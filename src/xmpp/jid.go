@@ -41,6 +41,7 @@ package jid
 
 import (
 	"code.google.com/p/go.text/unicode/norm"
+	// TODO: Use a proper stringprep library like "code.google.com/p/go-idn/idna"
 	"errors"
 	"regexp"
 	"strings"
@@ -50,8 +51,8 @@ import (
 // Define some reusable error messages.
 const (
 	ERROR_INVALID_STRING = "String is not valid UTF-8"
-	ERROR_LONG_PART      = "JID parts must be greater than 0 bytes"
-	ERROR_EMPTY_PART     = "JID parts must be less than 1023 bytes"
+	ERROR_EMPTY_PART     = "JID parts must be greater than 0 bytes"
+	ERROR_LONG_PART      = "JID parts must be less than 1023 bytes"
 	ERROR_INVALID_JID    = "String is not a valid JID"
 	ERROR_ILLEGAL_RUNE   = "String contains an illegal chartacter"
 	ERROR_ILLEGAL_SPACE  = "String contains illegal whitespace"
@@ -97,26 +98,32 @@ func (address jid) ResourcePart() string {
 // Verify that the JID part is valid and return a normalized string.
 func normalizeJIDPart(part string) (string, error) {
 	switch normalized := NF.String(part); {
-	case len(normalized) == 0: // Check that the length is greater than 0 bytes
-		return errors.New(ERROR_EMPTY_PART)
-	case len(normalized) > 1023: // Check that the length is less than 1023 bytes
-		return errors.New(ERROR_LONG_PART)
-	case !utf8.ValidString(part): // Check that the original string is valid UTF-8
-		return errors.New(ERROR_INVALID_STRING)
-	case strings.ContainsAny(part, "\"&'/:<>@"): // Check for illegal characters
-		return errors.New(ERROR_ILLEGAL_RUNE)
-	case len(strings.Fields(normalized)) != 1: // Check for illegal whitespace
-		return errors.New(ERROR_ILLEGAL_SPACE)
-		// TODO: There are many more tables in section A.5 of RFC 6122 that should be
-		// put here, mappings (B.3), etc.
+	case len(normalized) == 0:
+		// The normalized length should be > 0 bytes
+		return "", errors.New(ERROR_EMPTY_PART)
+	case len(normalized) > 1023:
+		// The normalized length should be ≤ 1023 bytes
+		return "", errors.New(ERROR_LONG_PART)
+	case !utf8.ValidString(part):
+		// The original string should be valid UTF-8
+		return "", errors.New(ERROR_INVALID_STRING)
+	case strings.ContainsAny(part, "\"&'/:<>@"):
+		// The original string should not contain any illegal characters. After
+		// normalization some of these characters maybe present.
+		return "", errors.New(ERROR_ILLEGAL_RUNE)
+	case len(strings.Fields(normalized)) != 1:
+		// There should be no whitespace in the normalized part.
+		return "", errors.New(ERROR_ILLEGAL_SPACE)
+		// TODO: Use a proper stringprep library to make sure this is all correct.
+	default:
+		return normalized, nil
 	}
-	return nil
 }
 
 // Set the localpart of a JID and verify that it is a valid/normalized UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
 func (address jid) SetLocalPart(localpart string) error {
-	normalized, err := verifyJIDPart(localpart)
+	normalized, err := normalizeJIDPart(localpart)
 	if err != nil {
 		return err
 	}
@@ -127,7 +134,7 @@ func (address jid) SetLocalPart(localpart string) error {
 // Set the domainpart of a JID and verify that it is a valid/normalized  UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
 func (address jid) SetDomainPart(domainpart string) error {
-	normalized, err := verifyJIDPart(domainpart)
+	normalized, err := normalizeJIDPart(domainpart)
 	if err != nil {
 		return err
 	}
