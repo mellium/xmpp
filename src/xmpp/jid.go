@@ -54,6 +54,7 @@ const (
 	ERROR_INVALID_STRING = "String is not valid UTF-8"
 	ERROR_EMPTY_PART     = "JID parts must be greater than 0 bytes"
 	ERROR_LONG_PART      = "JID parts must be less than 1023 bytes"
+	ERROR_NO_RESOURCE    = "String is a bare JID"
 	ERROR_INVALID_JID    = "String is not a valid JID"
 	ERROR_ILLEGAL_RUNE   = "String contains an illegal chartacter"
 	ERROR_ILLEGAL_SPACE  = "String contains illegal whitespace"
@@ -82,17 +83,17 @@ func NewJID(s string) (jid, error) {
 }
 
 // Get the local part of a JID
-func (address jid) LocalPart() string {
+func (address *jid) LocalPart() string {
 	return address.localpart
 }
 
 // Get the domainpart of a JID
-func (address jid) DomainPart() string {
+func (address *jid) DomainPart() string {
 	return address.domainpart
 }
 
 // Get the resourcepart of a JID
-func (address jid) ResourcePart() string {
+func (address *jid) ResourcePart() string {
 	return address.resourcepart
 }
 
@@ -123,18 +124,18 @@ func normalizeJIDPart(part string) (string, error) {
 
 // Set the localpart of a JID and verify that it is a valid/normalized UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
-func (address jid) SetLocalPart(localpart string) error {
+func (address *jid) SetLocalPart(localpart string) error {
 	normalized, err := normalizeJIDPart(localpart)
 	if err != nil {
 		return err
 	}
-	address.localpart = normalized
+	(*address).localpart = normalized
 	return nil
 }
 
 // Set the domainpart of a JID and verify that it is a valid/normalized  UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
-func (address jid) SetDomainPart(domainpart string) error {
+func (address *jid) SetDomainPart(domainpart string) error {
 	normalized, err := normalizeJIDPart(domainpart)
 	if err != nil {
 		return err
@@ -162,7 +163,7 @@ func (address jid) SetDomainPart(domainpart string) error {
 
 // Set the resourcepart of a JID and verify that it is a valid/normalized UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
-func (address jid) SetResourcePart(resourcepart string) error {
+func (address *jid) SetResourcePart(resourcepart string) error {
 	normalized, err := normalizeJIDPart(resourcepart)
 	if err != nil {
 		return err
@@ -172,12 +173,12 @@ func (address jid) SetResourcePart(resourcepart string) error {
 }
 
 // Return the full JID as a string
-func (address jid) String() string {
+func (address *jid) String() string {
 	return address.LocalPart() + "@" + address.DomainPart() + "/" + address.ResourcePart()
 }
 
 // Return the bare JID as a string
-func (address jid) GetBareJid() string {
+func (address jid) Bare() string {
 	return address.LocalPart() + "@" + address.DomainPart()
 }
 
@@ -185,7 +186,7 @@ func (address jid) GetBareJid() string {
 // Technically the only required part of a JID is the domainpart.
 const JIDMatch = "[^@/]+@[^@/]+/[^@/]+"
 
-func (address jid) FromString(s string) error {
+func (address *jid) FromString(s string) error {
 	// Make sure the string is valid UTF-8
 	if !utf8.ValidString(s) {
 		return errors.New(ERROR_INVALID_STRING)
@@ -202,6 +203,8 @@ func (address jid) FromString(s string) error {
 	switch matched, err := regexp.MatchString(JIDMatch, s); {
 	case err != nil:
 		return err
+	case !matched && !strings.ContainsRune(s, '/'):
+		return errors.New(ERROR_NO_RESOURCE)
 	case !matched:
 		return errors.New(ERROR_INVALID_JID)
 	}
