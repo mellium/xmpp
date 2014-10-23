@@ -78,7 +78,8 @@ func normalizeJIDPart(part string) (string, error) {
 		// The original string should not contain any illegal characters. After
 		// normalization some of these characters maybe present.
 		return "", errors.New(ERROR_ILLEGAL_RUNE)
-	case len(strings.Fields(normalized)) != 1:
+	// TODO: Is there no function to just do this?
+	case len(strings.Fields("'"+normalized+"'")) != 1:
 		// There should be no whitespace in the normalized part.
 		return "", errors.New(ERROR_ILLEGAL_SPACE)
 		// TODO: Use a proper stringprep library to make sure this is all correct.

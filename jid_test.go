@@ -4,16 +4,10 @@
 
 package jid
 
-import (
-	"fmt"
-	"testing"
-)
+import "testing"
 
 // Trying to create a new JID with an invalid UTF8 string should fail.
 func TestNewInvalidUtf8Jid(t *testing.T) {
-	// TODO: Leave this here while development is ongoing to make Google shutup
-	// about unused imports... ugly hax.
-	_ = fmt.Println
 	invalid := string([]byte{0xff, 0xfe, 0xfd})
 	_, err := NewJID(invalid + "@example.com/resourcepart")
 	if err == nil || err.Error() != ERROR_INVALID_STRING {
@@ -56,7 +50,7 @@ func TestNewSurroundingWhitespace(t *testing.T) {
 // New JIDs should not allow space.
 func TestNewHasWhitespace(t *testing.T) {
 	_, err := NewJID("localpart	@example.com/resourcepart")
-	if err == nil {
+	if err == nil || err.Error() != ERROR_ILLEGAL_SPACE {
 		t.FailNow()
 	}
 }
