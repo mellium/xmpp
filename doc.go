@@ -2,6 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
+// Package jid implements XMPP addresses (JIDs) as described in RFC 6122.
 // The syntax for a JID is defined as follows using the Augmented Backus-Naur
 // Form:
 //
