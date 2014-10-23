@@ -43,6 +43,7 @@ import (
 	"code.google.com/p/go.text/unicode/norm"
 	// TODO: Use a proper stringprep library like "code.google.com/p/go-idn/idna"
 	"errors"
+	"net"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -145,7 +146,7 @@ func (address jid) SetDomainPart(domainpart string) error {
 	// If the domain is a valid IPv6 address without brackets (it's a valid IP and
 	// does not fit in 4 bytes), wrap it in brackets.
 	// TODO: This is not very future proof.
-	if ip := net.ParseIP(normalized); ip != nil && !ip.To4() != nil {
+	if ip := net.ParseIP(normalized); ip != nil && ip.To4() == nil {
 		normalized = "[" + normalized + "]"
 	}
 	// According to RFC 6122:
@@ -162,7 +163,7 @@ func (address jid) SetDomainPart(domainpart string) error {
 // Set the resourcepart of a JID and verify that it is a valid/normalized UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
 func (address jid) SetResourcePart(resourcepart string) error {
-	normalized, err := verifyJIDPart(resourcepart)
+	normalized, err := normalizeJIDPart(resourcepart)
 	if err != nil {
 		return err
 	}
@@ -173,6 +174,11 @@ func (address jid) SetResourcePart(resourcepart string) error {
 // Return the full JID as a string
 func (address jid) String() string {
 	return address.LocalPart() + "@" + address.DomainPart() + "/" + address.ResourcePart()
+}
+
+// Return the bare JID as a string
+func (address jid) GetBareJid() string {
+	return address.LocalPart() + "@" + address.DomainPart()
 }
 
 // Set the JIDs properties from a string.
@@ -204,8 +210,6 @@ func (address jid) FromString(s string) error {
 	atLoc := strings.IndexRune(s, '@')
 	slashLoc := strings.IndexRune(s, '/')
 
-	// TODO: We don't want just one part to be set and the next part to error;
-	// perform checks before we set parts
 	err := address.SetLocalPart(s[0:atLoc])
 	if err != nil {
 		return err
