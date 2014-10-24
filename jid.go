@@ -48,6 +48,11 @@ func NewJID(s string) (JID, error) {
 	return j, err
 }
 
+// Tests for JID equality by testing the individual parts.
+func (jid *JID) Equals(jid2 JID) bool {
+	return (jid.LocalPart() == jid2.LocalPart() && jid.DomainPart() == jid2.DomainPart() && jid.ResourcePart() == jid2.ResourcePart())
+}
+
 // Get the local part of a JID
 func (address *JID) LocalPart() string {
 	return address.localpart

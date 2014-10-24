@@ -47,9 +47,17 @@ func TestNewSurroundingWhitespace(t *testing.T) {
 	}
 }
 
-// New JIDs should not allow space.
-func TestNewHasWhitespace(t *testing.T) {
+// New JIDs should not allow `\t`.
+func TestNewHasTab(t *testing.T) {
 	_, err := NewJID("localpart	@example.com/resourcepart")
+	if err == nil || err.Error() != ERROR_ILLEGAL_SPACE {
+		t.FailNow()
+	}
+}
+
+// New JIDs should not allow spaces.
+func TestNewHasSpace(t *testing.T) {
+	_, err := NewJID("localpart@exampl e.com/resourcepart")
 	if err == nil || err.Error() != ERROR_ILLEGAL_SPACE {
 		t.FailNow()
 	}
@@ -62,12 +70,47 @@ func TestNewValid(t *testing.T) {
 	jid, err := NewJID(s)
 	switch {
 	case err != nil:
-		fallthrough
+		t.FailNow();
 	case jid.LocalPart() != "jid":
-		fallthrough
+		t.FailNow();
 	case jid.DomainPart() != "example.com":
-		fallthrough
+		t.FailNow();
 	case jid.ResourcePart() != "resourcepart":
+		t.FailNow()
+	}
+}
+
+// Two identical JIDs should be equal.
+func TestEqualJIDs(t *testing.T) {
+	jid := JID{"newjid", "example.com", "equal"}
+	jid2 := JID{"newjid", "example.com", "equal"}
+	if !jid.Equals(jid2) {
+		t.FailNow()
+	}
+}
+
+// Two different JIDs should not be equal.
+func TestNotEqualJIDs(t *testing.T) {
+	jid := JID{"newjid", "example.com", "notequal"}
+	jid2 := JID{"newjid2", "example.com", "notequal"}
+	if jid.Equals(jid2) {
+		t.FailNow()
+	}
+}
+
+// Two JIDs with similar looking unicode characters should be equal.
+func TestEqualsUnicodeNorm(t *testing.T) {
+	// U+2126 Ω ohm sign
+	jid, err := NewJID("Ω@example.com/res")
+	if err != nil {
+		t.Fail()
+	}
+	// U+03A9 Ω greek capital letter omega
+	jid2, err := NewJID("Ω@example.com/res")
+	if err != nil {
+		t.Fail()
+	}
+	if !jid.Equals(jid2) {
 		t.FailNow()
 	}
 }
