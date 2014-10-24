@@ -147,7 +147,7 @@ func (address *JID) String() string {
 }
 
 // Return the bare JID as a string
-func (address JID) Bare() string {
+func (address *JID) Bare() string {
 	return address.LocalPart() + "@" + address.DomainPart()
 }
 
