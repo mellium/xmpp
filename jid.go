@@ -4,10 +4,10 @@
 
 package jid
 
+// TODO: Use a proper stringprep library like "code.google.com/p/go-idn/idna"
 import (
+	"code.google.com/p/go.net/idna"
 	"code.google.com/p/go.text/unicode/norm"
-	// TODO: Use a proper stringprep library like "code.google.com/p/go-idn/idna"
-	// Use for IDNA2008 support: "code.google.com/p/go.net/idna"
 	"errors"
 	"net"
 	"regexp"
