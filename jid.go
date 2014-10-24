@@ -40,7 +40,8 @@ type jid struct {
 	resourcepart string
 }
 
-// Create a new JID from the given string.
+// Create a new JID from the given string. Returns a struct of type `jid` with
+// three fields (all strings): `localpart`, `domainpart`, and `resourcepart`.
 func NewJID(s string) (jid, error) {
 	j := jid{}
 	err := j.FromString(s)
@@ -62,8 +63,10 @@ func (address *jid) ResourcePart() string {
 	return address.resourcepart
 }
 
-// Verify that the JID part is valid and return a normalized string.
-func normalizeJIDPart(part string) (string, error) {
+// Verify that the JID part is valid and return a normalized string. You do not
+// need to do this before passing parts to `NewJID()` or any of the `SetPart`
+// functions; they handle validation and normalization for you.
+func NormalizeJIDPart(part string) (string, error) {
 	switch normalized := NF.String(part); {
 	case len(normalized) == 0:
 		// The normalized length should be > 0 bytes
@@ -91,7 +94,7 @@ func normalizeJIDPart(part string) (string, error) {
 // Set the localpart of a JID and verify that it is a valid/normalized UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
 func (address *jid) SetLocalPart(localpart string) error {
-	normalized, err := normalizeJIDPart(localpart)
+	normalized, err := NormalizeJIDPart(localpart)
 	if err != nil {
 		return err
 	}
@@ -102,7 +105,7 @@ func (address *jid) SetLocalPart(localpart string) error {
 // Set the domainpart of a JID and verify that it is a valid/normalized  UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
 func (address *jid) SetDomainPart(domainpart string) error {
-	normalized, err := normalizeJIDPart(domainpart)
+	normalized, err := NormalizeJIDPart(domainpart)
 	if err != nil {
 		return err
 	}
@@ -130,7 +133,7 @@ func (address *jid) SetDomainPart(domainpart string) error {
 // Set the resourcepart of a JID and verify that it is a valid/normalized UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
 func (address *jid) SetResourcePart(resourcepart string) error {
-	normalized, err := normalizeJIDPart(resourcepart)
+	normalized, err := NormalizeJIDPart(resourcepart)
 	if err != nil {
 		return err
 	}
@@ -148,10 +151,11 @@ func (address jid) Bare() string {
 	return address.LocalPart() + "@" + address.DomainPart()
 }
 
-// Set the JIDs properties from a string.
-// Technically the only required part of a JID is the domainpart.
+// Used to match JIDs. Technically the only required part of a JID is the
+// domainpart, but for now we match on all parts. This does not match bare JIDs.
 const JIDMatch = "[^@/]+@[^@/]+/[^@/]+"
 
+// Set the existing JID from a string.
 func (address *jid) FromString(s string) error {
 	// Make sure the string is valid UTF-8
 	if !utf8.ValidString(s) {
