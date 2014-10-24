@@ -7,6 +7,7 @@ package jid
 import (
 	"code.google.com/p/go.text/unicode/norm"
 	// TODO: Use a proper stringprep library like "code.google.com/p/go-idn/idna"
+	// Use for IDNA2008 support: "code.google.com/p/go.net/idna"
 	"errors"
 	"net"
 	"regexp"
@@ -107,9 +108,20 @@ func (address *JID) SetLocalPart(localpart string) error {
 	return nil
 }
 
-// Set the domainpart of a JID and verify that it is a valid/normalized  UTF-8
+// Set the domainpart of a JID and verify that it is a valid/normalized UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
 func (address *JID) SetDomainPart(domainpart string) error {
+	// From RFC 6122 §2.2 Domainpart:
+	// If the domainpart includes a final character considered to be a label
+	// separator (dot) by [IDNA2003] or [DNS], this character MUST be stripped
+	// from the domainpart before the JID of which it is a part is used for the
+	// purpose of routing an XML stanza, comparing against another JID, or
+	// constructing an [XMPP‑URI]. In particular, the character MUST be stripped
+	// before any other canonicalization steps are taken, such as application of
+	// the [NAMEPREP] profile of [STRINGPREP] or completion of the ToASCII
+	// operation as described in [IDNA2003].
+	domainpart = strings.TrimRight(domainpart, ".")
+
 	normalized, err := NormalizeJIDPart(domainpart)
 	if err != nil {
 		return err
@@ -124,13 +136,6 @@ func (address *JID) SetDomainPart(domainpart string) error {
 	if ip := net.ParseIP(normalized); ip != nil && ip.To4() == nil {
 		normalized = "[" + normalized + "]"
 	}
-	// According to RFC 6122:
-	// If the domainpart includes a final character considered to be a label
-	// separator (dot) by [IDNA2003] or [DNS], this character MUST be stripped
-	// from the domainpart before the JID of which it is a part is used for the
-	// purpose of routing an XML stanza, comparing against another JID, or
-	// constructing an [XMPP-URI].
-	normalized = strings.TrimSuffix(normalized, ".")
 	address.domainpart = normalized
 	return nil
 }
