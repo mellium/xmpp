@@ -15,26 +15,58 @@ func TestNewInvalidUtf8Jid(t *testing.T) {
 	}
 }
 
-// Trying to create a new bare JID (no resource part) should error.
-func TestNewMissingResourcePart(t *testing.T) {
-	_, err := NewJID("barejid@example.com")
-	if err == nil || err.Error() != ERROR_NO_RESOURCE {
-		t.FailNow()
-	}
-}
-
-// Trying to create a JID with no localpart should error.
-func TestNewMissingLocalPart(t *testing.T) {
+// Trying to create a JID with an empty localpart should error.
+func TestNewEmptyLocalPart(t *testing.T) {
 	_, err := NewJID("@example.com/resourcepart")
-	if err == nil || err.Error() != ERROR_INVALID_JID {
+	if err == nil || err.Error() != ERROR_EMPTY_PART {
 		t.FailNow()
 	}
 }
 
-// Trying to create a JID with no @ symbol should error.
-func TestNewMissingAtSymbol(t *testing.T) {
-	_, err := NewJID("example.com/resourcepart")
-	if err == nil || err.Error() != ERROR_INVALID_JID {
+// Trying to create a JID with no localpart should work.
+func TestNewNoLocalPart(t *testing.T) {
+	jid, err := NewJID("example.com/resourcepart")
+	if err != nil || jid.LocalPart() != "" {
+		t.FailNow()
+	}
+}
+
+// Trying to create a JID with no domainpart should error.
+func TestNewNoDomainPart(t *testing.T) {
+	_, err := NewJID("text@/resourcepart")
+	if err == nil {
+		t.FailNow()
+	}
+}
+
+// Trying to create a JID with no anything should error.
+func TestNewNoAnything(t *testing.T) {
+	_, err := NewJID("@/")
+	if err == nil {
+		t.FailNow()
+	}
+}
+
+// Trying to create a JID with parts mixed up should error.
+func TestNewMixedUp(t *testing.T) {
+	_, err := NewJID("whywould/this@happen")
+	if err == nil {
+		t.FailNow()
+	}
+}
+
+// Trying to create a JID with an empty resource part should error.
+func TestNewEmptyResourcePart(t *testing.T) {
+	_, err := NewJID("text@example.com/")
+	if err == nil || err.Error() != ERROR_EMPTY_PART {
+		t.FailNow()
+	}
+}
+
+// Trying to create a new bare JID (no resource part) should work.
+func TestNewBareJID(t *testing.T) {
+	jid, err := NewJID("barejid@example.com")
+	if err != nil || jid.ResourcePart() != "" {
 		t.FailNow()
 	}
 }
@@ -42,7 +74,14 @@ func TestNewMissingAtSymbol(t *testing.T) {
 // New JIDs should strip whitespace from inputs.
 func TestNewSurroundingWhitespace(t *testing.T) {
 	jid, err := NewJID("  localpart@example.com/resourcepart	 ")
-	if err != nil || jid.String() != "localpart@example.com/resourcepart" {
+	if err != nil {
+		t.FailNow()
+	}
+	str, err := jid.String()
+	if err != nil {
+		t.FailNow()
+	}
+	if str != "localpart@example.com/resourcepart" {
 		t.FailNow()
 	}
 }
@@ -63,17 +102,29 @@ func TestNewHasSpace(t *testing.T) {
 	}
 }
 
+// New JIDs should not be empty strings.
+func TestNewEmpty(t *testing.T) {
+	_, err := NewJID("")
+	if err == nil {
+		t.FailNow()
+	}
+}
+
 // Creating a new JID from a valid JID string should work and contain all the
 // correct parts.
 func TestNewValid(t *testing.T) {
 	s := "jid@example.com/resourcepart"
 	jid, err := NewJID(s)
+	if err != nil {
+		t.FailNow()
+	}
+	dp, err := jid.DomainPart()
 	switch {
 	case err != nil:
 		t.FailNow();
 	case jid.LocalPart() != "jid":
 		t.FailNow();
-	case jid.DomainPart() != "example.com":
+	case dp != "example.com":
 		t.FailNow();
 	case jid.ResourcePart() != "resourcepart":
 		t.FailNow()

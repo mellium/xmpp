@@ -10,7 +10,6 @@ import (
 	"code.google.com/p/go.text/unicode/norm"
 	"errors"
 	"net"
-	"regexp"
 	"strings"
 	"unicode/utf8"
 )
@@ -20,7 +19,6 @@ const (
 	ERROR_INVALID_STRING = "String is not valid UTF-8"
 	ERROR_EMPTY_PART     = "JID parts must be greater than 0 bytes"
 	ERROR_LONG_PART      = "JID parts must be less than 1023 bytes"
-	ERROR_NO_RESOURCE    = "String is a bare JID"
 	ERROR_INVALID_JID    = "String is not a valid JID"
 	ERROR_ILLEGAL_RUNE   = "String contains an illegal chartacter"
 	ERROR_ILLEGAL_SPACE  = "String contains illegal whitespace"
@@ -51,7 +49,16 @@ func NewJID(s string) (JID, error) {
 
 // Tests for JID equality by testing the individual parts.
 func (jid *JID) Equals(jid2 JID) bool {
-	return (jid.LocalPart() == jid2.LocalPart() && jid.DomainPart() == jid2.DomainPart() && jid.ResourcePart() == jid2.ResourcePart())
+	domainpart, err := jid.DomainPart()
+	// Supressing an error, but if the domainpart errors it should never be equal.
+	if err != nil {
+		return false
+	}
+	domainpart2, err := jid2.DomainPart()
+	if err != nil {
+		return false
+	}
+	return (jid.LocalPart() == jid2.LocalPart() && domainpart == domainpart2 && jid.ResourcePart() == jid2.ResourcePart())
 }
 
 // Get the local part of a JID
@@ -60,8 +67,8 @@ func (address *JID) LocalPart() string {
 }
 
 // Get the domainpart of a JID
-func (address *JID) DomainPart() string {
-	return address.domainpart
+func (address *JID) DomainPart() (string, error) {
+	return idna.ToUnicode(address.domainpart)
 }
 
 // Get the resourcepart of a JID
@@ -111,18 +118,21 @@ func (address *JID) SetLocalPart(localpart string) error {
 // Set the domainpart of a JID and verify that it is a valid/normalized UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
 func (address *JID) SetDomainPart(domainpart string) error {
+
 	// From RFC 6122 §2.2 Domainpart:
-	// If the domainpart includes a final character considered to be a label
-	// separator (dot) by [IDNA2003] or [DNS], this character MUST be stripped
-	// from the domainpart before the JID of which it is a part is used for the
-	// purpose of routing an XML stanza, comparing against another JID, or
-	// constructing an [XMPP‑URI]. In particular, the character MUST be stripped
-	// before any other canonicalization steps are taken, such as application of
-	// the [NAMEPREP] profile of [STRINGPREP] or completion of the ToASCII
-	// operation as described in [IDNA2003].
+	//
+	//     If the domainpart includes a final character considered to be a label
+	//     separator (dot) by [IDNA2003] or [DNS], this character MUST be stripped
+	//     from the domainpart before the JID of which it is a part is used for
+	//     the purpose of routing an XML stanza, comparing against another JID, or
+	//     constructing an [XMPP‑URI]. In particular, the character MUST be
+	//     stripped before any other canonicalization steps are taken, such as
+	//     application of the [NAMEPREP] profile of [STRINGPREP] or completion of
+	//     the ToASCII operation as described in [IDNA2003].
+	//
 	domainpart = strings.TrimRight(domainpart, ".")
 
-	normalized, err := NormalizeJIDPart(domainpart)
+	normalized, err := idna.ToASCII(domainpart)
 	if err != nil {
 		return err
 	}
@@ -152,25 +162,34 @@ func (address *JID) SetResourcePart(resourcepart string) error {
 }
 
 // Return the full JID as a string
-func (address *JID) String() string {
-	return address.LocalPart() + "@" + address.DomainPart() + "/" + address.ResourcePart()
+func (address *JID) String() (string, error) {
+	out, err := address.DomainPart()
+	if lp := address.LocalPart(); lp != "" {
+		out = address.LocalPart() + "@" + out
+	}
+	if rp := address.ResourcePart(); rp != "" {
+		out = out + "/" + rp
+	}
+	return out, err
 }
 
 // Return the bare JID as a string
-func (address *JID) Bare() string {
-	return address.LocalPart() + "@" + address.DomainPart()
+func (address *JID) Bare() (string, error) {
+	out, err := address.DomainPart()
+	if lp := address.LocalPart(); lp != "" {
+		out = lp + "@" + out
+	}
+	return out, err
 }
-
-// Used to match JIDs. Technically the only required part of a JID is the
-// domainpart, but for now we match on all parts. This does not match bare JIDs.
-const JIDMatch = "[^@/]+@[^@/]+/[^@/]+"
 
 // Set the existing JID from a string.
 func (address *JID) FromString(s string) error {
+
 	// Make sure the string is valid UTF-8
 	if !utf8.ValidString(s) {
 		return errors.New(ERROR_INVALID_STRING)
 	}
+
 	// According to RFC 6122:
 	//
 	//     Implementation Note: When dividing a JID into its component parts, an
@@ -179,31 +198,80 @@ func (address *JID) FromString(s string) error {
 	//     certain Unicode code points to the separator characters (e.g., U+FE6B
 	//     SMALL COMMERCIAL AT might decompose into U+0040 COMMERCIAL AT).
 	//
-	// So don't normalize before we check the regex.
-	switch matched, err := regexp.MatchString(JIDMatch, s); {
-	case err != nil:
-		return err
-	case !matched && !strings.ContainsRune(s, '/'):
-		return errors.New(ERROR_NO_RESOURCE)
-	case !matched:
-		return errors.New(ERROR_INVALID_JID)
-	}
-	s = strings.TrimSpace(s)
-	// Set the various parts of the JID
-	atLoc := strings.IndexRune(s, '@')
-	slashLoc := strings.IndexRune(s, '/')
+	// So don't normalize until after we've checked the various parts.
 
-	err := address.SetLocalPart(s[0:atLoc])
-	if err != nil {
-		return err
+	// Trim any whitespace before we begin.
+	s = strings.TrimSpace(s)
+
+	// Do not allow whitespace elsewhere in the string…
+	if len(strings.Fields(s)) != 1 {
+		return errors.New(ERROR_ILLEGAL_SPACE)
 	}
-	err = address.SetDomainPart(s[atLoc+1 : slashLoc])
-	if err != nil {
-		return err
+
+	atCount := strings.Count(s, "@")
+	slashCount := strings.Count(s, "/")
+
+	switch {
+	case atCount == 0 && slashCount == 0: // domainpart only
+		err := address.SetDomainPart(s)
+		if err != nil {
+			return err
+		}
+
+	case atCount == 1 && slashCount == 0: // Bare JID
+		atLoc := strings.IndexRune(s, '@')
+		if atLoc == 0 || atLoc == len(s)-1 {
+			return errors.New(ERROR_EMPTY_PART)
+		}
+		err := address.SetLocalPart(s[0:atLoc])
+		if err != nil {
+			return err
+		}
+		err = address.SetDomainPart(s[atLoc+1:])
+		if err != nil {
+			return err
+		}
+
+	case atCount == 0 && slashCount == 1: // domainpart + resourcepart
+		slashLoc := strings.IndexRune(s, '/')
+		if slashLoc == 0 || slashLoc == len(s)-1 {
+			return errors.New(ERROR_EMPTY_PART)
+		}
+		err := address.SetDomainPart(s[0:slashLoc])
+		if err != nil {
+			return err
+		}
+		err = address.SetResourcePart(s[slashLoc+1:])
+		if err != nil {
+			return err
+		}
+
+	case atCount == 1 && slashCount == 1: // Full JID
+		atLoc := strings.IndexRune(s, '@')
+		slashLoc := strings.IndexRune(s, '/')
+		if slashLoc < atLoc {
+			return errors.New(ERROR_INVALID_JID)
+		}
+		last := len(s) - 1
+		if atLoc == 0 || slashLoc == 0 || atLoc == last || slashLoc == last || slashLoc == atLoc + 1{
+			return errors.New(ERROR_EMPTY_PART)
+		}
+		err := address.SetLocalPart(s[0:atLoc])
+		if err != nil {
+			return err
+		}
+		err = address.SetDomainPart(s[atLoc+1 : slashLoc])
+		if err != nil {
+			return err
+		}
+		err = address.SetResourcePart(s[slashLoc+1:])
+		if err != nil {
+			return err
+		}
+
+	default: // Too many '@' or '/' symbols
+		return errors.New(ERROR_ILLEGAL_RUNE)
 	}
-	err = address.SetResourcePart(s[slashLoc+1:])
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
