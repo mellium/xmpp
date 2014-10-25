@@ -20,7 +20,8 @@ resourceparts.
 
 Copyright 2014 Sam Whited.
 Use of this source code is governed by the BSD 2-clause license that can be
-found in the LICENSE file.
+found in the LICENSE file or the MIT License (also in the LICENSE file) at your
+disgression.
 
 [rfc6122]: https://www.rfc-editor.org/rfc/rfc6122.txt
 [idna2008]: http://www.unicode.org/reports/tr46/#IDNA2008
