@@ -8,6 +8,7 @@ package jid
 import (
 	"code.google.com/p/go.net/idna"
 	"code.google.com/p/go.text/unicode/norm"
+
 	"errors"
 	"net"
 	"strings"
@@ -253,7 +254,7 @@ func (address *JID) FromString(s string) error {
 			return errors.New(ERROR_INVALID_JID)
 		}
 		last := len(s) - 1
-		if atLoc == 0 || slashLoc == 0 || atLoc == last || slashLoc == last || slashLoc == atLoc + 1{
+		if atLoc == 0 || slashLoc == 0 || atLoc == last || slashLoc == last || slashLoc == atLoc+1 {
 			return errors.New(ERROR_EMPTY_PART)
 		}
 		err := address.SetLocalPart(s[0:atLoc])
