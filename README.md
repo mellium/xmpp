@@ -12,10 +12,9 @@ import github.com/SamWhited/koine
 
 ## Status
 
-A test suite is being developed and then the actual library will be brought up
-to date. Basic functionality and unicode normalization is present, but the
-library is currently not IDNA2008 compliant and is using a limited
-implementation of stringprep.
+Basic functionality and unicode normalization is present, but the library is
+not currently using a proper stringprep implementation for JID local and
+resourceparts.
 
 ## License
 
