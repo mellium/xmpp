@@ -1,5 +1,7 @@
 # Koiné
 
+[![Build Status](https://travis-ci.org/SamWhited/koine.png)](https://travis-ci.org/SamWhited/koine)
+
 **Koiné** is an XMPP JID address library and validator for Go which aims to be
 fully [RFC 6122][rfc6122] compliant, except using [IDNA2008][idna2008] for
 normalizing domain names.
