@@ -17,12 +17,15 @@ import (
 
 // Define some reusable error messages.
 const (
-	ERROR_INVALID_STRING = "String is not valid UTF-8"
-	ERROR_EMPTY_PART     = "JID parts must be greater than 0 bytes"
-	ERROR_LONG_PART      = "JID parts must be less than 1023 bytes"
-	ERROR_INVALID_JID    = "String is not a valid JID"
-	ERROR_ILLEGAL_RUNE   = "String contains an illegal chartacter"
-	ERROR_ILLEGAL_SPACE  = "String contains illegal whitespace"
+	ERROR_INVALID_STRING    = "String is not valid UTF-8"
+	ERROR_EMPTY_PART        = "JID parts must be > 0 bytes"
+	ERROR_LONG_PART         = "JID parts must be < 1023 bytes"
+	ERROR_LONG_DOMAIN_LABEL = "Domain names must be ≤ 63 chars per label"
+	ERROR_LONG_DOMAIN_NAME  = "Domain names must be ≤ 253 chars"
+	ERROR_LONG_DOMAIN_BYTES = "Domain names must be ≤ 255 octets"
+	ERROR_INVALID_JID       = "String is not a valid JID"
+	ERROR_ILLEGAL_RUNE      = "String contains an illegal chartacter"
+	ERROR_ILLEGAL_SPACE     = "String contains illegal whitespace"
 )
 
 // The Unicode normalization form to use. According to RFC 6122:
@@ -95,7 +98,7 @@ func NormalizeJIDPart(part string) (string, error) {
 		// The original string should not contain any illegal characters. After
 		// normalization some of these characters maybe present.
 		return "", errors.New(ERROR_ILLEGAL_RUNE)
-	// TODO: Is there no function to just do this?
+	// TODO: Is there no function or method to just do this?
 	case len(strings.Fields("'"+normalized+"'")) != 1:
 		// There should be no whitespace in the normalized part.
 		return "", errors.New(ERROR_ILLEGAL_SPACE)
