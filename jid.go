@@ -166,15 +166,15 @@ func (address *JID) SetResourcePart(resourcepart string) error {
 }
 
 // Return the full JID as a string
-func (address *JID) String() (string, error) {
-	out, err := address.DomainPart()
+func (address *JID) String() string {
+	out, _ := address.DomainPart()
 	if lp := address.LocalPart(); lp != "" {
 		out = address.LocalPart() + "@" + out
 	}
 	if rp := address.ResourcePart(); rp != "" {
 		out = out + "/" + rp
 	}
-	return out, err
+	return out
 }
 
 // Return the bare JID as a string

@@ -77,10 +77,7 @@ func TestNewSurroundingWhitespace(t *testing.T) {
 	if err != nil {
 		t.FailNow()
 	}
-	str, err := jid.String()
-	if err != nil {
-		t.FailNow()
-	}
+	str := jid.String()
 	if str != "localpart@example.com/resourcepart" {
 		t.FailNow()
 	}
@@ -121,11 +118,11 @@ func TestNewValid(t *testing.T) {
 	dp, err := jid.DomainPart()
 	switch {
 	case err != nil:
-		t.FailNow();
+		t.FailNow()
 	case jid.LocalPart() != "jid":
-		t.FailNow();
+		t.FailNow()
 	case dp != "example.com":
-		t.FailNow();
+		t.FailNow()
 	case jid.ResourcePart() != "resourcepart":
 		t.FailNow()
 	}
