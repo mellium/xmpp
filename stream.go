@@ -17,7 +17,7 @@ type Stream struct {
 	Name    xml.Name `xml:"http://etherx.jabber.org/streams stream"`
 }
 
-const NAME xml.name = xml.Name{Space: "http://etherx.jabber.org/streams", Local: "stream"}
+var NAME xml.Name = xml.Name{Space: "http://etherx.jabber.org/streams", Local: "stream"}
 
 func NewStream(to jid.JID, from jid.JID, xmlns string, id string) (*Stream, error) {
 	stream := new(Stream)
@@ -42,8 +42,8 @@ func (stream *Stream) FromStartElement(start xml.StartElement) error {
 
 	stream.Name = start.Name
 
-	for a := range start.Attr {
-		switch a.name {
+	for _, a := range start.Attr {
+		switch a.Name.Local {
 		case "to":
 			stream.STo = a.Value
 		case "from":
