@@ -32,6 +32,8 @@ func StreamFromStartElement(start xml.StartElement) (stream, error) {
 
 	for _, a := range start.Attr {
 		switch a.Name.Local {
+		case "xmlns":
+			s.Xmlns = a.Value
 		case "to":
 			s.STo = a.Value
 		case "from":

@@ -10,6 +10,7 @@ import (
 func Handle(c net.Conn, l net.Listener) error {
 	defer c.Close()
 	decoder := xml.NewDecoder(c)
+	encoder := xml.NewEncoder(c)
 	for {
 		t, err := decoder.RawToken()
 		if err != nil && err != io.EOF {
@@ -46,13 +47,10 @@ func Handle(c net.Conn, l net.Listener) error {
 					return err
 				}
 
+				// Encode the new stream element.
 				// Marshal the new stream element and send it.
-				if b, err := xml.Marshal(s); err != nil {
+				if err := encoder.Encode(s); err != nil {
 					return err
-				} else {
-					if _, err := c.Write(b); err != nil {
-						return err
-					}
 				}
 			} else {
 				return errors.New("Invalid start element " + t.Name.Local)
