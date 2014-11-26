@@ -64,6 +64,16 @@ func (s *Stream) To() (jid.JID, error) {
 	return jid.NewJID(s.STo)
 }
 
+// Set the `from' attribute of a stream from a jid.JID.
+func (s *Stream) SetFrom(j jid.JID) {
+	s.SFrom = j.String()
+}
+
+// Set the `to' attribute of a stream from a jid.JID.
+func (s *Stream) SetTo(j jid.JID) {
+	s.STo = j.String()
+}
+
 // Convert a stream element to an array of bytes.
 func (s *Stream) Bytes() []byte {
 	// Ignore errors and just return what we get (if we want an error we can marshal it ourselves)
