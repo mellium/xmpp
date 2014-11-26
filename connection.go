@@ -21,11 +21,11 @@ func Handle(c net.Conn, l net.Listener) error {
 			// specified that it's UTF-8.
 		case xml.StartElement:
 			if t.Name.Local == "stream" {
-				var stream Stream
-				decoder.DecodeElement(&stream, &t)
+				stream := new(Stream)
+				err := stream.FromStartElement(t)
 
 				// Send an XML header
-				_, err := c.Write([]byte(xml.Header))
+				_, err = c.Write([]byte(xml.Header))
 				if err != nil {
 					return err
 				}
