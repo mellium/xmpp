@@ -8,7 +8,7 @@ import (
 )
 
 // Represents an XMPP stream XML start element.
-type Stream struct {
+type stream struct {
 	STo     string   `xml:"to,attr"`
 	SFrom   string   `xml:"from,attr"`
 	Version string   `xml:"version,attr"`
@@ -22,66 +22,67 @@ type Stream struct {
 var NAME xml.Name = xml.Name{Space: "stream", Local: "stream"}
 
 // Fill in stream properties from an XML Start Element.
-func (stream *Stream) FromStartElement(start xml.StartElement) error {
+func StreamFromStartElement(start xml.StartElement) (stream, error) {
 	if start.Name != NAME {
-		return errors.New(start.Name.Space + ":" + start.Name.Local + " is not a valid start stream tag")
+		return stream{}, errors.New(start.Name.Space + ":" + start.Name.Local + " is not a valid start stream tag")
 	}
 
-	stream.Name = start.Name
+	s := new(stream)
+	s.Name = start.Name
 
 	for _, a := range start.Attr {
 		switch a.Name.Local {
 		case "to":
-			stream.STo = a.Value
+			s.STo = a.Value
 		case "from":
-			stream.SFrom = a.Value
+			s.SFrom = a.Value
 		case "version":
-			stream.Version = a.Value
+			s.Version = a.Value
 		case "lang":
-			stream.Lang = a.Value
+			s.Lang = a.Value
 		case "id":
-			stream.Id = a.Value
+			s.Id = a.Value
 		}
 	}
 
-	return nil
+	return *s, nil
 }
 
 // Create a copy fo the given stream.
-func (stream *Stream) Copy() *Stream {
-	s := new(Stream)
-	*s = *stream
-	return s
+func (s *stream) Copy() *stream {
+	ns := new(stream)
+	*ns = *s
+	return ns
 }
 
 // Get the `from' attribute of an XMPP stream as a JID.
-func (s *Stream) From() (jid.JID, error) {
+func (s *stream) From() (jid.JID, error) {
 	return jid.NewJID(s.SFrom)
 }
 
 // Get the `to' attribute of an XMPP stream as a JID.
-func (s *Stream) To() (jid.JID, error) {
+func (s *stream) To() (jid.JID, error) {
 	return jid.NewJID(s.STo)
 }
 
 // Set the `from' attribute of a stream from a jid.JID.
-func (s *Stream) SetFrom(j jid.JID) {
+func (s *stream) SetFrom(j jid.JID) {
 	s.SFrom = j.String()
 }
 
 // Set the `to' attribute of a stream from a jid.JID.
-func (s *Stream) SetTo(j jid.JID) {
+func (s *stream) SetTo(j jid.JID) {
 	s.STo = j.String()
 }
 
 // Convert a stream element to an array of bytes.
-func (s *Stream) Bytes() []byte {
+func (s *stream) Bytes() []byte {
 	// Ignore errors and just return what we get (if we want an error we can marshal it ourselves)
 	out, _ := xml.Marshal(s)
 	return out
 }
 
 // Convert a stream element to a string.
-func (s *Stream) String() string {
+func (s *stream) String() string {
 	return string(s.Bytes())
 }
