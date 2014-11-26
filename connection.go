@@ -2,12 +2,9 @@ package xmpp
 
 import (
 	"encoding/xml"
-	"fmt"
+	"errors"
 	"io"
 	"net"
-	"reflect"
-
-	"github.com/SamWhited/logger"
 )
 
 func Handle(c net.Conn, l net.Listener) error {
@@ -16,7 +13,6 @@ func Handle(c net.Conn, l net.Listener) error {
 	for {
 		t, err := decoder.RawToken()
 		if err != nil && err != io.EOF {
-			logger.Debug(err.Error())
 			return err
 		}
 		switch t := t.(type) {
@@ -24,17 +20,46 @@ func Handle(c net.Conn, l net.Listener) error {
 			// TODO: Validate that the inst is XML v 1.0 and if an encoding is
 			// specified that it's UTF-8.
 		case xml.StartElement:
-			stream := new(Stream)
-			err := stream.FromStartElement(t)
-			if err != nil {
-				logger.Debug(err.Error())
-				return err
+			if t.Name.Local == "stream" {
+				var stream Stream
+				decoder.DecodeElement(&stream, &t)
+
+				// Send an XML header
+				_, err := c.Write([]byte(xml.Header))
+				if err != nil {
+					return err
+				}
+
+				// TODO: Validate that we serve the domain in question.
+
+				// Create and send a new stream element
+				s := stream.Copy()
+				// Swap the to and from attributes from the initiating stream element.
+				// If a `from' attribute is set, use it. Otherwise, ignore it.
+				if val, err := stream.From(); err == nil {
+					s.SetTo(val)
+				} else {
+					s.STo = ""
+				}
+				if val, err := stream.To(); err == nil {
+					s.SetFrom(val)
+				} else {
+					return err
+				}
+
+				// Marshal the new stream element and send it.
+				if b, err := xml.Marshal(s); err != nil {
+					return err
+				} else {
+					if _, err := c.Write(b); err != nil {
+						return err
+					}
+				}
+			} else {
+				return errors.New("Invalid start element " + t.Name.Local)
 			}
 
-			// Send back a start element
-
 		default:
-			fmt.Println("O:", reflect.TypeOf(t))
 		}
 	}
 }
