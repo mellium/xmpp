@@ -4,7 +4,10 @@
 
 package jid
 
-import "testing"
+import (
+	"encoding/xml"
+	"testing"
+)
 
 // Trying to create a new JID with an invalid UTF8 string should fail.
 func TestNewInvalidUtf8Jid(t *testing.T) {
@@ -159,6 +162,16 @@ func TestEqualsUnicodeNorm(t *testing.T) {
 		t.Fail()
 	}
 	if !jid.Equals(jid2) {
+		t.FailNow()
+	}
+}
+
+// Test marshalling JID into an XML attribute
+func TestMarshal(t *testing.T) {
+	jid := JID{"newjid", "example.com", "marshal"}
+	attr, err := jid.MarshalXMLAttr(xml.Name{Space: "", Local: "to"})
+
+	if err != nil || attr.Name.Local != "to" || attr.Name.Space != "" || attr.Value != "newjid@example.com/marshal" {
 		t.FailNow()
 	}
 }

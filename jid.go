@@ -9,6 +9,7 @@ import (
 	"code.google.com/p/go.net/idna"
 	"code.google.com/p/go.text/unicode/norm"
 
+	"encoding/xml"
 	"errors"
 	"net"
 	"strings"
@@ -278,4 +279,9 @@ func (address *JID) FromString(s string) error {
 	}
 
 	return nil
+}
+
+// Marshals the JID as an XML attriute for use with the `encoding/xml' package.
+func (j *JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+	return xml.Attr{Name: name, Value: j.String()}, nil
 }
