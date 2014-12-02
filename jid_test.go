@@ -6,6 +6,7 @@ package jid
 
 import (
 	"encoding/xml"
+	"fmt"
 	"testing"
 )
 
@@ -54,6 +55,7 @@ func TestNewNoAnything(t *testing.T) {
 func TestNewJidInResourcePart(t *testing.T) {
 	_, err := NewJID("this/is@/fine")
 	if err != nil {
+		fmt.Println(err)
 		t.FailNow()
 	}
 }

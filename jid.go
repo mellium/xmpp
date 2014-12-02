@@ -109,6 +109,27 @@ func NormalizeJIDPart(part string) (string, error) {
 	}
 }
 
+func NormalizeResourcePart(part string) (string, error) {
+	switch normalized := NF.String(part); {
+	case len(normalized) == 0:
+		// The normalized length should be > 0 bytes
+		return "", errors.New(ERROR_EMPTY_PART)
+	case len(normalized) > 1023:
+		// The normalized length should be ≤ 1023 bytes
+		return "", errors.New(ERROR_LONG_PART)
+	case !utf8.ValidString(part):
+		// The original string should be valid UTF-8
+		return "", errors.New(ERROR_INVALID_STRING)
+	// TODO: Is there no function or method to just do this?
+	case len(strings.Fields("'"+normalized+"'")) != 1:
+		// There should be no whitespace in the normalized part.
+		return "", errors.New(ERROR_ILLEGAL_SPACE)
+		// TODO: Use a proper stringprep library to make sure this is all correct.
+	default:
+		return normalized, nil
+	}
+}
+
 // Set the localpart of a JID and verify that it is a valid/normalized UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
 func (address *JID) SetLocalPart(localpart string) error {
@@ -158,7 +179,7 @@ func (address *JID) SetDomainPart(domainpart string) error {
 // Set the resourcepart of a JID and verify that it is a valid/normalized UTF-8
 // string which is greater than 0 bytes and less than 1023 bytes.
 func (address *JID) SetResourcePart(resourcepart string) error {
-	normalized, err := NormalizeJIDPart(resourcepart)
+	normalized, err := NormalizeResourcePart(resourcepart)
 	if err != nil {
 		return err
 	}
@@ -215,16 +236,19 @@ func (address *JID) FromString(s string) error {
 
 	atCount := strings.Count(s, "@")
 	slashCount := strings.Count(s, "/")
+	atLoc := strings.IndexRune(s, '@')
+	slashLoc := strings.IndexRune(s, '/')
 
 	switch {
-	case atCount == 0 && slashCount == 0: // domainpart only
+	case atCount == 0 && slashCount == 0:
+		// domainpart only (eg. "example.net" or "example")
 		err := address.SetDomainPart(s)
 		if err != nil {
 			return err
 		}
 
-	case atCount == 1 && slashCount == 0: // Bare JID
-		atLoc := strings.IndexRune(s, '@')
+	case atCount == 1 && slashCount == 0:
+		// Bare JID ("test@example.net" or "test@example")
 		if atLoc == 0 || atLoc == len(s)-1 {
 			return errors.New(ERROR_EMPTY_PART)
 		}
@@ -237,9 +261,10 @@ func (address *JID) FromString(s string) error {
 			return err
 		}
 
-	case atCount == 0 && slashCount == 1: // domainpart + resourcepart
-		slashLoc := strings.IndexRune(s, '/')
+	case slashCount > 0 && (atCount == 0 || atLoc > slashLoc):
+		// domainpart + resourcepart (eg. "example/rp" or "example/@/")
 		if slashLoc == 0 || slashLoc == len(s)-1 {
+			// Error if JID is of the form "/jid" or "jid/" ("jid//" is okay)
 			return errors.New(ERROR_EMPTY_PART)
 		}
 		err := address.SetDomainPart(s[0:slashLoc])
@@ -251,12 +276,8 @@ func (address *JID) FromString(s string) error {
 			return err
 		}
 
-	case atCount == 1 && slashCount == 1: // Full JID
-		atLoc := strings.IndexRune(s, '@')
-		slashLoc := strings.IndexRune(s, '/')
-		if slashLoc < atLoc {
-			return errors.New(ERROR_INVALID_JID)
-		}
+	case slashCount > 0 && atCount > 0 && atLoc < slashLoc:
+		// Full JID (eg. "test@example.net/resourcepart" or "test@example.net/@/")
 		last := len(s) - 1
 		if atLoc == 0 || slashLoc == 0 || atLoc == last || slashLoc == last || slashLoc == atLoc+1 {
 			return errors.New(ERROR_EMPTY_PART)
