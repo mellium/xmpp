@@ -50,10 +50,10 @@ func TestNewNoAnything(t *testing.T) {
 	}
 }
 
-// Trying to create a JID with parts mixed up should error.
-func TestNewMixedUp(t *testing.T) {
-	_, err := NewJID("whywould/this@happen")
-	if err == nil {
+// Trying to create a JID with '@' or '/' in the resourcepart should work.
+func TestNewJidInResourcePart(t *testing.T) {
+	_, err := NewJID("this/is@/fine")
+	if err != nil {
 		t.FailNow()
 	}
 }
