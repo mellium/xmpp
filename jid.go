@@ -17,15 +17,15 @@ import (
 
 // Define some reusable error messages.
 const (
-	ERROR_INVALID_STRING    = "String is not valid UTF-8"
-	ERROR_EMPTY_PART        = "JID parts must be > 0 bytes"
-	ERROR_LONG_PART         = "JID parts must be < 1023 bytes"
-	ERROR_LONG_DOMAIN_LABEL = "Domain names must be ≤ 63 chars per label"
-	ERROR_LONG_DOMAIN_NAME  = "Domain names must be ≤ 253 chars"
-	ERROR_LONG_DOMAIN_BYTES = "Domain names must be ≤ 255 octets"
-	ERROR_INVALID_JID       = "String is not a valid JID"
-	ERROR_ILLEGAL_RUNE      = "String contains an illegal chartacter"
-	ERROR_ILLEGAL_SPACE     = "String contains illegal whitespace"
+	ErrorInvalidString   = "String is not valid UTF-8"
+	ErrorEmptyPart       = "JID parts must be > 0 bytes"
+	ErrorLongPart        = "JID parts must be < 1023 bytes"
+	ErrorLongDomainLabel = "Domain names must be ≤ 63 chars per label"
+	ErrorLongDomainName  = "Domain names must be ≤ 253 chars"
+	ErrorLongDomainBytes = "Domain names must be ≤ 255 octets"
+	ErrorInvalidJid      = "String is not a valid JID"
+	ErrorIllegalRune     = "String contains an illegal chartacter"
+	ErrorIllegalSpace    = "String contains illegal whitespace"
 )
 
 // NF is the Unicode normalization form to use. According to RFC 6122:
@@ -88,21 +88,21 @@ func NormalizeJIDPart(part string) (string, error) {
 	switch normalized := NF.String(part); {
 	case len(normalized) == 0:
 		// The normalized length should be > 0 bytes
-		return "", errors.New(ERROR_EMPTY_PART)
+		return "", errors.New(ErrorEmptyPart)
 	case len(normalized) > 1023:
 		// The normalized length should be ≤ 1023 bytes
-		return "", errors.New(ERROR_LONG_PART)
+		return "", errors.New(ErrorLongPart)
 	case !utf8.ValidString(part):
 		// The original string should be valid UTF-8
-		return "", errors.New(ERROR_INVALID_STRING)
+		return "", errors.New(ErrorInvalidString)
 	case strings.ContainsAny(part, "\"&'/:<>@"):
 		// The original string should not contain any illegal characters. After
 		// normalization some of these characters maybe present.
-		return "", errors.New(ERROR_ILLEGAL_RUNE)
+		return "", errors.New(ErrorIllegalRune)
 	// TODO: Is there no function or method to just do this?
 	case len(strings.Fields("'"+normalized+"'")) != 1:
 		// There should be no whitespace in the normalized part.
-		return "", errors.New(ERROR_ILLEGAL_SPACE)
+		return "", errors.New(ErrorIllegalSpace)
 		// TODO: Use a proper stringprep library to make sure this is all correct.
 	default:
 		return normalized, nil
@@ -117,17 +117,17 @@ func NormalizeResourcePart(part string) (string, error) {
 	switch normalized := NF.String(part); {
 	case len(normalized) == 0:
 		// The normalized length should be > 0 bytes
-		return "", errors.New(ERROR_EMPTY_PART)
+		return "", errors.New(ErrorEmptyPart)
 	case len(normalized) > 1023:
 		// The normalized length should be ≤ 1023 bytes
-		return "", errors.New(ERROR_LONG_PART)
+		return "", errors.New(ErrorLongPart)
 	case !utf8.ValidString(part):
 		// The original string should be valid UTF-8
-		return "", errors.New(ERROR_INVALID_STRING)
+		return "", errors.New(ErrorInvalidString)
 	// TODO: Is there no function or method to just do this?
 	case len(strings.Fields("'"+normalized+"'")) != 1:
 		// There should be no whitespace in the normalized part.
-		return "", errors.New(ERROR_ILLEGAL_SPACE)
+		return "", errors.New(ErrorIllegalSpace)
 		// TODO: Use a proper stringprep library to make sure this is all correct.
 	default:
 		return normalized, nil
@@ -220,7 +220,7 @@ func (j *JID) FromString(s string) error {
 
 	// Make sure the string is valid UTF-8
 	if !utf8.ValidString(s) {
-		return errors.New(ERROR_INVALID_STRING)
+		return errors.New(ErrorInvalidString)
 	}
 
 	// According to RFC 6122:
@@ -238,7 +238,7 @@ func (j *JID) FromString(s string) error {
 
 	// Do not allow whitespace elsewhere in the string…
 	if len(strings.Fields(s)) != 1 {
-		return errors.New(ERROR_ILLEGAL_SPACE)
+		return errors.New(ErrorIllegalSpace)
 	}
 
 	atCount := strings.Count(s, "@")
@@ -257,7 +257,7 @@ func (j *JID) FromString(s string) error {
 	case atCount == 1 && slashCount == 0:
 		// Bare JID ("test@example.net" or "test@example")
 		if atLoc == 0 || atLoc == len(s)-1 {
-			return errors.New(ERROR_EMPTY_PART)
+			return errors.New(ErrorEmptyPart)
 		}
 		err := j.SetLocalPart(s[0:atLoc])
 		if err != nil {
@@ -272,7 +272,7 @@ func (j *JID) FromString(s string) error {
 		// domainpart + resourcepart (eg. "example/rp" or "example/@/")
 		if slashLoc == 0 || slashLoc == len(s)-1 {
 			// Error if JID is of the form "/jid" or "jid/" ("jid//" is okay)
-			return errors.New(ERROR_EMPTY_PART)
+			return errors.New(ErrorEmptyPart)
 		}
 		err := j.SetDomainPart(s[0:slashLoc])
 		if err != nil {
@@ -287,7 +287,7 @@ func (j *JID) FromString(s string) error {
 		// Full JID (eg. "test@example.net/resourcepart" or "test@example.net/@/")
 		last := len(s) - 1
 		if atLoc == 0 || slashLoc == 0 || atLoc == last || slashLoc == last || slashLoc == atLoc+1 {
-			return errors.New(ERROR_EMPTY_PART)
+			return errors.New(ErrorEmptyPart)
 		}
 		err := j.SetLocalPart(s[0:atLoc])
 		if err != nil {
@@ -303,7 +303,7 @@ func (j *JID) FromString(s string) error {
 		}
 
 	default: // Too many '@' or '/' symbols
-		return errors.New(ERROR_ILLEGAL_RUNE)
+		return errors.New(ErrorIllegalRune)
 	}
 
 	return nil

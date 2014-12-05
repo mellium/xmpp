@@ -14,7 +14,7 @@ import (
 func TestNewInvalidUtf8Jid(t *testing.T) {
 	invalid := string([]byte{0xff, 0xfe, 0xfd})
 	_, err := NewJID(invalid + "@example.com/resourcepart")
-	if err == nil || err.Error() != ERROR_INVALID_STRING {
+	if err == nil || err.Error() != ErrorInvalidString {
 		t.FailNow()
 	}
 }
@@ -22,7 +22,7 @@ func TestNewInvalidUtf8Jid(t *testing.T) {
 // Trying to create a JID with an empty localpart should error.
 func TestNewEmptyLocalPart(t *testing.T) {
 	_, err := NewJID("@example.com/resourcepart")
-	if err == nil || err.Error() != ERROR_EMPTY_PART {
+	if err == nil || err.Error() != ErrorEmptyPart {
 		t.FailNow()
 	}
 }
@@ -63,7 +63,7 @@ func TestNewJidInResourcePart(t *testing.T) {
 // Trying to create a JID with an empty resource part should error.
 func TestNewEmptyResourcePart(t *testing.T) {
 	_, err := NewJID("text@example.com/")
-	if err == nil || err.Error() != ERROR_EMPTY_PART {
+	if err == nil || err.Error() != ErrorEmptyPart {
 		t.FailNow()
 	}
 }
@@ -91,7 +91,7 @@ func TestNewSurroundingWhitespace(t *testing.T) {
 // New JIDs should not allow `\t`.
 func TestNewHasTab(t *testing.T) {
 	_, err := NewJID("localpart	@example.com/resourcepart")
-	if err == nil || err.Error() != ERROR_ILLEGAL_SPACE {
+	if err == nil || err.Error() != ErrorIllegalSpace {
 		t.FailNow()
 	}
 }
@@ -99,7 +99,7 @@ func TestNewHasTab(t *testing.T) {
 // New JIDs should not allow spaces.
 func TestNewHasSpace(t *testing.T) {
 	_, err := NewJID("localpart@exampl e.com/resourcepart")
-	if err == nil || err.Error() != ERROR_ILLEGAL_SPACE {
+	if err == nil || err.Error() != ErrorIllegalSpace {
 		t.FailNow()
 	}
 }
