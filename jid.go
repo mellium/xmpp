@@ -52,8 +52,8 @@ func NewJID(s string) (JID, error) {
 
 // Equals tests for JID equality by testing the three individual parts of a JID
 // (localpart, domainpart, and resourcepart).
-func (jid *JID) Equals(jid2 JID) bool {
-	domainpart, err := jid.DomainPart()
+func (j *JID) Equals(jid2 JID) bool {
+	domainpart, err := j.DomainPart()
 	// Supressing an error, but if the domainpart errors it should never be equal.
 	if err != nil {
 		return false
@@ -62,22 +62,22 @@ func (jid *JID) Equals(jid2 JID) bool {
 	if err != nil {
 		return false
 	}
-	return (jid.LocalPart() == jid2.LocalPart() && domainpart == domainpart2 && jid.ResourcePart() == jid2.ResourcePart())
+	return (j.LocalPart() == jid2.LocalPart() && domainpart == domainpart2 && j.ResourcePart() == jid2.ResourcePart())
 }
 
 // LocalPart gets the localpart of a JID (eg "username").
-func (address *JID) LocalPart() string {
-	return address.localpart
+func (j *JID) LocalPart() string {
+	return j.localpart
 }
 
 // DomainPart gets the domainpart of a JID (eg. "example.net").
-func (address *JID) DomainPart() (string, error) {
-	return idna.ToUnicode(address.domainpart)
+func (j *JID) DomainPart() (string, error) {
+	return idna.ToUnicode(j.domainpart)
 }
 
 // ResourcePart gets the resourcepart of a JID (eg. "mobile").
-func (address *JID) ResourcePart() string {
-	return address.resourcepart
+func (j *JID) ResourcePart() string {
+	return j.resourcepart
 }
 
 // NormalizeJIDPart verifies that the JID part is valid and returns a normalized
@@ -137,19 +137,19 @@ func NormalizeResourcePart(part string) (string, error) {
 // SetLocalPart sets the localpart of a JID and verifies that it is a
 // valid/normalized UTF-8 string which is greater than 0 bytes and less than
 // 1023 bytes.
-func (address *JID) SetLocalPart(localpart string) error {
+func (j *JID) SetLocalPart(localpart string) error {
 	normalized, err := NormalizeJIDPart(localpart)
 	if err != nil {
 		return err
 	}
-	(*address).localpart = normalized
+	(*j).localpart = normalized
 	return nil
 }
 
 // SetDomainPart sets the domainpart of a JID and verify that it is a
 // valid/normalized UTF-8 string which is greater than 0 bytes and less than
 // 1023 bytes.
-func (address *JID) SetDomainPart(domainpart string) error {
+func (j *JID) SetDomainPart(domainpart string) error {
 
 	// From RFC 6122 §2.2 Domainpart:
 	//
@@ -169,54 +169,54 @@ func (address *JID) SetDomainPart(domainpart string) error {
 		return err
 	}
 	// Remove brackets if they already exist so that we can validate IPv6
-	// TODO: Check if brackets exist and don't allow them if this isn't a v6 address
+	// TODO: Check if brackets exist and don't allow them if this isn't a v6 j
 	normalized = strings.TrimPrefix(normalized, "[")
 	normalized = strings.TrimSuffix(normalized, "]")
-	// If the domain is a valid IPv6 address without brackets (it's a valid IP and
+	// If the domain is a valid IPv6 j without brackets (it's a valid IP and
 	// does not fit in 4 bytes), wrap it in brackets.
 	// TODO: This is not very future proof.
 	if ip := net.ParseIP(normalized); ip != nil && ip.To4() == nil {
 		normalized = "[" + normalized + "]"
 	}
-	address.domainpart = normalized
+	j.domainpart = normalized
 	return nil
 }
 
 // SetResourcePart sets the resourcepart of a JID and verifies that it is a
 // valid/normalized UTF-8 string which is greater than 0 bytes and less than
 // 1023 bytes.
-func (address *JID) SetResourcePart(resourcepart string) error {
+func (j *JID) SetResourcePart(resourcepart string) error {
 	normalized, err := NormalizeResourcePart(resourcepart)
 	if err != nil {
 		return err
 	}
-	address.resourcepart = normalized
+	j.resourcepart = normalized
 	return nil
 }
 
 // String converts the full JID to a string.
-func (address *JID) String() string {
-	out, _ := address.DomainPart()
-	if lp := address.LocalPart(); lp != "" {
-		out = address.LocalPart() + "@" + out
+func (j *JID) String() string {
+	out, _ := j.DomainPart()
+	if lp := j.LocalPart(); lp != "" {
+		out = j.LocalPart() + "@" + out
 	}
-	if rp := address.ResourcePart(); rp != "" {
+	if rp := j.ResourcePart(); rp != "" {
 		out = out + "/" + rp
 	}
 	return out
 }
 
 // Bare returns the bare JID (no resourcepart) as a string.
-func (address *JID) Bare() (string, error) {
-	out, err := address.DomainPart()
-	if lp := address.LocalPart(); lp != "" {
+func (j *JID) Bare() (string, error) {
+	out, err := j.DomainPart()
+	if lp := j.LocalPart(); lp != "" {
 		out = lp + "@" + out
 	}
 	return out, err
 }
 
 // FromString sets the fields in an existing JID from a string.
-func (address *JID) FromString(s string) error {
+func (j *JID) FromString(s string) error {
 
 	// Make sure the string is valid UTF-8
 	if !utf8.ValidString(s) {
@@ -249,7 +249,7 @@ func (address *JID) FromString(s string) error {
 	switch {
 	case atCount == 0 && slashCount == 0:
 		// domainpart only (eg. "example.net" or "example")
-		err := address.SetDomainPart(s)
+		err := j.SetDomainPart(s)
 		if err != nil {
 			return err
 		}
@@ -259,11 +259,11 @@ func (address *JID) FromString(s string) error {
 		if atLoc == 0 || atLoc == len(s)-1 {
 			return errors.New(ERROR_EMPTY_PART)
 		}
-		err := address.SetLocalPart(s[0:atLoc])
+		err := j.SetLocalPart(s[0:atLoc])
 		if err != nil {
 			return err
 		}
-		err = address.SetDomainPart(s[atLoc+1:])
+		err = j.SetDomainPart(s[atLoc+1:])
 		if err != nil {
 			return err
 		}
@@ -274,11 +274,11 @@ func (address *JID) FromString(s string) error {
 			// Error if JID is of the form "/jid" or "jid/" ("jid//" is okay)
 			return errors.New(ERROR_EMPTY_PART)
 		}
-		err := address.SetDomainPart(s[0:slashLoc])
+		err := j.SetDomainPart(s[0:slashLoc])
 		if err != nil {
 			return err
 		}
-		err = address.SetResourcePart(s[slashLoc+1:])
+		err = j.SetResourcePart(s[slashLoc+1:])
 		if err != nil {
 			return err
 		}
@@ -289,15 +289,15 @@ func (address *JID) FromString(s string) error {
 		if atLoc == 0 || slashLoc == 0 || atLoc == last || slashLoc == last || slashLoc == atLoc+1 {
 			return errors.New(ERROR_EMPTY_PART)
 		}
-		err := address.SetLocalPart(s[0:atLoc])
+		err := j.SetLocalPart(s[0:atLoc])
 		if err != nil {
 			return err
 		}
-		err = address.SetDomainPart(s[atLoc+1 : slashLoc])
+		err = j.SetDomainPart(s[atLoc+1 : slashLoc])
 		if err != nil {
 			return err
 		}
-		err = address.SetResourcePart(s[slashLoc+1:])
+		err = j.SetResourcePart(s[slashLoc+1:])
 		if err != nil {
 			return err
 		}
