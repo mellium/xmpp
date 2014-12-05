@@ -4,7 +4,6 @@
 
 package jid
 
-// TODO: Use a proper stringprep library like "code.google.com/p/go-idn/idna"
 import (
 	"code.google.com/p/go.net/idna"
 	"code.google.com/p/go.text/unicode/norm"
@@ -29,30 +28,30 @@ const (
 	ERROR_ILLEGAL_SPACE     = "String contains illegal whitespace"
 )
 
-// The Unicode normalization form to use. According to RFC 6122:
+// NF is the Unicode normalization form to use. According to RFC 6122:
 //
 //      This profile specifies the use of Unicode Normalization Form KC, as
 //      described in [STRINGPREP].
 //
 const NF norm.Form = norm.NFKC
 
-// A struct representing a JID. You should not create one of these directly;
-// instead, use the `NewJID()` function or the `jid.FromString(string)` method.
+// JID structs should not create one of these directly; instead, use the
+// `NewJID()` function or the `jid.FromString(string)` method.
 type JID struct {
 	localpart    string
 	domainpart   string
 	resourcepart string
 }
 
-// Create a new JID from the given string. Returns a struct of type `jid` with
-// three fields (all strings): `localpart`, `domainpart`, and `resourcepart`.
+// NewJID creates a new JID from the given string.
 func NewJID(s string) (JID, error) {
 	j := JID{}
 	err := j.FromString(s)
 	return j, err
 }
 
-// Tests for JID equality by testing the individual parts.
+// Equals tests for JID equality by testing the three individual parts of a JID
+// (localpart, domainpart, and resourcepart).
 func (jid *JID) Equals(jid2 JID) bool {
 	domainpart, err := jid.DomainPart()
 	// Supressing an error, but if the domainpart errors it should never be equal.
@@ -66,24 +65,25 @@ func (jid *JID) Equals(jid2 JID) bool {
 	return (jid.LocalPart() == jid2.LocalPart() && domainpart == domainpart2 && jid.ResourcePart() == jid2.ResourcePart())
 }
 
-// Get the local part of a JID
+// LocalPart gets the localpart of a JID (eg "username").
 func (address *JID) LocalPart() string {
 	return address.localpart
 }
 
-// Get the domainpart of a JID
+// DomainPart gets the domainpart of a JID (eg. "example.net").
 func (address *JID) DomainPart() (string, error) {
 	return idna.ToUnicode(address.domainpart)
 }
 
-// Get the resourcepart of a JID
+// ResourcePart gets the resourcepart of a JID (eg. "mobile").
 func (address *JID) ResourcePart() string {
 	return address.resourcepart
 }
 
-// Verify that the JID part is valid and return a normalized string. You do not
-// need to do this before passing parts to `NewJID()` or any of the `SetPart`
-// functions; they handle validation and normalization for you.
+// NormalizeJIDPart verifies that the JID part is valid and returns a normalized
+// string. You do NOT need to do this before passing parts to `NewJID()` or any
+// of the `SetPart` methods; they handle validation and normalization for you.
+// Eventually, this should be replaced with a proper stringprep implementation.
 func NormalizeJIDPart(part string) (string, error) {
 	switch normalized := NF.String(part); {
 	case len(normalized) == 0:
@@ -109,6 +109,10 @@ func NormalizeJIDPart(part string) (string, error) {
 	}
 }
 
+// NormalizeResourcePart verifies that the JID resource part is valid and
+// returns a normalized string. You probably do NOT need to call this manually,
+// as creating a JID handles this for you. Eventually, this should be replaced
+// with a proper stringprep implementation.
 func NormalizeResourcePart(part string) (string, error) {
 	switch normalized := NF.String(part); {
 	case len(normalized) == 0:
@@ -130,8 +134,9 @@ func NormalizeResourcePart(part string) (string, error) {
 	}
 }
 
-// Set the localpart of a JID and verify that it is a valid/normalized UTF-8
-// string which is greater than 0 bytes and less than 1023 bytes.
+// SetLocalPart sets the localpart of a JID and verifies that it is a
+// valid/normalized UTF-8 string which is greater than 0 bytes and less than
+// 1023 bytes.
 func (address *JID) SetLocalPart(localpart string) error {
 	normalized, err := NormalizeJIDPart(localpart)
 	if err != nil {
@@ -141,8 +146,9 @@ func (address *JID) SetLocalPart(localpart string) error {
 	return nil
 }
 
-// Set the domainpart of a JID and verify that it is a valid/normalized UTF-8
-// string which is greater than 0 bytes and less than 1023 bytes.
+// SetDomainPart sets the domainpart of a JID and verify that it is a
+// valid/normalized UTF-8 string which is greater than 0 bytes and less than
+// 1023 bytes.
 func (address *JID) SetDomainPart(domainpart string) error {
 
 	// From RFC 6122 §2.2 Domainpart:
@@ -176,8 +182,9 @@ func (address *JID) SetDomainPart(domainpart string) error {
 	return nil
 }
 
-// Set the resourcepart of a JID and verify that it is a valid/normalized UTF-8
-// string which is greater than 0 bytes and less than 1023 bytes.
+// SetResourcePart sets the resourcepart of a JID and verifies that it is a
+// valid/normalized UTF-8 string which is greater than 0 bytes and less than
+// 1023 bytes.
 func (address *JID) SetResourcePart(resourcepart string) error {
 	normalized, err := NormalizeResourcePart(resourcepart)
 	if err != nil {
@@ -187,7 +194,7 @@ func (address *JID) SetResourcePart(resourcepart string) error {
 	return nil
 }
 
-// Return the full JID as a string
+// String converts the full JID to a string.
 func (address *JID) String() string {
 	out, _ := address.DomainPart()
 	if lp := address.LocalPart(); lp != "" {
@@ -199,7 +206,7 @@ func (address *JID) String() string {
 	return out
 }
 
-// Return the bare JID as a string
+// Bare returns the bare JID (no resourcepart) as a string.
 func (address *JID) Bare() (string, error) {
 	out, err := address.DomainPart()
 	if lp := address.LocalPart(); lp != "" {
@@ -208,7 +215,7 @@ func (address *JID) Bare() (string, error) {
 	return out, err
 }
 
-// Set the existing JID from a string.
+// FromString sets the fields in an existing JID from a string.
 func (address *JID) FromString(s string) error {
 
 	// Make sure the string is valid UTF-8
@@ -302,7 +309,8 @@ func (address *JID) FromString(s string) error {
 	return nil
 }
 
-// Marshals the JID as an XML attriute for use with the `encoding/xml' package.
+// MarshalXMLAttr marshals the JID as an XML attriute for use with the
+// `encoding/xml' package.
 func (j *JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	return xml.Attr{Name: name, Value: j.String()}, nil
 }
