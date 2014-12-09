@@ -5,8 +5,8 @@
 package jid
 
 import (
-	"code.google.com/p/go.net/idna"
-	"code.google.com/p/go.text/unicode/norm"
+	"golang.org/x/net/idna"
+	"golang.org/x/text/unicode/norm"
 
 	"encoding/xml"
 	"errors"
