@@ -10,7 +10,7 @@ normalizing domain names.
 To use it in your project, import it like so:
 
 ```go
-import github.com/SamWhited/koine
+import bitbucket.org/SamWhited/koine
 ```
 
 ## Status
@@ -21,10 +21,8 @@ resourceparts.
 
 ## License
 
-Copyright 2014 Sam Whited.
-Use of this source code is governed by the BSD 2-clause license that can be
-found in the LICENSE file or the MIT License (also in the LICENSE file) at your
-discretion.
+Use of this source code is governed by the BSD 2-clause license, a copy of
+which can be found in the LICENSE file.
 
 [rfc6122]: https://www.rfc-editor.org/rfc/rfc6122.txt
 [idna2008]: http://www.unicode.org/reports/tr46/#IDNA2008
