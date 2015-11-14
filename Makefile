@@ -2,11 +2,11 @@
 
 .PHONY: test
 test:
-	go test
+	go test -cover
 
 .PHONY: benchmark
 benchmark:
-	go test -bench . -benchmem -run 'Benchmark.*'
+	go test -cover -bench . -benchmem -run 'Benchmark.*'
 
 .PHONY: build
 build:

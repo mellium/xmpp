@@ -4,9 +4,54 @@
 package jid
 
 import (
+	"bytes"
 	"encoding/xml"
 	"testing"
 )
+
+// Ensure that JID parts are split properly.
+func TestValidPartsFromString(t *testing.T) {
+	valid_decompositions := [][]string{
+		{"lp@dp/rp", "lp", "dp", "rp"},
+		{"dp/rp", "", "dp", "rp"},
+		{"dp", "", "dp", ""},
+		{"lp@dp//rp", "lp", "dp", "/rp"},
+		{"lp@dp/rp/", "lp", "dp", "rp/"},
+		{"lp@dp/@rp/", "lp", "dp", "@rp/"},
+		{"lp@dp/lp@dp/rp", "lp", "dp", "lp@dp/rp"},
+		{"dp//rp", "", "dp", "/rp"},
+		{"dp/rp/", "", "dp", "rp/"},
+		{"dp/@rp/", "", "dp", "@rp/"},
+		{"dp/lp@dp/rp", "", "dp", "lp@dp/rp"},
+	}
+	for _, d := range valid_decompositions {
+		lp, dp, rp, err := partsFromString(d[0])
+		if err != nil || lp != d[1] || dp != d[2] || rp != d[3] {
+			t.FailNow()
+		}
+	}
+}
+
+// Ensure that JIDs that are too long return an error.
+func TestLongParts(t *testing.T) {
+	// Generate a part that is too long.
+	pb := bytes.NewBuffer(make([]byte, 0, 1024))
+	for i := 0; i < 64; i++ {
+		pb.WriteString("aaaaaaaaaaaaaaaa")
+	}
+	ps := pb.String()
+	invalid_decompositions := []string{
+		ps + "@example.com/test",
+		"lp@" + ps + "/test",
+		"lp@example.com/" + ps,
+		ps + "@" + ps + "/" + ps,
+	}
+	for _, d := range invalid_decompositions {
+		if _, _, _, err := partsFromString(d); err != nil {
+			t.FailNow()
+		}
+	}
+}
 
 // JIDS cannot contain invalid UTF8 in the localpart.
 func TestNewInvalidUtf8Localpart(t *testing.T) {
