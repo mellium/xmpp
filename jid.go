@@ -26,11 +26,7 @@ type Jid struct {
 	resourcepart string
 }
 
-// FromString constructs a new Jid object from the given string representation.
-// The string may be any valid bare or full JID including domain names, IP
-// literals, or hosts.
-func FromString(s string) (*Jid, error) {
-
+func partsFromString(s string) (string, string, string, error) {
 	var localpart, domainpart, resourcepart string
 
 	// RFC 7622 §3.1.  Fundamentals:
@@ -57,7 +53,7 @@ func FromString(s string) (*Jid, error) {
 		if len(parts) == 2 && parts[1] != "" {
 			resourcepart = parts[1]
 		} else {
-			return nil, errors.New("The resourcepart must be larger than 0 bytes")
+			return "", "", "", errors.New("The resourcepart must be larger than 0 bytes")
 		}
 	} else {
 		resourcepart = ""
@@ -71,7 +67,7 @@ func FromString(s string) (*Jid, error) {
 	nolp := strings.SplitAfterN(norp, "@", 2)
 
 	if nolp[0] == "@" {
-		return nil, errors.New("The localpart must be larger than 0 bytes")
+		return "", "", "", errors.New("The localpart must be larger than 0 bytes")
 	}
 
 	switch len(nolp) {
@@ -95,7 +91,31 @@ func FromString(s string) (*Jid, error) {
 
 	domainpart = strings.TrimSuffix(domainpart, ".")
 
+	return localpart, domainpart, resourcepart, nil
+}
+
+// FromString constructs a new Jid object from the given string representation.
+// The string may be any valid bare or full JID including domain names, IP
+// literals, or hosts.
+func FromString(s string) (*Jid, error) {
+	localpart, domainpart, resourcepart, err := partsFromString(s)
+	if err != nil {
+		return nil, err
+	}
 	return FromParts(localpart, domainpart, resourcepart)
+}
+
+// FromStringUnsafe constructs a Jid without performing any verification on the
+// input string. This is unsafe and should only be used for trusted, internal
+// data (eg. a Jid from the database). External data (user input, a JID sent
+// over the wire via an XMPP connection, etc.) should use the FromString method
+// instead.
+func FromStringUnsafe(s string) (*Jid, error) {
+	localpart, domainpart, resourcepart, err := partsFromString(s)
+	if err != nil {
+		return nil, err
+	}
+	return FromPartsUnsafe(localpart, domainpart, resourcepart), nil
 }
 
 // FromParts constructs a new Jid object from the given localpart, domainpart,
@@ -256,6 +276,13 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 		domainpart:   domainpart,
 		resourcepart: resourcepart,
 	}, nil
+}
+
+// FromPartsUnsafe constructs a Jid from the given localpart, domainpart, and
+// resourcepart without performing any verification on the
+// input string.
+func FromPartsUnsafe(localpart, domainpart, resourcepart string) *Jid {
+	return &Jid{localpart, domainpart, resourcepart}
 }
 
 // Bare returns a copy of the Jid without a resourcepart. This is sometimes
