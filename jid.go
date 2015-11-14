@@ -31,7 +31,7 @@ func FromString(s string) (*Jid, error) {
 
 	var localpart, domainpart, resourcepart string
 
-	// According to RFC 7622 §3.1:
+	// RFC 7622 §3.1.  Fundamentals:
 	//
 	//    Implementation Note: When dividing a JID into its component parts,
 	//    an implementation needs to match the separator characters '@' and
@@ -280,7 +280,7 @@ func (j *Jid) Resourcepart() string {
 	return j.resourcepart
 }
 
-// String converts the full JID to a string.
+// String converts a `Jid` object to its string representation.
 func (j *Jid) String() string {
 	out := j.Domainpart()
 	if lp := j.Localpart(); lp != "" {
@@ -292,7 +292,7 @@ func (j *Jid) String() string {
 	return out
 }
 
-// MarshalXMLAttr marshals the JID as an XML attriute for use with the
+// MarshalXMLAttr marshals the JID as an XML attribute for use with the
 // encoding/xml package.
 func (j *Jid) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	return xml.Attr{Name: name, Value: j.String()}, nil
