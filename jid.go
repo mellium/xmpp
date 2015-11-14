@@ -240,30 +240,13 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 		return r
 	}, resourcepart)
 
-	//
 	//    3.  Case-Mapping Rule: Uppercase and titlecase characters MUST NOT be
 	//        mapped to their lowercase equivalents.
 	//
 	//    4.  Normalization Rule: Unicode Normalization Form C (NFC) MUST be
 	//        applied to all characters.
-	//
-	//    5.  Directionality Rule: There is no directionality rule.  The "Bidi
-	//        Rule" (defined in [RFC5893]) and similar rules are unnecessary
-	//        and inapplicable to passwords, because they can reduce the range
-	//        of characters that are allowed in a string and therefore reduce
-	//        the amount of entropy that is possible in a password.  Such rules
-	//        are intended to minimize the possibility that the same string
-	//        will be displayed differently on a layout system set for
-	//        right-to-left display and a layout system set for left-to-right
-	//        display; however, passwords are typically not displayed at all
-	//        and are rarely meant to be interoperable across different layout
-	//        systems in the way that non-secret strings like domain names and
-	//        usernames are.  Furthermore, it is perfectly acceptable for
-	//        opaque strings other than passwords to be presented differently
-	//        in different layout systems, as long as the presentation is
-	//        consistent in any given layout system.
 
-	// [TODO]
+	resourcepart = norm.NFC.String(resourcepart)
 
 	l = len(resourcepart)
 	if l > 1023 {
