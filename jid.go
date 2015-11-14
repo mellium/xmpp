@@ -24,6 +24,7 @@ type Jid struct {
 	localpart    string
 	domainpart   string
 	resourcepart string
+	validated    bool
 }
 
 func partsFromString(s string) (string, string, string, error) {
@@ -116,6 +117,20 @@ func FromStringUnsafe(s string) (*Jid, error) {
 		return nil, err
 	}
 	return FromPartsUnsafe(localpart, domainpart, resourcepart), nil
+}
+
+// FromJid creates a new Jid object from an existing one. If the Jid has
+// already been validated, FromJid(j) is identical to j.Copy(). Otherwise it
+// validates the Jid and returns a new copy that has been validated and
+// normalized. This means that Jid's created with FromJid will not necessarily
+// be octet-for-octet identical with the old Jid and j.Equals(jid.FromJid(j))
+// may return false.
+func FromJid(j *Jid) (*Jid, error) {
+	if j.validated {
+		return j.Copy(), nil
+	}
+
+	return FromParts(j.localpart, j.domainpart, j.resourcepart)
 }
 
 // FromParts constructs a new Jid object from the given localpart, domainpart,
@@ -275,6 +290,7 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 		localpart:    localpart,
 		domainpart:   domainpart,
 		resourcepart: resourcepart,
+		validated:    true,
 	}, nil
 }
 
@@ -282,7 +298,12 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 // resourcepart without performing any verification on the
 // input string.
 func FromPartsUnsafe(localpart, domainpart, resourcepart string) *Jid {
-	return &Jid{localpart, domainpart, resourcepart}
+	return &Jid{
+		localpart:    localpart,
+		domainpart:   domainpart,
+		resourcepart: resourcepart,
+		validated:    false,
+	}
 }
 
 // Bare returns a copy of the Jid without a resourcepart. This is sometimes
@@ -292,6 +313,7 @@ func (j *Jid) Bare() *Jid {
 		localpart:    j.localpart,
 		domainpart:   j.domainpart,
 		resourcepart: "",
+		validated:    j.validated,
 	}
 }
 
@@ -313,6 +335,22 @@ func (j *Jid) Domainpart() string {
 // Resourcepart gets the resourcepart of a JID (eg. "mobile").
 func (j *Jid) Resourcepart() string {
 	return j.resourcepart
+}
+
+// Checks if the given Jid object has been validated and normalized.
+func (j *Jid) Validated() bool {
+	return j.validated
+}
+
+// Makes an identical (octet-for-octet) copy of the given Jid.
+// j.Equals(j.Copy()) will always return true.
+func (j *Jid) Copy() *Jid {
+	return &Jid{
+		localpart:    j.localpart,
+		domainpart:   j.domainpart,
+		resourcepart: j.resourcepart,
+		validated:    j.validated,
+	}
 }
 
 func (j *Jid) Equals(j2 *Jid) bool {

@@ -182,27 +182,59 @@ func TestNewValid(t *testing.T) {
 
 // Two identical JIDs should be equal.
 func TestEqualJIDs(t *testing.T) {
-	jid := &Jid{"newjid", "example.com", "equal"}
-	jid2 := &Jid{"newjid", "example.com", "equal"}
+	jid := &Jid{"newjid", "example.com", "equal", false}
+	jid2 := &Jid{"newjid", "example.com", "equal", false}
 	if !jid.Equals(jid2) {
+		t.FailNow()
+	}
+}
+
+// A Jid constructed from another Jid should be equal to the original.
+func TestFromJid(t *testing.T) {
+	// Check that Jids that are validated but don't change match
+	j := &Jid{"newjid", "example.com", "equal", false}
+	jv, err := FromJid(j)
+	if err != nil || !j.Equals(jv) {
+		t.FailNow()
+	}
+
+	// Check that Jids which are validated and changed don't match
+	j = &Jid{"\u03a9newjid", "example.com", "equal", false}
+	jv, err = FromJid(j)
+	if err != nil || j.Equals(jv) {
+		t.FailNow()
+	}
+
+	// Check that already valid Jid's still match
+	j = &Jid{"newjid", "example.com", "equal", true}
+	jv, err = FromJid(j)
+	if err != nil || !j.Equals(jv) {
+		t.FailNow()
+	}
+}
+
+// A Jid should equal a copy of itself.
+func TestCopy(t *testing.T) {
+	j := &Jid{"newjid", "example.com", "equal", false}
+	if !j.Equals(j.Copy()) {
 		t.FailNow()
 	}
 }
 
 // Two different JIDs should not be equal.
 func TestNotEqualJIDs(t *testing.T) {
-	jid := &Jid{"newjid", "example.com", "notequal"}
-	jid2 := &Jid{"newjid2", "example.com", "notequal"}
+	jid := &Jid{"newjid", "example.com", "notequal", false}
+	jid2 := &Jid{"newjid2", "example.com", "notequal", false}
 	if jid.Equals(jid2) {
 		t.FailNow()
 	}
-	jid = &Jid{"newjid", "example.com", "notequal"}
-	jid2 = &Jid{"newjid", "example.net", "notequal"}
+	jid = &Jid{"newjid", "example.com", "notequal", false}
+	jid2 = &Jid{"newjid", "example.net", "notequal", false}
 	if jid.Equals(jid2) {
 		t.FailNow()
 	}
-	jid = &Jid{"newjid", "example.com", "notequal"}
-	jid2 = &Jid{"newjid", "example.com", "notequal2"}
+	jid = &Jid{"newjid", "example.com", "notequal", false}
+	jid2 = &Jid{"newjid", "example.com", "notequal2", false}
 	if jid.Equals(jid2) {
 		t.FailNow()
 	}
@@ -244,7 +276,7 @@ func TestEqualsUnicodeNormResourcepart(t *testing.T) {
 
 // Jids should be marshalable to an XML attribute
 func TestMarshal(t *testing.T) {
-	jid := Jid{"newjid", "example.com", "marshal"}
+	jid := Jid{"newjid", "example.com", "marshal", false}
 	attr, err := jid.MarshalXMLAttr(xml.Name{Space: "", Local: "to"})
 
 	if err != nil || attr.Name.Local != "to" || attr.Name.Space != "" || attr.Value != "newjid@example.com/marshal" {
