@@ -126,9 +126,7 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//
 	// TODO: I have no idea what this is talking about.
 	//       I'm pretty sure RFC 5892 specifies several character classes and
-	//       rules. What actually needs to be applied and in what order? Probably
-	//       one of the normalization forms from: golang.org/x/text/unicode/norm
-	//       Is it the same as the localpart (which follows)?
+	//       rules. What actually needs to be applied and in what order?
 
 	l := len(domainpart)
 	if l < 1 || l > 1023 {
