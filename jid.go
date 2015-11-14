@@ -9,6 +9,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"strings"
+	"unicode"
 
 	"golang.org/x/net/idna"
 	"golang.org/x/text/cases"
@@ -141,8 +142,6 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//    [RFC7613].  The rules and considerations provided in that
 	//    specification MUST be applied to XMPP localparts.
 	//
-	// Which means that we need to implement a few rules:
-	//
 	// RFC 7613 §3.2.1
 	//
 	//    An entity that prepares a string according to this profile MUST first
@@ -202,15 +201,12 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 		return nil, errors.New("Jid contains forbidden characters")
 	}
 
-	// TODO:
 	// RFC 7622 §3.4:
 	//
 	//    The resourcepart of a JID is an instance of the OpaqueString profile
 	//    of the PRECIS FreeformClass, which is specified in [RFC7613].  The
 	//    rules and considerations provided in that specification MUST be
 	//    applied to XMPP resourceparts.
-	//
-	// Which means that some more rules need to be applied:
 	//
 	// RFC 7613 §4.2.1.  Preparation
 	//
@@ -236,6 +232,14 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//        mapped to ASCII space (U+0020); a non-ASCII space is any Unicode
 	//        code point having a Unicode general category of "Zs" (with the
 	//        exception of U+0020).
+
+	resourcepart = strings.Map(func(r rune) rune {
+		if unicode.In(r, unicode.Zs) {
+			return '\u0020'
+		}
+		return r
+	}, resourcepart)
+
 	//
 	//    3.  Case-Mapping Rule: Uppercase and titlecase characters MUST NOT be
 	//        mapped to their lowercase equivalents.
