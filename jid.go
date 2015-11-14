@@ -182,8 +182,8 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//        must be satisfied).
 
 	l = len(localpart)
-	if l < 1 || l > 1023 {
-		return nil, errors.New("The localpart must be between 1 and 1023 bytes")
+	if l > 1023 {
+		return nil, errors.New("The localpart must be smaller than 1023 bytes")
 	}
 
 	// RFC 7622 §3.3.1 provides a small table of characters which are still not
