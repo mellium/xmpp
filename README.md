@@ -1,6 +1,6 @@
 # Koiné
 
-[![GoDoc](https://godoc.org/bitbucket.org/SamWhited/koine?status.svg)](https://godoc.org/bitbucket.org/SamWhited/koine)
+[![GoDoc](https://godoc.org/bitbucket.org/SamWhited/go-jid?status.svg)](https://godoc.org/bitbucket.org/SamWhited/go-jid)
 
 **Koiné** is an XMPP JID address validation library for Go which aims to be
 fully [RFC 7622][rfc7622] compliant.
@@ -8,7 +8,7 @@ fully [RFC 7622][rfc7622] compliant.
 To use it in your project, import it like so:
 
 ```go
-import bitbucket.org/SamWhited/koine
+import bitbucket.org/SamWhited/go-jid
 ```
 
 ## License
