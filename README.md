@@ -3,7 +3,7 @@
 [![GoDoc](https://godoc.org/bitbucket.org/SamWhited/go-jid?status.svg)](https://godoc.org/bitbucket.org/SamWhited/go-jid)
 
 **Koiné** is an XMPP JID address validation library for Go which aims to be
-fully [RFC 7622][rfc7622] compliant.
+fully [RFC 7622][rfc7622] compliant (it's not yet).
 
 To use it in your project, import it like so:
 
