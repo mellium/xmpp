@@ -16,7 +16,6 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"golang.org/x/text/unicode/norm"
-	"golang.org/x/text/width"
 )
 
 // Jid is an immutable representation of an XMPP address comprising a
@@ -185,8 +184,9 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//        character form, the user might not know which form they are
 	//        entering.
 
-	// TODO: This is not the correct form. What is the "decomposition" mapping?
-	domainpart = width.Narrow.String(domainpart)
+	// TODO: Does this want me to apply NFD to fullwidth and halfwidth east
+	//       asian characters, and then apply NFC in the next step to get them
+	//       back to canonical composed form?
 
 	//    3.  All characters are mapped using Unicode Normalization Form C
 	//        (NFC).  This step was chosen because it maps combinations of
@@ -243,7 +243,9 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 
 	// TODO: This is not the correct form. What is the "decomposition" mapping?
 
-	localpart = width.Narrow.String(localpart)
+	// TODO: Does this want me to apply NFD to fullwidth and halfwidth east
+	//       asian characters, and then apply NFC in the next step to get them
+	//       back to canonical composed form?
 
 	// TODO:
 	//
