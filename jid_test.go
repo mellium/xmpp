@@ -199,7 +199,7 @@ func TestFromJid(t *testing.T) {
 	}
 
 	// Check that Jids which are validated and changed don't match
-	j = &Jid{"\u03a9newjid", "example.com", "equal", false}
+	j = &Jid{"\u212akelvinsign", "example.com", "equal", false}
 	jv, err = FromJid(j)
 	if err != nil || j.Equals(jv) {
 		t.FailNow()

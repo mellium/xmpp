@@ -10,6 +10,7 @@ import (
 	"errors"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/net/idna"
 	"golang.org/x/text/cases"
@@ -108,9 +109,9 @@ func FromString(s string) (*Jid, error) {
 
 // FromStringUnsafe constructs a Jid without performing any verification on the
 // input string. This is unsafe and should only be used for trusted, internal
-// data (eg. a Jid from the database). External data (user input, a JID sent
-// over the wire via an XMPP connection, etc.) should use the FromString method
-// instead.
+// data (eg. a Jid from the database that has already been validated). External
+// data (user input, a JID sent over the wire via an XMPP connection, etc.)
+// should use the FromString method instead.
 func FromStringUnsafe(s string) (*Jid, error) {
 	localpart, domainpart, resourcepart, err := partsFromString(s)
 	if err != nil {
@@ -149,7 +150,10 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 
 	domainpart, err := idna.ToUnicode(domainpart)
 	if err != nil {
-		return nil, errors.New("Domainpart could not be converted to unicode")
+		return nil, err
+	}
+	if !utf8.ValidString(domainpart) {
+		return nil, errors.New("Domainpart contains invalid UTF-8")
 	}
 
 	// RFC 7622 §3.2.2:
@@ -159,13 +163,69 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//    the normalization, case-mapping, and width-mapping rules defined in
 	//    [RFC5892].
 	//
-	// TODO: I have no idea what this is talking about.
-	//       I'm pretty sure RFC 5892 specifies several character classes and
-	//       rules. What actually needs to be applied and in what order?
+	// I'm assuming that the reference to RFC 5892 is wrong, and that it meant
+	// RFC 5895.
+	//
+	// RFC 5895 §2. The General Procedure:
+	//
+	//    1.  Uppercase characters are mapped to their lowercase equivalents by
+	//        using the algorithm for mapping case in Unicode characters.  This
+	//        step was chosen because the output will behave more like ASCII
+	//        host names behave.
+
+	lowercaser := cases.Lower(language.Und)
+	domainpart = lowercaser.String(domainpart)
+
+	//    2.  Fullwidth and halfwidth characters (those defined with
+	//        Decomposition Types <wide> and <narrow>) are mapped to their
+	//        decomposition mappings as shown in the Unicode character
+	//        database.  This step was chosen because many input mechanisms,
+	//        particularly in Asia, do not allow you to easily enter characters
+	//        in the form used by IDNA2008.  Even if they do allow the correct
+	//        character form, the user might not know which form they are
+	//        entering.
+
+	// TODO: This is not the correct form. What is the "decomposition" mapping?
+	domainpart = width.Narrow.String(domainpart)
+
+	//    3.  All characters are mapped using Unicode Normalization Form C
+	//        (NFC).  This step was chosen because it maps combinations of
+	//        combining characters into canonical composed form.  As with the
+	//        fullwidth/halfwidth mapping, users are not generally aware of the
+	//        particular form of characters that they are entering, and
+	//        IDNA2008 requires that only the canonical composed forms from NFC
+	//        be used.
+
+	domainpart = norm.NFC.String(domainpart)
+
+	//    4.  [IDNA2008protocol] is specified such that the protocol acts on
+	//        the individual labels of the domain name.  If an implementation
+	//        of this mapping is also performing the step of separation of the
+	//        parts of a domain name into labels by using the FULL STOP
+	//        character (U+002E), the IDEOGRAPHIC FULL STOP character (U+3002)
+	//        can be mapped to the FULL STOP before label separation occurs.
+	//        There are other characters that are used as "full stops" that one
+	//        could consider mapping as label separators, but their use as such
+	//        has not been investigated thoroughly.  This step was chosen
+	//        because some input mechanisms do not allow the user to easily
+	//        enter proper label separators.  Only the IDEOGRAPHIC FULL STOP
+	//        character (U+3002) is added in this mapping because the authors
+	//        have not fully investigated the applicability of other characters
+	//        and the environments where they should and should not be
+	//        considered domain name label separators.
+	//
+	// We'll go ahead and do this for comparison purposes:
+
+	domainpart = strings.Replace(domainpart, "\u3002", ".", -1)
 
 	l := len(domainpart)
 	if l < 1 || l > 1023 {
 		return nil, errors.New("The domainpart must be between 1 and 1023 bytes")
+	}
+
+	// Process the localpart. First check if it's actually valid UTF-8:
+	if !utf8.ValidString(localpart) {
+		return nil, errors.New("Localpart contains invalid UTF-8")
 	}
 
 	// RFC 7622 §3.3:
@@ -181,7 +241,8 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//    map fullwidth and halfwidth characters to their decomposition
 	//    mappings (see Unicode Standard Annex #11 [UAX11]).
 
-	// TODO: Does this want the Narrow mapping, or the canonical width?
+	// TODO: This is not the correct form. What is the "decomposition" mapping?
+
 	localpart = width.Narrow.String(localpart)
 
 	// TODO:
@@ -204,10 +265,7 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//        a future version of the Unicode Standard); see further discussion
 	//        in Section 3.4.
 
-	// TODO: Cache this caser? It should not be shared betweem goroutines as it
-	//       may be stateful.
-	// TODO: Is language.Und correct? What's the default mentioned above?
-	localpart = cases.Lower(language.Und).String(localpart)
+	localpart = lowercaser.String(localpart)
 
 	//    4.  Normalization Rule: Unicode Normalization Form C (NFC) MUST be
 	//        applied to all characters.
@@ -223,7 +281,7 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 
 	l = len(localpart)
 	if l > 1023 {
-		return nil, errors.New("The localpart must be smaller than 1023 bytes")
+		return nil, errors.New("The localpart must be smaller than 1024 bytes")
 	}
 
 	// RFC 7622 §3.3.1 provides a small table of characters which are still not
@@ -231,7 +289,12 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	// UsernameCaseMapped profile don't forbid them; remove them here.
 	// TODO: Add XMPP-0106 support?
 	if strings.ContainsAny(localpart, "\"&'/:<>@") {
-		return nil, errors.New("Jid contains forbidden characters")
+		return nil, errors.New("Localpart contains forbidden characters")
+	}
+
+	// Process the resourcepart. First check if it's actually valid UTF-8:
+	if !utf8.ValidString(resourcepart) {
+		return nil, errors.New("Resourcepart contains invalid UTF-8")
 	}
 
 	// RFC 7622 §3.4:
@@ -283,7 +346,7 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 
 	l = len(resourcepart)
 	if l > 1023 {
-		return nil, errors.New("The resourcepart must be smaller than 1023 bytes")
+		return nil, errors.New("The resourcepart must be smaller than 1024 bytes")
 	}
 
 	return &Jid{
