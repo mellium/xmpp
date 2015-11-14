@@ -3,9 +3,8 @@
 [![Build Status](https://travis-ci.org/SamWhited/koine.png)](https://travis-ci.org/SamWhited/koine)
 [![GoDoc](https://godoc.org/github.com/SamWhited/koine?status.svg)](https://godoc.org/github.com/SamWhited/koine)
 
-**Koiné** is an XMPP JID address library and validator for Go which aims to be
-fully [RFC 6122][rfc6122] compliant, except using [IDNA2008][idna2008] for
-normalizing domain names.
+**Koiné** is an XMPP JID address validation library for Go which aims to be
+fully [RFC 7622][rfc7622] compliant.
 
 To use it in your project, import it like so:
 
@@ -13,16 +12,9 @@ To use it in your project, import it like so:
 import bitbucket.org/SamWhited/koine
 ```
 
-## Status
-
-Basic functionality and unicode normalization is present, but the library is
-not currently using a proper stringprep implementation for JID local and
-resourceparts.
-
 ## License
 
 Use of this source code is governed by the BSD 2-clause license, a copy of
-which can be found in the LICENSE file.
+which can be found in the `LICENSE.md` file.
 
-[rfc6122]: https://www.rfc-editor.org/rfc/rfc6122.txt
-[idna2008]: http://www.unicode.org/reports/tr46/#IDNA2008
+[rfc7622]: https://www.rfc-editor.org/rfc/rfc7622.txt

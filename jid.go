@@ -5,312 +5,295 @@
 package jid
 
 import (
-	"golang.org/x/net/idna"
-	"golang.org/x/text/unicode/norm"
-
 	"encoding/xml"
 	"errors"
-	"net"
 	"strings"
-	"unicode/utf8"
+
+	"golang.org/x/net/idna"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+	"golang.org/x/text/unicode/norm"
+	"golang.org/x/text/width"
 )
 
-// Define some reusable error messages.
-var (
-	ErrorInvalidString   = errors.New("String is not valid UTF-8")
-	ErrorEmptyPart       = errors.New("JID parts must be > 0 bytes")
-	ErrorLongPart        = errors.New("JID parts must be < 1023 bytes")
-	ErrorLongDomainLabel = errors.New("Domain names must be ≤ 63 chars per label")
-	ErrorLongDomainName  = errors.New("Domain names must be ≤ 253 chars")
-	ErrorLongDomainBytes = errors.New("Domain names must be ≤ 255 octets")
-	ErrorInvalidJid      = errors.New("String is not a valid JID")
-	ErrorIllegalRune     = errors.New("String contains an illegal chartacter")
-	ErrorIllegalSpace    = errors.New("String contains illegal whitespace")
-)
-
-// NF is the Unicode normalization form to use. According to RFC 6122:
-//
-//      This profile specifies the use of Unicode Normalization Form KC, as
-//      described in [STRINGPREP].
-//
-const NF norm.Form = norm.NFKC
-
-// JID structs should not create one of these directly; instead, use the
-// `NewJID()` function or the `jid.FromString(string)` method.
-type JID struct {
+// Jid represents an XMPP address comprising a localpart, domainpart, and
+// resourcepart.
+type Jid struct {
 	localpart    string
 	domainpart   string
 	resourcepart string
 }
 
-// NewJID creates a new JID from the given string.
-func NewJID(s string) (JID, error) {
-	j := JID{}
-	err := j.FromString(s)
-	return j, err
+// FromString constructs a new Jid object from the given string representation.
+// The string may be any valid bare or full JID including domain names, IP
+// literals, or hosts.
+func FromString(s string) (*Jid, error) {
+
+	var localpart, domainpart, resourcepart string
+
+	// According to RFC 7622 §3.1:
+	//
+	//    Implementation Note: When dividing a JID into its component parts,
+	//    an implementation needs to match the separator characters '@' and
+	//    '/' before applying any transformation algorithms, which might
+	//    decompose certain Unicode code points to the separator characters.
+	//
+	// so let's do that now. First we'll parse the domainpart using the rules
+	// defined in §3.2:
+	//
+	//    The domainpart of a JID is the portion that remains once the
+	//    following parsing steps are taken:
+	//
+	//    1.  Remove any portion from the first '/' character to the end of the
+	//        string (if there is a '/' character present).
+	parts := strings.SplitAfterN(
+		"test@example.net/resource/test/and more", "/", 2,
+	)
+	norp := strings.TrimSuffix(parts[0], "/")
+
+	//    2.  Remove any portion from the beginning of the string to the first
+	//        '@' character (if there is an '@' character present).
+
+	nolp := strings.SplitAfterN(norp, "@", 2)
+	switch len(nolp) {
+	case 0:
+		domainpart = ""
+		localpart = ""
+	case 1:
+		domainpart = nolp[0]
+		localpart = ""
+	case 2:
+		domainpart = nolp[1]
+		localpart = strings.TrimSuffix(nolp[0], "@")
+	}
+
+	// We'll throw out any trailing dots on domainparts, since they're ignored:
+	//
+	//    If the domainpart includes a final character considered to be a label
+	//    separator (dot) by [RFC1034], this character MUST be stripped from
+	//    the domainpart before the JID of which it is a part is used for the
+	//    purpose of routing an XML stanza, comparing against another JID, or
+	//    constructing an XMPP URI or IRI [RFC5122].  In particular, such a
+	//    character MUST be stripped before any other canonicalization steps
+	//    are taken.
+
+	domainpart = strings.TrimSuffix(domainpart, ".")
+
+	// The resourcepart is left over from earlier:
+	if len(parts) == 2 {
+		resourcepart = parts[1]
+	} else {
+		resourcepart = ""
+	}
+
+	return FromParts(localpart, domainpart, resourcepart)
 }
 
-// Equals tests for JID equality by testing the three individual parts of a JID
-// (localpart, domainpart, and resourcepart).
-func (j *JID) Equals(jid2 JID) bool {
-	domainpart, err := j.DomainPart()
-	// Supressing an error, but if the domainpart errors it should never be equal.
+// FromParts constructs a new Jid object from the given localpart, domainpart,
+// and resourcepart. The only required part is the domainpart ('example.net'
+// and 'hostname' are valid Jids).
+func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
+
+	// RFC 7622 §3.2.1:
+	//
+	//    An entity that prepares a string for inclusion in an XMPP domainpart
+	//    slot MUST ensure that the string consists only of Unicode code points
+	//    that are allowed in NR-LDH labels or U-labels as defined in
+	//    [RFC5890].  This implies that the string MUST NOT include A-labels as
+	//    defined in [RFC5890]; each A-label MUST be converted to a U-label
+	//    during preparation of a string for inclusion in a domainpart slot.
+
+	domainpart, err := idna.ToUnicode(domainpart)
 	if err != nil {
-		return false
+		return nil, errors.New("Domainpart could not be converted to unicode")
 	}
-	domainpart2, err := jid2.DomainPart()
-	if err != nil {
-		return false
+
+	// RFC 7622 §3.2.2:
+	//
+	//    An entity that performs enforcement in XMPP domainpart slots MUST
+	//    prepare a string as described in Section 3.2.1 and MUST also apply
+	//    the normalization, case-mapping, and width-mapping rules defined in
+	//    [RFC5892].
+	//
+	// TODO: I have no idea what this is talking about.
+	//       I'm pretty sure RFC 5892 specifies several character classes and
+	//       rules. What actually needs to be applied and in what order? Probably
+	//       one of the normalization forms from: golang.org/x/text/unicode/norm
+	//       Is it the same as the localpart (which follows)?
+
+	l := len(domainpart)
+	if l < 1 || l > 1023 {
+		return nil, errors.New("The domainpart must be between 1 and 1023 bytes")
 	}
-	return (j.LocalPart() == jid2.LocalPart() && domainpart == domainpart2 && j.ResourcePart() == jid2.ResourcePart())
+
+	// RFC 7622 §3.3:
+	//
+	//    The localpart of a JID is an instance of the UsernameCaseMapped
+	//    profile of the PRECIS IdentifierClass, which is specified in
+	//    [RFC7613].  The rules and considerations provided in that
+	//    specification MUST be applied to XMPP localparts.
+	//
+	// Which means that we need to implement a few rules:
+	//
+	// RFC 7613 §3.2.1
+	//
+	//    An entity that prepares a string according to this profile MUST first
+	//    map fullwidth and halfwidth characters to their decomposition
+	//    mappings (see Unicode Standard Annex #11 [UAX11]).
+
+	// TODO: Does this want the Narrow mapping, or the canonical width?
+	localpart = width.Narrow.String(localpart)
+
+	// TODO:
+	//
+	//    After applying this width-mapping rule, the entity then MUST ensure
+	//    that the string consists only of Unicode code points that conform to
+	//    the PRECIS IdentifierClass defined in Section 4.2 of [RFC7564].
+
+	// RFC 7613 §3.2.2
+	//
+	//    1.  Width-Mapping Rule: Applied as part of preparation (see above).
+	//
+	//    2.  Additional Mapping Rule: There is no additional mapping rule.
+	//
+	//    3.  Case-Mapping Rule: Uppercase and titlecase characters MUST be
+	//        mapped to their lowercase equivalents, preferably using Unicode
+	//        Default Case Folding as defined in the Unicode Standard [Unicode]
+	//        (at the time of this writing, the algorithm is specified in
+	//        Chapter 3 of [Unicode7.0], but the chapter number might change in
+	//        a future version of the Unicode Standard); see further discussion
+	//        in Section 3.4.
+
+	// TODO: Cache this caser? It should not be shared betweem goroutines as it
+	//       may be stateful.
+	// TODO: Is language.Und correct? What's the default mentioned above?
+	localpart = cases.Lower(language.Und).String(localpart)
+
+	//    4.  Normalization Rule: Unicode Normalization Form C (NFC) MUST be
+	//        applied to all characters.
+
+	localpart = norm.NFC.String(localpart)
+
+	// TODO:
+	//
+	//    5.  Directionality Rule: Applications MUST apply the "Bidi Rule"
+	//        defined in [RFC5893] to strings that contain right-to-left
+	//        characters (i.e., each of the six conditions of the Bidi Rule
+	//        must be satisfied).
+
+	l = len(localpart)
+	if l < 1 || l > 1023 {
+		return nil, errors.New("The localpart must be between 1 and 1023 bytes")
+	}
+
+	// RFC 7622 §3.3.1 provides a small table of characters which are still not
+	// allowed in localpart's even though the IdentifierClass base class and the
+	// UsernameCaseMapped profile don't forbid them; remove them here.
+	// TODO: Add XMPP-0106 support?
+	if strings.ContainsAny(localpart, "\"&'/:<>@") {
+		return nil, errors.New("Jid contains forbidden characters")
+	}
+
+	// TODO:
+	// RFC 7622 §3.4:
+	//
+	//    The resourcepart of a JID is an instance of the OpaqueString profile
+	//    of the PRECIS FreeformClass, which is specified in [RFC7613].  The
+	//    rules and considerations provided in that specification MUST be
+	//    applied to XMPP resourceparts.
+	//
+	// Which means that some more rules need to be applied:
+	//
+	// RFC 7613 §4.2.1.  Preparation
+	//
+	//    An entity that prepares a string according to this profile MUST
+	//    ensure that the string consists only of Unicode code points that
+	//    conform to the FreeformClass base string class defined in [RFC7564].
+	//    In addition, the entity MUST encode the string as UTF-8 [RFC3629].
+
+	// [TODO]
+
+	// RFC 7613 §4.2.2.  Enforcement
+	//
+	//    An entity that performs enforcement according to this profile MUST
+	//    prepare a string as described in Section 4.2.1 and MUST also apply
+	//    the rules specified below for the OpaqueString profile (these rules
+	//    MUST be applied in the order shown):
+	//
+	//    1.  Width-Mapping Rule: Fullwidth and halfwidth characters MUST NOT
+	//        be mapped to their decomposition mappings (see Unicode Standard
+	//        Annex #11 [UAX11]).
+	//
+	//    2.  Additional Mapping Rule: Any instances of non-ASCII space MUST be
+	//        mapped to ASCII space (U+0020); a non-ASCII space is any Unicode
+	//        code point having a Unicode general category of "Zs" (with the
+	//        exception of U+0020).
+	//
+	//    3.  Case-Mapping Rule: Uppercase and titlecase characters MUST NOT be
+	//        mapped to their lowercase equivalents.
+	//
+	//    4.  Normalization Rule: Unicode Normalization Form C (NFC) MUST be
+	//        applied to all characters.
+	//
+	//    5.  Directionality Rule: There is no directionality rule.  The "Bidi
+	//        Rule" (defined in [RFC5893]) and similar rules are unnecessary
+	//        and inapplicable to passwords, because they can reduce the range
+	//        of characters that are allowed in a string and therefore reduce
+	//        the amount of entropy that is possible in a password.  Such rules
+	//        are intended to minimize the possibility that the same string
+	//        will be displayed differently on a layout system set for
+	//        right-to-left display and a layout system set for left-to-right
+	//        display; however, passwords are typically not displayed at all
+	//        and are rarely meant to be interoperable across different layout
+	//        systems in the way that non-secret strings like domain names and
+	//        usernames are.  Furthermore, it is perfectly acceptable for
+	//        opaque strings other than passwords to be presented differently
+	//        in different layout systems, as long as the presentation is
+	//        consistent in any given layout system.
+
+	// [TODO]
+
+	l = len(resourcepart)
+	if l < 1 || l > 1023 {
+		return nil, errors.New("The resourcepart must be between 1 and 1023 bytes")
+	}
+
+	return &Jid{
+		localpart:    localpart,
+		domainpart:   domainpart,
+		resourcepart: resourcepart,
+	}, nil
 }
 
-// LocalPart gets the localpart of a JID (eg "username").
-func (j *JID) LocalPart() string {
+// Localpart gets the localpart of a JID (eg "username").
+func (j *Jid) Localpart() string {
 	return j.localpart
 }
 
-// DomainPart gets the domainpart of a JID (eg. "example.net").
-func (j *JID) DomainPart() (string, error) {
-	return idna.ToUnicode(j.domainpart)
+// Domainpart gets the domainpart of a JID (eg. "example.net").
+func (j *Jid) Domainpart() string {
+	return j.domainpart
 }
 
-// ResourcePart gets the resourcepart of a JID (eg. "mobile").
-func (j *JID) ResourcePart() string {
+// Resourcepart gets the resourcepart of a JID (eg. "mobile").
+func (j *Jid) Resourcepart() string {
 	return j.resourcepart
 }
 
-// NormalizeJIDPart verifies that the JID part is valid and returns a normalized
-// string. You do NOT need to do this before passing parts to `NewJID()` or any
-// of the `SetPart` methods; they handle validation and normalization for you.
-// Eventually, this should be replaced with a proper stringprep implementation.
-func NormalizeJIDPart(part string) (string, error) {
-	switch normalized := NF.String(part); {
-	case len(normalized) == 0:
-		// The normalized length should be > 0 bytes
-		return "", ErrorEmptyPart
-	case len(normalized) > 1023:
-		// The normalized length should be ≤ 1023 bytes
-		return "", ErrorLongPart
-	case !utf8.ValidString(part):
-		// The original string should be valid UTF-8
-		return "", ErrorInvalidString
-	case strings.ContainsAny(part, "\"&'/:<>@"):
-		// The original string should not contain any illegal characters. After
-		// normalization some of these characters maybe present.
-		return "", ErrorIllegalRune
-	// TODO: Is there no function or method to just do this?
-	case len(strings.Fields("'"+normalized+"'")) != 1:
-		// There should be no whitespace in the normalized part.
-		return "", ErrorIllegalSpace
-		// TODO: Use a proper stringprep library to make sure this is all correct.
-	default:
-		return normalized, nil
-	}
-}
-
-// NormalizeResourcePart verifies that the JID resource part is valid and
-// returns a normalized string. You probably do NOT need to call this manually,
-// as creating a JID handles this for you. Eventually, this should be replaced
-// with a proper stringprep implementation.
-func NormalizeResourcePart(part string) (string, error) {
-	switch normalized := NF.String(part); {
-	case len(normalized) == 0:
-		// The normalized length should be > 0 bytes
-		return "", ErrorEmptyPart
-	case len(normalized) > 1023:
-		// The normalized length should be ≤ 1023 bytes
-		return "", ErrorLongPart
-	case !utf8.ValidString(part):
-		// The original string should be valid UTF-8
-		return "", ErrorInvalidString
-	// TODO: Is there no function or method to just do this?
-	case len(strings.Fields("'"+normalized+"'")) != 1:
-		// There should be no whitespace in the normalized part.
-		return "", ErrorIllegalSpace
-		// TODO: Use a proper stringprep library to make sure this is all correct.
-	default:
-		return normalized, nil
-	}
-}
-
-// SetLocalPart sets the localpart of a JID and verifies that it is a
-// valid/normalized UTF-8 string which is greater than 0 bytes and less than
-// 1023 bytes.
-func (j *JID) SetLocalPart(localpart string) error {
-	normalized, err := NormalizeJIDPart(localpart)
-	if err != nil {
-		return err
-	}
-	(*j).localpart = normalized
-	return nil
-}
-
-// SetDomainPart sets the domainpart of a JID and verify that it is a
-// valid/normalized UTF-8 string which is greater than 0 bytes and less than
-// 1023 bytes.
-func (j *JID) SetDomainPart(domainpart string) error {
-
-	// From RFC 6122 §2.2 Domainpart:
-	//
-	//     If the domainpart includes a final character considered to be a label
-	//     separator (dot) by [IDNA2003] or [DNS], this character MUST be stripped
-	//     from the domainpart before the JID of which it is a part is used for
-	//     the purpose of routing an XML stanza, comparing against another JID, or
-	//     constructing an [XMPP‑URI]. In particular, the character MUST be
-	//     stripped before any other canonicalization steps are taken, such as
-	//     application of the [NAMEPREP] profile of [STRINGPREP] or completion of
-	//     the ToASCII operation as described in [IDNA2003].
-	//
-	domainpart = strings.TrimRight(domainpart, ".")
-
-	normalized, err := idna.ToASCII(domainpart)
-	if err != nil {
-		return err
-	}
-	// Remove brackets if they already exist so that we can validate IPv6
-	// TODO: Check if brackets exist and don't allow them if this isn't a v6 j
-	normalized = strings.TrimPrefix(normalized, "[")
-	normalized = strings.TrimSuffix(normalized, "]")
-	// If the domain is a valid IPv6 j without brackets (it's a valid IP and
-	// does not fit in 4 bytes), wrap it in brackets.
-	// TODO: This is not very future proof.
-	if ip := net.ParseIP(normalized); ip != nil && ip.To4() == nil {
-		normalized = "[" + normalized + "]"
-	}
-	j.domainpart = normalized
-	return nil
-}
-
-// SetResourcePart sets the resourcepart of a JID and verifies that it is a
-// valid/normalized UTF-8 string which is greater than 0 bytes and less than
-// 1023 bytes.
-func (j *JID) SetResourcePart(resourcepart string) error {
-	normalized, err := NormalizeResourcePart(resourcepart)
-	if err != nil {
-		return err
-	}
-	j.resourcepart = normalized
-	return nil
-}
-
 // String converts the full JID to a string.
-func (j *JID) String() string {
-	out, _ := j.DomainPart()
-	if lp := j.LocalPart(); lp != "" {
-		out = j.LocalPart() + "@" + out
+func (j *Jid) String() string {
+	out := j.Domainpart()
+	if lp := j.Localpart(); lp != "" {
+		out = j.Localpart() + "@" + out
 	}
-	if rp := j.ResourcePart(); rp != "" {
+	if rp := j.Resourcepart(); rp != "" {
 		out = out + "/" + rp
 	}
 	return out
 }
 
-// Bare returns the bare JID (no resourcepart) as a string.
-func (j *JID) Bare() (string, error) {
-	out, err := j.DomainPart()
-	if lp := j.LocalPart(); lp != "" {
-		out = lp + "@" + out
-	}
-	return out, err
-}
-
-// FromString sets the fields in an existing JID from a string.
-func (j *JID) FromString(s string) error {
-
-	// Make sure the string is valid UTF-8
-	if !utf8.ValidString(s) {
-		return ErrorInvalidString
-	}
-
-	// According to RFC 6122:
-	//
-	//     Implementation Note: When dividing a JID into its component parts, an
-	//     implementation needs to match the separator characters '@' and '/'
-	//     before applying any transformation algorithms, which might decompose
-	//     certain Unicode code points to the separator characters (e.g., U+FE6B
-	//     SMALL COMMERCIAL AT might decompose into U+0040 COMMERCIAL AT).
-	//
-	// So don't normalize until after we've checked the various parts.
-
-	// Trim any whitespace before we begin.
-	s = strings.TrimSpace(s)
-
-	// Do not allow whitespace elsewhere in the string…
-	if len(strings.Fields(s)) != 1 {
-		return ErrorIllegalSpace
-	}
-
-	atCount := strings.Count(s, "@")
-	slashCount := strings.Count(s, "/")
-	atLoc := strings.IndexRune(s, '@')
-	slashLoc := strings.IndexRune(s, '/')
-
-	switch {
-	case atCount == 0 && slashCount == 0:
-		// domainpart only (eg. "example.net" or "example")
-		err := j.SetDomainPart(s)
-		if err != nil {
-			return err
-		}
-
-	case atCount == 1 && slashCount == 0:
-		// Bare JID ("test@example.net" or "test@example")
-		if atLoc == 0 || atLoc == len(s)-1 {
-			return ErrorEmptyPart
-		}
-		err := j.SetLocalPart(s[0:atLoc])
-		if err != nil {
-			return err
-		}
-		err = j.SetDomainPart(s[atLoc+1:])
-		if err != nil {
-			return err
-		}
-
-	case slashCount > 0 && (atCount == 0 || atLoc > slashLoc):
-		// domainpart + resourcepart (eg. "example/rp" or "example/@/")
-		if slashLoc == 0 || slashLoc == len(s)-1 {
-			// Error if JID is of the form "/jid" or "jid/" ("jid//" is okay)
-			return ErrorEmptyPart
-		}
-		err := j.SetDomainPart(s[0:slashLoc])
-		if err != nil {
-			return err
-		}
-		err = j.SetResourcePart(s[slashLoc+1:])
-		if err != nil {
-			return err
-		}
-
-	case slashCount > 0 && atCount > 0 && atLoc < slashLoc:
-		// Full JID (eg. "test@example.net/resourcepart" or "test@example.net/@/")
-		last := len(s) - 1
-		if atLoc == 0 || slashLoc == 0 || atLoc == last || slashLoc == last || slashLoc == atLoc+1 {
-			return ErrorEmptyPart
-		}
-		err := j.SetLocalPart(s[0:atLoc])
-		if err != nil {
-			return err
-		}
-		err = j.SetDomainPart(s[atLoc+1 : slashLoc])
-		if err != nil {
-			return err
-		}
-		err = j.SetResourcePart(s[slashLoc+1:])
-		if err != nil {
-			return err
-		}
-
-	default: // Too many '@' or '/' symbols
-		return ErrorIllegalRune
-	}
-
-	return nil
-}
-
 // MarshalXMLAttr marshals the JID as an XML attriute for use with the
-// `encoding/xml' package.
-func (j *JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+// encoding/xml package.
+func (j *Jid) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	return xml.Attr{Name: name, Value: j.String()}, nil
 }

@@ -2,40 +2,42 @@
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
-// Package jid implements XMPP addresses (JIDs) as described in RFC 6122.
-// The syntax for a JID is defined as follows using the Augmented Backus-Naur
-// Form:
+// Package jid implements XMPP addresses (historically called "Jabber IDs" or
+// JIDs) as described in RFC 7622.  The syntax for a JID is defined as follows
+// using the Augmented Backus-Naur Form (ABNF) as specified in RFC 5234:
 //
-//      jid           = [ localpart "@" ] domainpart [ "/" resourcepart ]
-//      localpart     = 1*(nodepoint)
-//                      ;
-//                      ; a "nodepoint" is a UTF-8 encoded Unicode code
-//                      ; point that satisfies the Nodeprep profile of
-//                      ; stringprep
-//                      ;
-//      domainpart    = IP-literal / IPv4address / ifqdn
-//                      ;
-//                      ; the "IPv4address" and "IP-literal" rules are
-//                      ; defined in RFC 3986, and the first-match-wins
-//                      ; (a.k.a. "greedy") algorithm described in RFC
-//                      ; 3986 applies to the matching process
-//                      ;
-//                      ; note well that reuse of the IP-literal rule
-//                      ; from RFC 3986 implies that IPv6 addresses are
-//                      ; enclosed in square brackets (i.e., beginning
-//                      ; with '[' and ending with ']'), which was not
-//                      ; the case in RFC 3920
-//                      ;
-//      ifqdn         = 1*(namepoint)
-//                      ;
-//                      ; a "namepoint" is a UTF-8 encoded Unicode
-//                      ; code point that satisfies the Nameprep
-//                      ; profile of stringprep
-//                      ;
-//      resourcepart  = 1*(resourcepoint)
-//                      ;
-//                      ; a "resourcepoint" is a UTF-8 encoded Unicode
-//                      ; code point that satisfies the Resourceprep
-//                      ; profile of stringprep
-//                      ;
+//      jid          = [ localpart "@" ] domainpart [ "/" resourcepart ]
+//      localpart    = 1*1023(userbyte)
+//                     ;
+//                     ; a "userbyte" is a byte used to represent a
+//                     ; UTF-8 encoded Unicode code point that can be
+//                     ; contained in a string that conforms to the
+//                     ; UsernameCaseMapped profile of the PRECIS
+//                     ; IdentifierClass defined in RFC 7613
+//                     ;
+//      domainpart   = IP-literal / IPv4address / ifqdn
+//                     ;
+//                     ; the "IPv4address" and "IP-literal" rules are
+//                     ; defined in RFCs 3986 and 6874, respectively,
+//                     ; and the first-match-wins (a.k.a. "greedy")
+//                     ; algorithm described in Appendix B of RFC 3986
+//                     ; applies to the matching process
+//                     ;
+//      ifqdn        = 1*1023(domainbyte)
+//                     ;
+//                     ; a "domainbyte" is a byte used to represent a
+//                     ; UTF-8 encoded Unicode code point that can be
+//                     ; contained in a string that conforms to RFC 5890
+//                     ;
+//      resourcepart = 1*1023(opaquebyte)
+//                     ;
+//                     ; an "opaquebyte" is a byte used to represent a
+//                     ; UTF-8 encoded Unicode code point that can be
+//                     ; contained in a string that conforms to the
+//                     ; OpaqueString profile of the PRECIS
+//                     ; FreeformClass defined in RFC 7613
+//                     ;
+// Internationalized strings in JIDs are handled similarly to internationalized
+// domain names via RFC 7564: "PRECIS Framework: Preparation, Enforcement, and
+// Comaprison of Internationalized Strings in Application Protocols".
 package jid
