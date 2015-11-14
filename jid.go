@@ -154,13 +154,12 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 
 	// Ensure that all parts are valid UTF-8 (and short circuit the rest of the
 	// process if they're not)
-	if !utf8.ValidString(domainpart) {
-		return nil, errors.New("Domainpart contains invalid UTF-8")
-	}
-	if !utf8.ValidString(localpart) {
+	switch {
+	case !utf8.ValidString(domainpart):
+		return nil, errors.New("Jid contains invalid UTF-8")
+	case !utf8.ValidString(localpart):
 		return nil, errors.New("Localpart contains invalid UTF-8")
-	}
-	if !utf8.ValidString(resourcepart) {
+	case !utf8.ValidString(resourcepart):
 		return nil, errors.New("Resourcepart contains invalid UTF-8")
 	}
 
