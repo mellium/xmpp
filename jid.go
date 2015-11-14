@@ -151,8 +151,17 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Ensure that all parts are valid UTF-8 (and short circuit the rest of the
+	// process if they're not)
 	if !utf8.ValidString(domainpart) {
 		return nil, errors.New("Domainpart contains invalid UTF-8")
+	}
+	if !utf8.ValidString(localpart) {
+		return nil, errors.New("Localpart contains invalid UTF-8")
+	}
+	if !utf8.ValidString(resourcepart) {
+		return nil, errors.New("Resourcepart contains invalid UTF-8")
 	}
 
 	// RFC 7622 §3.2.2:
@@ -223,11 +232,6 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 		return nil, errors.New("The domainpart must be between 1 and 1023 bytes")
 	}
 
-	// Process the localpart. First check if it's actually valid UTF-8:
-	if !utf8.ValidString(localpart) {
-		return nil, errors.New("Localpart contains invalid UTF-8")
-	}
-
 	// RFC 7622 §3.3:
 	//
 	//    The localpart of a JID is an instance of the UsernameCaseMapped
@@ -292,11 +296,6 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	// TODO: Add XMPP-0106 support?
 	if strings.ContainsAny(localpart, "\"&'/:<>@") {
 		return nil, errors.New("Localpart contains forbidden characters")
-	}
-
-	// Process the resourcepart. First check if it's actually valid UTF-8:
-	if !utf8.ValidString(resourcepart) {
-		return nil, errors.New("Resourcepart contains invalid UTF-8")
 	}
 
 	// RFC 7622 §3.4:
