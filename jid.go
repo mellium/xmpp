@@ -18,8 +18,8 @@ import (
 	"golang.org/x/text/width"
 )
 
-// Jid represents an XMPP address comprising a localpart, domainpart, and
-// resourcepart.
+// Jid is an immutable representation of an XMPP address comprising a
+// localpart, domainpart, and resourcepart.
 type Jid struct {
 	localpart    string
 	domainpart   string
