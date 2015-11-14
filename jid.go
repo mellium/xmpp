@@ -254,8 +254,8 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	// [TODO]
 
 	l = len(resourcepart)
-	if l < 1 || l > 1023 {
-		return nil, errors.New("The resourcepart must be between 1 and 1023 bytes")
+	if l > 1023 {
+		return nil, errors.New("The resourcepart must be smaller than 1023 bytes")
 	}
 
 	return &Jid{
