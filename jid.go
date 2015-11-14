@@ -265,6 +265,21 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	}, nil
 }
 
+// Bare returns a copy of the Jid without a resource part. This is sometimes
+// called a "bare" JID.
+func (j *Jid) Bare() *Jid {
+	return &Jid{
+		localpart:    j.localpart,
+		domainpart:   j.domainpart,
+		resourcepart: "",
+	}
+}
+
+// IsBare is true if the JID is a bare JID (it has no resource part).
+func (j *Jid) IsBare() bool {
+	return j.resourcepart == ""
+}
+
 // Localpart gets the localpart of a JID (eg "username").
 func (j *Jid) Localpart() string {
 	return j.localpart
