@@ -47,7 +47,7 @@ func FromString(s string) (*Jid, error) {
 	//    1.  Remove any portion from the first '/' character to the end of the
 	//        string (if there is a '/' character present).
 	parts := strings.SplitAfterN(
-		"test@example.net/resource/test/and more", "/", 2,
+		s, "/", 2,
 	)
 	norp := strings.TrimSuffix(parts[0], "/")
 
