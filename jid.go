@@ -49,16 +49,30 @@ func FromString(s string) (*Jid, error) {
 	parts := strings.SplitAfterN(
 		s, "/", 2,
 	)
+
+	// If the resource part exists, make sure it isn't empty.
+	if strings.HasSuffix(parts[0], "/") {
+		if len(parts) == 2 && parts[1] != "" {
+			resourcepart = parts[1]
+		} else {
+			return nil, errors.New("The resourcepart must be larger than 0 bytes")
+		}
+	} else {
+		resourcepart = ""
+	}
+
 	norp := strings.TrimSuffix(parts[0], "/")
 
 	//    2.  Remove any portion from the beginning of the string to the first
 	//        '@' character (if there is an '@' character present).
 
 	nolp := strings.SplitAfterN(norp, "@", 2)
+
+	if nolp[0] == "@" {
+		return nil, errors.New("The localpart must be larger than 0 bytes")
+	}
+
 	switch len(nolp) {
-	case 0:
-		domainpart = ""
-		localpart = ""
 	case 1:
 		domainpart = nolp[0]
 		localpart = ""
@@ -78,13 +92,6 @@ func FromString(s string) (*Jid, error) {
 	//    are taken.
 
 	domainpart = strings.TrimSuffix(domainpart, ".")
-
-	// The resourcepart is left over from earlier:
-	if len(parts) == 2 {
-		resourcepart = parts[1]
-	} else {
-		resourcepart = ""
-	}
 
 	return FromParts(localpart, domainpart, resourcepart)
 }
@@ -265,7 +272,7 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	}, nil
 }
 
-// Bare returns a copy of the Jid without a resource part. This is sometimes
+// Bare returns a copy of the Jid without a resourcepart. This is sometimes
 // called a "bare" JID.
 func (j *Jid) Bare() *Jid {
 	return &Jid{
@@ -275,7 +282,7 @@ func (j *Jid) Bare() *Jid {
 	}
 }
 
-// IsBare is true if the JID is a bare JID (it has no resource part).
+// IsBare is true if the JID is a bare JID (it has no resourcepart).
 func (j *Jid) IsBare() bool {
 	return j.resourcepart == ""
 }
