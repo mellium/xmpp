@@ -303,6 +303,11 @@ func (j *Jid) Resourcepart() string {
 	return j.resourcepart
 }
 
+func (j *Jid) Equals(j2 *Jid) bool {
+	return j.localpart == j2.localpart &&
+		j.domainpart == j2.domainpart && j.resourcepart == j2.resourcepart
+}
+
 // String converts a `Jid` object to its string representation.
 func (j *Jid) String() string {
 	b := bytes.NewBuffer(make(
