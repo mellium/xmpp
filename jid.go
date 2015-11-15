@@ -425,16 +425,14 @@ func (j *Jid) Equals(j2 *Jid) bool {
 
 // String converts a `Jid` object to its string representation.
 func (j *Jid) String() string {
-	switch {
-	case j.localpart != "" && j.resourcepart != "":
-		return j.localpart + "@" + j.domainpart + "/" + j.resourcepart
-	case j.localpart != "":
-		return j.localpart + "@" + j.domainpart
-	case j.resourcepart != "":
-		return j.domainpart + "/" + j.domainpart
-	default:
-		return j.domainpart
+	s := j.domainpart
+	if j.localpart != "" {
+		s = j.localpart + "@" + s
 	}
+	if j.resourcepart != "" {
+		s = s + "/" + j.resourcepart
+	}
+	return s
 }
 
 // MarshalXMLAttr marshals the JID as an XML attribute for use with the
