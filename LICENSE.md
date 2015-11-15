@@ -1,4 +1,4 @@
-## BSD 2-claus license
+## BSD 2-clause license
 
 Copyright © 2014 Sam Whited
 All rights reserved.
