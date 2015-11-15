@@ -23,6 +23,7 @@ func TestValidPartsFromString(t *testing.T) {
 		{"dp/rp/", "", "dp", "rp/"},
 		{"dp/@rp/", "", "dp", "@rp/"},
 		{"dp/lp@dp/rp", "", "dp", "lp@dp/rp"},
+		{"₩", "", "₩", ""},
 	}
 	for _, d := range valid_decompositions {
 		lp, dp, rp, err := partsFromString(d[0])

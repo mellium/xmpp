@@ -16,6 +16,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"golang.org/x/text/unicode/norm"
+	"golang.org/x/text/width"
 )
 
 // Jid is an immutable representation of an XMPP address comprising a
@@ -192,9 +193,15 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//        character form, the user might not know which form they are
 	//        entering.
 
-	// TODO: Does this want me to apply NFD to fullwidth and halfwidth east
-	//       asian characters, and then apply NFC in the next step to get them
-	//       back to canonical composed form?
+	// TODO: This could use some serious optimiziation…
+	eastAsianNFD := func(r rune) rune {
+		if kind := width.LookupRune(r).Kind(); kind == width.EastAsianFullwidth ||
+			kind == width.EastAsianHalfwidth {
+			return []rune(norm.NFD.String(string(r)))[0]
+		}
+		return r
+	}
+	domainpart = strings.Map(eastAsianNFD, domainpart)
 
 	//    3.  All characters are mapped using Unicode Normalization Form C
 	//        (NFC).  This step was chosen because it maps combinations of
@@ -244,11 +251,7 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//    map fullwidth and halfwidth characters to their decomposition
 	//    mappings (see Unicode Standard Annex #11 [UAX11]).
 
-	// TODO: This is not the correct form. What is the "decomposition" mapping?
-
-	// TODO: Does this want me to apply NFD to fullwidth and halfwidth east
-	//       asian characters, and then apply NFC in the next step to get them
-	//       back to canonical composed form?
+	localpart = strings.Map(eastAsianNFD, localpart)
 
 	// TODO:
 	//
