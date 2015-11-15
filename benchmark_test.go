@@ -6,7 +6,15 @@ package jid
 
 import (
 	"testing"
+
+	"encoding/xml"
 )
+
+func BenchmarkJidSplit(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		partsFromString("user@example.com/resource")
+	}
+}
 
 func BenchmarkJidFromString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -29,5 +37,48 @@ func BenchmarkJidFromParts(b *testing.B) {
 func BenchmarkJidFromPartsUnsafe(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		FromPartsUnsafe("user", "example.com", "resource")
+	}
+}
+
+func BenchmarkJidFromJidValidated(b *testing.B) {
+	j := &Jid{"user", "example.com", "resource", true}
+	for i := 0; i < b.N; i++ {
+		FromJid(j)
+	}
+}
+
+func BenchmarkJidFromJidUnvalidated(b *testing.B) {
+	j := &Jid{"user", "example.com", "resource", false}
+	for i := 0; i < b.N; i++ {
+		FromJid(j)
+	}
+}
+
+func BenchmarkJidCopy(b *testing.B) {
+	j := &Jid{"user", "example.com", "resource", false}
+	for i := 0; i < b.N; i++ {
+		j.Copy()
+	}
+}
+
+func BenchmarkJidBare(b *testing.B) {
+	j := &Jid{"user", "example.com", "resource", false}
+	for i := 0; i < b.N; i++ {
+		j.Bare()
+	}
+}
+
+func BenchmarkJidString(b *testing.B) {
+	j := &Jid{"user", "example.com", "resource", false}
+	for i := 0; i < b.N; i++ {
+		j.String()
+	}
+}
+
+func BenchmarkJidMarshalXMLAttr(b *testing.B) {
+	j := &Jid{"user", "example.com", "resource", false}
+	n := xml.Name{}
+	for i := 0; i < b.N; i++ {
+		j.MarshalXMLAttr(n)
 	}
 }
