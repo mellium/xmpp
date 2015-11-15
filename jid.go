@@ -5,7 +5,6 @@
 package jid
 
 import (
-	"bytes"
 	"encoding/xml"
 	"errors"
 	"strings"
@@ -426,21 +425,16 @@ func (j *Jid) Equals(j2 *Jid) bool {
 
 // String converts a `Jid` object to its string representation.
 func (j *Jid) String() string {
-	b := bytes.NewBuffer(make(
-		[]byte, 0,
-		len(j.localpart)+len(j.domainpart)+len(j.resourcepart)+2,
-	))
-
-	if lp := j.Localpart(); lp != "" {
-		b.WriteString(lp)
-		b.WriteString("@")
+	var s string
+	switch {
+	case j.localpart != "" && j.resourcepart != "":
+		s = j.localpart + "@" + j.domainpart + "/" + j.resourcepart
+	case j.localpart != "":
+		s = j.localpart + "@" + j.domainpart
+	case j.resourcepart != "":
+		s = j.domainpart + "/" + j.domainpart
 	}
-	b.WriteString(j.Domainpart())
-	if rp := j.Resourcepart(); rp != "" {
-		b.WriteString("/")
-		b.WriteString(rp)
-	}
-	return b.String()
+	return s
 }
 
 // MarshalXMLAttr marshals the JID as an XML attribute for use with the
