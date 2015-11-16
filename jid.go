@@ -192,15 +192,14 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//        character form, the user might not know which form they are
 	//        entering.
 
-	// TODO: This could use some serious optimiziation…
-	eastAsianNFD := func(r rune) rune {
+	eastAsianNFKD := func(r rune) rune {
 		if kind := width.LookupRune(r).Kind(); kind == width.EastAsianFullwidth ||
 			kind == width.EastAsianHalfwidth {
-			return []rune(norm.NFD.String(string(r)))[0]
+			return []rune(norm.NFKD.String(string(r)))[0]
 		}
 		return r
 	}
-	domainpart = strings.Map(eastAsianNFD, domainpart)
+	domainpart = strings.Map(eastAsianNFKD, domainpart)
 
 	//    3.  All characters are mapped using Unicode Normalization Form C
 	//        (NFC).  This step was chosen because it maps combinations of
@@ -250,7 +249,7 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//    map fullwidth and halfwidth characters to their decomposition
 	//    mappings (see Unicode Standard Annex #11 [UAX11]).
 
-	localpart = strings.Map(eastAsianNFD, localpart)
+	localpart = strings.Map(eastAsianNFKD, localpart)
 
 	// TODO:
 	//
