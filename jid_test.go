@@ -11,7 +11,7 @@ import (
 
 // Ensure that JID parts are split properly.
 func TestValidPartsFromString(t *testing.T) {
-	valid_decompositions := [][]string{
+	decompositions := [][]string{
 		{"lp@dp/rp", "lp", "dp", "rp"},
 		{"dp/rp", "", "dp", "rp"},
 		{"dp", "", "dp", ""},
@@ -25,7 +25,7 @@ func TestValidPartsFromString(t *testing.T) {
 		{"dp/lp@dp/rp", "", "dp", "lp@dp/rp"},
 		{"₩", "", "₩", ""},
 	}
-	for _, d := range valid_decompositions {
+	for _, d := range decompositions {
 		lp, dp, rp, err := partsFromString(d[0])
 		if err != nil || lp != d[1] || dp != d[2] || rp != d[3] {
 			t.FailNow()
@@ -33,16 +33,40 @@ func TestValidPartsFromString(t *testing.T) {
 	}
 }
 
-func TestValidJidFromParts(t *testing.T) {
-	valid_decompositions := [][]string{
+func TestValidFromParts(t *testing.T) {
+	decompositions := [][]string{
 		{"lp", "dp", "rp", "lp", "dp", "rp"},
 		{"ｌｐ", "ｄｐ", "ｒｐ", "lp", "dp", "ｒｐ"},
 		{"ﾛ", "ﾛ", "ﾛ", "ロ", "ロ", "ﾛ"},
+		{"", "127.0.0.1", "", "", "127.0.0.1", ""},
+		{"", "[::1]", "", "", "[::1]", ""},
 	}
-	for _, d := range valid_decompositions {
+	for _, d := range decompositions {
 		j, err := FromParts(d[0], d[1], d[2])
 		if err != nil || j.localpart != d[3] || j.domainpart != d[4] ||
 			j.resourcepart != d[5] {
+			t.FailNow()
+		}
+	}
+}
+
+func TestInvalidFromParts(t *testing.T) {
+	decompositions := [][]string{
+		{"lp", "", "rp"},
+		{"", "[test]", ""},
+		{"", "[127.0.0.1]", ""},
+		// Currently failing:
+		{"lp", "@test", "rp"},
+		{"lp", "test/", "rp"},
+		{"", "::1", ""},
+		{"lp ", "example.com", "rp"},
+		{"lp\t", "example.com", "rp"},
+		{"lp", " example.com", "rp"},
+		{"lp", "\texample.com", "rp"},
+	}
+	for _, d := range decompositions {
+		j, err := FromParts(d[0], d[1], d[2])
+		if err == nil {
 			t.FailNow()
 		}
 	}
@@ -56,13 +80,13 @@ func TestLongParts(t *testing.T) {
 		pb.WriteString("aaaaaaaaaaaaaaaa")
 	}
 	ps := pb.String()
-	invalid_decompositions := []string{
+	jids := []string{
 		ps + "@example.com/test",
 		"lp@" + ps + "/test",
 		"lp@example.com/" + ps,
 		ps + "@" + ps + "/" + ps,
 	}
-	for _, d := range invalid_decompositions {
+	for _, d := range jids {
 		if _, _, _, err := partsFromString(d); err != nil {
 			t.FailNow()
 		}
@@ -156,22 +180,6 @@ func TestNewEmptyResourcepart(t *testing.T) {
 func TestNewBareJid(t *testing.T) {
 	jid, err := FromString("barejid@example.com")
 	if err != nil || jid.Resourcepart() != "" {
-		t.FailNow()
-	}
-}
-
-// New JIDs should not allow `\t` in the localpart.
-func TestNewHasTabInLocalpart(t *testing.T) {
-	_, err := FromString("localpart	@example.com/resourcepart")
-	if err == nil {
-		t.FailNow()
-	}
-}
-
-// New JIDs should not allow spaces in the domainpart.
-func TestNewHasSpaceInDomainpart(t *testing.T) {
-	_, err := FromString("localpart@exampl e.com/resourcepart")
-	if err == nil {
 		t.FailNow()
 	}
 }

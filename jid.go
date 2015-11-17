@@ -7,6 +7,7 @@ package jid
 import (
 	"encoding/xml"
 	"errors"
+	"net"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -285,6 +286,32 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	l = len(resourcepart)
 	if l > 1023 {
 		return nil, errors.New("The resourcepart must be smaller than 1024 bytes")
+	}
+
+	// If the domain is a valid IPv6 address (with brackets), short circuit.
+	if l := len(domainpart); l > 2 && strings.HasPrefix(domainpart, "[") &&
+		strings.HasSuffix(domainpart, "]") {
+		if ip := net.ParseIP(domainpart[1 : l-1]); ip != nil && ip.To4() == nil {
+			return &Jid{
+				localpart:    localpart,
+				domainpart:   domainpart,
+				resourcepart: resourcepart,
+				validated:    true,
+			}, nil
+		} else {
+			// If the domainpart has brackets, but is not an IPv6 address, error.
+			return nil, errors.New("Domainpart is not a valid IPv6 address: ")
+		}
+	}
+
+	// If the domainpart is a valid IPv4 address, short circuit.
+	if ip := net.ParseIP(domainpart); ip != nil && ip.To4() != nil {
+		return &Jid{
+			localpart:    localpart,
+			domainpart:   domainpart,
+			resourcepart: resourcepart,
+			validated:    true,
+		}, nil
 	}
 
 	// RFC 7622 §3.2.2:

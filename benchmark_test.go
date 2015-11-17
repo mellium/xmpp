@@ -22,6 +22,18 @@ func BenchmarkFromString(b *testing.B) {
 	}
 }
 
+func BenchmarkFromStringIPv4(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		FromString("user@127.0.0.1/resource")
+	}
+}
+
+func BenchmarkFromStringIPv6(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		FromString("user@[::1]/resource")
+	}
+}
+
 func BenchmarkFromStringUnsafe(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		FromStringUnsafe("user@example.com/resource")
