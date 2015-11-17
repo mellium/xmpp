@@ -10,72 +10,72 @@ import (
 	"encoding/xml"
 )
 
-func BenchmarkJidSplit(b *testing.B) {
+func BenchmarkSplit(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		partsFromString("user@example.com/resource")
 	}
 }
 
-func BenchmarkJidFromString(b *testing.B) {
+func BenchmarkFromString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		FromString("user@example.com/resource")
 	}
 }
 
-func BenchmarkJidFromStringUnsafe(b *testing.B) {
+func BenchmarkFromStringUnsafe(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		FromStringUnsafe("user@example.com/resource")
 	}
 }
 
-func BenchmarkJidFromParts(b *testing.B) {
+func BenchmarkFromParts(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		FromParts("user", "example.com", "resource")
 	}
 }
 
-func BenchmarkJidFromPartsUnsafe(b *testing.B) {
+func BenchmarkFromPartsUnsafe(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		FromPartsUnsafe("user", "example.com", "resource")
 	}
 }
 
-func BenchmarkJidFromJidValidated(b *testing.B) {
+func BenchmarkFromJidValidated(b *testing.B) {
 	j := &Jid{"user", "example.com", "resource", true}
 	for i := 0; i < b.N; i++ {
 		FromJid(j)
 	}
 }
 
-func BenchmarkJidFromJidUnvalidated(b *testing.B) {
+func BenchmarkFromJidUnvalidated(b *testing.B) {
 	j := &Jid{"user", "example.com", "resource", false}
 	for i := 0; i < b.N; i++ {
 		FromJid(j)
 	}
 }
 
-func BenchmarkJidCopy(b *testing.B) {
+func BenchmarkCopy(b *testing.B) {
 	j := &Jid{"user", "example.com", "resource", false}
 	for i := 0; i < b.N; i++ {
 		j.Copy()
 	}
 }
 
-func BenchmarkJidBare(b *testing.B) {
+func BenchmarkBare(b *testing.B) {
 	j := &Jid{"user", "example.com", "resource", false}
 	for i := 0; i < b.N; i++ {
 		j.Bare()
 	}
 }
 
-func BenchmarkJidString(b *testing.B) {
+func BenchmarkString(b *testing.B) {
 	j := &Jid{"user", "example.com", "resource", false}
 	for i := 0; i < b.N; i++ {
 		j.String()
 	}
 }
 
-func BenchmarkJidMarshalXMLAttr(b *testing.B) {
+func BenchmarkMarshalXMLAttr(b *testing.B) {
 	j := &Jid{"user", "example.com", "resource", false}
 	n := xml.Name{}
 	for i := 0; i < b.N; i++ {
