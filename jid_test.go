@@ -33,6 +33,21 @@ func TestValidPartsFromString(t *testing.T) {
 	}
 }
 
+func TestValidJidFromParts(t *testing.T) {
+	valid_decompositions := [][]string{
+		{"lp", "dp", "rp", "lp", "dp", "rp"},
+		{"ｌｐ", "ｄｐ", "ｒｐ", "lp", "dp", "ｒｐ"},
+		{"ﾛ", "ﾛ", "ﾛ", "ロ", "ロ", "ﾛ"},
+	}
+	for _, d := range valid_decompositions {
+		j, err := FromParts(d[0], d[1], d[2])
+		if err != nil || j.localpart != d[3] || j.domainpart != d[4] ||
+			j.resourcepart != d[5] {
+			t.FailNow()
+		}
+	}
+}
+
 // Ensure that JIDs that are too long return an error.
 func TestLongParts(t *testing.T) {
 	// Generate a part that is too long.
