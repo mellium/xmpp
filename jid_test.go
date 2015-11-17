@@ -65,8 +65,7 @@ func TestInvalidFromParts(t *testing.T) {
 		{"lp", "\texample.com", "rp"},
 	}
 	for _, d := range decompositions {
-		j, err := FromParts(d[0], d[1], d[2])
-		if err == nil {
+		if _, err := FromParts(d[0], d[1], d[2]); err == nil {
 			t.FailNow()
 		}
 	}
