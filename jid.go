@@ -140,15 +140,13 @@ func FromJid(j *Jid) (*Jid, error) {
 func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 
 	// Ensure that parts are valid UTF-8 (and short circuit the rest of the
-	// process if they're not)
-	if !utf8.ValidString(localpart) {
-		return nil, errors.New("Localpart contains invalid UTF-8")
-	}
-	if !utf8.ValidString(resourcepart) {
-		return nil, errors.New("Resourcepart contains invalid UTF-8")
+	// process if they're not). We'll check the domainpart after performing
+	// the IDNA ToUnicode operation.
+	if !utf8.ValidString(localpart) || !utf8.ValidString(resourcepart) {
+		return nil, errors.New("JID contains invalid UTF-8")
 	}
 
-	// RFC 7622 §3.2.1:
+	// RFC 7622 §3.2.1.  Preparation
 	//
 	//    An entity that prepares a string for inclusion in an XMPP domainpart
 	//    slot MUST ensure that the string consists only of Unicode code points
@@ -166,27 +164,26 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 		return nil, errors.New("Domainpart contains invalid UTF-8")
 	}
 
-	// RFC 7622 §3.3:
+	// RFC 7622 §3.3.  Localpart
 	//
 	//    The localpart of a JID is an instance of the UsernameCaseMapped
 	//    profile of the PRECIS IdentifierClass, which is specified in
 	//    [RFC7613].  The rules and considerations provided in that
 	//    specification MUST be applied to XMPP localparts.
 	//
-	// RFC 7613 §3.2.1
+	// RFC 7613 §3.2.1.  Preparation
 	//
 	//    An entity that prepares a string according to this profile MUST first
 	//    map fullwidth and halfwidth characters to their decomposition
 	//    mappings (see Unicode Standard Annex #11 [UAX11]).
 
-	eastAsianNFKD := func(r rune) rune {
+	localpart = strings.Map(func(r rune) rune {
 		if kind := width.LookupRune(r).Kind(); kind == width.EastAsianFullwidth ||
 			kind == width.EastAsianHalfwidth {
 			return []rune(norm.NFKD.String(string(r)))[0]
 		}
 		return r
-	}
-	localpart = strings.Map(eastAsianNFKD, localpart)
+	}, localpart)
 
 	// TODO:
 	//
@@ -194,7 +191,7 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	//    that the string consists only of Unicode code points that conform to
 	//    the PRECIS IdentifierClass defined in Section 4.2 of [RFC7564].
 
-	// RFC 7613 §3.2.2
+	// RFC 7613 §3.2.2.  Enforcement
 	//
 	//    1.  Width-Mapping Rule: Applied as part of preparation (see above).
 	//
@@ -231,12 +228,11 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 	// RFC 7622 §3.3.1 provides a small table of characters which are still not
 	// allowed in localpart's even though the IdentifierClass base class and the
 	// UsernameCaseMapped profile don't forbid them; remove them here.
-	// TODO: Add XMPP-0106 support?
 	if strings.ContainsAny(localpart, "\"&'/:<>@") {
 		return nil, errors.New("Localpart contains forbidden characters")
 	}
 
-	// RFC 7622 §3.4:
+	// RFC 7622 §3.4.  Resourcepart
 	//
 	//    The resourcepart of a JID is an instance of the OpaqueString profile
 	//    of the PRECIS FreeformClass, which is specified in [RFC7613].  The
@@ -288,7 +284,7 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 		return nil, errors.New("The resourcepart must be smaller than 1024 bytes")
 	}
 
-	// If the domain is a valid IPv6 address (with brackets), short circuit.
+	// If the domainpart is a valid IPv6 address (with brackets), short circuit.
 	if l := len(domainpart); l > 2 && strings.HasPrefix(domainpart, "[") &&
 		strings.HasSuffix(domainpart, "]") {
 		if ip := net.ParseIP(domainpart[1 : l-1]); ip != nil && ip.To4() == nil {
@@ -300,7 +296,7 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 			}, nil
 		} else {
 			// If the domainpart has brackets, but is not an IPv6 address, error.
-			return nil, errors.New("Domainpart is not a valid IPv6 address: ")
+			return nil, errors.New("Domainpart is not a valid IPv6 address")
 		}
 	}
 
@@ -314,65 +310,13 @@ func FromParts(localpart, domainpart, resourcepart string) (*Jid, error) {
 		}, nil
 	}
 
-	// RFC 7622 §3.2.2:
+	// RFC 7622 §3.2.2.  Enforcement
+	// TODO:
 	//
 	//    An entity that performs enforcement in XMPP domainpart slots MUST
 	//    prepare a string as described in Section 3.2.1 and MUST also apply
 	//    the normalization, case-mapping, and width-mapping rules defined in
 	//    [RFC5892].
-	//
-	// I'm assuming that the reference to RFC 5892 is wrong, and that it meant
-	// RFC 5895.
-	//
-	// RFC 5895 §2. The General Procedure:
-	//
-	//    1.  Uppercase characters are mapped to their lowercase equivalents by
-	//        using the algorithm for mapping case in Unicode characters.  This
-	//        step was chosen because the output will behave more like ASCII
-	//        host names behave.
-
-	domainpart = lowercaser.String(domainpart)
-
-	//    2.  Fullwidth and halfwidth characters (those defined with
-	//        Decomposition Types <wide> and <narrow>) are mapped to their
-	//        decomposition mappings as shown in the Unicode character
-	//        database.  This step was chosen because many input mechanisms,
-	//        particularly in Asia, do not allow you to easily enter characters
-	//        in the form used by IDNA2008.  Even if they do allow the correct
-	//        character form, the user might not know which form they are
-	//        entering.
-
-	domainpart = strings.Map(eastAsianNFKD, domainpart)
-
-	//    3.  All characters are mapped using Unicode Normalization Form C
-	//        (NFC).  This step was chosen because it maps combinations of
-	//        combining characters into canonical composed form.  As with the
-	//        fullwidth/halfwidth mapping, users are not generally aware of the
-	//        particular form of characters that they are entering, and
-	//        IDNA2008 requires that only the canonical composed forms from NFC
-	//        be used.
-
-	domainpart = norm.NFC.String(domainpart)
-
-	//    4.  [IDNA2008protocol] is specified such that the protocol acts on
-	//        the individual labels of the domain name.  If an implementation
-	//        of this mapping is also performing the step of separation of the
-	//        parts of a domain name into labels by using the FULL STOP
-	//        character (U+002E), the IDEOGRAPHIC FULL STOP character (U+3002)
-	//        can be mapped to the FULL STOP before label separation occurs.
-	//        There are other characters that are used as "full stops" that one
-	//        could consider mapping as label separators, but their use as such
-	//        has not been investigated thoroughly.  This step was chosen
-	//        because some input mechanisms do not allow the user to easily
-	//        enter proper label separators.  Only the IDEOGRAPHIC FULL STOP
-	//        character (U+3002) is added in this mapping because the authors
-	//        have not fully investigated the applicability of other characters
-	//        and the environments where they should and should not be
-	//        considered domain name label separators.
-	//
-	// We'll go ahead and do this for comparison purposes:
-
-	domainpart = strings.Replace(domainpart, "\u3002", ".", -1)
 
 	l = len(domainpart)
 	if l < 1 || l > 1023 {
