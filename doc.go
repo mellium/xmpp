@@ -4,8 +4,7 @@
 
 // Package jid implements XMPP addresses (historically called "Jabber ID's" or
 // "JID's") as described in RFC 7622.  The syntax for a JID is defined as
-// follows using the Augmented Backus-Naur Form (ABNF) as specified in RFC
-// 5234:
+// follows using the Augmented Backus-Naur Form (ABNF):
 //
 //     jid          = [ localpart "@" ] domainpart [ "/" resourcepart ]
 //     localpart    = 1*1023(userbyte)
