@@ -55,6 +55,9 @@ func TestInvalidFromParts(t *testing.T) {
 		{"lp", "", "rp"},
 		{"", "[test]", ""},
 		{"", "[127.0.0.1]", ""},
+		{"", "\u0660", ""},
+		{"", "\u0669", ""},
+		{"", "\u303B", ""},
 		// Currently failing:
 		{"lp", "@test", "rp"},
 		{"lp", "test/", "rp"},
