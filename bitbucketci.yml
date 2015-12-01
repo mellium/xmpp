@@ -3,5 +3,4 @@ pipeline:
   - job:
       script:
         - go-wrapper download
-        - go-wrapper install
         - go test
