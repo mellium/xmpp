@@ -1,0 +1,5 @@
+image: golang:onbuild
+pipeline:
+  - job:
+      script:
+        - go run
