@@ -408,7 +408,19 @@ func (j *Jid) String() string {
 }
 
 // MarshalXMLAttr marshals the JID as an XML attribute for use with the
-// encoding/xml package.
+// encoding/xml package. It satisfies the MarshalerAttr interface.
 func (j *Jid) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	return xml.Attr{Name: name, Value: j.String()}, nil
+}
+
+// UnmarshalXMLAttr unmarshals an XML attribute into a valid JID (or returns an
+// error). It satisfies the UnmarshalerAttr interface from the encoding/xml
+// package.
+func (j *Jid) UnmarshalXMLAttr(attr xml.Attr) error {
+	jid, err := FromString(attr.Value)
+	j.localpart = jid.localpart
+	j.domainpart = jid.domainpart
+	j.resourcepart = jid.resourcepart
+	j.validated = jid.validated
+	return err
 }

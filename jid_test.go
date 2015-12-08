@@ -309,3 +309,15 @@ func TestMarshal(t *testing.T) {
 		t.FailNow()
 	}
 }
+
+// Jids should be unmarshalable from an XML attribute
+func TestUnmarshal(t *testing.T) {
+	jid := &Jid{}
+	err := jid.UnmarshalXMLAttr(
+		xml.Attr{xml.Name{"space", ""}, "newjid@example.com/unmarshal"},
+	)
+
+	if err != nil || jid.Localpart() != "newjid" || jid.Domainpart() != "example.com" || jid.Resourcepart() != "unmarshal" || jid.Validated() != true {
+		t.FailNow()
+	}
+}
