@@ -3,4 +3,5 @@ pipeline:
   - job:
       script:
         - go-wrapper download
-        - go test
+        - make test
+        - make benchmark
