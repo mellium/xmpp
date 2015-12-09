@@ -7,6 +7,7 @@ package jid
 import (
 	"encoding/xml"
 	"errors"
+	"net"
 	"strings"
 )
 
@@ -94,4 +95,56 @@ func SplitString(s string) (localpart, domainpart, resourcepart string, err erro
 	domainpart = strings.TrimSuffix(domainpart, ".")
 
 	return
+}
+
+func stringify(j JID) string {
+	s := j.Domainpart()
+	if lp := j.Localpart(); lp != "" {
+		s = lp + "@" + s
+	}
+	if rp := j.Resourcepart(); rp != "" {
+		s = s + "/" + rp
+	}
+	return s
+}
+
+func checkIP6String(domainpart string) error {
+	// If the domainpart is a valid IPv6 address (with brackets), short circuit.
+	if l := len(domainpart); l > 2 && strings.HasPrefix(domainpart, "[") &&
+		strings.HasSuffix(domainpart, "]") {
+		if ip := net.ParseIP(domainpart[1 : l-1]); ip == nil || ip.To4() != nil {
+			return errors.New("Domainpart is not a valid IPv6 address")
+		}
+	}
+	return nil
+}
+
+func commonChecks(localpart, domainpart, resourcepart string) error {
+	l := len(localpart)
+	if l > 1023 {
+		return errors.New("The localpart must be smaller than 1024 bytes")
+	}
+
+	// RFC 7622 §3.3.1 provides a small table of characters which are still not
+	// allowed in localpart's even though the IdentifierClass base class and the
+	// UsernameCaseMapped profile don't forbid them; remove them here.
+	if strings.ContainsAny(localpart, "\"&'/:<>@") {
+		return errors.New("Localpart contains forbidden characters")
+	}
+
+	l = len(resourcepart)
+	if l > 1023 {
+		return errors.New("The resourcepart must be smaller than 1024 bytes")
+	}
+
+	l = len(domainpart)
+	if l < 1 || l > 1023 {
+		return errors.New("The domainpart must be between 1 and 1023 bytes")
+	}
+
+	if err := checkIP6String(domainpart); err != nil {
+		return err
+	}
+
+	return nil
 }

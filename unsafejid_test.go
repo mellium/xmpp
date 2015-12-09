@@ -54,33 +54,6 @@ func TestLongParts(t *testing.T) {
 	}
 }
 
-// JIDS cannot contain invalid UTF8 in the localpart.
-func TestNewInvalidUtf8Localpart(t *testing.T) {
-	invalid := string([]byte{0xff, 0xfe, 0xfd})
-	_, err := UnsafeFromString(invalid + "@example.com/resourcepart")
-	if err == nil {
-		t.FailNow()
-	}
-}
-
-// JIDS cannot contain invalid UTF8 in the domainpart.
-func TestNewInvalidUtf8Domainpart(t *testing.T) {
-	invalid := string([]byte{0xff, 0xfe, 0xfd})
-	_, err := UnsafeFromString("example@" + invalid + "/resourcepart")
-	if err == nil {
-		t.FailNow()
-	}
-}
-
-// JIDS cannot contain invalid UTF8 in the resourcepart.
-func TestNewInvalidUtf8Resourcepart(t *testing.T) {
-	invalid := string([]byte{0xff, 0xfe, 0xfd})
-	_, err := UnsafeFromString("example@example.com/" + invalid)
-	if err == nil {
-		t.FailNow()
-	}
-}
-
 // Trying to create a JID with an empty localpart should error.
 func TestNewEmptyLocalpart(t *testing.T) {
 	_, err := UnsafeFromString("@example.com/resourcepart")
