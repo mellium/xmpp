@@ -1,4 +1,4 @@
-package xmpp
+package server
 
 import (
 	"crypto/tls"
@@ -7,14 +7,13 @@ import (
 
 // A Server defines parameters for running an XMPP server.
 type Server struct {
-	ClientAddr string      // TCP address to listen on, ":xmpp-client" if empty.
-	Handler    ConnHandler // Connection handler to invoke.
-	TLSConfig  *tls.Config
+	options
+	handler ConnHandler // Connection handler to invoke.
 }
 
 // ListenAndServe listens on the TCP network address srv.ClientAddr and then
 // calls Serve to handle requests on incoming connections. If srv.ClientAddr is
-// blank, ":xmpp-client" is used.
+// blank, ":xmpp-client" (":5222")is used.
 func (srv *Server) ListenAndServe() error {
 	clientaddr := srv.ClientAddr
 	if clientaddr == "" {
