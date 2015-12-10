@@ -5,7 +5,7 @@ import (
 )
 
 type Message struct {
-	stanza
+	Stanza
 }
 
 func UnmarshalMessage(raw string) (*Message, error) {
