@@ -1,7 +1,7 @@
 package xmpp
 
 import (
-	"bitbucket.org/SamWhited/go-jid"
+	"bitbucket.org/mellium/xmpp/jid"
 	"testing"
 )
 

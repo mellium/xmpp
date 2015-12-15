@@ -3,7 +3,7 @@ package xmpp
 import (
 	"encoding/xml"
 
-	"bitbucket.org/SamWhited/go-jid"
+	"bitbucket.org/mellium/xmpp/jid"
 )
 
 // A stanza represents any top level XMPP stanza (Presence, Message, or IQ)
