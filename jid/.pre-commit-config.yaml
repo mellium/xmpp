@@ -1,0 +1,5 @@
+-   repo: https://bitbucket.org/SamWhited/go-pre-commit.git
+    sha: v0.0.2
+    hooks:
+      -   id: gofmt
+      -   id: gotest
