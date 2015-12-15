@@ -1,0 +1,6 @@
+image: golang:1.5.1
+pipeline:
+  - job:
+      script:
+        - go-wrapper download
+        - go test -cover
