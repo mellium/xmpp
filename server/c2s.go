@@ -1,8 +1,12 @@
 package server
 
 import (
+	"encoding/xml"
 	"errors"
+	"io"
 	"net"
+
+	"bitbucket.org/mellium/xmpp"
 )
 
 type C2SSession struct {
@@ -27,47 +31,22 @@ func (h *C2SSession) Handle(c net.Conn, l net.Listener) (err error) {
 				return errors.New("Received invalid XML procinst")
 			}
 
-			err = encoder.EncodeToken(t.Copy())
+			// Write an XML header
+			_, err = c.Write([]byte(xml.Header))
 			if err != nil {
-				return
+				return err
 			}
-		//case xml.StartElement:
-		//	if t.Name == StreamName {
-		//		stream, err := StreamFromStartElement(t)
+		case xml.StartElement:
+			if t.Name.Local == "stream" && t.Name.Space == "stream" {
+				stream, err := xmpp.StreamFromStartElement(t)
+				if err != nil {
+					return err
+				}
 
-		//		// Send an XML header
-		//		_, err = c.Write([]byte(xml.Header))
-		//		if err != nil {
-		//			return err
-		//		}
-
-		//		// TODO(): Validate that we serve the domain in question.
-
-		//		// Create and send a new stream element
-		//		s := stream.Copy()
-		//		// Swap the to and from attributes from the initiating stream element.
-		//		// If a `from' attribute is set, use it. Otherwise, ignore it.
-		//		if val, err := stream.From(); err == nil {
-		//			s.SetTo(val)
-		//		} else {
-		//			s.To = &jid.EnforcedJID{}
-		//		}
-		//		if val, err := stream.To(); err == nil {
-		//			s.SetFrom(val)
-		//		} else {
-		//			return err
-		//		}
-
-		//		// Write the new stream
-		//		_, err = c.Write(s.Bytes())
-		//		if err != nil {
-		//			return err
-		//		}
-
-		//	} else {
-		//		return errors.New("Invalid start element " + t.Name.Local)
-		//	}
-
+				go stream.Handle(encoder, decoder)
+			} else {
+				return errors.New("Invalid start element", t.Name)
+			}
 		default:
 			return errors.New("Encountered invalid token while parsing XML")
 		}

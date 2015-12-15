@@ -4,10 +4,13 @@ import (
 	"crypto/tls"
 )
 
+// Option's can be used to configure the server.
 type Option func(*options)
 type options struct {
 	clientAddr string // TCP address to listen on, ":xmpp-client" if empty.
-	tlsConfig  *tls.Config
+	// TODO: Figure out how we want to handle vhosts for the server API
+	vhosts    []string
+	tlsConfig *tls.Config
 }
 
 func getOpts(o ...Option) (res options) {
