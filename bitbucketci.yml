@@ -4,3 +4,4 @@ pipeline:
       script:
         - go-wrapper download
         - go test -cover
+        - go test -cover -bench . -benchmem -run 'Benchmark.*'
