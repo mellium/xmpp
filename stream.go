@@ -1,6 +1,7 @@
 package xmpp
 
 import (
+	"encoding/xml"
 	"errors"
 
 	"bitbucket.org/mellium/xmpp/jid"
@@ -14,11 +15,6 @@ type Stream struct {
 	id       string
 }
 
-func (stream *Stream) Handle(
-	encoder xml.Encoder, decoder xml.Decoder,
-) error {
-}
-
 // StreamFromStartElement constructs a new Stream from the given
 // xml.StartElement (which must be of the form <stream:stream>).
 func StreamFromStartElement(
@@ -30,16 +26,16 @@ func StreamFromStartElement(
 	}
 
 	stream := &Stream{}
-	for attr := range start.Attr {
+	for _, attr := range start.Attr {
 		switch attr.Name.Local {
 		case "from":
-			j, err = jid.EnforcedFromString(attr.Value)
+			j, err := jid.EnforcedFromString(attr.Value)
 			if err != nil {
 				return nil, err
 			}
 			stream.from = j
 		case "to":
-			j, err = jid.EnforcedFromString(attr.Value)
+			j, err := jid.EnforcedFromString(attr.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -54,6 +50,8 @@ func StreamFromStartElement(
 			stream.id = attr.Value
 		}
 	}
+
+	return stream, nil
 }
 
 func (*Stream) StartElement() xml.StartElement {
