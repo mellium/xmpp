@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 
