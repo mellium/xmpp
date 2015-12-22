@@ -43,7 +43,7 @@ func (h *C2SSession) Handle(c net.Conn, l net.Listener) (err error) {
 					return err
 				}
 
-				go stream.Handle(encoder, decoder)
+				return stream.Handle(encoder, decoder)
 			} else {
 				return errors.New(fmt.Sprintf("Invalid start element %s", t.Name))
 			}
