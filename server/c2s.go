@@ -45,7 +45,7 @@ func (h *C2SSession) Handle(c net.Conn, l net.Listener) (err error) {
 
 				go stream.Handle(encoder, decoder)
 			} else {
-				return errors.New("Invalid start element", t.Name)
+				return errors.New(fmt.Sprintf("Invalid start element %s", t.Name))
 			}
 		default:
 			return errors.New("Encountered invalid token while parsing XML")
