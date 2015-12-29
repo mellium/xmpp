@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// JID defines methods that are common to all XMPP address (historically,
+// JID defines methods that are common to all XMPP addresses (historically,
 // "Jabber ID") implementations.
 type JID interface {
 	Localpart() string
