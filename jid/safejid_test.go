@@ -8,6 +8,9 @@ import (
 	"testing"
 )
 
+// Compile time check ot make sure that SafeJID is a JID
+var _ JID = (*SafeJID)(nil)
+
 // SafeJID's cannot contain invalid UTF8 in the localpart.
 func TestNewInvalidUtf8Localpart(t *testing.T) {
 	invalid := string([]byte{0xff, 0xfe, 0xfd})

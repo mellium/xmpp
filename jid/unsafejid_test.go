@@ -10,9 +10,12 @@ import (
 	"testing"
 )
 
+// Compile time check ot make sure that UnsafeJID is a JID
+var _ JID = (*UnsafeJID)(nil)
+
 // Ensure that JID parts are split properly.
 func TestValidPartsFromString(t *testing.T) {
-	decompositions := [][]string{
+	for _, d := range [][]string{
 		{"lp@dp/rp", "lp", "dp", "rp"},
 		{"dp/rp", "", "dp", "rp"},
 		{"dp", "", "dp", ""},
@@ -25,8 +28,7 @@ func TestValidPartsFromString(t *testing.T) {
 		{"dp/@rp/", "", "dp", "@rp/"},
 		{"dp/lp@dp/rp", "", "dp", "lp@dp/rp"},
 		{"₩", "", "₩", ""},
-	}
-	for _, d := range decompositions {
+	} {
 		lp, dp, rp, err := SplitString(d[0])
 		if err != nil || lp != d[1] || dp != d[2] || rp != d[3] {
 			t.FailNow()
