@@ -7,7 +7,6 @@ import (
 // A Server defines parameters for running an XMPP server.
 type Server struct {
 	options
-	// handler ConnHandler // Connection handler to invoke.
 }
 
 // New creates a new XMPP server with the given options.
