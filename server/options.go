@@ -32,9 +32,9 @@ func ClientAddr(addr string) Option {
 	}
 }
 
-// The TLSConfig option fully configures the servers TLS including the
-// certificate chains used, cipher suites, etc. based on the given tls.Config.
-func TLSConfig(config *tls.Config) Option {
+// The TLS option fully configures the servers TLS including the certificate
+// chains used, cipher suites, etc. based on the given tls.Config.
+func TLS(config *tls.Config) Option {
 	return func(o *options) {
 		o.tlsConfig = config
 	}
