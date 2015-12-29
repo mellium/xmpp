@@ -1,1 +1,1 @@
-package xmpp // import "bitbucket.org/mellium/go-xmpp"
+package xmpp // import "bitbucket.org/mellium/xmpp"
