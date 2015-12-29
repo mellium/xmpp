@@ -12,7 +12,7 @@ import (
 )
 
 type Stream struct {
-	to, from *jid.EnforcedJID
+	to, from jid.JID
 	version  string
 	xmlns    string
 	lang     string
@@ -31,13 +31,13 @@ func StreamFromStartElement(start xml.StartElement) (*Stream, error) {
 	for _, attr := range start.Attr {
 		switch attr.Name.Local {
 		case "from":
-			j, err := jid.EnforcedFromString(attr.Value)
+			j, err := jid.SafeFromString(attr.Value)
 			if err != nil {
 				return nil, err
 			}
 			stream.from = j
 		case "to":
-			j, err := jid.EnforcedFromString(attr.Value)
+			j, err := jid.SafeFromString(attr.Value)
 			if err != nil {
 				return nil, err
 			}
