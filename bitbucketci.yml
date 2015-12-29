@@ -3,5 +3,5 @@ pipeline:
   - job:
       script:
         - go-wrapper download
-        - go test -cover
-        - go test -cover -bench . -benchmem -run 'Benchmark.*'
+        - go test -cover ./...
+        - go test -cover -bench . -benchmem -run 'Benchmark.*' ./...
