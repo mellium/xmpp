@@ -6,4 +6,6 @@
 // your XMPP server or component. It provides a higher level API for creating
 // and managing XMPP servers (without digging down in to the nitty gritty XML
 // details).
+//
+// Be advised: This API is still unstable and is subject to change.
 package server // import "bitbucket.org/mellium/xmpp/server"

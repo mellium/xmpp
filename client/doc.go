@@ -4,4 +4,6 @@
 
 // The client package provides a higher level API for creating and managing XMPP
 // clients without digging down into the underlying protocol.
+//
+// Be advised: This API is still unstable and is subject to change.
 package client // import "bitbucket.org/mellium/xmpp/client"
