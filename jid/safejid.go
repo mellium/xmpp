@@ -96,7 +96,7 @@ func SafeFromParts(localpart, domainpart, resourcepart string) (*SafeJID, error)
 
 // Bare returns a copy of the Jid without a resourcepart. This is sometimes
 // called a "bare" JID.
-func (j *SafeJID) Bare() *SafeJID {
+func (j *SafeJID) Bare() JID {
 	return &SafeJID{
 		localpart:    j.localpart,
 		domainpart:   j.domainpart,
@@ -119,7 +119,7 @@ func (j *SafeJID) Resourcepart() string {
 	return j.resourcepart
 }
 
-// Makes a copy of the given Jid. j.Equals(j.Copy()) will always return true.
+// Makes a copy of the given Jid. j.Equal(j.Copy()) will always return true.
 func (j *SafeJID) Copy() *SafeJID {
 	return &SafeJID{
 		localpart:    j.localpart,

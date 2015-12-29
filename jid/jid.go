@@ -17,6 +17,7 @@ type JID interface {
 	Localpart() string
 	Domainpart() string
 	Resourcepart() string
+	Bare() JID
 
 	String() string
 	Equal(other JID) bool

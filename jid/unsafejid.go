@@ -45,7 +45,7 @@ func UnsafeFromParts(localpart, domainpart, resourcepart string) (*UnsafeJID, er
 
 // Bare returns a copy of the Jid without a resourcepart. This is sometimes
 // called a "bare" JID.
-func (j *UnsafeJID) Bare() *UnsafeJID {
+func (j *UnsafeJID) Bare() JID {
 	return &UnsafeJID{
 		localpart:    j.localpart,
 		domainpart:   j.domainpart,
