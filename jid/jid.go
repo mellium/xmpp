@@ -28,7 +28,7 @@ type JID interface {
 
 // SplitString splits out the localpart, domainpart, and resourcepart from a
 // string representation of a JID. The parts are not guaranteed to be valid, and
-// SplitString only performs basic length validation on the individual parts.
+// each part must be 1023 bytes or less.
 func SplitString(s string) (localpart, domainpart, resourcepart string, err error) {
 
 	// RFC 7622 §3.1.  Fundamentals:
