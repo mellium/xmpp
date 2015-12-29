@@ -78,9 +78,11 @@ func SafeFromParts(localpart, domainpart, resourcepart string) (*SafeJID, error)
 		return nil, err
 	}
 
-	resourcepart, err = precis.OpaqueString.String(resourcepart)
-	if err != nil {
-		return nil, err
+	if resourcepart != "" {
+		resourcepart, err = precis.OpaqueString.String(resourcepart)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err := commonChecks(localpart, domainpart, resourcepart); err != nil {
