@@ -7,8 +7,8 @@ package client
 import (
 	"encoding/xml"
 	"net"
-
-	_ "bitbucket.org/mellium/xmpp"
+	"strconv"
+	"time"
 )
 
 // A Client represents an XMPP client capable of making a single
@@ -18,6 +18,11 @@ type Client struct {
 	conn    net.Conn
 	decoder *xml.Decoder
 	encoder *xml.Encoder
+
+	// DNS Cache
+	cname   string
+	addrs   []*net.SRV
+	srvtime time.Time
 }
 
 // New creates a new XMPP client with the given options.
@@ -27,7 +32,54 @@ func New(opts ...Option) *Client {
 	}
 }
 
-// Sends the given stanza
-func (c *Client) Send(el xml.Marshaler) {
-	panic("Not implemented")
+// Connect establishes a connection with the server.
+func (c *Client) Connect(password string) error {
+
+	// If the cache has expired, lookup SRV records again.
+	if c.srvtime.Add(c.options.srvExpiration).Before(time.Now()) {
+		if err := c.LookupSRV(); err != nil {
+			return err
+		}
+	}
+
+	// Try dialing all of the SRV records we know about, breaking as soon as the
+	// connection is established.
+	var err error
+	for _, addr := range c.addrs {
+		if conn, e := c.options.dialer.Dial(
+			"tcp", net.JoinHostPort(
+				addr.Target, strconv.FormatUint(uint64(addr.Port), 10),
+			),
+		); e != nil {
+			err = e
+			continue
+		} else {
+			err = nil
+			c.conn = conn
+			break
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// LookupSRV fetches and caches any xmpp-client SRV records associated with the
+// domain name in the clients JID. It is called automatically when a client
+// attempts to establish a connection, but can be called manually to force the
+// cache to update. If an expiration time is set for the records, LookupSRV
+// resets the timeout.
+func (c *Client) LookupSRV() error {
+	if cname, addrs, err := net.LookupSRV(
+		"xmpp-client", "tcp", c.options.user.Domainpart(),
+	); err != nil {
+		return err
+	} else {
+		c.addrs = addrs
+		c.cname = cname
+	}
+	c.srvtime = time.Now()
+	return nil
 }
