@@ -8,14 +8,11 @@ import (
 	"crypto/tls"
 	"net"
 	"time"
-
-	"bitbucket.org/mellium/xmpp/jid"
 )
 
 // Option's can be used to configure the client.
 type Option func(*options)
 type options struct {
-	user          *jid.SafeJID
 	tlsConfig     *tls.Config
 	srvExpiration time.Duration
 	dialer        net.Dialer
@@ -26,13 +23,6 @@ func getOpts(o ...Option) (res options) {
 		f(&res)
 	}
 	return
-}
-
-// The User option sets the username (a bare JID) for which the
-func User(j *jid.SafeJID) Option {
-	return func(o *options) {
-		o.user = j.Bare().(*jid.SafeJID)
-	}
 }
 
 // The TLS option fully configures the clients TLS connection options including

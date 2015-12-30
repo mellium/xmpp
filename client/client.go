@@ -9,12 +9,15 @@ import (
 	"net"
 	"strconv"
 	"time"
+
+	"bitbucket.org/mellium/xmpp/jid"
 )
 
 // A Client represents an XMPP client capable of making a single
-// client-to-server (C2S) connection on behalf of the configured user.
+// client-to-server (C2S) connection on behalf of the configured JID.
 type Client struct {
 	options
+	jid     jid.JID
 	conn    net.Conn
 	decoder *xml.Decoder
 	encoder *xml.Encoder
@@ -26,8 +29,9 @@ type Client struct {
 }
 
 // New creates a new XMPP client with the given options.
-func New(opts ...Option) *Client {
+func New(j jid.JID, opts ...Option) *Client {
 	return &Client{
+		jid:     j.Bare(),
 		options: getOpts(opts...),
 	}
 }
@@ -73,7 +77,7 @@ func (c *Client) Connect(password string) error {
 // resets the timeout.
 func (c *Client) LookupSRV() error {
 	if cname, addrs, err := net.LookupSRV(
-		"xmpp-client", "tcp", c.options.user.Domainpart(),
+		"xmpp-client", "tcp", c.jid.Domainpart(),
 	); err != nil {
 		return err
 	} else {
