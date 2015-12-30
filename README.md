@@ -9,8 +9,13 @@ To use it in your project, import it (or one of its subproject's) like so:
 
 ```go
 import bitbucket.org/mellium/xmpp
-import bitbucket.org/mellium/xmpp/jid
 ```
+
+## Issues and feature requests
+
+To file a bug report or submit a feature request, please use the main Mellium
+[issue tracker](https://bitbucket.org/mellium/mel/issues?status=new&status=open)
+and select the appropriate component (eg. "XMPP" or "Server").
 
 ## License
 
