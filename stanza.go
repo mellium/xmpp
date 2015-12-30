@@ -20,21 +20,27 @@ type stanza struct {
 	Lang  string  `xml:"xml:lang,attr"`
 }
 
-// Message is a top level XMPP stanza that contains a payload for direct
-// one-to-one communication with another network entity.  It is often used for
-// sending chat messages to an individual or group chat server, or for
-// notifications and alerts that don't require a response.
+// Message is an XMPP stanza that contains a payload for direct one-to-one
+// communication with another network entity.  It is often used for sending chat
+// messages to an individual or group chat server, or for notifications and
+// alerts that don't require a response.
 type Message struct {
 	stanza
 	XMLName xml.Name `xml:"message"`
 }
 
-// Presence rep
+// Presence is an XMPP stanza that is used as an indication that an entity is
+// available for communication. It is used to set a status message, broadcast
+// availability, and advertise entity capabilities. It can be directed
+// (one-to-one), or as a broadcast mechanism (one-to-many).
 type Presence struct {
 	stanza
 	XMLName xml.Name `xml:"presence"`
 }
 
+// IQ ("Information Query") is used as a general request response mechanism.
+// IQ's are one-to-one, provide get and set semantics, and always require a
+// response in the form of a result or an error.
 type IQ struct {
 	stanza
 	XMLName xml.Name `xml:"iq"`
