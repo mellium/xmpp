@@ -37,7 +37,7 @@ func TestMarshalPointerAndNormal(t *testing.T) {
 // see-other-host errors should wrap IPv6 addresses in brackets.
 func TestMarshalSeeOtherHostv6(t *testing.T) {
 	ipaddr := net.IPAddr{IP: net.ParseIP("::1")}
-	soh := NewSeeOtherHostError(&ipaddr)
+	soh := SeeOtherHost(&ipaddr)
 	xb, err := xml.Marshal(soh)
 	if err != nil {
 		t.Log(err)
