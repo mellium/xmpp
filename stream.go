@@ -5,8 +5,6 @@
 package xmpp
 
 import (
-	"encoding/xml"
-
 	"bitbucket.org/mellium/xmpp/jid"
 )
 
@@ -17,38 +15,6 @@ type Stream struct {
 	xmlns   string
 	lang    string
 	id      string
-}
-
-// A StreamError represents an unrecoverable stream-level error. If a stream
-// error is received, the stream will be immediately closed.
-type StreamError struct {
-	Err xml.Name `xml:",any"`
-}
-
-// Error satisfies the builtin error interface and returns the name of the
-// StreamError. For instance, given the error:
-//
-//     <stream:error>
-//       <restricted-xml xmlns="urn:ietf:params:xml:ns:xmpp-streams"/>
-//     </stream:error>
-//
-// Error() would return "restricted-xml".
-func (e *StreamError) Error() string {
-	return e.Err.Local
-}
-
-// MarshalXML satisfies the xml package's Marshaler interface and allows
-// StreamError's to be correctly marshaled back into XML.
-func (s *StreamError) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	e.EncodeElement(struct {
-		Err struct{ XMLName xml.Name }
-	}{
-		struct{ XMLName xml.Name }{s.Err},
-	}, xml.StartElement{
-		xml.Name{"", "stream:error"},
-		[]xml.Attr{},
-	})
-	return nil
 }
 
 // func NewStream(
