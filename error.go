@@ -57,17 +57,86 @@ var (
 	// the stream.
 	InternalServerError = StreamError{Err: "internal-server-error"}
 
-	InvalidFrom            = StreamError{Err: "invalid-from"}
-	InvalidNamespace       = StreamError{Err: "invalid-namespace"}
-	InvalidXML             = StreamError{Err: "invalid-xml"}
-	NotAuthorized          = StreamError{Err: "not-authorized"}
-	NotWellFormed          = StreamError{Err: "not-well-formed"}
-	PolicyViolation        = StreamError{Err: "policy-violation"}
+	// InvalidFrom is sent when data provided in a 'from' attribute does not match
+	// an authorized JID or validated domain as negotiated (1) between two servers
+	// using SASL or Server Dialback, or (2) between a client and a server via
+	// SASL authentication and resource binding.
+	InvalidFrom = StreamError{Err: "invalid-from"}
+
+	// InvalidNamespace may be sent when the stream namespace name is something
+	// other than "http://etherx.jabber.org/streams" or the content namespace
+	// declared as the default namespace is not supported (e.g., something other
+	// than "jabber:client" or "jabber:server").
+	InvalidNamespace = StreamError{Err: "invalid-namespace"}
+
+	// InvalidXML may be sent when the entity has sent invalid XML over the stream
+	// to a server that performs validation.
+	InvalidXML = StreamError{Err: "invalid-xml"}
+
+	// NotAuthorized may be sent when the entity has attempted to send XML stanzas
+	// or other outbound data before the stream has been authenticated, or
+	// otherwise is not authorized to perform an action related to stream
+	// negotiation; the receiving entity MUST NOT process the offending data
+	// before sending the stream error.
+	NotAuthorized = StreamError{Err: "not-authorized"}
+
+	// NotWellFormed may be sent when the initiating entity has sent XML that
+	// violates the well-formedness rules of XML or XML namespaces.
+	NotWellFormed = StreamError{Err: "not-well-formed"}
+
+	// PolicyViolation may be sent when an entity has violated some local service
+	// policy (e.g., a stanza exceeds a configured size limit).
+	PolicyViolation = StreamError{Err: "policy-violation"}
+
+	// RemoteConnectionFailed may be sent when the server is unable to properly
+	// connect to a remote entity that is needed for authentication or
+	// authorization
 	RemoteConnectionFailed = StreamError{Err: "remote-connection-failed"}
-	Reset                  = StreamError{Err: "reset"}
-	ResourceConstraint     = StreamError{Err: "resource-constraint"}
-	RestrictedXML          = StreamError{Err: "restricted-xml"}
-	// SeeOtherHost           = StreamError{"see-other-host"}
+
+	// server is closing the stream because it has new (typically
+	// security-critical) features to offer, because the keys or certificates used
+	// to establish a secure context for the stream have expired or have been
+	// revoked during the life of the stream, because the TLS sequence number has
+	// wrapped, etc. Encryption and authentication need to be negotiated again for
+	// the new stream (e.g., TLS session resumption cannot be used).
+	Reset = StreamError{Err: "reset"}
+
+	// ResourceConstraing may be sent when the server lacks the system resources
+	// necessary to service the stream.
+	ResourceConstraint = StreamError{Err: "resource-constraint"}
+
+	// RestrictedXML may be sent when the entity has attempted to send restricted
+	// XML features such as a comment, processing instruction, DTD subset, or XML
+	// entity reference.
+	RestrictedXML = StreamError{Err: "restricted-xml"}
+
+	// SeeOtherHost -- See "NewSeeOtherHostError"
+
+	// SystemShutdown may be sent when server is being shut down and all active
+	// streams are being closed.
+	SystemShutdown = StreamError{Err: "system-shutdown"}
+
+	// UnsupportedEncoding may be sent when initiating entity has encoded the
+	// stream in an encoding that is not UTF-8.
+	UnsupportedEncoding = StreamError{Err: "unsupported-encoding"}
+
+	// UnsupportedFeature may be sent when receiving entity has advertised a
+	// mandatory-to-negotiate stream feature that the initiating entity does not
+	// support.
+	UnsupportedFeature = StreamError{Err: "unsupported-feature"}
+
+	// UnsupportedStanzaType may be sent when the initiating entity has sent a
+	// first-level child of the stream that is not supported by the server, either
+	// because the receiving entity does not understand the namespace or because
+	// the receiving entity does not understand the element name for the
+	// applicable namespace (which might be the content namespace declared as the
+	// default namespace).
+	UnsupportedStanzaType = StreamError{Err: "unsupported-stanza-type"}
+
+	// UnsupportedVersion may be sent when the 'version' attribute provided by the
+	// initiating entity in the stream header specifies a version of XMPP that is
+	// not supported by the server.
+	UnsupportedVersion = StreamError{Err: "unsupported-version"}
 )
 
 // Returns a new SeeOtherHostError with the given network address as the host.
@@ -86,10 +155,11 @@ func NewSeeOtherHostError(addr net.Addr) StreamError {
 	return StreamError{"see-other-host", []byte(cdata)}
 }
 
-// A StreamError represents an unrecoverable stream-level error.
+// A StreamError represents an unrecoverable stream-level error that may include
+// character data or arbitrary inner XML.
 type StreamError struct {
 	Err      string
-	CharData []byte
+	InnerXML []byte
 }
 
 // Error satisfies the builtin error interface and returns the name of the
@@ -111,7 +181,7 @@ func (s *StreamError) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error
 		XMLName xml.Name
 		Err     struct {
 			XMLName  xml.Name
-			CharData []byte `xml:",chardata"`
+			InnerXML []byte `xml:",innerxml"`
 		} `xml:",any"`
 	}{}
 	err := d.DecodeElement(&se, &start)
@@ -119,7 +189,7 @@ func (s *StreamError) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error
 		return err
 	}
 	s.Err = se.Err.XMLName.Local
-	s.CharData = se.Err.CharData
+	s.InnerXML = se.Err.InnerXML
 	return nil
 }
 
@@ -130,15 +200,15 @@ func (s StreamError) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		struct {
 			Err struct {
 				XMLName  xml.Name
-				CharData []byte `xml:",chardata"`
+				InnerXML []byte `xml:",innerxml"`
 			}
 		}{
 			struct {
 				XMLName  xml.Name
-				CharData []byte `xml:",chardata"`
+				InnerXML []byte `xml:",innerxml"`
 			}{
 				XMLName:  xml.Name{"urn:ietf:params:xml:ns:xmpp-streams", s.Err},
-				CharData: s.CharData,
+				InnerXML: s.InnerXML,
 			},
 		},
 		xml.StartElement{
