@@ -110,8 +110,6 @@ var (
 	// entity reference.
 	RestrictedXML = StreamError{Err: "restricted-xml"}
 
-	// SeeOtherHost -- See "NewSeeOtherHostError"
-
 	// SystemShutdown may be sent when server is being shut down and all active
 	// streams are being closed.
 	SystemShutdown = StreamError{Err: "system-shutdown"}
@@ -139,10 +137,10 @@ var (
 	UnsupportedVersion = StreamError{Err: "unsupported-version"}
 )
 
-// Returns a new SeeOtherHostError with the given network address as the host.
-// If the address appears to be a raw IPv6 address (eg. "::1"), the error wraps
-// it in brackets ("[::1]").
-func NewSeeOtherHostError(addr net.Addr) StreamError {
+// SeeOtherHost returns a new see-other-host error with the given network
+// address as the host. If the address appears to be a raw IPv6 address (eg.
+// "::1"), the error wraps it in brackets ("[::1]").
+func SeeOtherHost(addr net.Addr) StreamError {
 	var cdata string
 
 	// If the address looks like an IPv6 literal, wrap it in []
