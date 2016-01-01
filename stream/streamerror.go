@@ -2,7 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
-package errors
+package stream
 
 import (
 	"encoding/xml"
@@ -137,10 +137,10 @@ var (
 	UnsupportedVersion = StreamError{Err: "unsupported-version"}
 )
 
-// SeeOtherHost returns a new see-other-host error with the given network
+// SeeOtherHostError returns a new see-other-host error with the given network
 // address as the host. If the address appears to be a raw IPv6 address (eg.
 // "::1"), the error wraps it in brackets ("[::1]").
-func SeeOtherHost(addr net.Addr) StreamError {
+func SeeOtherHostError(addr net.Addr) StreamError {
 	var cdata string
 
 	// If the address looks like an IPv6 literal, wrap it in []

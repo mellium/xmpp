@@ -2,7 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
-package errors
+package stream
 
 import (
 	"bytes"
@@ -35,9 +35,9 @@ func TestMarshalPointerAndNormal(t *testing.T) {
 }
 
 // see-other-host errors should wrap IPv6 addresses in brackets.
-func TestMarshalSeeOtherHostv6(t *testing.T) {
+func TestMarshalSeeOtherHostV6(t *testing.T) {
 	ipaddr := net.IPAddr{IP: net.ParseIP("::1")}
-	soh := SeeOtherHost(&ipaddr)
+	soh := SeeOtherHostError(&ipaddr)
 	xb, err := xml.Marshal(soh)
 	if err != nil {
 		t.Log(err)
