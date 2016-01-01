@@ -2,19 +2,25 @@
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
-package xmpp
+package stream
 
 import (
 	"bitbucket.org/mellium/xmpp/jid"
 )
 
+// A Stream is a container for the exchange of XML elements between two
+// endpoints. It maintains state about stream-level features, and handles
+// decoding and routing incoming XMPP stanza's and other elements, as well as
+// encoding outgoing XMPP elements. Each XMPP connection has two streams, one
+// for input, and one for output.
 type Stream struct {
-	to      jid.JID
-	from    jid.JID
-	version string
-	xmlns   string
-	lang    string
-	id      string
+	to       jid.JID
+	from     jid.JID
+	version  string
+	xmlns    string
+	lang     string
+	id       string
+	resbound bool
 }
 
 // func NewStream(
