@@ -7,6 +7,7 @@ package jid
 import (
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"net"
 	"strings"
 )
@@ -19,9 +20,9 @@ type JID interface {
 	Resourcepart() string
 	Bare() JID
 
-	String() string
 	Equal(other JID) bool
 
+	fmt.Stringer
 	xml.MarshalerAttr
 	xml.UnmarshalerAttr
 }
