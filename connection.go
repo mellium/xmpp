@@ -52,7 +52,7 @@ func ConnManager(
 				}
 				switch token.(type) {
 				case xml.ProcInst, xml.Comment, xml.Directive, xml.CharData:
-					out <- errors.RestrictedXML
+					out <- stream.RestrictedXML
 				case xml.StartElement:
 					// TODO:
 					// If stream:stream, handle it.

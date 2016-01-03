@@ -29,8 +29,8 @@ func TestUnmarshalMessage(t *testing.T) {
 	`)
 	m := &Message{
 		stanza{
-			To:   &jid.SafeJID{},
-			From: &jid.SafeJID{},
+			To:   jid.JID{},
+			From: jid.JID{},
 		},
 		xml.Name{"", ""},
 	}
@@ -56,11 +56,11 @@ func TestUnmarshalMessage(t *testing.T) {
 
 // Messages must be marshalable to XML
 func TestMarshalMessage(t *testing.T) {
-	j, _ := jid.UnsafeFromString("feste@shakespeare.lit")
+	j, _ := jid.ParseString("feste@shakespeare.lit")
 	m := Message{
 		stanza{
 			ID:   "1234",
-			To:   j,
+			To:   *j,
 			Lang: "en",
 		},
 		xml.Name{"jabber:client", "message"},

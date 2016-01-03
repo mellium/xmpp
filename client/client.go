@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"bitbucket.org/mellium/xmpp/jid"
+	"bitbucket.org/mellium/xmpp/stream"
 )
 
 // A Client represents an XMPP client capable of making a single
