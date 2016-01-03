@@ -8,6 +8,9 @@ import (
 	"bitbucket.org/mellium/xmpp/jid"
 )
 
+// The currently supported stream version.
+const Version = "1.0"
+
 // A Stream is a container for the exchange of XML elements between two
 // endpoints. It maintains state about stream-level features, and handles
 // decoding and routing incoming XMPP stanza's and other elements, as well as
