@@ -8,30 +8,29 @@ import (
 	"bitbucket.org/mellium/xmpp/jid"
 )
 
-// The currently supported stream version.
-const Version = "1.0"
-
 // A Stream is a container for the exchange of XML elements between two
 // endpoints. It maintains state about stream-level features, and handles
 // decoding and routing incoming XMPP stanza's and other elements, as well as
 // encoding outgoing XMPP elements. Each XMPP connection has two streams, one
 // for input, and one for output.
 type Stream struct {
+	options
 	to       jid.JID
 	from     jid.JID
-	version  string
-	xmlns    string
-	lang     string
-	id       string
+	version  Version
 	resbound bool
 }
 
-// func NewStream(
-// 	to, from jid.JID,
-// 	lang language.Tag,
-// 	f ...StreamFeature) Stream {
-// 	return Stream{}
-// }
+// New creats an XMPP stream that will be used to initiate a new XMPP
+// connection.
+func New(to, from jid.JID, opts ...Option) Stream {
+	return Stream{
+		to:      to,
+		from:    from,
+		version: Version{1, 0},
+		options: getOpts(opts...),
+	}
+}
 
 // StreamFromStartElement constructs a new Stream from the given
 // xml.StartElement (which must be of the form <stream:stream>).
