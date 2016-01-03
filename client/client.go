@@ -1,11 +1,10 @@
-// Copyright 2014 Sam Whited.
+// Copyright 2016 Sam Whited.
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
 package client
 
 import (
-	"encoding/xml"
 	"net"
 	"strconv"
 	"time"
@@ -17,10 +16,10 @@ import (
 // client-to-server (C2S) connection on behalf of the configured JID.
 type Client struct {
 	options
-	jid     jid.JID
-	conn    net.Conn
-	decoder *xml.Decoder
-	encoder *xml.Encoder
+	jid    jid.JID
+	conn   net.Conn
+	input  *Stream
+	output *Stream
 
 	// DNS Cache
 	cname   string
