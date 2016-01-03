@@ -108,6 +108,15 @@ func (j *JID) Bare() JID {
 	}
 }
 
+// Domain returns a copy of the Jid without a resourcepart or localpart.
+func (j *JID) Domain() JID {
+	return JID{
+		localpart:    "",
+		domainpart:   j.domainpart,
+		resourcepart: "",
+	}
+}
+
 // Localpart gets the localpart of a JID (eg "username").
 func (j *JID) Localpart() string {
 	return j.localpart
