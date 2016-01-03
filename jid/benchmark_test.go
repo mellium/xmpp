@@ -14,46 +14,46 @@ func BenchmarkSplit(b *testing.B) {
 	}
 }
 
-func BenchmarkUnsafeFromString(b *testing.B) {
+func BenchmarkParseString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		UnsafeFromString("user@example.com/resource")
+		ParseString("user@example.com/resource")
 	}
 }
 
-func BenchmarkUnsafeFromStringIPv4(b *testing.B) {
+func BenchmarkParseStringIPv4(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		UnsafeFromString("user@127.0.0.1/resource")
+		ParseString("user@127.0.0.1/resource")
 	}
 }
 
-func BenchmarkUnsafeFromStringIPv6(b *testing.B) {
+func BenchmarkParseStringIPv6(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		UnsafeFromString("user@[::1]/resource")
+		ParseString("user@[::1]/resource")
 	}
 }
 
-func BenchmarkUnsafeFromParts(b *testing.B) {
+func BenchmarkNew(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		UnsafeFromParts("user", "example.com", "resource")
+		New("user", "example.com", "resource")
 	}
 }
 
 func BenchmarkCopy(b *testing.B) {
-	j := &UnsafeJID{"user", "example.com", "resource"}
+	j := &JID{"user", "example.com", "resource"}
 	for i := 0; i < b.N; i++ {
 		j.Copy()
 	}
 }
 
 func BenchmarkBare(b *testing.B) {
-	j := &UnsafeJID{"user", "example.com", "resource"}
+	j := &JID{"user", "example.com", "resource"}
 	for i := 0; i < b.N; i++ {
 		j.Bare()
 	}
 }
 
 func BenchmarkString(b *testing.B) {
-	j := &UnsafeJID{"user", "example.com", "resource"}
+	j := &JID{"user", "example.com", "resource"}
 	for i := 0; i < b.N; i++ {
 		j.String()
 	}

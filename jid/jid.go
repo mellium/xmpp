@@ -7,24 +7,163 @@ package jid
 import (
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"net"
 	"strings"
+	"unicode/utf8"
+
+	"golang.org/x/net/idna"
+	"golang.org/x/text/unicode/precis"
 )
 
-// JID defines methods that are common to all XMPP addresses (historically,
-// "Jabber ID") implementations.
-type JID interface {
-	Localpart() string
-	Domainpart() string
-	Resourcepart() string
-	Bare() JID
+// JID represents an XMPP address (Jabber ID) comprising a localpart,
+// domainpart, and resourcepart. All parts of a JID are guaranteed to be valid
+// UTF-8 and will be represented in their canonical form which gives comparison
+// the greatest chance of succeeding unless any of the "unsafe" methods are used
+// to create the JID.
+type JID struct {
+	localpart    string
+	domainpart   string
+	resourcepart string
+}
 
-	Equal(other JID) bool
+// ParseString constructs a new JID from the given string
+// representation.
+func ParseString(s string) (*JID, error) {
+	localpart, domainpart, resourcepart, err := SplitString(s)
+	if err != nil {
+		return nil, err
+	}
+	return New(localpart, domainpart, resourcepart)
+}
 
-	fmt.Stringer
-	xml.MarshalerAttr
-	xml.UnmarshalerAttr
+// New constructs a new JID from the given localpart, domainpart, and
+// resourcepart.
+func New(localpart, domainpart, resourcepart string) (*JID, error) {
+	// Ensure that parts are valid UTF-8 (and short circuit the rest of the
+	// process if they're not). We'll check the domainpart after performing
+	// the IDNA ToUnicode operation.
+	if !utf8.ValidString(localpart) || !utf8.ValidString(resourcepart) {
+		return nil, errors.New("JID contains invalid UTF-8")
+	}
+
+	// RFC 7622 §3.2.1.  Preparation
+	//
+	//    An entity that prepares a string for inclusion in an XMPP domainpart
+	//    slot MUST ensure that the string consists only of Unicode code points
+	//    that are allowed in NR-LDH labels or U-labels as defined in
+	//    [RFC5890].  This implies that the string MUST NOT include A-labels as
+	//    defined in [RFC5890]; each A-label MUST be converted to a U-label
+	//    during preparation of a string for inclusion in a domainpart slot.
+
+	var err error
+	domainpart, err = idna.ToUnicode(domainpart)
+	if err != nil {
+		return nil, err
+	}
+
+	if !utf8.ValidString(domainpart) {
+		return nil, errors.New("Domainpart contains invalid UTF-8")
+	}
+
+	// RFC 7622 §3.2.2.  Enforcement
+	//
+	//   An entity that performs enforcement in XMPP domainpart slots MUST
+	//   prepare a string as described in Section 3.2.1 and MUST also apply
+	//   the normalization, case-mapping, and width-mapping rules defined in
+	//   [RFC5892].
+	//
+	// TODO: I have no idea what this is talking about… what rules? RFC 5892 is a
+	//       bunch of property lists. Maybe it meant RFC 5895?
+
+	localpart, err = precis.UsernameCaseMapped.String(localpart)
+	if err != nil {
+		return nil, err
+	}
+
+	if resourcepart != "" {
+		resourcepart, err = precis.OpaqueString.String(resourcepart)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := commonChecks(localpart, domainpart, resourcepart); err != nil {
+		return nil, err
+	}
+
+	return &JID{
+		localpart:    localpart,
+		domainpart:   domainpart,
+		resourcepart: resourcepart,
+	}, nil
+}
+
+// Bare returns a copy of the Jid without a resourcepart. This is sometimes
+// called a "bare" JID.
+func (j *JID) Bare() JID {
+	return JID{
+		localpart:    j.localpart,
+		domainpart:   j.domainpart,
+		resourcepart: "",
+	}
+}
+
+// Localpart gets the localpart of a JID (eg "username").
+func (j *JID) Localpart() string {
+	return j.localpart
+}
+
+// Domainpart gets the domainpart of a JID (eg. "example.net").
+func (j *JID) Domainpart() string {
+	return j.domainpart
+}
+
+// Resourcepart gets the resourcepart of a JID (eg. "someclient-abc123").
+func (j *JID) Resourcepart() string {
+	return j.resourcepart
+}
+
+// Makes a copy of the given Jid. j.Equal(j.Copy()) will always return true.
+func (j *JID) Copy() *JID {
+	return &JID{
+		localpart:    j.localpart,
+		domainpart:   j.domainpart,
+		resourcepart: j.resourcepart,
+	}
+}
+
+// String converts an JID to its string representation.
+func (j JID) String() string {
+	s := j.domainpart
+	if j.localpart != "" {
+		s = j.localpart + "@" + s
+	}
+	if j.resourcepart != "" {
+		s = s + "/" + j.resourcepart
+	}
+	return s
+}
+
+// Equal performs an octet-for-octet comparison with the given JID.
+func (j *JID) Equal(j2 JID) bool {
+	return j.Localpart() == j2.Localpart() &&
+		j.Domainpart() == j2.Domainpart() && j.Resourcepart() == j2.Resourcepart()
+}
+
+// MarshalXMLAttr satisfies the MarshalerAttr interface and marshals the JID as
+// an XML attribute.
+func (j JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+	return xml.Attr{Name: name, Value: j.String()}, nil
+}
+
+// UnmarshalXMLAttr satisfies the UnmarshalerAttr interface and unmarshals an
+// XML attribute into a valid JID (or returns an error).
+func (j *JID) UnmarshalXMLAttr(attr xml.Attr) error {
+	jid, err := ParseString(attr.Value)
+	j.localpart = jid.localpart
+	j.domainpart = jid.domainpart
+	j.resourcepart = jid.resourcepart
+	return err
 }
 
 // SplitString splits out the localpart, domainpart, and resourcepart from a
@@ -97,17 +236,6 @@ func SplitString(s string) (localpart, domainpart, resourcepart string, err erro
 	domainpart = strings.TrimSuffix(domainpart, ".")
 
 	return
-}
-
-func stringify(j JID) string {
-	s := j.Domainpart()
-	if lp := j.Localpart(); lp != "" {
-		s = lp + "@" + s
-	}
-	if rp := j.Resourcepart(); rp != "" {
-		s = s + "/" + rp
-	}
-	return s
 }
 
 func checkIP6String(domainpart string) error {
