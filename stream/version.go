@@ -12,6 +12,11 @@ import (
 	"strings"
 )
 
+var (
+	DefaultVersion = Version{1, 0} // The default version to send.
+	EmptyVersion   = Version{0, 9} // The value of a missing version attribute.
+)
+
 // Version is a version of XMPP.
 type Version struct {
 	Major uint8
@@ -43,6 +48,12 @@ func ParseVersion(s string) (Version, error) {
 	v.Minor = uint8(minor)
 
 	return v, nil
+}
+
+// Less compares the major and minor version numbers, returning true if a is
+// less than b.
+func (a Version) Less(b Version) bool {
+	return a.Major < b.Major || (a.Major == b.Major && a.Minor < b.Minor)
 }
 
 // Prints a string representation of the XMPP version in the form "Major.Minor".

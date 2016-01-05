@@ -5,6 +5,7 @@
 package stream
 
 import (
+	"encoding/xml"
 	"net"
 
 	"golang.org/x/text/language"
@@ -13,10 +14,11 @@ import (
 // Option's can be used to configure the stream.
 type Option func(*options)
 type options struct {
-	lang  language.Tag
-	conn  net.Conn
-	xmlns string
-	id    string
+	lang    language.Tag
+	conn    *net.Conn
+	xmlns   string
+	encoder *xml.Encoder
+	decoder *xml.Decoder
 }
 
 func getOpts(o ...Option) (res options) {
@@ -37,9 +39,12 @@ func Language(l language.Tag) Option {
 }
 
 // Conn is the connection which the stream will use for sending and receiving
-// data.
-func Conn(c net.Conn) Option {
+// data. To manually manage streams (not recommended), don't provide a
+// connection and marshal and send the stream yourself.
+func Conn(c *net.Conn) Option {
 	return func(o *options) {
 		o.conn = c
+		o.encoder = xml.NewEncoder(c)
+		o.decoder = xml.NewDecoder(c)
 	}
 }
