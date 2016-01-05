@@ -5,7 +5,11 @@
 package stream
 
 import (
+	"encoding/xml"
+	"errors"
+
 	"bitbucket.org/mellium/xmpp/jid"
+	"golang.org/x/text/language"
 )
 
 // A Stream is a container for the exchange of XML elements between two
@@ -28,8 +32,8 @@ type Stream struct {
 // by the initiating server in a server-to-server connection.
 func New(to, from jid.JID, opts ...Option) Stream {
 	return Stream{
-		to:      *to,
-		from:    *from,
+		to:      &to,
+		from:    &from,
 		version: DefaultVersion,
 		options: getOpts(opts...),
 	}
@@ -46,7 +50,7 @@ func ReadResponse(responds, replaces *Stream, opts ...Option) (Stream, error) {
 
 	switch {
 	case replaces != nil:
-		s.version = replaces.Version
+		s.version = replaces.version
 	// RFC 6120 §4.7.5  version.
 	//    2.  The receiving entity MUST set the value of the 'version'
 	//        attribute in the response stream header to either the value
@@ -72,7 +76,7 @@ func ReadResponse(responds, replaces *Stream, opts ...Option) (Stream, error) {
 }
 
 // fromStartElement constructs a new Stream from the given xml.StartElement.
-func fromStartElement(start xml.StartElement) (Stream, error) {
+func fromStartElement(start xml.StartElement) (*Stream, error) {
 
 	if start.Name.Local != "stream" || start.Name.Space != "stream" {
 		return nil, errors.New("Incorrect XML name on stream start element.")
@@ -82,13 +86,13 @@ func fromStartElement(start xml.StartElement) (Stream, error) {
 	for _, attr := range start.Attr {
 		switch attr.Name.Local {
 		case "from":
-			j, err := jid.SafeFromString(attr.Value)
+			j, err := jid.ParseString(attr.Value)
 			if err != nil {
 				return nil, err
 			}
 			stream.from = j
 		case "to":
-			j, err := jid.SafeFromString(attr.Value)
+			j, err := jid.ParseString(attr.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -97,14 +101,14 @@ func fromStartElement(start xml.StartElement) (Stream, error) {
 			stream.xmlns = attr.Value
 		case "lang":
 			if attr.Name.Space == "xml" {
-				stream.lang = attr.Value
+				stream.lang = language.Make(attr.Value)
 			}
 		case "id":
 			stream.id = attr.Value
 		}
 	}
 
-	return stream, nil
+	return &stream, nil
 }
 
 // // StartElement creates an XML start element from the given stream which is

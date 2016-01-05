@@ -19,8 +19,8 @@ type Client struct {
 	options
 	jid    jid.JID
 	conn   net.Conn
-	input  *Stream
-	output *Stream
+	input  Stream
+	output Stream
 
 	// DNS Cache
 	cname   string
@@ -66,6 +66,8 @@ func (c *Client) Connect(password string) error {
 	if err != nil {
 		return err
 	}
+
+	c.output = stream.New(c.from.Domain(), c.from, stream.Conn(conn))
 
 	return nil
 }

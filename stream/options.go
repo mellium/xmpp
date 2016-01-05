@@ -15,7 +15,7 @@ import (
 type Option func(*options)
 type options struct {
 	lang    language.Tag
-	conn    *net.Conn
+	conn    net.Conn
 	xmlns   string
 	encoder *xml.Encoder
 	decoder *xml.Decoder
@@ -41,7 +41,7 @@ func Language(l language.Tag) Option {
 // Conn is the connection which the stream will use for sending and receiving
 // data. To manually manage streams (not recommended), don't provide a
 // connection and marshal and send the stream yourself.
-func Conn(c *net.Conn) Option {
+func Conn(c net.Conn) Option {
 	return func(o *options) {
 		o.conn = c
 		o.encoder = xml.NewEncoder(c)
