@@ -1,6 +1,7 @@
 # Koiné XMPP
 
 [![GoDoc](https://godoc.org/bitbucket.org/mellium/xmpp?status.svg)](https://godoc.org/bitbucket.org/mellium/xmpp)
+[![License](https://img.shields.io/badge/license-FreeBSD-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
 **Koiné** is an XMPP library in Go originally designed for the
 [Mellium][mellium] server project.
