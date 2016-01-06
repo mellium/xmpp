@@ -48,6 +48,10 @@ func FromStartElement(start xml.StartElement) (Stream, error) {
 
 	for _, attr := range start.Attr {
 		switch attr.Name {
+		case xml.Name{"xmlns", "stream"}:
+			if attr.Value != "http://etherx.jabber.org/streams" {
+				return stream, errors.New("Stream name has invalid xmlns.")
+			}
 		case xml.Name{"", "from"}:
 			j, err := jid.ParseString(attr.Value)
 			if err != nil {
