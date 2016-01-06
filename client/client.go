@@ -17,10 +17,10 @@ import (
 // client-to-server (C2S) connection on behalf of the configured JID.
 type Client struct {
 	options
-	jid    jid.JID
+	jid    *jid.JID
 	conn   net.Conn
-	input  Stream
-	output Stream
+	input  stream.Stream
+	output stream.Stream
 
 	// DNS Cache
 	cname   string
@@ -29,7 +29,7 @@ type Client struct {
 }
 
 // New creates a new XMPP client with the given options.
-func New(j jid.JID, opts ...Option) *Client {
+func New(j *jid.JID, opts ...Option) *Client {
 	return &Client{
 		jid:     j.Bare(),
 		options: getOpts(opts...),
@@ -67,7 +67,7 @@ func (c *Client) Connect(password string) error {
 		return err
 	}
 
-	c.output = stream.New(c.from.Domain(), c.from, stream.Conn(conn))
+	c.output = stream.New(c.jid.Domain(), c.jid)
 
 	return nil
 }

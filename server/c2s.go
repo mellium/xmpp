@@ -11,7 +11,7 @@ import (
 	"io"
 	"net"
 
-	"bitbucket.org/mellium/xmpp"
+	"bitbucket.org/mellium/xmpp/stream"
 )
 
 type C2SSession struct {
@@ -24,7 +24,7 @@ func (h *C2SSession) Handle(c net.Conn, l net.Listener) (err error) {
 		}
 	}()
 	decoder := xml.NewDecoder(c)
-	encoder := xml.NewEncoder(c)
+	// encoder := xml.NewEncoder(c)
 	for {
 		t, err := decoder.RawToken()
 		if err != nil && err != io.EOF {
@@ -43,12 +43,13 @@ func (h *C2SSession) Handle(c net.Conn, l net.Listener) (err error) {
 			}
 		case xml.StartElement:
 			if t.Name.Local == "stream" && t.Name.Space == "stream" {
-				stream, err := xmpp.StreamFromStartElement(t)
+				_, err := stream.FromStartElement(t)
 				if err != nil {
 					return err
 				}
 
-				return stream.Handle(encoder, decoder)
+				// TODO: Delegate to stream handler?
+				return nil
 			} else {
 				return errors.New(fmt.Sprintf("Invalid start element %s", t.Name))
 			}
