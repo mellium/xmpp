@@ -2,6 +2,6 @@ image: golang:1.5.1
 pipeline:
   - job:
       script:
-        - go-wrapper download
+        - GO15VENDOREXPERIMENT=1 go-wrapper download
         - GO15VENDOREXPERIMENT=1 go test -cover ./...
         - GO15VENDOREXPERIMENT=1 go test -cover -bench . -benchmem -run 'Benchmark.*' ./...
