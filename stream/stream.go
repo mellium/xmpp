@@ -102,33 +102,36 @@ func (s Stream) StartElement() xml.StartElement {
 	} else {
 		xmlns = "jabber:client"
 	}
+	attrs := []xml.Attr{
+		xml.Attr{
+			xml.Name{"", "to"},
+			s.to.String(),
+		},
+		xml.Attr{
+			xml.Name{"", "from"},
+			s.from.String(),
+		},
+		xml.Attr{
+			xml.Name{"xml", "lang"},
+			s.options.lang.String(),
+		},
+		xml.Attr{
+			xml.Name{"", "id"},
+			s.id,
+		},
+		xml.Attr{
+			xml.Name{"", "xmlns"},
+			xmlns,
+		},
+	}
+	if !s.options.noVersionAttr {
+		attrs = append(attrs, xml.Attr{
+			xml.Name{"", "version"},
+			s.version.String(),
+		})
+	}
 	return xml.StartElement{
 		Name: xml.Name{"stream", "stream"},
-		Attr: []xml.Attr{
-			xml.Attr{
-				xml.Name{"", "to"},
-				s.to.String(),
-			},
-			xml.Attr{
-				xml.Name{"", "from"},
-				s.from.String(),
-			},
-			xml.Attr{
-				xml.Name{"", "version"},
-				s.version.String(),
-			},
-			xml.Attr{
-				xml.Name{"xml", "lang"},
-				s.options.lang.String(),
-			},
-			xml.Attr{
-				xml.Name{"", "id"},
-				s.id,
-			},
-			xml.Attr{
-				xml.Name{"", "xmlns"},
-				xmlns,
-			},
-		},
+		Attr: attrs,
 	}
 }
