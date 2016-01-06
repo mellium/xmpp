@@ -102,8 +102,8 @@ func New(localpart, domainpart, resourcepart string) (*JID, error) {
 
 // Bare returns a copy of the Jid without a resourcepart. This is sometimes
 // called a "bare" JID.
-func (j *JID) Bare() JID {
-	return JID{
+func (j *JID) Bare() *JID {
+	return &JID{
 		localpart:    j.localpart,
 		domainpart:   j.domainpart,
 		resourcepart: "",
@@ -111,8 +111,8 @@ func (j *JID) Bare() JID {
 }
 
 // Domain returns a copy of the Jid without a resourcepart or localpart.
-func (j *JID) Domain() JID {
-	return JID{
+func (j *JID) Domain() *JID {
+	return &JID{
 		localpart:    "",
 		domainpart:   j.domainpart,
 		resourcepart: "",
