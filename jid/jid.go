@@ -75,9 +75,11 @@ func New(localpart, domainpart, resourcepart string) (*JID, error) {
 	// TODO: I have no idea what this is talking about… what rules? RFC 5892 is a
 	//       bunch of property lists. Maybe it meant RFC 5895?
 
-	localpart, err = precis.UsernameCaseMapped.String(localpart)
-	if err != nil {
-		return nil, err
+	if localpart != "" {
+		localpart, err = precis.UsernameCaseMapped.String(localpart)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if resourcepart != "" {
