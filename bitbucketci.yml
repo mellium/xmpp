@@ -6,5 +6,5 @@ pipeline:
         - ln -s "`pwd`" "$GOPATH/src/bitbucket.org/mellium/xmpp"
         - cd "$GOPATH/src/bitbucket.org/mellium/xmpp"
         - GO15VENDOREXPERIMENT=1 go-wrapper download
-        - GO15VENDOREXPERIMENT=1 go test -cover ./...
+        - make test
         - GO15VENDOREXPERIMENT=1 go test -cover -bench . -benchmem -run 'Benchmark.*' ./...
