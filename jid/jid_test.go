@@ -17,28 +17,53 @@ var _ xml.MarshalerAttr = (*JID)(nil)
 var _ xml.MarshalerAttr = JID{}
 var _ xml.UnmarshalerAttr = (*JID)(nil)
 
-var invalid = string([]byte{0xff, 0xfe, 0xfd})
-
-// JID's cannot contain invalid UTF8 in the localpart.
-func TestNewInvalidUtf8Localpart(t *testing.T) {
-	_, err := ParseString(invalid + "@example.com/resourcepart")
-	if err == nil {
-		t.FailNow()
+func TestValidJIDs(t *testing.T) {
+	for _, jid := range []struct {
+		jid, lp, dp, rp string
+	}{
+		{"example.net", "", "example.net", ""},
+		{"example.net/rp", "", "example.net", "rp"},
+		{"mercutio@example.net", "mercutio", "example.net", ""},
+		{"mercutio@example.net/rp", "mercutio", "example.net", "rp"},
+		{"mercutio@example.net/rp@rp", "mercutio", "example.net", "rp@rp"},
+		{"mercutio@example.net/rp@rp/rp", "mercutio", "example.net", "rp@rp/rp"},
+		{"mercutio@example.net/@", "mercutio", "example.net", "@"},
+		{"mercutio@example.net//@", "mercutio", "example.net", "/@"},
+		{"mercutio@example.net//@//", "mercutio", "example.net", "/@//"},
+	} {
+		j, err := ParseString(jid.jid)
+		switch {
+		case err != nil:
+			t.Log(err)
+			t.Fail()
+		case j.Domainpart() != jid.dp:
+			t.Logf("Got domainpart %s but expected %s", j.Domainpart(), jid.dp)
+			t.Fail()
+		case j.Localpart() != jid.lp:
+			t.Logf("Got localpart %s but expected %s", j.Localpart(), jid.lp)
+			t.Fail()
+		case j.Resourcepart() != jid.rp:
+			t.Logf("Got resourcepart %s but expected %s", j.Resourcepart(), jid.rp)
+			t.Fail()
+		}
 	}
 }
 
-// JID's cannot contain invalid UTF8 in the domainpart.
-func TestNewInvalidUtf8Domainpart(t *testing.T) {
-	_, err := ParseString("example@" + invalid + "/resourcepart")
-	if err == nil {
-		t.FailNow()
-	}
-}
+var invalidutf8 = string([]byte{0xff, 0xfe, 0xfd})
 
-// JID's cannot contain invalid UTF8 in the resourcepart.
-func TestNewInvalidUtf8Resourcepart(t *testing.T) {
-	_, err := ParseString("example@example.com/" + invalid)
-	if err == nil {
-		t.FailNow()
+func TestInvalidJIDs(t *testing.T) {
+	for _, jid := range []string{
+		"test@/test",
+		invalidutf8 + "@example.com/rp",
+		invalidutf8 + "/rp",
+		invalidutf8,
+		"example.com/" + invalidutf8,
+		"lp@/rp",
+	} {
+		_, err := ParseString(jid)
+		if err == nil {
+			t.Logf("Expected JID %s to fail", jid)
+			t.Fail()
+		}
 	}
 }
