@@ -11,9 +11,9 @@ import (
 )
 
 // Compile time check ot make sure that JID and *JID match several interfaces.
-var _ fmt.Stringer = &JID{}
+var _ fmt.Stringer = (*JID)(nil)
 var _ fmt.Stringer = JID{}
-var _ xml.MarshalerAttr = &JID{}
+var _ xml.MarshalerAttr = (*JID)(nil)
 var _ xml.MarshalerAttr = JID{}
 var _ xml.UnmarshalerAttr = (*JID)(nil)
 
