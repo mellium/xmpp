@@ -12,7 +12,7 @@ import (
 	"unicode/utf8"
 
 	"golang.org/x/net/idna"
-	"golang.org/x/text/unicode/precis"
+	"golang.org/x/text/secure/precis"
 )
 
 // JID represents an XMPP address (Jabber ID) comprising a localpart,
