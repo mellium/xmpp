@@ -10,11 +10,11 @@ import (
 )
 
 func ExampleNew() {
-	err := &errorXML{
-		XMLName:  xml.Name{"http://example.net", "comedy"},
-		CharData: "There was a comedy of errors.",
-	}
-	b, _ := xml.MarshalIndent(err, "", "  ")
+	e := New(
+		xml.Name{"http://example.net", "comedy"},
+		"There was a comedy of errors.",
+	)
+	b, _ := xml.Marshal(e)
 	fmt.Println(string(b))
 	// Output:
 	// <comedy xmlns="http://example.net">There was a comedy of errors.</comedy>
