@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-func ExampleError_New() {
+func Example_New() {
 	err := &errorXML{
 		XMLName:  xml.Name{"http://example.net", "comedy"},
 		CharData: "There was a comedy of errors.",
