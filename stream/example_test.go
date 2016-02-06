@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+
+	"bitbucket.org/mellium/xmpp/errors"
 )
 
 func ExampleStreamError_UnmarshalXML() {
@@ -30,5 +32,27 @@ func ExampleStreamError_MarshalXML() {
 	// Output:
 	// <stream:error>
 	//   <not-authorized xmlns="urn:ietf:params:xml:ns:xmpp-streams"></not-authorized>
+	// </stream:error>
+}
+
+func ExampleUndefinedConditionError() {
+	apperr := errors.New(xml.Name{"http://example.org/ns", "app-error"}, "")
+	e := UndefinedConditionError(apperr)
+	b, _ := xml.MarshalIndent(e, "", "  ")
+	fmt.Println(string(b))
+	// Output:
+	// <stream:error>
+	//   <undefined-condition xmlns="urn:ietf:params:xml:ns:xmpp-streams"><app-error xmlns="http://example.org/ns"></app-error></undefined-condition>
+	// </stream:error>
+}
+
+func ExampleUndefinedConditionError_errorf() {
+	apperr := fmt.Errorf("Unknown error")
+	e := UndefinedConditionError(apperr)
+	b, _ := xml.MarshalIndent(e, "", "  ")
+	fmt.Println(string(b))
+	// Output:
+	// <stream:error>
+	//   <undefined-condition xmlns="urn:ietf:params:xml:ns:xmpp-streams">Unknown error</undefined-condition>
 	// </stream:error>
 }

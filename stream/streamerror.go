@@ -7,6 +7,8 @@ package stream
 import (
 	"encoding/xml"
 	"net"
+
+	"bitbucket.org/mellium/xmpp/errors"
 )
 
 // A list of stream errors defined in RFC 6120 §4.9.3
@@ -151,6 +153,21 @@ func SeeOtherHostError(addr net.Addr) StreamError {
 	}
 
 	return StreamError{"see-other-host", []byte(cdata)}
+}
+
+// UndefinedConditionError returns a new undefined-condition stream error with
+// the given error as the inner application level error.
+func UndefinedConditionError(e error) StreamError {
+
+	var b []byte
+	switch e := e.(type) {
+	default:
+		b = []byte(e.Error())
+	case *errors.ErrorXML:
+		b, _ = xml.Marshal(e)
+	}
+
+	return StreamError{"undefined-condition", b}
 }
 
 // A StreamError represents an unrecoverable stream-level error that may include
