@@ -6,11 +6,14 @@ package server
 
 import (
 	"crypto/tls"
+	"io/ioutil"
+	"log"
 )
 
 // Option's can be used to configure the server.
 type Option func(*options)
 type options struct {
+	log        *log.Logger
 	clientAddr string // TCP address to listen on, ":xmpp-client" if empty.
 	// TODO: Figure out how we want to handle vhosts for the server API
 	vhosts    []string
@@ -21,7 +24,20 @@ func getOpts(o ...Option) (res options) {
 	for _, f := range o {
 		f(&res)
 	}
+
+	// Log to /dev/null by default.
+	if res.log == nil {
+		res.log = log.New(ioutil.Discard, "", log.LstdFlags)
+	}
 	return
+}
+
+// The Logger option can be provided to have the server log debug messages and
+// other helpful info.
+func Logger(logger *log.Logger) Option {
+	return func(o *options) {
+		o.log = logger
+	}
 }
 
 // The ClientAddr option sets the interface and port that the server will listen

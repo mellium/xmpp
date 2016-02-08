@@ -6,6 +6,8 @@ package client
 
 import (
 	"crypto/tls"
+	"io/ioutil"
+	"log"
 	"net"
 	"time"
 )
@@ -13,6 +15,7 @@ import (
 // Option's can be used to configure the client.
 type Option func(*options)
 type options struct {
+	log           *log.Logger
 	tlsConfig     *tls.Config
 	srvExpiration time.Duration
 	dialer        net.Dialer
@@ -22,7 +25,20 @@ func getOpts(o ...Option) (res options) {
 	for _, f := range o {
 		f(&res)
 	}
+
+	// Log to /dev/null by default.
+	if res.log == nil {
+		res.log = log.New(ioutil.Discard, "", log.LstdFlags)
+	}
 	return
+}
+
+// The Logger option can be provided to have Client log debug messages and other
+// helpful info.
+func Logger(logger *log.Logger) Option {
+	return func(o *options) {
+		o.log = logger
+	}
 }
 
 // The TLS option fully configures the clients TLS connection options including

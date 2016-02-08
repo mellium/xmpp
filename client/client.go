@@ -39,6 +39,8 @@ func New(j *jid.JID, opts ...Option) *Client {
 // Connect establishes a connection with the server.
 func (c *Client) Connect(password string) error {
 
+	c.options.log.Printf("Establishing C2S connection to %s…\n", c.jid.Domainpart())
+
 	// If the cache has expired, lookup SRV records again.
 	if c.srvtime.Add(c.options.srvExpiration).Before(time.Now()) {
 		if err := c.LookupSRV(); err != nil {
@@ -78,6 +80,8 @@ func (c *Client) Connect(password string) error {
 // cache to update. If an expiration time is set for the records, LookupSRV
 // resets the timeout.
 func (c *Client) LookupSRV() error {
+	c.options.log.Printf("Refreshing SRV record cache for %s…\n", c.jid.Domainpart())
+
 	if cname, addrs, err := net.LookupSRV(
 		"xmpp-client", "tcp", c.jid.Domainpart(),
 	); err != nil {
