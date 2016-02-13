@@ -8,7 +8,7 @@ import (
 	"encoding/xml"
 	"net"
 
-	"bitbucket.org/mellium/xmpp/errors"
+	"bitbucket.org/mellium/xmpp"
 )
 
 // A list of stream errors defined in RFC 6120 §4.9.3
@@ -161,10 +161,10 @@ func UndefinedConditionError(e error) StreamError {
 
 	var b []byte
 	switch e := e.(type) {
+	case *xmpp.Error, xmpp.Error:
+		b, _ = xml.Marshal(e)
 	default:
 		b = []byte(e.Error())
-	case *errors.ErrorXML:
-		b, _ = xml.Marshal(e)
 	}
 
 	return StreamError{"undefined-condition", b}

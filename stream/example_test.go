@@ -9,7 +9,7 @@ import (
 	"encoding/xml"
 	"fmt"
 
-	"bitbucket.org/mellium/xmpp/errors"
+	"bitbucket.org/mellium/xmpp"
 )
 
 func ExampleStreamError_UnmarshalXML() {
@@ -36,7 +36,7 @@ func ExampleStreamError_MarshalXML() {
 }
 
 func ExampleUndefinedConditionError() {
-	apperr := errors.New(xml.Name{"http://example.org/ns", "app-error"}, "")
+	apperr := xmpp.Error{xml.Name{"http://example.org/ns", "app-error"}, ""}
 	e := UndefinedConditionError(apperr)
 	b, _ := xml.MarshalIndent(e, "", "  ")
 	fmt.Println(string(b))
