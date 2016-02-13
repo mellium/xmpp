@@ -143,6 +143,12 @@ func (j *JID) Copy() *JID {
 	}
 }
 
+// Satisfies the net.Addr interface by returning the name of the network for
+// which the connection should be made.
+func (j JID) Network() string {
+	return "xmpp"
+}
+
 // String converts an JID to its string representation.
 func (j JID) String() string {
 	s := j.domainpart

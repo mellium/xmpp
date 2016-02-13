@@ -7,6 +7,7 @@ package jid
 import (
 	"encoding/xml"
 	"fmt"
+	"net"
 	"testing"
 )
 
@@ -16,6 +17,8 @@ var _ fmt.Stringer = JID{}
 var _ xml.MarshalerAttr = (*JID)(nil)
 var _ xml.MarshalerAttr = JID{}
 var _ xml.UnmarshalerAttr = (*JID)(nil)
+var _ net.Addr = (*JID)(nil)
+var _ net.Addr = JID{}
 
 func TestValidJIDs(t *testing.T) {
 	for _, jid := range []struct {
