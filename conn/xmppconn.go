@@ -13,10 +13,9 @@ import (
 )
 
 type XMPPConn struct {
-	opts     options
-	conn     net.Conn
-	conntype string
-	laddr    *jid.JID
+	opts  options
+	conn  net.Conn
+	laddr *jid.JID
 
 	// DNS Cache
 	cname   string
@@ -26,14 +25,12 @@ type XMPPConn struct {
 
 // Dial creates a server-to-server or client-to-server connection to a remote
 // endpoint. By default, it connects to the domain part of the given local
-// address. The conntype should be either "xmpp-client" for C2S connections, or
-// "xmpp-server" for S2S connections.
-func Dial(conntype string, laddr *jid.JID, opts ...Option) (*XMPPConn, error) {
+// address.
+func Dial(laddr *jid.JID, opts ...Option) (*XMPPConn, error) {
 
 	c := &XMPPConn{
-		opts:     getOpts(laddr, opts...),
-		conntype: conntype,
-		laddr:    laddr,
+		opts:  getOpts(laddr, opts...),
+		laddr: laddr,
 	}
 
 	// If the cache has expired, lookup SRV records again.
@@ -74,7 +71,7 @@ func Dial(conntype string, laddr *jid.JID, opts ...Option) (*XMPPConn, error) {
 // for the records, lookupSRV resets the timeout.
 func (c *XMPPConn) lookupSRV() error {
 	if cname, addrs, err := net.LookupSRV(
-		string(c.conntype), "tcp", c.opts.raddr.Domainpart(),
+		string(c.opts.conntype), "tcp", c.opts.raddr.Domainpart(),
 	); err != nil {
 		return err
 	} else {

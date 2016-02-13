@@ -19,6 +19,7 @@ type Option func(*options)
 type options struct {
 	log           *log.Logger
 	tlsConfig     *tls.Config
+	conntype      string
 	srvExpiration time.Duration
 	dialer        net.Dialer
 	network       string
@@ -40,8 +41,21 @@ func getOpts(laddr *jid.JID, o ...Option) (res options) {
 	if res.raddr == nil {
 		res.raddr = laddr.Domain()
 	}
+	if res.conntype == "" {
+		res.conntype = "xmpp-client"
+	}
 	return
 }
+
+var (
+	S2S Option = s2s // The S2S option causes the connection to be treated as a server-to-server connection.
+)
+
+var (
+	s2s = func(o *options) {
+		o.conntype = "xmpp-server"
+	}
+)
 
 // The Logger option can be provided to have the connection log debug messages.
 func Logger(logger *log.Logger) Option {

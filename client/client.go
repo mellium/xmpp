@@ -32,7 +32,7 @@ func New(j *jid.JID, opts ...Option) *Client {
 func (c *Client) Connect(password string) (err error) {
 
 	c.options.log.Printf("Establishing C2S connection to %s…\n", c.jid.Domainpart())
-	c.conn, err = conn.Dial("xmpp-client", c.jid)
+	c.conn, err = conn.Dial(c.jid)
 
 	c.output = stream.New(c.jid.Domain(), c.jid)
 
