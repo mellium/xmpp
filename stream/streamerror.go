@@ -7,8 +7,6 @@ package stream
 import (
 	"encoding/xml"
 	"net"
-
-	"bitbucket.org/mellium/xmpp"
 )
 
 // A list of stream errors defined in RFC 6120 §4.9.3
@@ -116,6 +114,11 @@ var (
 	// streams are being closed.
 	SystemShutdown = StreamError{Err: "system-shutdown"}
 
+	// UndefinedCondition may be sent when the error condition is not one of those
+	// defined by the other conditions in this list; this error condition should
+	// be used in conjunction with an application-specific condition.
+	UndefinedCondition = StreamError{Err: "undefined-condition"}
+
 	// UnsupportedEncoding may be sent when initiating entity has encoded the
 	// stream in an encoding that is not UTF-8.
 	UnsupportedEncoding = StreamError{Err: "unsupported-encoding"}
@@ -155,21 +158,6 @@ func SeeOtherHostError(addr net.Addr) StreamError {
 	return StreamError{"see-other-host", []byte(cdata)}
 }
 
-// UndefinedConditionError returns a new undefined-condition stream error with
-// the given error as the inner application level error.
-func UndefinedConditionError(e error) StreamError {
-
-	var b []byte
-	switch e := e.(type) {
-	case *xmpp.Error, xmpp.Error:
-		b, _ = xml.Marshal(e)
-	default:
-		b = []byte(e.Error())
-	}
-
-	return StreamError{"undefined-condition", b}
-}
-
 // A StreamError represents an unrecoverable stream-level error that may include
 // character data or arbitrary inner XML.
 type StreamError struct {
@@ -185,7 +173,7 @@ type StreamError struct {
 //     </stream:error>
 //
 // Error() would return "restricted-xml".
-func (e *StreamError) Error() string {
+func (e StreamError) Error() string {
 	return e.Err
 }
 

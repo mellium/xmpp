@@ -12,7 +12,9 @@ import (
 )
 
 var _ error = (*StreamError)(nil)
+var _ error = StreamError{}
 var _ xml.Marshaler = (*StreamError)(nil)
+var _ xml.Marshaler = StreamError{}
 var _ xml.Unmarshaler = (*StreamError)(nil)
 
 // Both pointers and normal errors should marshal to the same thing.
