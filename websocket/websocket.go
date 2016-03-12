@@ -92,5 +92,6 @@ func checkReq(config *websocket.Config, req *http.Request) (err error) {
 // ServeHTTP implements the http.Handler interface for a WebSocket.
 func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	s := websocket.Server{Handler: websocket.Handler(h), Handshake: checkReq}
+	w.Header().Add("Sec-WebSocket-Protocol", "xmpp")
 	s.ServeHTTP(w, req)
 }
