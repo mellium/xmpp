@@ -17,7 +17,7 @@ type stanza struct {
 	Inner string  `xml:",innerxml"`
 	To    jid.JID `xml:"to,attr"`
 	From  jid.JID `xml:"from,attr"`
-	Lang  string  `xml:"xml:lang,attr"`
+	Lang  string  `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 }
 
 // Message is an XMPP stanza that contains a payload for direct one-to-one
@@ -26,6 +26,7 @@ type stanza struct {
 // alerts that don't require a response.
 type Message struct {
 	stanza
+
 	XMLName xml.Name `xml:"message"`
 }
 
@@ -35,6 +36,7 @@ type Message struct {
 // (one-to-one), or as a broadcast mechanism (one-to-many).
 type Presence struct {
 	stanza
+
 	XMLName xml.Name `xml:"presence"`
 }
 
@@ -43,5 +45,6 @@ type Presence struct {
 // response in the form of a result or an error.
 type IQ struct {
 	stanza
+
 	XMLName xml.Name `xml:"iq"`
 }

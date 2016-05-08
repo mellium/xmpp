@@ -4,5 +4,5 @@
 
 package xmpp
 
-var _ error = (*Error)(nil)
-var _ error = Error{}
+var _ error = (*StanzaError)(nil)
+var _ error = StanzaError{}
