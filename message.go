@@ -1,8 +1,22 @@
-// Copyright 2015 Sam Whited.
+// Copyright 2016 Sam Whited.
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
 package xmpp
+
+import (
+	"encoding/xml"
+)
+
+// Message is an XMPP stanza that contains a payload for direct one-to-one
+// communication with another network entity.  It is often used for sending chat
+// messages to an individual or group chat server, or for notifications and
+// alerts that don't require a response.
+type Message struct {
+	stanza
+
+	XMLName xml.Name `xml:"message"`
+}
 
 type messageType int
 
@@ -40,59 +54,4 @@ const (
 	// groupchat messages (e.g., by not providing the recipient with the ability
 	// to reply).
 	HeadlineMessage
-)
-
-type presenceType int
-
-const (
-	// NoTypePresence is a special type that indicates that a stanza is a presence
-	// stanza without a defined type (indicating availability on the network).
-	NoTypePresence presenceType = iota
-
-	// An ErrorPresence indicates that an error has occurred regarding processing
-	// of a previously sent presence stanza; if the presence stanza is of type
-	// "error", it MUST include an <error/> child element
-	ErrorPresence presenceType = iota
-
-	// A ProbePresence is a request for an entity's current presence. It should
-	// generally only be generated and sent by servers on behalf of a user.
-	ProbePresence
-
-	// A SubscribePresence is sent when the sender wishes to subscribe to the
-	// recipient's presence.
-	SubscribePresence
-
-	// A SubscribedPresence indicates that the sender has allowed the recipient to
-	// receive future presence broadcasts.
-	SubscribedPresence
-
-	// An UnavailablePresence indicates that the sender is no longer available for
-	// communication.
-	UnavailablePresence
-
-	// An UnsubscribePresence indicates that the sender is unsubscribing from the
-	// receiver's presence.
-	UnsubscribePresence
-
-	// An UnsubscribedPresence indicates that the subscription request has been
-	// denied, or a previously granted subscription has been revoked.
-	UnsubscribedPresence
-)
-
-type iqType int
-
-const (
-	// A GetIQ is used to query another entity for information.
-	GetIQ iqType = iota
-
-	// A SetIQ is used to provide data to another entity, set new values, replace
-	// existing values, and other such operations.
-	SetIQ
-
-	// A ResultIQ is sent in response to a successful GetIQ or SetIQ stanza.
-	ResultIQ
-
-	// An ErrorIQ is sent to report that an error occured during the delivery or
-	// processing of a GetIQ or SetIQ.
-	ErrorIQ
 )

@@ -15,6 +15,15 @@ import (
 // TODO: How should we test marshalling? Probably don't want to assume that
 //       attribute order will remain stable.
 
+func TestDefaults(t *testing.T) {
+	var mt messageType
+
+	if mt != NormalMessage {
+		t.Log("Default value of message type should be 'normal'.")
+		t.Fail()
+	}
+}
+
 // Tests unmarshalling of a single XML blob into a message.
 func TestUnmarshalMessage(t *testing.T) {
 	mb := []byte(`
