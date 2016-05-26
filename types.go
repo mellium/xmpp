@@ -84,11 +84,14 @@ type iqType int
 const (
 	// A GetIQ is used to query another entity for information.
 	GetIQ iqType = iota
+
 	// A SetIQ is used to provide data to another entity, set new values, replace
 	// existing values, and other such operations.
 	SetIQ
+
 	// A ResultIQ is sent in response to a successful GetIQ or SetIQ stanza.
 	ResultIQ
+
 	// An ErrorIQ is sent to report that an error occured during the delivery or
 	// processing of a GetIQ or SetIQ.
 	ErrorIQ

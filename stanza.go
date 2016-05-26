@@ -33,7 +33,7 @@ type Message struct {
 // Presence is an XMPP stanza that is used as an indication that an entity is
 // available for communication. It is used to set a status message, broadcast
 // availability, and advertise entity capabilities. It can be directed
-// (one-to-one), or as a broadcast mechanism (one-to-many).
+// (one-to-one), or used as a broadcast mechanism (one-to-many).
 type Presence struct {
 	stanza
 
