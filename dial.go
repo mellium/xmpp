@@ -5,7 +5,6 @@
 package xmpp
 
 import (
-	"log"
 	"net"
 	"strconv"
 	"time"
@@ -18,9 +17,9 @@ import (
 //
 // Known networks are "xmpp-cient" (C2S connections) and "xmpp-server" (S2S
 // connections).
-func Dial(network string, laddr *jid.JID) (*Conn, error) {
+func Dial(network string, laddr, raddr *jid.JID) (*Conn, error) {
 	var d Dialer
-	return d.Dial(network, laddr)
+	return d.Dial(network, laddr, raddr)
 }
 
 // A Dialer contains options for connecting to an XMPP address.
@@ -65,8 +64,8 @@ func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Tim
 // Dial connects to the address on the named network.
 //
 // See func Dial for a description of the network and address parameters.
-func (d *Dialer) Dial(network string, laddr *jid.JID) (*Conn, error) {
-	return d.DialContext(context.Background(), network, laddr)
+func (d *Dialer) Dial(network string, laddr, raddr *jid.JID) (*Conn, error) {
+	return d.DialContext(context.Background(), network, laddr, raddr)
 }
 
 // DialContext connects to the address on the named network using
@@ -81,7 +80,7 @@ func (d *Dialer) Dial(network string, laddr *jid.JID) (*Conn, error) {
 // See func Dial for a description of the network and address
 // parameters.
 func (d *Dialer) DialContext(
-	ctx context.Context, network string, laddr *jid.JID) (*Conn, error) {
+	ctx context.Context, network string, laddr, raddr *jid.JID) (*Conn, error) {
 	if ctx == nil {
 		panic("xmpp.DialContext: nil context")
 	}
@@ -109,8 +108,14 @@ func (d *Dialer) DialContext(
 
 	c := &Conn{
 		laddr:   laddr,
-		raddr:   laddr.Domain(),
 		network: network,
+	}
+	// If we're a client and no remote address was specified, connect to the
+	// domain in the local address (our JID).
+	if raddr == nil && network == "xmpp-client" {
+		c.raddr = laddr.Domain()
+	} else {
+		c.raddr = raddr
 	}
 
 	_, addrs, err := net.LookupSRV(network, "tcp", laddr.Domainpart())
