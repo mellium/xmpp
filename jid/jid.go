@@ -18,8 +18,7 @@ import (
 // JID represents an XMPP address (Jabber ID) comprising a localpart,
 // domainpart, and resourcepart. All parts of a JID are guaranteed to be valid
 // UTF-8 and will be represented in their canonical form which gives comparison
-// the greatest chance of succeeding unless any of the "unsafe" methods are used
-// to create the JID.
+// the greatest chance of succeeding.
 type JID struct {
 	localpart    string
 	domainpart   string
