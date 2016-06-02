@@ -8,4 +8,4 @@ import (
 	"net"
 )
 
-var _ net.Conn = (*XMPPConn)(nil)
+var _ net.Conn = (*Conn)(nil)
