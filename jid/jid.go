@@ -184,6 +184,9 @@ func (j *JID) Equal(j2 JID) bool {
 // MarshalXMLAttr satisfies the MarshalerAttr interface and marshals the JID as
 // an XML attribute.
 func (j *JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+	if j == nil {
+		return xml.Attr{}, nil
+	}
 	return xml.Attr{Name: name, Value: j.String()}, nil
 }
 

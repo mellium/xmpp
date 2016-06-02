@@ -67,3 +67,15 @@ func TestInvalidJIDs(t *testing.T) {
 		}
 	}
 }
+
+func TestMarshalEmpty(t *testing.T) {
+	attr, err := ((*JID)(nil)).MarshalXMLAttr(xml.Name{})
+	switch {
+	case err != nil:
+		t.Logf("Marshaling an empty JID to an attr should not error but got %v\n", err)
+		t.Fail()
+	case attr != xml.Attr{}:
+		t.Logf("Error marshaling empty JID expected Attr{} but got: %+v\n", err)
+		t.Fail()
+	}
+}
