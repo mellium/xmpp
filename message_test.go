@@ -38,8 +38,8 @@ func TestUnmarshalMessage(t *testing.T) {
 	`)
 	m := &Message{
 		stanza{
-			To:   jid.JID{},
-			From: jid.JID{},
+			To:   &jid.JID{},
+			From: &jid.JID{},
 		},
 		xml.Name{"", ""},
 	}
