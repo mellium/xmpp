@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"net"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -33,6 +34,21 @@ func ParseString(s string) (*JID, error) {
 		return nil, err
 	}
 	return New(localpart, domainpart, resourcepart)
+}
+
+// MustParse is like ParseString but panics if the JID cannot be parsed.
+// It simplifies safe initialization of JIDs from known-good constant strings.
+func MustParse(s string) *JID {
+	j, err := ParseString(s)
+	if err != nil {
+		if strconv.CanBackquote(s) {
+			s = "`" + s + "`"
+		} else {
+			s = strconv.Quote(s)
+		}
+		panic(`jid: Parse(` + s + `): ` + err.Error())
+	}
+	return j
 }
 
 // New constructs a new JID from the given localpart, domainpart, and
