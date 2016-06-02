@@ -33,47 +33,6 @@ type Conn struct {
 	srvtime time.Time
 }
 
-// Dial creates a server-to-server or client-to-server connection to a remote
-// endpoint. By default, it connects to the domain part of the given local
-// address.
-// func Dial(laddr *jid.JID) (*Conn, error) {
-//
-// 	c := &Conn{
-// 		opts:  getOpts(laddr, opts...),
-// 		laddr: laddr,
-// 	}
-//
-// 	// If the cache has expired, lookup SRV records again.
-// 	if c.srvtime.Add(c.opts.srvExpiration).Before(time.Now()) {
-// 		if err := c.lookupSRV(); err != nil {
-// 			return nil, err
-// 		}
-// 	}
-//
-// 	// Try dialing all of the SRV records we know about, breaking as soon as the
-// 	// connection is established.
-// 	var err error
-// 	for _, addr := range c.addrs {
-// 		if conn, e := c.opts.dialer.Dial(
-// 			c.opts.network, net.JoinHostPort(
-// 				addr.Target, strconv.FormatUint(uint64(addr.Port), 10),
-// 			),
-// 		); e != nil {
-// 			err = e
-// 			continue
-// 		} else {
-// 			err = nil
-// 			c.conn = conn
-// 			break
-// 		}
-// 	}
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	return c, nil
-// }
-
 // Read reads data from the connection.
 func (c *Conn) Read(b []byte) (n int, err error) {
 	return c.conn.Read(b)
