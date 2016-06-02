@@ -26,9 +26,8 @@ type JID struct {
 	resourcepart string
 }
 
-// ParseString constructs a new JID from the given string
-// representation.
-func ParseString(s string) (*JID, error) {
+// Parse constructs a new JID from the given string representation.
+func Parse(s string) (*JID, error) {
 	localpart, domainpart, resourcepart, err := SplitString(s)
 	if err != nil {
 		return nil, err
@@ -36,10 +35,10 @@ func ParseString(s string) (*JID, error) {
 	return New(localpart, domainpart, resourcepart)
 }
 
-// MustParse is like ParseString but panics if the JID cannot be parsed.
+// MustParse is like Parse but panics if the JID cannot be parsed.
 // It simplifies safe initialization of JIDs from known-good constant strings.
 func MustParse(s string) *JID {
-	j, err := ParseString(s)
+	j, err := Parse(s)
 	if err != nil {
 		if strconv.CanBackquote(s) {
 			s = "`" + s + "`"
@@ -191,7 +190,7 @@ func (j JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 // UnmarshalXMLAttr satisfies the UnmarshalerAttr interface and unmarshals an
 // XML attribute into a valid JID (or returns an error).
 func (j *JID) UnmarshalXMLAttr(attr xml.Attr) error {
-	jid, err := ParseString(attr.Value)
+	jid, err := Parse(attr.Value)
 	j.localpart = jid.localpart
 	j.domainpart = jid.domainpart
 	j.resourcepart = jid.resourcepart
