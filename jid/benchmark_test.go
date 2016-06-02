@@ -16,19 +16,19 @@ func BenchmarkSplit(b *testing.B) {
 
 func BenchmarkParseString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ParseString("user@example.com/resource")
+		Parse("user@example.com/resource")
 	}
 }
 
 func BenchmarkParseStringIPv4(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ParseString("user@127.0.0.1/resource")
+		Parse("user@127.0.0.1/resource")
 	}
 }
 
 func BenchmarkParseStringIPv6(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ParseString("user@[::1]/resource")
+		Parse("user@[::1]/resource")
 	}
 }
 

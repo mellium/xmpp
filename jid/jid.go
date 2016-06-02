@@ -159,12 +159,12 @@ func (j *JID) Copy() *JID {
 
 // Satisfies the net.Addr interface by returning the name of the network
 // ("xmpp").
-func (j JID) Network() string {
+func (j *JID) Network() string {
 	return "xmpp"
 }
 
 // String converts an JID to its string representation.
-func (j JID) String() string {
+func (j *JID) String() string {
 	s := j.domainpart
 	if j.localpart != "" {
 		s = j.localpart + "@" + s
@@ -183,7 +183,7 @@ func (j *JID) Equal(j2 JID) bool {
 
 // MarshalXMLAttr satisfies the MarshalerAttr interface and marshals the JID as
 // an XML attribute.
-func (j JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+func (j *JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	return xml.Attr{Name: name, Value: j.String()}, nil
 }
 

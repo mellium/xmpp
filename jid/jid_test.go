@@ -13,12 +13,9 @@ import (
 
 // Compile time check ot make sure that JID and *JID match several interfaces.
 var _ fmt.Stringer = (*JID)(nil)
-var _ fmt.Stringer = JID{}
 var _ xml.MarshalerAttr = (*JID)(nil)
-var _ xml.MarshalerAttr = JID{}
 var _ xml.UnmarshalerAttr = (*JID)(nil)
 var _ net.Addr = (*JID)(nil)
-var _ net.Addr = JID{}
 
 func TestValidJIDs(t *testing.T) {
 	for _, jid := range []struct {
@@ -34,7 +31,7 @@ func TestValidJIDs(t *testing.T) {
 		{"mercutio@example.net//@", "mercutio", "example.net", "/@"},
 		{"mercutio@example.net//@//", "mercutio", "example.net", "/@//"},
 	} {
-		j, err := ParseString(jid.jid)
+		j, err := Parse(jid.jid)
 		switch {
 		case err != nil:
 			t.Log(err)
@@ -63,7 +60,7 @@ func TestInvalidJIDs(t *testing.T) {
 		"example.com/" + invalidutf8,
 		"lp@/rp",
 	} {
-		_, err := ParseString(jid)
+		_, err := Parse(jid)
 		if err == nil {
 			t.Logf("Expected JID %s to fail", jid)
 			t.Fail()
