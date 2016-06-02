@@ -65,18 +65,17 @@ func TestUnmarshalMessage(t *testing.T) {
 
 // Messages must be marshalable to XML
 func TestMarshalMessage(t *testing.T) {
-	j, _ := jid.ParseString("feste@shakespeare.lit")
+	j := jid.MustParse("feste@shakespeare.lit")
 	m := Message{
 		stanza{
 			ID:   "1234",
-			To:   *j,
+			To:   j,
 			Lang: "en",
 		},
 		xml.Name{"jabber:client", "message"},
 	}
 	// TODO: Check the output; is the order guaranteed?
-	_, err := xml.Marshal(m)
-	if err != nil {
+	if _, err := xml.Marshal(m); err != nil {
 		t.Log(err)
 		t.Fail()
 	}
