@@ -1,6 +1,6 @@
 # Koiné XMPP
 
-[![GoDoc](https://godoc.org/bitbucket.org/mellium/xmpp?status.svg)](https://godoc.org/bitbucket.org/mellium/xmpp)
+[![GoDoc](https://godoc.org/mellium.im/xmpp?status.svg)](https://godoc.org/mellium.im/xmpp)
 [![License](https://img.shields.io/badge/license-FreeBSD-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
 **Koiné** is an XMPP library in Go originally designed for the
@@ -9,7 +9,7 @@
 To use it in your project, import it (or one of its subproject's) like so:
 
 ```go
-import bitbucket.org/mellium/xmpp
+import mellium.im/xmpp
 ```
 
 ## Issues and feature requests

@@ -7,7 +7,7 @@ package xmpp
 import (
 	"encoding/xml"
 
-	"bitbucket.org/mellium/xmpp/jid"
+	"mellium.im/xmpp/jid"
 )
 
 //go:generate stringer -type=errorType

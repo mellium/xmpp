@@ -10,7 +10,7 @@ import (
 	"net"
 	"time"
 
-	"bitbucket.org/mellium/xmpp/jid"
+	"mellium.im/xmpp/jid"
 )
 
 // A Conn represents an XMPP connection that can perform SRV lookups for a given

@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"bitbucket.org/mellium/xmpp/jid"
 	"golang.org/x/net/context"
+	"mellium.im/xmpp/jid"
 )
 
 // Dial connects to the address on the named network.

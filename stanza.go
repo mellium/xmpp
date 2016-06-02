@@ -5,7 +5,7 @@
 package xmpp
 
 import (
-	"bitbucket.org/mellium/xmpp/jid"
+	"mellium.im/xmpp/jid"
 )
 
 // stanza contains fields common to any any top level XMPP stanza (Presence,

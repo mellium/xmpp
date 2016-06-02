@@ -8,7 +8,7 @@ import (
 	"encoding/xml"
 	"testing"
 
-	"bitbucket.org/mellium/xmpp/jid"
+	"mellium.im/xmpp/jid"
 )
 
 // TODO: Make this a table test and add some more complicated messages.

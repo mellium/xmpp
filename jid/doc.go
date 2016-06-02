@@ -6,4 +6,4 @@
 // "JID's") as described in RFC 7622.
 //
 // Be advised: This API is still unstable and is subject to change.
-package jid // import "bitbucket.org/mellium/xmpp/jid"
+package jid // import "mellium.im/xmpp/jid"

@@ -4,4 +4,4 @@
 
 // Package internal provides non-exported functionality used by xmpp and its
 // child packages.
-package internal // import "bitbucket.org/mellium/xmpp/internal"
+package internal // import "mellium.im/xmpp/internal"

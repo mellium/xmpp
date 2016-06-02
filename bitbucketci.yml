@@ -2,9 +2,9 @@ image: golang:latest
 pipeline:
   - job:
       script:
-        - mkdir -p "$GOPATH/src/bitbucket.org/mellium/"
-        - ln -s "`pwd`" "$GOPATH/src/bitbucket.org/mellium/xmpp"
-        - cd "$GOPATH/src/bitbucket.org/mellium/xmpp"
+        - mkdir -p "$GOPATH/src/mellium.im/"
+        - ln -s "`pwd`" "$GOPATH/src/mellium.im/xmpp"
+        - cd "$GOPATH/src/mellium.im/xmpp"
         - GO15VENDOREXPERIMENT=1 go-wrapper download
         - make test
         - GO15VENDOREXPERIMENT=1 go test -cover -bench . -benchmem -run 'Benchmark.*' ./...
