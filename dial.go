@@ -15,11 +15,10 @@ import (
 
 // Dial connects to the address on the named network.
 //
-// Known networks are "xmpp-cient" (C2S connections) and "xmpp-server" (S2S
-// connections).
-func Dial(network string, laddr, raddr *jid.JID) (*Conn, error) {
+// For a list of understood networks, see net.Dial.
+func Dial(network string, addr *jid.JID) (*Conn, error) {
 	var d Dialer
-	return d.Dial(network, laddr, raddr)
+	return d.Dial(network, addr)
 }
 
 // A Dialer contains options for connecting to an XMPP address.
@@ -64,8 +63,8 @@ func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Tim
 // Dial connects to the address on the named network.
 //
 // See func Dial for a description of the network and address parameters.
-func (d *Dialer) Dial(network string, laddr, raddr *jid.JID) (*Conn, error) {
-	return d.DialContext(context.Background(), network, laddr, raddr)
+func (d *Dialer) Dial(network string, addr *jid.JID) (*Conn, error) {
+	return d.DialContext(context.Background(), network, addr)
 }
 
 // DialContext connects to the address on the named network using
@@ -80,7 +79,7 @@ func (d *Dialer) Dial(network string, laddr, raddr *jid.JID) (*Conn, error) {
 // See func Dial for a description of the network and address
 // parameters.
 func (d *Dialer) DialContext(
-	ctx context.Context, network string, laddr, raddr *jid.JID) (*Conn, error) {
+	ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
 	if ctx == nil {
 		panic("xmpp.DialContext: nil context")
 	}
@@ -107,18 +106,11 @@ func (d *Dialer) DialContext(
 	}
 
 	c := &Conn{
-		laddr:   laddr,
+		laddr:   addr,
 		network: network,
 	}
-	// If we're a client and no remote address was specified, connect to the
-	// domain in the local address (our JID).
-	if raddr == nil && network == "xmpp-client" {
-		c.raddr = laddr.Domain()
-	} else {
-		c.raddr = raddr
-	}
 
-	_, addrs, err := net.LookupSRV(network, "tcp", laddr.Domainpart())
+	_, addrs, err := net.LookupSRV(network, "tcp", addr.Domainpart())
 	if err != nil {
 		// Use domain and default port.
 		p, err := net.LookupPort("tcp", network)
@@ -126,7 +118,7 @@ func (d *Dialer) DialContext(
 			return nil, err
 		}
 		addrs = []*net.SRV{{
-			Target: laddr.Domainpart(),
+			Target: addr.Domainpart(),
 			Port:   uint16(p),
 		}}
 	}
