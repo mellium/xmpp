@@ -40,7 +40,9 @@ var (
 // func LookupWebsocket(addr *jid.JID) {
 // }
 
-func lookupWebsocketDNS(name string) (urls []string, err error) {
+// TODO(ssw): Rely on the OS DNS cache, or cache lookups ourselves?
+
+func lookupWebsocketDNS(ctx context.Context, name string) (urls []string, err error) {
 	txts, err := net.LookupTXT(name)
 	if err != nil {
 		return urls, err
@@ -48,6 +50,9 @@ func lookupWebsocketDNS(name string) (urls []string, err error) {
 
 	var s string
 	for _, txt := range txts {
+		if _, ok := <-ctx.Done(); ok {
+			return urls, ctx.Err()
+		}
 		if s = strings.TrimPrefix(txt, wsPrefix); s != txt {
 			urls = append(urls, s)
 		}
@@ -56,8 +61,9 @@ func lookupWebsocketDNS(name string) (urls []string, err error) {
 	return urls, err
 }
 
-func lookupWebsocketHostMeta(ctx context.Context, name string) (urls []string, err error) {
-	client := &http.Client{}
+// TODO(ssw): Memoize the following functions?
+
+func lookupWebsocketHostMeta(ctx context.Context, client *http.Client, name string) (urls []string, err error) {
 	url, err := url.Parse(name)
 	if err != nil {
 		return urls, err
