@@ -1,6 +1,7 @@
 image: golang:latest
-pipeline:
-  - job:
+pipelines:
+  default:
+    - step:
       script:
         - mkdir -p "$GOPATH/src/mellium.im/"
         - ln -s "`pwd`" "$GOPATH/src/mellium.im/xmpp"
