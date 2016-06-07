@@ -131,10 +131,16 @@ func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype str
 
 	ctx, cancel := context.WithCancel(ctx)
 
-	var xrd *internal.XRD
+	var (
+		xrd *internal.XRD
+		wg  sync.WaitGroup
+	)
+
 	// Race! If one of the two goroutines does not error, we want that one. If
 	// both error, or both are error free, we don't care.
+	wg.Add(2)
 	go func() {
+		defer wg.Done()
 		defer cancel()
 		x, e := getHostMetaXML(ctx, client, url.String())
 		if e != nil {
@@ -144,6 +150,7 @@ func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype str
 		xrd, err = &x, e
 	}()
 	go func() {
+		defer wg.Done()
 		defer cancel()
 		x, e := getHostMetaJSON(ctx, client, url.String())
 		if e != nil {
@@ -152,6 +159,10 @@ func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype str
 		}
 		xrd, err = &x, e
 	}()
+
+	// TODO: Don't use a waitgroup; instead return when either goroutine returns
+	// successfully.
+	wg.Wait()
 
 	if xrd == nil {
 		return urls, err
