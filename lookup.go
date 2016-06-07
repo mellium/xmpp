@@ -5,7 +5,6 @@
 package xmpp
 
 import (
-	"context"
 	"encoding/json"
 	"encoding/xml"
 	"net"
@@ -15,6 +14,7 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/jid"
