@@ -13,9 +13,11 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"sync"
 
 	"golang.org/x/net/context/ctxhttp"
 	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/jid"
 )
 
 const (
@@ -36,9 +38,44 @@ var (
 
 // LookupWebsocket discovers websocket endpoints that are valid for the given
 // address using DNS TXT records and Web Host Metadata as described in XEP-0156:
-// Discovering Alternative XMPP Connection Methods.
-// func LookupWebsocket(addr *jid.JID) {
-// }
+// Discovering Alternative XMPP Connection Methods. If client is nil, only DNS
+// is queried.
+func LookupWebsocket(ctx context.Context, client *http.Client, addr *jid.JID) (urls []string, err error) {
+	// TODO: Should these even be fetched concurrently?
+	var (
+		u  []string
+		e  error
+		wg sync.WaitGroup
+
+		name = addr.Domainpart()
+	)
+
+	wg.Add(1)
+	go func() {
+		urls, err = lookupWebsocketDNS(ctx, name)
+		wg.Done()
+	}()
+	if client != nil {
+		wg.Add(1)
+		go func() {
+			u, e = lookupWebsocketHostMeta(ctx, client, name)
+			wg.Done()
+		}()
+	}
+
+	switch {
+	case err == nil && len(urls) > 0:
+		return urls, err
+	case e == nil && len(u) > 0:
+		return u, e
+	case err != nil:
+		return urls, err
+	case e != nil:
+		return u, e
+	}
+
+	return urls, err
+}
 
 // TODO(ssw): Rely on the OS DNS cache, or cache lookups ourselves?
 
