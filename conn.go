@@ -26,11 +26,6 @@ type Conn struct {
 	network       string
 	raddr         *jid.JID
 	laddr         *jid.JID
-
-	// DNS Cache
-	cname   string
-	addrs   []*net.SRV
-	srvtime time.Time
 }
 
 // Read reads data from the connection.
