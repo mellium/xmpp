@@ -41,6 +41,18 @@ var (
 // Discovering Alternative XMPP Connection Methods. If client is nil, only DNS
 // is queried.
 func LookupWebsocket(ctx context.Context, client *http.Client, addr *jid.JID) (urls []string, err error) {
+	return lookupConn(ctx, client, addr, "ws")
+}
+
+// LookupBOSH discovers BOSH endpoints that are valid for the given address
+// using DNS TXT records and Web Host Metadata as described in XEP-0156:
+// Discovering Alternative XMPP Connection Methods. If client is nil, only DNS
+// is queried.
+func LookupBOSH(ctx context.Context, client *http.Client, addr *jid.JID) (urls []string, err error) {
+	return lookupConn(ctx, client, addr, "bosh")
+}
+
+func lookupConn(ctx context.Context, client *http.Client, addr *jid.JID, conntype string) (urls []string, err error) {
 	// TODO: Should these even be fetched concurrently?
 	var (
 		u  []string
@@ -52,13 +64,13 @@ func LookupWebsocket(ctx context.Context, client *http.Client, addr *jid.JID) (u
 
 	wg.Add(1)
 	go func() {
-		urls, err = lookupWebsocketDNS(ctx, name)
+		urls, err = lookupDNS(ctx, name, conntype)
 		wg.Done()
 	}()
 	if client != nil {
 		wg.Add(1)
 		go func() {
-			u, e = lookupWebsocketHostMeta(ctx, client, name)
+			u, e = lookupHostMeta(ctx, client, name, conntype)
 			wg.Done()
 		}()
 	}
@@ -79,7 +91,7 @@ func LookupWebsocket(ctx context.Context, client *http.Client, addr *jid.JID) (u
 
 // TODO(ssw): Rely on the OS DNS cache, or cache lookups ourselves?
 
-func lookupWebsocketDNS(ctx context.Context, name string) (urls []string, err error) {
+func lookupDNS(ctx context.Context, name, conntype string) (urls []string, err error) {
 	txts, err := net.LookupTXT(name)
 	if err != nil {
 		return urls, err
@@ -90,8 +102,17 @@ func lookupWebsocketDNS(ctx context.Context, name string) (urls []string, err er
 		if _, ok := <-ctx.Done(); ok {
 			return urls, ctx.Err()
 		}
-		if s = strings.TrimPrefix(txt, wsPrefix); s != txt {
-			urls = append(urls, s)
+		switch conntype {
+		case "ws":
+			if s = strings.TrimPrefix(txt, wsPrefix); s != txt {
+				urls = append(urls, s)
+			}
+		case "bosh":
+			if s = strings.TrimPrefix(txt, boshPrefix); s != txt {
+				urls = append(urls, s)
+			}
+		default:
+			panic("xmpp.lookupHostMeta: Invalid conntype specified")
 		}
 	}
 
@@ -100,7 +121,7 @@ func lookupWebsocketDNS(ctx context.Context, name string) (urls []string, err er
 
 // TODO(ssw): Memoize the following functions?
 
-func lookupWebsocketHostMeta(ctx context.Context, client *http.Client, name string) (urls []string, err error) {
+func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype string) (urls []string, err error) {
 	url, err := url.Parse(name)
 	if err != nil {
 		return urls, err
@@ -136,8 +157,17 @@ func lookupWebsocketHostMeta(ctx context.Context, client *http.Client, name stri
 	}
 
 	for _, link := range xrd.Links {
-		if link.Rel == wsRel {
-			urls = append(urls, link.Href)
+		switch conntype {
+		case "ws":
+			if link.Rel == wsRel {
+				urls = append(urls, link.Href)
+			}
+		case "bosh":
+			if link.Rel == boshRel {
+				urls = append(urls, link.Href)
+			}
+		default:
+			panic("xmpp.lookupHostMeta: Invalid conntype specified")
 		}
 	}
 	return urls, err
