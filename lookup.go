@@ -5,7 +5,6 @@
 package xmpp
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"net"
 	"net/http"
@@ -20,17 +19,12 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-// BUG(ssw): RFC6415 says that JSON may be returned by the host-meta file if we
-//           set an Accepts header of "application/json"; we should try this
-//           too in case they don't have a host-meta.json file.
-
 const (
-	wsPrefix     = "_xmpp-client-websocket="
-	boshPrefix   = "_xmpp-client-xbosh="
-	wsRel        = "urn:xmpp:alt-connections:websocket"
-	boshRel      = "urn:xmpp:alt-connections:xbosh"
-	hostMetaXML  = "/.well-known/host-meta"
-	hostMetaJSON = "/.well-known/host-meta.json"
+	wsPrefix    = "_xmpp-client-websocket="
+	boshPrefix  = "_xmpp-client-xbosh="
+	wsRel       = "urn:xmpp:alt-connections:websocket"
+	boshRel     = "urn:xmpp:alt-connections:xbosh"
+	hostMetaXML = "/.well-known/host-meta"
 )
 
 var (
@@ -133,42 +127,8 @@ func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype str
 	}
 	url.Path = ""
 
-	ctx, cancel := context.WithCancel(ctx)
-
-	var (
-		xrd *internal.XRD
-		wg  sync.WaitGroup
-	)
-
-	// Race! If one of the two goroutines does not error, we want that one. If
-	// both error, or both are error free, we don't care.
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		defer cancel()
-		x, e := getHostMetaXML(ctx, client, url.String())
-		if e != nil {
-			err = e
-			return
-		}
-		xrd, err = &x, e
-	}()
-	go func() {
-		defer wg.Done()
-		defer cancel()
-		x, e := getHostMetaJSON(ctx, client, url.String())
-		if e != nil {
-			err = e
-			return
-		}
-		xrd, err = &x, e
-	}()
-
-	// TODO: Don't use a waitgroup; instead return when either goroutine returns
-	// successfully.
-	wg.Wait()
-
-	if xrd == nil {
+	xrd, err := getHostMetaXML(ctx, client, url.String())
+	if err != nil {
 		return urls, err
 	}
 
@@ -211,23 +171,4 @@ func getHostMetaXML(
 			}
 		}
 	}
-}
-
-func getHostMetaJSON(
-	ctx context.Context, client *http.Client, name string) (xrd internal.XRD, err error) {
-	resp, err := ctxhttp.Get(ctx, client, path.Join(name, hostMetaJSON))
-	if err != nil {
-		return xrd, err
-	}
-
-	if _, ok := <-ctx.Done(); ok {
-		return xrd, ctx.Err()
-	}
-
-	d := json.NewDecoder(resp.Body)
-
-	// TODO: We should probably tokenize this and have the ability to cancel
-	// anywhere in between.
-	err = d.Decode(&xrd)
-	return xrd, err
 }
