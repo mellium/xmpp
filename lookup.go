@@ -20,6 +20,10 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
+// BUG(ssw): RFC6415 says that JSON may be returned by the host-meta file if we
+//           set an Accepts header of "application/json"; we should try this
+//           too in case they don't have a host-meta.json file.
+
 const (
 	wsPrefix     = "_xmpp-client-websocket="
 	boshPrefix   = "_xmpp-client-xbosh="
