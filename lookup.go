@@ -41,7 +41,7 @@ var (
 // Discovering Alternative XMPP Connection Methods. If client is nil, only DNS
 // is queried.
 func LookupWebsocket(ctx context.Context, client *http.Client, addr *jid.JID) (urls []string, err error) {
-	return lookupConn(ctx, client, addr, "ws")
+	return lookupEndpoint(ctx, client, addr, "ws")
 }
 
 // LookupBOSH discovers BOSH endpoints that are valid for the given address
@@ -49,10 +49,10 @@ func LookupWebsocket(ctx context.Context, client *http.Client, addr *jid.JID) (u
 // Discovering Alternative XMPP Connection Methods. If client is nil, only DNS
 // is queried.
 func LookupBOSH(ctx context.Context, client *http.Client, addr *jid.JID) (urls []string, err error) {
-	return lookupConn(ctx, client, addr, "bosh")
+	return lookupEndpoint(ctx, client, addr, "bosh")
 }
 
-func lookupConn(ctx context.Context, client *http.Client, addr *jid.JID, conntype string) (urls []string, err error) {
+func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, conntype string) (urls []string, err error) {
 	// TODO: Should these even be fetched concurrently?
 	var (
 		u  []string
