@@ -74,6 +74,7 @@ func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, con
 			wg.Done()
 		}()
 	}
+	wg.Wait()
 
 	switch {
 	case err == nil && len(urls) > 0:
