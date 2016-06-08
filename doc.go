@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 // Package xmpp provides functionality from the Extensible Messaging and
-// Presence Protocol (more commonly known as XMPP).
+// Presence Protocol.
 //
 // Be advised: This API is still unstable and is subject to change.
 package xmpp // import "mellium.im/xmpp"
