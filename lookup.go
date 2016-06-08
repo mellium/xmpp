@@ -109,6 +109,11 @@ func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, con
 
 func lookupDNS(ctx context.Context, name, conntype string) (urls []string, err error) {
 	validateConnTypeOrPanic(conntype)
+	select {
+	case <-ctx.Done():
+		return urls, ctx.Err()
+	default:
+	}
 
 	txts, err := net.LookupTXT(name)
 	if err != nil {
@@ -117,8 +122,10 @@ func lookupDNS(ctx context.Context, name, conntype string) (urls []string, err e
 
 	var s string
 	for _, txt := range txts {
-		if _, ok := <-ctx.Done(); ok {
+		select {
+		case <-ctx.Done():
 			return urls, ctx.Err()
+		default:
 		}
 		switch conntype {
 		case "ws":
@@ -139,6 +146,11 @@ func lookupDNS(ctx context.Context, name, conntype string) (urls []string, err e
 
 func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype string) (urls []string, err error) {
 	validateConnTypeOrPanic(conntype)
+	select {
+	case <-ctx.Done():
+		return urls, ctx.Err()
+	default:
+	}
 
 	url, err := url.Parse(name)
 	if err != nil {

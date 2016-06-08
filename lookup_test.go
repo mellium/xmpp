@@ -6,6 +6,8 @@ package xmpp
 
 import (
 	"testing"
+
+	"golang.org/x/net/context"
 )
 
 // If an invalid connection type is looked up, we should panic.
@@ -15,7 +17,7 @@ func TestLookupEndpointPanicsOnInvalidType(t *testing.T) {
 			t.Error("lookupEndpoint should panic if an invalid conntype is specified.")
 		}
 	}()
-	lookupEndpoint(nil, nil, nil, "wssorbashorsomething")
+	lookupEndpoint(context.Background(), nil, nil, "wssorbashorsomething")
 }
 
 // If an invalid connection type is looked up, we should panic.
@@ -25,7 +27,7 @@ func TestLookupDNSPanicsOnInvalidType(t *testing.T) {
 			t.Error("lookupDNS should panic if an invalid conntype is specified.")
 		}
 	}()
-	lookupDNS(nil, "name", "wssorbashorsomething")
+	lookupDNS(context.Background(), "name", "wssorbashorsomething")
 }
 
 // If an invalid connection type is looked up, we should panic.
@@ -35,5 +37,18 @@ func TestLookupHostMetaPanicsOnInvalidType(t *testing.T) {
 			t.Error("lookupHostMeta should panic if an invalid conntype is specified.")
 		}
 	}()
-	lookupHostMeta(nil, nil, "name", "wssorbashorsomething")
+	lookupHostMeta(context.Background(), nil, "name", "wssorbashorsomething")
+}
+
+// The lookup methods should not run if the context is canceled.
+func TestLookupMethodsDoNotRunIfContextIsDone(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	if _, err := lookupDNS(ctx, "name", "ws"); err != context.Canceled {
+		t.Error("lookupDNS should not run if the context is canceled.")
+	}
+	if _, err := lookupHostMeta(ctx, nil, "name", "ws"); err != context.Canceled {
+		t.Error("lookupHostMeta should not run if the context is canceled.")
+	}
 }
