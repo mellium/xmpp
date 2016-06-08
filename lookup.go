@@ -35,22 +35,29 @@ var (
 )
 
 // LookupWebsocket discovers websocket endpoints that are valid for the given
-// address using DNS TXT records and Web Host Metadata as described in XEP-0156:
-// Discovering Alternative XMPP Connection Methods. If client is nil, only DNS
-// is queried.
+// address using DNS TXT records and Web Host Metadata as described in XEP-0156.
+// If client is nil, only DNS is queried.
 func LookupWebsocket(ctx context.Context, client *http.Client, addr *jid.JID) (urls []string, err error) {
 	return lookupEndpoint(ctx, client, addr, "ws")
 }
 
 // LookupBOSH discovers BOSH endpoints that are valid for the given address
-// using DNS TXT records and Web Host Metadata as described in XEP-0156:
-// Discovering Alternative XMPP Connection Methods. If client is nil, only DNS
-// is queried.
+// using DNS TXT records and Web Host Metadata as described in XEP-0156. If
+// client is nil, only DNS is queried.
 func LookupBOSH(ctx context.Context, client *http.Client, addr *jid.JID) (urls []string, err error) {
 	return lookupEndpoint(ctx, client, addr, "bosh")
 }
 
+func validateConnTypeOrPanic(conntype string) {
+
+	if conntype != "ws" && conntype != "bosh" {
+		panic("xmpp.lookupEndpoint: Invalid conntype specified")
+	}
+}
+
 func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, conntype string) (urls []string, err error) {
+	validateConnTypeOrPanic(conntype)
+
 	// TODO: Should these even be fetched concurrently?
 	var (
 		u  []string
@@ -91,6 +98,8 @@ func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, con
 // TODO(ssw): Rely on the OS DNS cache, or cache lookups ourselves?
 
 func lookupDNS(ctx context.Context, name, conntype string) (urls []string, err error) {
+	validateConnTypeOrPanic(conntype)
+
 	txts, err := net.LookupTXT(name)
 	if err != nil {
 		return urls, err
@@ -110,8 +119,6 @@ func lookupDNS(ctx context.Context, name, conntype string) (urls []string, err e
 			if s = strings.TrimPrefix(txt, boshPrefix); s != txt {
 				urls = append(urls, s)
 			}
-		default:
-			panic("xmpp.lookupHostMeta: Invalid conntype specified")
 		}
 	}
 
@@ -121,6 +128,8 @@ func lookupDNS(ctx context.Context, name, conntype string) (urls []string, err e
 // TODO(ssw): Memoize the following functions?
 
 func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype string) (urls []string, err error) {
+	validateConnTypeOrPanic(conntype)
+
 	url, err := url.Parse(name)
 	if err != nil {
 		return urls, err
@@ -142,8 +151,6 @@ func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype str
 			if link.Rel == boshRel {
 				urls = append(urls, link.Href)
 			}
-		default:
-			panic("xmpp.lookupHostMeta: Invalid conntype specified")
 		}
 	}
 	return urls, err

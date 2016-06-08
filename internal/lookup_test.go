@@ -23,14 +23,14 @@ func TestUnmarshalWellKnownXML(t *testing.T) {
 </XRD>`)
 	var xrd XRD
 	if err := xml.Unmarshal(hostMeta, &xrd); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	switch {
 	case len(xrd.Links) != 2:
-		t.Fatalf("Expected 2 links in xrd unmarshal output, but found %d", len(xrd.Links))
+		t.Errorf("Expected 2 links in xrd unmarshal output, but found %d", len(xrd.Links))
 	case xrd.Links[0] != boshLink:
-		t.Fatalf("Expected %v, but got %v", boshLink, xrd.Links[0])
+		t.Errorf("Expected %v, but got %v", boshLink, xrd.Links[0])
 	case xrd.Links[1] != wsLink:
-		t.Fatalf("Expected %v, but got %v", wsLink, xrd.Links[1])
+		t.Errorf("Expected %v, but got %v", wsLink, xrd.Links[1])
 	}
 }
