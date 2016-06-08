@@ -49,7 +49,6 @@ func LookupBOSH(ctx context.Context, client *http.Client, addr *jid.JID) (urls [
 }
 
 func validateConnTypeOrPanic(conntype string) {
-
 	if conntype != "ws" && conntype != "bosh" {
 		panic("xmpp.lookupEndpoint: Invalid conntype specified")
 	}
@@ -58,7 +57,6 @@ func validateConnTypeOrPanic(conntype string) {
 func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, conntype string) (urls []string, err error) {
 	validateConnTypeOrPanic(conntype)
 
-	// TODO: Should these even be fetched concurrently?
 	var (
 		u  []string
 		e  error
@@ -67,16 +65,28 @@ func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, con
 		name = addr.Domainpart()
 	)
 
+	ctx, cancel := context.WithCancel(ctx)
+
 	wg.Add(1)
 	go func() {
+		defer func() {
+			if err == nil && len(urls) > 0 {
+				cancel()
+			}
+			wg.Done()
+		}()
 		urls, err = lookupDNS(ctx, name, conntype)
-		wg.Done()
 	}()
 	if client != nil {
 		wg.Add(1)
 		go func() {
+			defer func() {
+				if e == nil && len(u) > 0 {
+					cancel()
+				}
+				wg.Done()
+			}()
 			u, e = lookupHostMeta(ctx, client, name, conntype)
-			wg.Done()
 		}()
 	}
 	wg.Wait()
