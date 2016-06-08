@@ -15,10 +15,10 @@ import (
 
 // Dial connects to the address on the named network.
 //
-// For a list of understood networks, see net.Dial.
-func Dial(network string, addr *jid.JID) (*Conn, error) {
+// For a list of understood networks, see DialC
+func Dial(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
 	var d Dialer
-	return d.Dial(network, addr)
+	return d.Dial(ctx, network, addr)
 }
 
 // A Dialer contains options for connecting to an XMPP address.
@@ -60,28 +60,17 @@ func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Tim
 	return minNonzeroTime(earliest, d.Deadline)
 }
 
-// Dial connects to the address on the named network.
-//
+// Dial connects to the address on the named network using the provided context.
 // See func Dial for a description of the network and address parameters.
-func (d *Dialer) Dial(network string, addr *jid.JID) (*Conn, error) {
-	return d.DialContext(context.Background(), network, addr)
-}
-
-// DialContext connects to the address on the named network using
-// the provided context. See func Dial for a description of the network and
-// address parameters.
 //
 // The provided Context must be non-nil. If the context expires before
 // the connection is complete, an error is returned. Once successfully
 // connected, any expiration of the context will not affect the
 // connection.
-//
-// See func Dial for a description of the network and address
-// parameters.
-func (d *Dialer) DialContext(
+func (d *Dialer) Dial(
 	ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
 	if ctx == nil {
-		panic("xmpp.DialContext: nil context")
+		panic("xmpp.Dial: nil context")
 	}
 
 	deadline := d.deadline(ctx, time.Now())
