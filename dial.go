@@ -13,12 +13,15 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-// Dial connects to the address on the named network.
+// DialClient connects to the address on the named network with a
+// client-to-server (c2s) connection.
 //
-// For a list of understood networks, see DialC
-func Dial(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
+// Network may be any of the network types supported by net.Dial, but you almost
+// certainly want to use one of the tcp connection types ("tcp", "tcp4", or
+// "tcp6").
+func DialClient(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
 	var d Dialer
-	return d.Dial(ctx, network, addr)
+	return d.DialClient(ctx, network, addr)
 }
 
 // A Dialer contains options for connecting to an XMPP address.
@@ -60,14 +63,16 @@ func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Tim
 	return minNonzeroTime(earliest, d.Deadline)
 }
 
-// Dial connects to the address on the named network using the provided context.
-// See func Dial for a description of the network and address parameters.
+// DialClient connects to the address on the named network with a c2s connection
+// using the provided context.
 //
 // The provided Context must be non-nil. If the context expires before
 // the connection is complete, an error is returned. Once successfully
 // connected, any expiration of the context will not affect the
 // connection.
-func (d *Dialer) Dial(
+//
+// See func Dial for a description of the network and address parameters.
+func (d *Dialer) DialClient(
 	ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
 	if ctx == nil {
 		panic("xmpp.Dial: nil context")
@@ -99,7 +104,7 @@ func (d *Dialer) Dial(
 		network: network,
 	}
 
-	_, addrs, err := net.LookupSRV(network, "tcp", addr.Domainpart())
+	_, addrs, err := net.LookupSRV("xmpp-client", "tcp", addr.Domainpart())
 	if err != nil {
 		// Use domain and default port.
 		p, err := net.LookupPort("tcp", network)
@@ -116,7 +121,7 @@ func (d *Dialer) Dial(
 	// connection is established.
 	for _, addr := range addrs {
 		if conn, e := d.Dialer.Dial(
-			"tcp", net.JoinHostPort(
+			network, net.JoinHostPort(
 				addr.Target, strconv.FormatUint(uint64(addr.Port), 10),
 			),
 		); e != nil {
