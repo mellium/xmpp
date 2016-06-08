@@ -5,8 +5,6 @@
 package xmpp
 
 import (
-	"crypto/tls"
-	"log"
 	"net"
 	"time"
 
@@ -18,14 +16,9 @@ import (
 type Conn struct {
 	conn net.Conn
 
-	log           *log.Logger
-	tlsConfig     *tls.Config
-	conntype      string
-	srvExpiration time.Duration
-	dialer        net.Dialer
-	network       string
-	raddr         *jid.JID
-	laddr         *jid.JID
+	network string
+	raddr   *jid.JID
+	laddr   *jid.JID
 }
 
 // Read reads data from the connection.
