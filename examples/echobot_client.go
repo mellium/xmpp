@@ -2,7 +2,7 @@
 
 // The echobot command is a pretend XMPP bot written using the (as yet
 // non-existant) higher level mellium.im/xmpp/client package. It is to
-// experiment with and prove out the API for won't actually compile (yet).
+// experiment with and prove out the API; it won't actually compile (yet).
 package main
 
 import (
