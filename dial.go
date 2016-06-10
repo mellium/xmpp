@@ -129,25 +129,9 @@ func (d *Dialer) Dial(
 		network: network,
 	}
 
-	service := d.connType()
-	_, addrs, err := net.LookupSRV(service, "tcp", addr.Domainpart())
+	addrs, err := lookupService(d.connType(), addr.Domain())
 	if err != nil {
-		// Use domain and default port.
-		p, err := net.LookupPort("tcp", service)
-		if err != nil {
-			switch service {
-			case "xmpp-client":
-				p = 5222
-			case "xmpp-server":
-				p = 5269
-			default:
-				return nil, err
-			}
-		}
-		addrs = []*net.SRV{{
-			Target: addr.Domainpart(),
-			Port:   uint16(p),
-		}}
+		return nil, err
 	}
 
 	// Try dialing all of the SRV records we know about, breaking as soon as the

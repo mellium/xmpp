@@ -6,6 +6,7 @@ package xmpp
 
 import (
 	"encoding/xml"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -28,11 +29,54 @@ const (
 )
 
 var (
+	ErrNoServiceAtAddress = errors.New("This address does not offer the requested service")
+)
+
+var (
 	xrdName = xml.Name{
 		Space: "http://docs.oasis-open.org/ns/xri/xrd-1.0",
 		Local: "XRD",
 	}
 )
+
+// lookupService looks for an XMPP service hosted by the given address. It
+// returns addresses from SRV records or the default domain (as a fake SRV
+// record) if no real records exist. Service should be one of "xmpp-client" or
+// "xmpp-server".
+func lookupService(service string, addr *jid.JID) (addrs []*net.SRV, err error) {
+	_, addrs, err = net.LookupSRV(service, "tcp", addr.Domainpart())
+
+	// RFC 6230 §3.2.1
+	//    3.  If a response is received, it will contain one or more
+	//        combinations of a port and FDQN, each of which is weighted and
+	//        prioritized as described in [DNS-SRV].  (However, if the result
+	//        of the SRV lookup is a single resource record with a Target of
+	//        ".", i.e., the root domain, then the initiating entity MUST abort
+	//        SRV processing at this point because according to [DNS-SRV] such
+	//        a Target "means that the service is decidedly not available at
+	//        this domain".)
+	if err == nil && len(addrs) == 1 && addrs[0].Target == "." {
+		return addrs, err
+	}
+
+	// Use domain and default port.
+	p, err := net.LookupPort("tcp", service)
+	if err != nil {
+		switch service {
+		case "xmpp-client":
+			p = 5222
+		case "xmpp-server":
+			p = 5269
+		default:
+			return nil, err
+		}
+	}
+	addrs = []*net.SRV{{
+		Target: addr.Domainpart(),
+		Port:   uint16(p),
+	}}
+	return addrs, nil
+}
 
 // LookupWebsocket discovers websocket endpoints that are valid for the given
 // address using DNS TXT records and Web Host Metadata as described in XEP-0156.
