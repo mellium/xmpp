@@ -20,7 +20,7 @@ import (
 // method.
 func DialClient(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
 	var d Dialer
-	d.ConnType = "xmpp-client"
+	d.Service = "xmpp-client"
 	return d.Dial(ctx, network, addr)
 }
 
@@ -31,7 +31,7 @@ func DialClient(ctx context.Context, network string, addr *jid.JID) (*Conn, erro
 // method.
 func DialServer(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
 	var d Dialer
-	d.ConnType = "xmpp-server"
+	d.Service = "xmpp-server"
 	return d.Dial(ctx, network, addr)
 }
 
@@ -43,9 +43,9 @@ func DialServer(ctx context.Context, network string, addr *jid.JID) (*Conn, erro
 type Dialer struct {
 	net.Dialer
 
-	// ConnType is the connection type that the dialer will create (either
+	// Service is the connection type that the dialer will create (either
 	// xmpp-client or xmpp-server).
-	ConnType string
+	Service string
 }
 
 // Copied from the net package in the standard library. Copyright The Go
@@ -79,10 +79,10 @@ func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Tim
 }
 
 func (d *Dialer) connType() string {
-	if d.ConnType == "" {
+	if d.Service == "" {
 		return "xmpp-client"
 	} else {
-		return d.ConnType
+		return d.Service
 	}
 }
 
@@ -129,12 +129,20 @@ func (d *Dialer) Dial(
 		network: network,
 	}
 
-	_, addrs, err := net.LookupSRV(d.connType(), "tcp", addr.Domainpart())
+	service := d.connType()
+	_, addrs, err := net.LookupSRV(service, "tcp", addr.Domainpart())
 	if err != nil {
 		// Use domain and default port.
-		p, err := net.LookupPort("tcp", network)
+		p, err := net.LookupPort("tcp", service)
 		if err != nil {
-			return nil, err
+			switch service {
+			case "xmpp-client":
+				p = 5222
+			case "xmpp-server":
+				p = 5269
+			default:
+				return nil, err
+			}
 		}
 		addrs = []*net.SRV{{
 			Target: addr.Domainpart(),
