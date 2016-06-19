@@ -40,18 +40,6 @@ const (
 	StreamRestartRequired
 )
 
-type stream struct {
-	encoder *xml.Encoder
-	decoder *xml.Decoder
-}
-
-func newStream(rw io.ReadWriter) stream {
-	return stream{
-		encoder: xml.NewEncoder(rw),
-		decoder: xml.NewDecoder(rw),
-	}
-}
-
 // NewConn attempts to use an existing connection (or any io.ReadWriteCloser) to
 // negotiate an XMPP session based on the given config. If the provided context
 // is canceled before stream negotiation is complete an error is returned. After
@@ -60,6 +48,8 @@ func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn
 	c := &Conn{
 		config: config,
 		rwc:    rwc,
+		e:      xml.NewEncoder(rwc),
+		d:      xml.NewDecoder(rwc),
 	}
 	return c, c.connect(ctx)
 }
@@ -68,10 +58,11 @@ func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn
 // server and connect to the correct ports.
 type Conn struct {
 	config   *Config
-	in, out  stream
 	rwc      io.ReadWriteCloser
 	state    SessionState
 	received bool
+	e        *xml.Encoder
+	d        *xml.Decoder
 }
 
 func (c *Conn) connect(ctx context.Context) error {
