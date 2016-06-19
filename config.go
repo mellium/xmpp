@@ -61,3 +61,10 @@ func NewServerConfig(location, origin *jid.JID) *Config {
 		},
 	}
 }
+
+func (config *Config) connType() string {
+	if config.S2S {
+		return "xmpp-server"
+	}
+	return "xmpp-client"
+}

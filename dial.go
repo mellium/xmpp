@@ -6,7 +6,6 @@ package xmpp
 
 import (
 	"net"
-	"strconv"
 	"time"
 
 	"golang.org/x/net/context"
@@ -56,6 +55,11 @@ func Dial(ctx context.Context, network string, config *Config) (*Conn, error) {
 // the DialClient function.
 type Dialer struct {
 	net.Dialer
+
+	// NoLookup stops the dialer from looking up SRV or TXT records for the given
+	// domain. It also prevents fetching of the host metadata file.
+	// Instead, it will try to connect to the domain directly.
+	NoLookup bool
 }
 
 // Copied from the net package in the standard library. Copyright The Go
@@ -88,13 +92,6 @@ func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Tim
 	return minNonzeroTime(earliest, d.Deadline)
 }
 
-func connType(config *Config) string {
-	if config.S2S {
-		return "xmpp-server"
-	}
-	return "xmpp-client"
-}
-
 // DialClient discovers and connects to the address on the named network that
 // services the given local address with a client-to-server (c2s) connection.
 //
@@ -125,63 +122,4 @@ func (d *Dialer) Dial(
 	c.connect(ctx)
 
 	return c, err
-}
-
-func (d *Dialer) dial(
-	ctx context.Context, network string, config *Config) (*Conn, error) {
-	if ctx == nil {
-		panic("xmpp.Dial: nil context")
-	}
-
-	deadline := d.deadline(ctx, time.Now())
-	if !deadline.IsZero() {
-		if d, ok := ctx.Deadline(); !ok || deadline.Before(d) {
-			subCtx, cancel := context.WithDeadline(ctx, deadline)
-			defer cancel()
-			ctx = subCtx
-		}
-	}
-	if oldCancel := d.Cancel; oldCancel != nil {
-		subCtx, cancel := context.WithCancel(ctx)
-		defer cancel()
-		go func() {
-			select {
-			case <-oldCancel:
-				cancel()
-			case <-subCtx.Done():
-			}
-		}()
-		ctx = subCtx
-	}
-
-	c := &Conn{
-		config: config,
-	}
-
-	addrs, err := lookupService(connType(config), c.RemoteAddr())
-	if err != nil {
-		return nil, err
-	}
-
-	// Try dialing all of the SRV records we know about, breaking as soon as the
-	// connection is established.
-	for _, addr := range addrs {
-		if conn, e := d.Dialer.Dial(
-			network, net.JoinHostPort(
-				addr.Target, strconv.FormatUint(uint64(addr.Port), 10),
-			),
-		); e != nil {
-			err = e
-			continue
-		} else {
-			err = nil
-			c.rwc = conn
-			break
-		}
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return c, nil
 }

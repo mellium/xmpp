@@ -39,11 +39,27 @@ var (
 	}
 )
 
+func lookupPort(network, service string) (int, error) {
+	p, err := net.LookupPort(network, service)
+	if err == nil {
+		return p, err
+	}
+	switch service {
+	case "xmpp-client":
+		return 5222, nil
+	case "xmpp-server":
+		return 5269, nil
+	case "xmpp-bosh":
+		return 5280, nil
+	}
+	return 0, err
+}
+
 // lookupService looks for an XMPP service hosted by the given address. It
 // returns addresses from SRV records or the default domain (as a fake SRV
 // record) if no real records exist. Service should be one of "xmpp-client" or
 // "xmpp-server".
-func lookupService(service string, addr net.Addr) (addrs []*net.SRV, err error) {
+func lookupService(service, network string, addr net.Addr) (addrs []*net.SRV, err error) {
 	switch j := addr.(type) {
 	case *jid.JID:
 		addr = j.Domain()
@@ -64,18 +80,9 @@ func lookupService(service string, addr net.Addr) (addrs []*net.SRV, err error) 
 	}
 
 	// Use domain and default port.
-	p, err := net.LookupPort("tcp", service)
+	p, err := lookupPort(network, service)
 	if err != nil {
-		switch service {
-		case "xmpp-client":
-			p = 5222
-		case "xmpp-server":
-			p = 5269
-		case "xmpp-bosh":
-			p = 5280
-		default:
-			return nil, err
-		}
+		return nil, err
 	}
 	addrs = []*net.SRV{{
 		Target: addr.String(),
