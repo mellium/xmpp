@@ -5,9 +5,8 @@
 package xmpp
 
 import (
+	"context"
 	"testing"
-
-	"golang.org/x/net/context"
 )
 
 // If an invalid connection type is looked up, we should panic.

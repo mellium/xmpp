@@ -5,13 +5,12 @@
 package xmpp
 
 import (
+	"context"
 	"encoding/xml"
 	"errors"
 	"io"
 	"net"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // SessionState represents the current state of an XMPP session. For a

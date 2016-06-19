@@ -5,9 +5,8 @@
 package xmpp
 
 import (
+	"context"
 	"encoding/xml"
-
-	"golang.org/x/net/context"
 )
 
 // StartTLS returns a new stream feature that can be used for negotiating TLS.

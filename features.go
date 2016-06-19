@@ -5,9 +5,8 @@
 package xmpp
 
 import (
+	"context"
 	"encoding/xml"
-
-	"golang.org/x/net/context"
 )
 
 // A StreamFeature represents a feature that may be selected during stream
