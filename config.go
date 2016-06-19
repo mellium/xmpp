@@ -12,11 +12,6 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-// StreamFeatures represents a list of handlers for starting XMPP stream
-// features (eg. STARTTLS). While the feature is being negotiated, the given
-// function has complete control over the XML stream and the session.
-type StreamFeatures map[xml.Name]func(e xml.Encoder, d xml.Decoder)
-
 // Config represents the configuration of an XMPP session.
 type Config struct {
 	// An XMPP server address.
@@ -31,18 +26,38 @@ type Config struct {
 	// TLS config for STARTTLS.
 	TLSConfig *tls.Config
 
-	Features StreamFeatures
+	// True if this is a server-to-server session.
+	S2S bool
+
+	// The supported stream features.
+	Features map[xml.Name]StreamFeature
 }
 
-// NewConfig constructs a new session configuration with some sane defaults. The
-// resulting config supports features to auth against most XMPP servers off the
-// shelf.
-func NewConfig(server, origin *jid.JID) *Config {
+// NewClientConfig constructs a new client-to-server session configuration with
+// sane defaults.
+func NewClientConfig(origin *jid.JID) *Config {
 	return &Config{
-		Location: server,
+		Location: origin.Domain(),
 		Origin:   origin,
 		Version:  internal.DefaultVersion,
 
-		Features: StreamFeatures{},
+		Features: map[xml.Name]StreamFeature{
+		// TODO
+		},
+	}
+}
+
+// NewServerConfig constructs a new server-to-server session configuration with
+// sane defaults.
+func NewServerConfig(location, origin *jid.JID) *Config {
+	return &Config{
+		Location: location,
+		Origin:   origin,
+		S2S:      true,
+		Version:  internal.DefaultVersion,
+
+		Features: map[xml.Name]StreamFeature{
+		// TODO
+		},
 	}
 }

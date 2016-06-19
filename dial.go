@@ -13,26 +13,40 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-// DialClient connects to the address on the named network with a
-// client-to-server (c2s) connection.
+// DialClient discovers and connects to the address on the named network that
+// services the given local address with a client-to-server (c2s) connection.
 //
-// For a description of the network and addr arguments see the Dialer.Dial
-// method.
-func DialClient(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
+// laddr is the clients origin address. The remote address is taken from the
+// origins domain part or from the domains SRV records. For a description of the
+// ctx and network arguments, see the Dial function.
+func DialClient(ctx context.Context, network string, laddr *jid.JID) (*Conn, error) {
 	var d Dialer
-	d.Service = "xmpp-client"
-	return d.Dial(ctx, network, addr)
+	return d.DialClient(ctx, network, laddr)
 }
 
 // DialServer connects to the address on the named network with a
 // server-to-server (s2s) connection.
 //
-// For a description of the network and addr arguments see the Dialer.Dial
-// method.
-func DialServer(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
+// raddr is the remote servers address and laddr is the local servers origin
+// address. For a description of the ctx and network arguments, see the Dial
+// function.
+func DialServer(ctx context.Context, network string, raddr, laddr *jid.JID) (*Conn, error) {
 	var d Dialer
-	d.Service = "xmpp-server"
-	return d.Dial(ctx, network, addr)
+	return d.DialServer(ctx, network, raddr, laddr)
+}
+
+// Dial connects to the address on the named network using the provided config.
+//
+// The context must be non-nil. If the context expires before the connection is
+// complete, an error is returned. Once successfully connected, any expiration
+// of the context will not affect the connection.
+//
+// Network may be any of the network types supported by net.Dial, but you almost
+// certainly want to use one of the tcp connection types ("tcp", "tcp4", or
+// "tcp6").
+func Dial(ctx context.Context, network string, config *Config) (*Conn, error) {
+	var d Dialer
+	return d.Dial(ctx, network, config)
 }
 
 // A Dialer contains options for connecting to an XMPP address.
@@ -42,10 +56,6 @@ func DialServer(ctx context.Context, network string, addr *jid.JID) (*Conn, erro
 // the DialClient function.
 type Dialer struct {
 	net.Dialer
-
-	// Service is the connection type that the dialer will create (either
-	// xmpp-client or xmpp-server).
-	Service string
 }
 
 // Copied from the net package in the standard library. Copyright The Go
@@ -78,27 +88,36 @@ func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Tim
 	return minNonzeroTime(earliest, d.Deadline)
 }
 
-func (d *Dialer) connType() string {
-	if d.Service == "" {
-		return "xmpp-client"
-	} else {
-		return d.Service
+func connType(config *Config) string {
+	if config.S2S {
+		return "xmpp-server"
 	}
+	return "xmpp-client"
 }
 
-// Dial connects to the address on the named network using the provided context.
+// DialClient discovers and connects to the address on the named network that
+// services the given local address with a client-to-server (c2s) connection.
 //
-// The context must be non-nil. If the context expires before the connection is
-// complete, an error is returned. Once successfully connected, any expiration
-// of the context will not affect the connection.
+// For a description of the arguments see the DialClient function.
+func (d *Dialer) DialClient(ctx context.Context, network string, laddr *jid.JID) (*Conn, error) {
+	c := NewClientConfig(laddr)
+	return d.Dial(ctx, network, c)
+}
+
+// DialServer connects to the address on the named network with a
+// server-to-server (s2s) connection.
 //
-// Network may be any of the network types supported by net.Dial, but you almost
-// certainly want to use one of the tcp connection types ("tcp", "tcp4", or
-// "tcp6"). The address is the local address that you want to make a connection
-// for, and the remote address is taken from the JIDs domainpart (@example.com)
-// or from the domains SRV records.
+// For a description of the arguments see the DialServer function.
+func (d *Dialer) DialServer(ctx context.Context, network string, raddr, laddr *jid.JID) (*Conn, error) {
+	c := NewServerConfig(raddr, laddr)
+	return d.Dial(ctx, network, c)
+}
+
+// Dial connects to the address on the named network using the provided config.
+//
+// For a description of the arguments see the Dial function.
 func (d *Dialer) Dial(
-	ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
+	ctx context.Context, network string, config *Config) (*Conn, error) {
 	if ctx == nil {
 		panic("xmpp.Dial: nil context")
 	}
@@ -125,11 +144,11 @@ func (d *Dialer) Dial(
 	}
 
 	c := &Conn{
-		laddr:   addr,
+		config:  config,
 		network: network,
 	}
 
-	addrs, err := lookupService(d.connType(), addr.Domain())
+	addrs, err := lookupService(connType(config), c.RemoteAddr())
 	if err != nil {
 		return nil, err
 	}

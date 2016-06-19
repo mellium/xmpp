@@ -5,20 +5,65 @@
 package xmpp
 
 import (
+	"encoding/xml"
+	"io"
 	"net"
 	"time"
-
-	"mellium.im/xmpp/jid"
 )
+
+// SessionState represents the current state of an XMPP session. For a
+// description of each bit, see the various SessionState typed constants.
+type SessionState int8
+
+const (
+	// Indicates that the underlying connection has been secured. For instance,
+	// after STARTTLS has been performed or if an already secure connection is
+	// being used such as websockets over HTTPS.
+	Secure SessionState = 1 << iota
+
+	// Indicates that the session has been authenticated via SASL.
+	Authn
+
+	// Indicates that an XMPP resource has been bound.
+	Bind
+
+	// Indicates that the session is fully negotiated and that XMPP stanzas may be
+	// sent and received.
+	Ready
+
+	// Indicates that the session's streams must be restarted. This bit will
+	// trigger an automatic restart and will be flipped back to off as soon as the
+	// stream is restarted.
+	StreamRestartRequired
+)
+
+type stream struct {
+	encoder *xml.Encoder
+	decoder *xml.Decoder
+}
+
+func newStream(rw io.ReadWriter) stream {
+	return stream{
+		encoder: xml.NewEncoder(rw),
+		decoder: xml.NewDecoder(rw),
+	}
+}
 
 // A Conn represents an XMPP connection that can perform SRV lookups for a given
 // server and connect to the correct ports.
 type Conn struct {
-	conn net.Conn
+	config   *Config
+	conn     net.Conn
+	in, out  stream
+	network  string
+	rwc      io.ReadWriteCloser
+	state    SessionState
+	received bool
+}
 
-	network string
-	raddr   *jid.JID
-	laddr   *jid.JID
+// Config returns the connections config.
+func (conn *Conn) Config() *Config {
+	return conn.config
 }
 
 // Read reads data from the connection.
@@ -37,14 +82,28 @@ func (c *Conn) Close() error {
 	return c.conn.Close()
 }
 
-// LocalAddr returns the local network address as a JID.
-func (c *Conn) LocalAddr() net.Addr {
-	return c.laddr
+// State returns the current state of the session.
+func (conn *Conn) State() SessionState {
+	return conn.state
 }
 
-// RemoteAddr returns the remote network address as a JID.
+// LocalAddr returns the Origin address for initiated connections, or the
+// Location for received connections.
+func (c *Conn) LocalAddr() net.Addr {
+	if c.received {
+		return c.config.Location
+	}
+
+	return c.config.Origin
+}
+
+// RemoteAddr returns the Location address for initiated connections, or the
+// Origin address for received connections.
 func (c *Conn) RemoteAddr() net.Addr {
-	return c.raddr
+	if c.received {
+		return c.config.Origin
+	}
+	return c.config.Location
 }
 
 // SetDeadline sets the read and write deadlines associated with the connection.

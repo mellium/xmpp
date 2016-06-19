@@ -43,8 +43,12 @@ var (
 // returns addresses from SRV records or the default domain (as a fake SRV
 // record) if no real records exist. Service should be one of "xmpp-client" or
 // "xmpp-server".
-func lookupService(service string, addr *jid.JID) (addrs []*net.SRV, err error) {
-	_, addrs, err = net.LookupSRV(service, "tcp", addr.Domainpart())
+func lookupService(service string, addr net.Addr) (addrs []*net.SRV, err error) {
+	switch j := addr.(type) {
+	case *jid.JID:
+		addr = j.Domain()
+	}
+	_, addrs, err = net.LookupSRV(service, "tcp", addr.String())
 
 	// RFC 6230 §3.2.1
 	//    3.  If a response is received, it will contain one or more
@@ -67,12 +71,14 @@ func lookupService(service string, addr *jid.JID) (addrs []*net.SRV, err error) 
 			p = 5222
 		case "xmpp-server":
 			p = 5269
+		case "xmpp-bosh":
+			p = 5280
 		default:
 			return nil, err
 		}
 	}
 	addrs = []*net.SRV{{
-		Target: addr.Domainpart(),
+		Target: addr.String(),
 		Port:   uint16(p),
 	}}
 	return addrs, nil
