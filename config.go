@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"encoding/xml"
 
+	"golang.org/x/text/language"
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/jid"
 )
@@ -20,17 +21,20 @@ type Config struct {
 	// An XMPP connection origin (local address).
 	Origin *jid.JID
 
-	// XMPP protocol version
-	Version internal.Version
+	// The supported stream features.
+	Features map[xml.Name]StreamFeature
 
-	// TLS config for STARTTLS.
-	TLSConfig *tls.Config
+	// The default language for any streams constructed using this config.
+	Lang language.Tag
 
 	// True if this is a server-to-server session.
 	S2S bool
 
-	// The supported stream features.
-	Features map[xml.Name]StreamFeature
+	// TLS config for STARTTLS.
+	TLSConfig *tls.Config
+
+	// XMPP protocol version
+	Version internal.Version
 }
 
 // NewClientConfig constructs a new client-to-server session configuration with
