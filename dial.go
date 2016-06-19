@@ -119,7 +119,6 @@ func (d *Dialer) Dial(
 	if err != nil {
 		return c, err
 	}
-	c.connect(ctx)
 
 	return c, err
 }

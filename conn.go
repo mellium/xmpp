@@ -51,7 +51,7 @@ func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn
 		e:      xml.NewEncoder(rwc),
 		d:      xml.NewDecoder(rwc),
 	}
-	return c, c.connect(ctx)
+	return c, c.negotiateStreams(ctx)
 }
 
 // A Conn represents an XMPP connection that can perform SRV lookups for a given
@@ -65,7 +65,7 @@ type Conn struct {
 	d        *xml.Decoder
 }
 
-func (c *Conn) connect(ctx context.Context) error {
+func (c *Conn) negotiateStreams(ctx context.Context) error {
 	// TODO(ssw)
 	panic("xmpp: connect not yet implemented")
 }
