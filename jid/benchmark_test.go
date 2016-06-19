@@ -55,6 +55,6 @@ func BenchmarkBare(b *testing.B) {
 func BenchmarkString(b *testing.B) {
 	j := &JID{"user", "example.com", "resource"}
 	for i := 0; i < b.N; i++ {
-		j.String()
+		_ = j.String()
 	}
 }

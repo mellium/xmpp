@@ -68,7 +68,6 @@ type Conn struct {
 func (c *Conn) connect(ctx context.Context) error {
 	// TODO(ssw)
 	panic("xmpp: connect not yet implemented")
-	return nil
 }
 
 // Config returns the connections config.

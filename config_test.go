@@ -12,7 +12,7 @@ import (
 func TestDefaultConnType(t *testing.T) {
 	c := &Config{}
 	if ct := c.connType(); ct != "xmpp-client" {
-		t.Error("Wrong default value for conntype; expected xmpp-client but got %s", ct)
+		t.Errorf("Wrong default value for conntype; expected xmpp-client but got %s", ct)
 	}
 }
 
@@ -20,6 +20,6 @@ func TestDefaultConnType(t *testing.T) {
 func TestS2SConnType(t *testing.T) {
 	c := &Config{S2S: true}
 	if ct := c.connType(); ct != "xmpp-server" {
-		t.Error("Wrong s2s value for conntype; expected xmpp-server but got %s", ct)
+		t.Errorf("Wrong s2s value for conntype; expected xmpp-server but got %s", ct)
 	}
 }

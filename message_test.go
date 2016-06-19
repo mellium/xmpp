@@ -41,7 +41,7 @@ func TestUnmarshalMessage(t *testing.T) {
 			To:   &jid.JID{},
 			From: &jid.JID{},
 		},
-		xml.Name{"", ""},
+		xml.Name{},
 	}
 	err := xml.Unmarshal(mb, m)
 	if err != nil {
@@ -72,7 +72,7 @@ func TestMarshalMessage(t *testing.T) {
 			To:   j,
 			Lang: "en",
 		},
-		xml.Name{"jabber:client", "message"},
+		xml.Name{Space: "jabber:client", Local: "message"},
 	}
 	// TODO: Check the output; is the order guaranteed?
 	if _, err := xml.Marshal(m); err != nil {
