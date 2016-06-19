@@ -12,10 +12,6 @@ bench:
 vet:
 	go vet $(PACKAGES)
 
-.PHONEY: ci
-ci: test bench vet
-	go build -race
-
 deps.svg: *.go
 	(   echo "digraph G {"; \
 	go list -f '{{range .Imports}}{{printf "\t%q -> %q;\n" $$.ImportPath .}}{{end}}' \
