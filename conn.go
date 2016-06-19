@@ -13,46 +13,6 @@ import (
 	"time"
 )
 
-// SessionState represents the current state of an XMPP session. For a
-// description of each bit, see the various SessionState typed constants.
-type SessionState int8
-
-const (
-	// Indicates that the underlying connection has been secured. For instance,
-	// after STARTTLS has been performed or if an already secure connection is
-	// being used such as websockets over HTTPS.
-	Secure SessionState = 1 << iota
-
-	// Indicates that the session has been authenticated via SASL.
-	Authn
-
-	// Indicates that an XMPP resource has been bound.
-	Bind
-
-	// Indicates that the session is fully negotiated and that XMPP stanzas may be
-	// sent and received.
-	Ready
-
-	// Indicates that the session's streams must be restarted. This bit will
-	// trigger an automatic restart and will be flipped back to off as soon as the
-	// stream is restarted.
-	StreamRestartRequired
-)
-
-// NewConn attempts to use an existing connection (or any io.ReadWriteCloser) to
-// negotiate an XMPP session based on the given config. If the provided context
-// is canceled before stream negotiation is complete an error is returned. After
-// stream negotiation if the context is canceled it has no effect.
-func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn, error) {
-	c := &Conn{
-		config: config,
-		rwc:    rwc,
-		e:      xml.NewEncoder(rwc),
-		d:      xml.NewDecoder(rwc),
-	}
-	return c, c.negotiateStreams(ctx)
-}
-
 // A Conn represents an XMPP connection that can perform SRV lookups for a given
 // server and connect to the correct ports.
 type Conn struct {
@@ -64,9 +24,16 @@ type Conn struct {
 	d        *xml.Decoder
 }
 
-func (c *Conn) negotiateStreams(ctx context.Context) error {
-	// TODO(ssw)
-	panic("xmpp: connect not yet implemented")
+// NewConn attempts to use an existing connection (or any io.ReadWriteCloser) to
+// negotiate an XMPP session based on the given config. If the provided context
+// is canceled before stream negotiation is complete an error is returned. After
+// stream negotiation if the context is canceled it has no effect.
+func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn, error) {
+	c := &Conn{
+		config: config,
+		rwc:    rwc,
+	}
+	return c, c.negotiateStreams(ctx)
 }
 
 // Config returns the connections config.
