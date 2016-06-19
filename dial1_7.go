@@ -18,10 +18,6 @@ func (d *Dialer) dial(
 		panic("xmpp.Dial: nil context")
 	}
 
-	c := &Conn{
-		config: config,
-	}
-
 	if d.NoLookup {
 		p, err := lookupPort(network, config.connType())
 		if err != nil {
@@ -34,11 +30,10 @@ func (d *Dialer) dial(
 		if err != nil {
 			return nil, err
 		}
-		c.rwc = conn
-		return c, nil
+		return NewConn(ctx, config, conn)
 	}
 
-	addrs, err := lookupService(config.connType(), network, c.RemoteAddr())
+	addrs, err := lookupService(config.connType(), network, config.Location)
 	if err != nil {
 		return nil, err
 	}
@@ -54,14 +49,8 @@ func (d *Dialer) dial(
 			err = e
 			continue
 		} else {
-			err = nil
-			c.rwc = conn
-			break
+			return NewConn(ctx, config, conn)
 		}
 	}
-	if err != nil {
-		return nil, err
-	}
-
-	return c, nil
+	return nil, err
 }

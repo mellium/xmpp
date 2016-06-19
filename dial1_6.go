@@ -42,10 +42,6 @@ func (d *Dialer) dial(
 		ctx = subCtx
 	}
 
-	c := &Conn{
-		config: config,
-	}
-
 	if d.NoLookup {
 		p, err := lookupPort(network, config.connType())
 		if err != nil {
@@ -58,11 +54,10 @@ func (d *Dialer) dial(
 		if err != nil {
 			return nil, err
 		}
-		c.rwc = conn
-		return c, nil
+		return NewConn(ctx, config, conn)
 	}
 
-	addrs, err := lookupService(config.connType(), network, c.RemoteAddr())
+	addrs, err := lookupService(config.connType(), network, config.Location)
 	if err != nil {
 		return nil, err
 	}
@@ -70,22 +65,15 @@ func (d *Dialer) dial(
 	// Try dialing all of the SRV records we know about, breaking as soon as the
 	// connection is established.
 	for _, addr := range addrs {
-		if conn, e := d.Dialer.Dial(
-			network, net.JoinHostPort(
-				addr.Target, strconv.FormatUint(uint64(addr.Port), 10),
-			),
+		if conn, e := d.Dialer.Dial(network, net.JoinHostPort(
+			addr.Target, strconv.FormatUint(uint64(addr.Port), 10),
+		),
 		); e != nil {
 			err = e
 			continue
 		} else {
-			err = nil
-			c.rwc = conn
-			break
+			return NewConn(ctx, config, conn)
 		}
 	}
-	if err != nil {
-		return nil, err
-	}
-
-	return c, nil
+	return nil, err
 }
