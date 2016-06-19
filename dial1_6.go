@@ -9,6 +9,7 @@ package xmpp
 import (
 	"net"
 	"strconv"
+	"time"
 
 	"golang.org/x/net/context"
 )
