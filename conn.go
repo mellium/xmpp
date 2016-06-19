@@ -74,14 +74,14 @@ type Conn struct {
 	received bool
 }
 
-func (conn *Conn) connect(ctx context.Context) error {
+func (c *Conn) connect(ctx context.Context) error {
 	// TODO(ssw)
 	return nil
 }
 
 // Config returns the connections config.
-func (conn *Conn) Config() *Config {
-	return conn.config
+func (c *Conn) Config() *Config {
+	return c.config
 }
 
 // Read reads data from the connection.
@@ -101,8 +101,8 @@ func (c *Conn) Close() error {
 }
 
 // State returns the current state of the session.
-func (conn *Conn) State() SessionState {
-	return conn.state
+func (c *Conn) State() SessionState {
+	return c.state
 }
 
 // LocalAddr returns the Origin address for initiated connections, or the
