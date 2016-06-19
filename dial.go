@@ -118,6 +118,17 @@ func (d *Dialer) DialServer(ctx context.Context, network string, raddr, laddr *j
 // For a description of the arguments see the Dial function.
 func (d *Dialer) Dial(
 	ctx context.Context, network string, config *Config) (*Conn, error) {
+	c, err := d.dial(ctx, network, config)
+	if err != nil {
+		return c, err
+	}
+	c.connect(ctx)
+
+	return c, err
+}
+
+func (d *Dialer) dial(
+	ctx context.Context, network string, config *Config) (*Conn, error) {
 	if ctx == nil {
 		panic("xmpp.Dial: nil context")
 	}
@@ -144,8 +155,7 @@ func (d *Dialer) Dial(
 	}
 
 	c := &Conn{
-		config:  config,
-		network: network,
+		config: config,
 	}
 
 	addrs, err := lookupService(connType(config), c.RemoteAddr())
@@ -165,7 +175,7 @@ func (d *Dialer) Dial(
 			continue
 		} else {
 			err = nil
-			c.conn = conn
+			c.rwc = conn
 			break
 		}
 	}
