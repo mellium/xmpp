@@ -7,6 +7,4 @@ pipelines:
           - ln -s "`pwd`" "$GOPATH/src/mellium.im/xmpp"
           - cd "$GOPATH/src/mellium.im/xmpp"
           - go-wrapper download
-          - go build -race
-          - make test
-          - make bench
+          - make ci
