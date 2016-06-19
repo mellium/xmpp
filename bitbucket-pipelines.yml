@@ -6,6 +6,7 @@ pipelines:
           - mkdir -p "$GOPATH/src/mellium.im/"
           - ln -s "`pwd`" "$GOPATH/src/mellium.im/xmpp"
           - cd "$GOPATH/src/mellium.im/xmpp"
-          - GO15VENDOREXPERIMENT=1 go-wrapper download
+          - go-wrapper download
+          - go build -race
           - make test
-          - GO15VENDOREXPERIMENT=1 go test -cover -bench . -benchmem -run 'Benchmark.*' ./...
+          - make bench
