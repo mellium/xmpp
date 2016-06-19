@@ -18,11 +18,3 @@ func TestDialClientPanicsIfNilContext(t *testing.T) {
 	}()
 	DialClient(nil, "tcp", jid.MustParse("feste@shakespeare.lit"))
 }
-
-// The zero value of Dialer.ConnType should be "xmpp-client"
-func TestDefaultConnType(t *testing.T) {
-	var d Dialer
-	if ct := d.connType(); ct != "xmpp-client" {
-		t.Error("Wrong zero value for conntype; expected xmpp-client but got %s", ct)
-	}
-}
