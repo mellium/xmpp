@@ -6,6 +6,7 @@ package xmpp
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"strings"
@@ -37,23 +38,29 @@ func TestSendNewS2S(t *testing.T) {
 			config.S2S = tc.s2s
 			err := sendNewStream(&b, config, ids)
 
+			str := b.String()
+			if !strings.HasPrefix(str, xml.Header) {
+				t.Errorf("Expected string to start with XML header but got: %s", str)
+			}
+			str = strings.TrimPrefix(str, xml.Header)
+
 			switch {
 			case err != tc.err:
 				t.Errorf("Error did not match, excepted `%s` but got `%s`.", tc.err, err)
-			case !strings.Contains(b.String(), tc.output):
-				t.Errorf("Expected string to contain `%s` but got: %s", tc.output, b.String())
-			case !strings.HasPrefix(b.String(), `<stream:stream `):
-				t.Errorf("Expected string to start with `<stream:stream ` but got: %s", b.String())
-			case !strings.Contains(b.String(), ` to='example.net' `):
-				t.Errorf("Expected string to contain ` to='example.net' ` but got: %s", b.String())
-			case !strings.Contains(b.String(), ` from='test@example.net' `):
-				t.Errorf("Expected string to contain ` from='test@example.net' ` but got: %s", b.String())
-			case !strings.Contains(b.String(), ` version='1.0' `):
-				t.Errorf("Expected string to contain ` version='1.0' ` but got: %s", b.String())
-			case !strings.Contains(b.String(), ` xml:lang='und' `):
-				t.Errorf("Expected string to contain ` xml:lang='und' ` but got: %s", b.String())
-			case !strings.HasSuffix(b.String(), ` xmlns:stream='http://etherx.jabber.org/streams'>`):
-				t.Errorf("Expected string to end with xmlns:stream=… but got: %s", b.String())
+			case !strings.Contains(str, tc.output):
+				t.Errorf("Expected string to contain `%s` but got: %s", tc.output, str)
+			case !strings.HasPrefix(str, `<stream:stream `):
+				t.Errorf("Expected string to start with `<stream:stream ` but got: %s", str)
+			case !strings.Contains(str, ` to='example.net' `):
+				t.Errorf("Expected string to contain ` to='example.net' ` but got: %s", str)
+			case !strings.Contains(str, ` from='test@example.net' `):
+				t.Errorf("Expected string to contain ` from='test@example.net' ` but got: %s", str)
+			case !strings.Contains(str, ` version='1.0' `):
+				t.Errorf("Expected string to contain ` version='1.0' ` but got: %s", str)
+			case !strings.Contains(str, ` xml:lang='und' `):
+				t.Errorf("Expected string to contain ` xml:lang='und' ` but got: %s", str)
+			case !strings.HasSuffix(str, ` xmlns:stream='http://etherx.jabber.org/streams'>`):
+				t.Errorf("Expected string to end with xmlns:stream=… but got: %s", str)
 			}
 		})
 	}
