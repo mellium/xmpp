@@ -6,6 +6,7 @@ package xmpp
 
 import (
 	"context"
+	"encoding/xml"
 	"fmt"
 	"io"
 )
@@ -49,7 +50,11 @@ func sendNewStream(w io.Writer, c *Config, id string) error {
 	} else {
 		id = ` id='` + id + `' `
 	}
-	_, err := fmt.Fprintf(w,
+	_, err := fmt.Fprint(w, xml.Header)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(w,
 		`<stream:stream%sto='%s' from='%s' version='%s' xml:lang='%s' xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
 		id,
 		c.Location.String(),
