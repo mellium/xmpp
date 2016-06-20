@@ -87,6 +87,9 @@ func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
 	var foundHeader bool
 	for {
 		t, err := d.Token()
+		if err != nil {
+			return err
+		}
 		switch tok := t.(type) {
 		case xml.StartElement:
 			// TODO: Validate the token and clear the StreamRestartRequired bit.
