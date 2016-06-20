@@ -84,6 +84,7 @@ func sendNewStream(w io.Writer, c *Config, id string) error {
 // (or an XML header followed by a stream), error. Clear the
 // StreamRestartRequired bit afterwards.
 func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
+	// TODO: Ensure we're checking the context for cancelation.
 	var foundHeader bool
 	for {
 		t, err := d.Token()
@@ -100,8 +101,10 @@ func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
 				foundHeader = true
 				continue
 			}
-			fallthrough
+			// TODO: What errors should we use for this? Check the RFC.
+			return NotAuthorized
 		default:
+			// TODO: What errors should we use for this? Check the RFC.
 			return NotAuthorized
 		}
 	}
