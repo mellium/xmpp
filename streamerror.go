@@ -210,13 +210,13 @@ func (s StreamError) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 				XMLName  xml.Name
 				InnerXML []byte `xml:",innerxml"`
 			}{
-				XMLName:  xml.Name{"urn:ietf:params:xml:ns:xmpp-streams", s.Err},
+				XMLName:  xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-streams", Local: s.Err},
 				InnerXML: s.InnerXML,
 			},
 		},
 		xml.StartElement{
-			xml.Name{"", "stream:error"},
-			[]xml.Attr{},
+			Name: xml.Name{Space: "", Local: "stream:error"},
+			Attr: []xml.Attr{},
 		},
 	)
 	return nil
