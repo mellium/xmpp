@@ -37,6 +37,12 @@ const (
 	StreamRestartRequired
 )
 
+// Sends a new XML header followed by a stream start element on the given
+// io.Writer. We don't use an xml.Encoder both because Go's standard library xml
+// package really doesn't like the namespaced stream:stream attribute and
+// because we can guarantee well-formedness of the XML with a print in this case
+// and printing is much faster than encoding. Afterwards, clear the
+// StreamRestartRequired bit.
 func sendNewStream(w io.Writer, c *Config, id string) error {
 	var ns string
 	switch c.S2S {
@@ -67,11 +73,35 @@ func sendNewStream(w io.Writer, c *Config, id string) error {
 		return err
 	}
 
-	// Clear the StreamRestartRequired Bit
+	// Clear the StreamRestartRequired bit
 	if c, ok := w.(*Conn); ok {
 		c.state &= ^StreamRestartRequired
 	}
 	return err
+}
+
+// Fetch a token from the given decoder. If it is not a new stream start element
+// (or an XML header followed by a stream), error. Clear the
+// StreamRestartRequired bit afterwards.
+func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
+	var foundHeader bool
+	for {
+		t, err := d.Token()
+		switch tok := t.(type) {
+		case xml.StartElement:
+			// TODO: Validate the token and clear the StreamRestartRequired bit.
+			panic("xmpp: Not yet implemented.")
+		case xml.ProcInst:
+			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8.
+			if !foundHeader && tok.Target == "xml" {
+				foundHeader = true
+				continue
+			}
+			fallthrough
+		default:
+			return NotAuthorized
+		}
+	}
 }
 
 func (c *Conn) negotiateStreams(ctx context.Context) error {
