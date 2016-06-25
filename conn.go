@@ -6,7 +6,6 @@ package xmpp
 
 import (
 	"context"
-	"encoding/xml"
 	"errors"
 	"io"
 	"net"
@@ -20,8 +19,6 @@ type Conn struct {
 	rwc      io.ReadWriteCloser
 	state    SessionState
 	received bool
-	e        *xml.Encoder
-	d        *xml.Decoder
 }
 
 // NewConn attempts to use an existing connection (or any io.ReadWriteCloser) to
