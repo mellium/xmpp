@@ -98,6 +98,7 @@ func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
 		case xml.StartElement:
 			// TODO: Validate the token and clear the StreamRestartRequired bit.
 			panic("xmpp: Not yet implemented.")
+			c.state &= ^StreamRestartRequired
 		case xml.ProcInst:
 			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8.
 			if !foundHeader && tok.Target == "xml" {
