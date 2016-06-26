@@ -152,6 +152,7 @@ func expectNewStream(ctx context.Context, c *Conn) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
+		default:
 		}
 		t, err := c.in.d.RawToken()
 		if err != nil {
