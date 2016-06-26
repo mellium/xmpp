@@ -1,15 +1,15 @@
 // +build ignore
 
-// The echobot command is a pretend XMPP bot written using the (as yet
-// non-existant) mellium.im/xmpp package. It is to experiment with and prove out
-// the API for mellium.im/xmpp and won't actually compile (yet).
+// The echobot command is a pretend XMPP bot written using the mellium.im/xmpp
+// package. It is to experiment with and prove out the API for mellium.im/xmpp
+// and won't actually compile (yet).
 package main
 
 import (
 	"context"
 	"log"
 
-	"example.net/sasl" // This package was made up and doesn't exist yet.
+	"mellium.im/sasl"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/jid"
 )
@@ -17,26 +17,16 @@ import (
 var laddr = jid.MustParse("echo@mellium.im")
 
 func main() {
-
-	// TODO: We could also have an xmpp.NewConn(c net.Conn) function that wraps an
-	// existing connection in an xmpp.Conn. This way we could implement
-	// xmpp-over-random-transport without really thinking about it (websockets and
-	// BOSH would probably be handled at a higher level since they require some
-	// modifications to the underlying XML stream).
-
-	// Supports all the normal net.Dial networks (tcp, tcp4, udp, etc.), but also
-	// knows what to do if you use "websockets" or "bosh" and how to discover the
-	// endpoint if it's different from the specified address.
-	c, err := xmpp.DialClient(context.Background(), "tcp6", laddr)
+	d := xmpp.Dialer{
+		Auth: []sasl.Mechanism{
+			sasl.ScramSHA1Plus,
+			sasl.ScramSHA1,
+		},
+	}
+	c, err := d.DialClient(context.Background(), "tcp6", laddr)
 	if err != nil {
 		log.Fatal("Failed to dial upstream XMPP server")
 	}
-
-	// xmpp.Conn implements net.Conn, so you can fmt.Fprintf(c, "<somexml/>") if
-	// you really want too (but you probably don't).
-
-	// TODO: What does Auth look like?
-	c.Auth(sasl.ScramSHA1Plus(c.TLSConfig), sasl.DigestMD5)
 
 	// TODO: What does a roster request look like? Is it worth having a special
 	// function, or should the user construct a request?
