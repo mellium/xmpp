@@ -155,6 +155,7 @@ func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
 		case xml.StartElement:
 			switch {
 			case tok.Name.Local != "stream":
+				return BadFormat
 			case tok.Name.Space != "stream":
 				return BadNamespacePrefix
 			}
@@ -176,11 +177,8 @@ func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
 			return RestrictedXML
 		case xml.EndElement:
 			return NotWellFormed
-		case xml.Comment:
-			return RestrictedXML
 		default:
-			// TODO: What errors should we use for this? Check the RFC.
-			return NotAuthorized
+			return RestrictedXML
 		}
 	}
 }
