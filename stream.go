@@ -175,6 +175,7 @@ func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
 				// if we are the initiating entity and there is no stream ID…
 				return BadFormat
 			}
+			c.in = stream
 			return nil
 		case xml.ProcInst:
 			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8
