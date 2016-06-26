@@ -166,7 +166,7 @@ func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
 			if stream.version != internal.DefaultVersion {
 				return UnsupportedVersion
 			}
-
+			return nil
 		case xml.ProcInst:
 			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8
 			if !foundHeader && tok.Target == "xml" {
