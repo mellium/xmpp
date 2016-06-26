@@ -39,6 +39,10 @@ const (
 	// trigger an automatic restart and will be flipped back to off as soon as the
 	// stream is restarted.
 	StreamRestartRequired
+
+	// Indicates that the session was started by a foreign entity and that we
+	// should be the entity responding to new streams.
+	Received
 )
 
 type stream struct {
@@ -164,8 +168,12 @@ func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
 			if err != nil {
 				return err
 			}
-			if stream.version != internal.DefaultVersion {
+			switch {
+			case stream.version != internal.DefaultVersion:
 				return UnsupportedVersion
+			case (c.state&Received) != Received && stream.id == "":
+				// if we are the initiating entity and there is no stream ID…
+				return BadFormat
 			}
 			return nil
 		case xml.ProcInst:

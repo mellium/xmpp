@@ -15,11 +15,10 @@ import (
 // A Conn represents an XMPP connection that can perform SRV lookups for a given
 // server and connect to the correct ports.
 type Conn struct {
-	config   *Config
-	rwc      io.ReadWriteCloser
-	state    SessionState
-	received bool
-	in, out  stream
+	config  *Config
+	rwc     io.ReadWriteCloser
+	state   SessionState
+	in, out stream
 }
 
 // NewConn attempts to use an existing connection (or any io.ReadWriteCloser) to
@@ -63,7 +62,7 @@ func (c *Conn) State() SessionState {
 // LocalAddr returns the Origin address for initiated connections, or the
 // Location for received connections.
 func (c *Conn) LocalAddr() net.Addr {
-	if c.received {
+	if (c.state & Received) == Received {
 		return c.config.Location
 	}
 
@@ -73,7 +72,7 @@ func (c *Conn) LocalAddr() net.Addr {
 // RemoteAddr returns the Location address for initiated connections, or the
 // Origin address for received connections.
 func (c *Conn) RemoteAddr() net.Addr {
-	if c.received {
+	if (c.state & Received) == Received {
 		return c.config.Origin
 	}
 	return c.config.Location
