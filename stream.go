@@ -136,7 +136,8 @@ func sendNewStream(w io.Writer, c *Config, id string) error {
 	// Clear the StreamRestartRequired bit
 	if c, ok := w.(*Conn); ok {
 		c.state &= ^StreamRestartRequired
-		c.out = stream
+		c.out.stream = stream
+		c.out.e = xml.NewEncoder(w)
 	}
 	return err
 }
@@ -144,14 +145,15 @@ func sendNewStream(w io.Writer, c *Config, id string) error {
 // Fetch a token from the given decoder. If it is not a new stream start element
 // (or an XML header followed by a stream), error. Clear the
 // StreamRestartRequired bit afterwards.
-func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
+func expectNewStream(ctx context.Context, c *Conn) error {
 	var foundHeader bool
+	c.in.d = xml.NewDecoder(c.rwc)
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		}
-		t, err := d.RawToken()
+		t, err := c.in.d.RawToken()
 		if err != nil {
 			return err
 		}
@@ -175,7 +177,7 @@ func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
 				// if we are the initiating entity and there is no stream ID…
 				return BadFormat
 			}
-			c.in = stream
+			c.in.stream = stream
 			return nil
 		case xml.ProcInst:
 			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8
@@ -193,5 +195,14 @@ func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
 }
 
 func (c *Conn) negotiateStreams(ctx context.Context) error {
+	if (c.state & Received) == Received {
+		if err := expectNewStream(ctx, c); err != nil {
+			return err
+		}
+	} else {
+		if err := sendNewStream(c, c.config, ""); err != nil {
+			return err
+		}
+	}
 	panic("xmpp: Not yet implemented.")
 }

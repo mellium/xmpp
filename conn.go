@@ -6,6 +6,7 @@ package xmpp
 
 import (
 	"context"
+	"encoding/xml"
 	"errors"
 	"io"
 	"net"
@@ -15,10 +16,17 @@ import (
 // A Conn represents an XMPP connection that can perform SRV lookups for a given
 // server and connect to the correct ports.
 type Conn struct {
-	config  *Config
-	rwc     io.ReadWriteCloser
-	state   SessionState
-	in, out stream
+	config *Config
+	rwc    io.ReadWriteCloser
+	state  SessionState
+	in     struct {
+		stream
+		d *xml.Decoder
+	}
+	out struct {
+		stream
+		e *xml.Encoder
+	}
 }
 
 // NewConn attempts to use an existing connection (or any io.ReadWriteCloser) to
