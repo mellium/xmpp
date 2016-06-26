@@ -19,6 +19,7 @@ type Conn struct {
 	rwc      io.ReadWriteCloser
 	state    SessionState
 	received bool
+	in, out  stream
 }
 
 // NewConn attempts to use an existing connection (or any io.ReadWriteCloser) to

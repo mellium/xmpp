@@ -9,6 +9,10 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+
+	"golang.org/x/text/language"
+	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/jid"
 )
 
 // SessionState represents the current state of an XMPP session. For a
@@ -37,25 +41,77 @@ const (
 	StreamRestartRequired
 )
 
+type stream struct {
+	to      *jid.JID         `xml:"to,attr"`
+	from    *jid.JID         `xml:"from,attr"`
+	id      string           `xml:"id,attr,ommitempty"`
+	version internal.Version `xml:"version,attr,ommitempty"`
+	xmlns   string           `xml:"xmlns,attr"`
+	lang    language.Tag     `xml:"http://www.w3.org/XML/1998/namespace lang"`
+}
+
+// This MUST only return stream errors.
+func streamFromStartElement(s xml.StartElement) (stream, error) {
+	stream := stream{}
+	for _, attr := range s.Attr {
+		switch attr.Name {
+		case xml.Name{Space: "", Local: "to"}:
+			stream.to = &jid.JID{}
+			if err := stream.to.UnmarshalXMLAttr(attr); err != nil {
+				return stream, ImproperAddressing
+			}
+		case xml.Name{Space: "", Local: "from"}:
+			stream.from = &jid.JID{}
+			if err := stream.from.UnmarshalXMLAttr(attr); err != nil {
+				return stream, ImproperAddressing
+			}
+		case xml.Name{Space: "", Local: "id"}:
+			stream.id = attr.Value
+		case xml.Name{Space: "", Local: "version"}:
+			(&stream.version).UnmarshalXMLAttr(attr)
+		case xml.Name{Space: "", Local: "xmlns"}:
+			if attr.Value != "jabber:client" && attr.Value != "jabber:server" {
+				return stream, InvalidNamespace
+			}
+			stream.xmlns = attr.Value
+		case xml.Name{Space: "xmlns", Local: "stream"}:
+			if attr.Value != NSStream {
+				return stream, InvalidNamespace
+			}
+		case xml.Name{Space: "xml", Local: "lang"}:
+			stream.lang = language.Make(attr.Value)
+		}
+	}
+	return stream, nil
+}
+
 // Sends a new XML header followed by a stream start element on the given
 // io.Writer. We don't use an xml.Encoder both because Go's standard library xml
 // package really doesn't like the namespaced stream:stream attribute and
 // because we can guarantee well-formedness of the XML with a print in this case
 // and printing is much faster than encoding. Afterwards, clear the
-// StreamRestartRequired bit.
+// StreamRestartRequired bit and set the output stream information.
 func sendNewStream(w io.Writer, c *Config, id string) error {
-	var ns string
+	stream := stream{
+		to:      c.Location,
+		from:    c.Origin,
+		lang:    c.Lang,
+		version: c.Version,
+	}
 	switch c.S2S {
 	case true:
-		ns = NSServer
+		stream.xmlns = NSServer
 	case false:
-		ns = NSClient
+		stream.xmlns = NSClient
 	}
+
+	stream.id = id
 	if id == "" {
 		id = " "
 	} else {
 		id = ` id='` + id + `' `
 	}
+
 	_, err := fmt.Fprint(w, xml.Header)
 	if err != nil {
 		return err
@@ -67,7 +123,7 @@ func sendNewStream(w io.Writer, c *Config, id string) error {
 		c.Origin.String(),
 		c.Version,
 		c.Lang,
-		ns,
+		stream.xmlns,
 	)
 	if err != nil {
 		return err
@@ -76,6 +132,7 @@ func sendNewStream(w io.Writer, c *Config, id string) error {
 	// Clear the StreamRestartRequired bit
 	if c, ok := w.(*Conn); ok {
 		c.state &= ^StreamRestartRequired
+		c.out = stream
 	}
 	return err
 }
@@ -90,23 +147,37 @@ func expectNewStream(ctx context.Context, d *xml.Decoder, c *Conn) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		}
-		t, err := d.Token()
+		t, err := d.RawToken()
 		if err != nil {
 			return err
 		}
 		switch tok := t.(type) {
 		case xml.StartElement:
-			// TODO: Validate the token and clear the StreamRestartRequired bit.
-			panic("xmpp: Not yet implemented.")
-			c.state &= ^StreamRestartRequired
+			switch {
+			case tok.Name.Local != "stream":
+			case tok.Name.Space != "stream":
+				return BadNamespacePrefix
+			}
+
+			stream, err := streamFromStartElement(tok)
+			if err != nil {
+				return err
+			}
+			if stream.version != internal.DefaultVersion {
+				return UnsupportedVersion
+			}
+
 		case xml.ProcInst:
-			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8.
+			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8
 			if !foundHeader && tok.Target == "xml" {
 				foundHeader = true
 				continue
 			}
-			// TODO: What errors should we use for this? Check the RFC.
-			return NotAuthorized
+			return RestrictedXML
+		case xml.EndElement:
+			return NotWellFormed
+		case xml.Comment:
+			return RestrictedXML
 		default:
 			// TODO: What errors should we use for this? Check the RFC.
 			return NotAuthorized
