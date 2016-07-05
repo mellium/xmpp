@@ -19,8 +19,8 @@ var (
 
 // StartTLS returns a new stream feature that can be used for negotiating TLS.
 // For StartTLS to work, the underlying connection must support TLS (it must
-// implement net.Conn).
-func StartTLS(cfg *tls.Config) StreamFeature {
+// implement net.Conn) and the connections config must have a TLSConfig.
+func StartTLS() StreamFeature {
 	return StreamFeature{
 		Name: xml.Name{Local: "starttls", Space: NSStartTLS},
 		Handler: func(ctx context.Context, conn *Conn) (mask SessionState, err error) {
@@ -49,7 +49,7 @@ func StartTLS(cfg *tls.Config) StreamFeature {
 						if err = conn.in.d.Skip(); err != nil {
 							return EndStream, InvalidXML
 						}
-						conn.rwc = tls.Client(conn.rwc.(net.Conn), cfg)
+						conn.rwc = tls.Client(conn.rwc.(net.Conn), conn.config.TLSConfig)
 					case tok.Name.Local == "failure":
 						// Skip the </failure> token.
 						if err = conn.in.d.Skip(); err != nil {
