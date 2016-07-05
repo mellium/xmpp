@@ -6,7 +6,6 @@ package xmpp
 
 import (
 	"crypto/tls"
-	"encoding/xml"
 
 	"golang.org/x/text/language"
 	"mellium.im/xmpp/internal"
@@ -22,7 +21,7 @@ type Config struct {
 	Origin *jid.JID
 
 	// The supported stream features.
-	Features map[xml.Name]StreamFeature
+	Features []StreamFeature
 
 	// The default language for any streams constructed using this config.
 	Lang language.Tag
@@ -39,30 +38,24 @@ type Config struct {
 
 // NewClientConfig constructs a new client-to-server session configuration with
 // sane defaults.
-func NewClientConfig(origin *jid.JID) *Config {
+func NewClientConfig(origin *jid.JID, features ...StreamFeature) *Config {
 	return &Config{
+		Features: features,
 		Location: origin.Domain(),
 		Origin:   origin,
 		Version:  internal.DefaultVersion,
-
-		Features: map[xml.Name]StreamFeature{
-		// TODO
-		},
 	}
 }
 
 // NewServerConfig constructs a new server-to-server session configuration with
 // sane defaults.
-func NewServerConfig(location, origin *jid.JID) *Config {
+func NewServerConfig(location, origin *jid.JID, features ...StreamFeature) *Config {
 	return &Config{
+		Features: features,
 		Location: location,
 		Origin:   origin,
 		S2S:      true,
 		Version:  internal.DefaultVersion,
-
-		Features: map[xml.Name]StreamFeature{
-		// TODO
-		},
 	}
 }
 
