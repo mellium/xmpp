@@ -6,17 +6,71 @@ package xmpp
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/xml"
+	"errors"
+	"fmt"
+)
+
+var (
+	ErrTLSUpgradeFailed = errors.New("The underlying connection cannot be upgraded to TLS")
 )
 
 // StartTLS returns a new stream feature that can be used for negotiating TLS.
-func StartTLS(required bool) StreamFeature {
+// For StartTLS to work, the underlying connection must support TLS (it must
+// implement net.Conn).
+func StartTLS(cfg *tls.Config) StreamFeature {
 	return StreamFeature{
-		Handler: func(ctx context.Context, conn *Conn) (state SessionState, err error) {
-			state = Secure | StreamRestartRequired
+		Name: xml.Name{Local: "starttls", Space: NSStartTLS},
+		Handler: func(ctx context.Context, conn *Conn) (mask SessionState, err error) {
+			if conn.conn == nil {
+				return mask, ErrTLSUpgradeFailed
+			}
+
+			if (conn.state & Received) == Received {
+				panic("server startTLS not yet implemented")
+			} else {
+				// Select starttls for negotiation.
+				fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
+
+				// Receive a <proceed/> or <failure/> response from the server.
+				t, err := conn.in.d.Token()
+				if err != nil {
+					return mask, err
+				}
+				switch tok := t.(type) {
+				case xml.StartElement:
+					switch {
+					case tok.Name.Space != NSStartTLS:
+						return mask, UnsupportedStanzaType
+					case tok.Name.Local == "proceed":
+						// Skip the </proceed> token.
+						if err = conn.in.d.Skip(); err != nil {
+							return EndStream, InvalidXML
+						}
+						conn.conn = tls.Client(conn.conn, cfg)
+						conn.rwc = conn.conn
+					case tok.Name.Local == "failure":
+						// Skip the </failure> token.
+						if err = conn.in.d.Skip(); err != nil {
+							err = InvalidXML
+						}
+						// Failure is not an "error", it's expected behavior. The server is
+						// telling us to end the stream. However, if we encounter bad XML
+						// while skipping the </feailure> token, return that error.
+						return EndStream, err
+					default:
+						return mask, UnsupportedStanzaType
+					}
+				default:
+					return mask, RestrictedXML
+				}
+				mask = Secure | StreamRestartRequired
+				return mask, nil
+			}
+			mask = Secure | StreamRestartRequired
 			return
 		},
-		Name:     xml.Name{Local: "starttls", Space: "urn:ietf:params:xml:ns:xmpp-tls"},
 		Required: true,
 	}
 }

@@ -14,6 +14,8 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
+const streamIDLength = 16
+
 // SessionState represents the current state of an XMPP session. For a
 // description of each bit, see the various SessionState typed constants.
 type SessionState int8
@@ -39,9 +41,13 @@ const (
 	// stream is restarted.
 	StreamRestartRequired
 
-	// Indicates that the session was started by a foreign entity and that we
-	// should be the entity responding to new streams.
+	// Indicates that the session was initiated by a foreign entity.
 	Received
+
+	// Indicates that the stream should be (or has been) terminated. After being
+	// flipped, this bit is left off unless the stream is restarted. This does not
+	// provide any information about the underlying TLS connection.
+	EndStream
 )
 
 type stream struct {
@@ -194,6 +200,9 @@ func expectNewStream(ctx context.Context, c *Conn) error {
 func (c *Conn) negotiateStreams(ctx context.Context) error {
 	if (c.state & Received) == Received {
 		if err := expectNewStream(ctx, c); err != nil {
+			return err
+		}
+		if err := sendNewStream(c, internal.RandomID(streamIDLength)); err != nil {
 			return err
 		}
 	} else {
