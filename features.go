@@ -44,9 +44,9 @@ type StreamFeature struct {
 
 func (c *Conn) negotiateFeatures(ctx context.Context) error {
 	if (c.state & Received) == Received {
-		// sendFeatures
+		panic("Sending stream:features not yet implemented")
 	} else {
-		// expectFeatures
+		panic("Receiving stream:features not yet implemented")
 	}
 	return nil
 }
