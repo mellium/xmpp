@@ -197,12 +197,12 @@ func expectNewStream(ctx context.Context, c *Conn) error {
 	}
 }
 
-func (c *Conn) negotiateStreams(ctx context.Context) error {
+func (c *Conn) negotiateStreams(ctx context.Context) (err error) {
 	if (c.state & Received) == Received {
-		if err := expectNewStream(ctx, c); err != nil {
+		if err = expectNewStream(ctx, c); err != nil {
 			return err
 		}
-		if err := sendNewStream(c, internal.RandomID(streamIDLength)); err != nil {
+		if err = sendNewStream(c, internal.RandomID(streamIDLength)); err != nil {
 			return err
 		}
 	} else {
@@ -212,6 +212,9 @@ func (c *Conn) negotiateStreams(ctx context.Context) error {
 		if err := expectNewStream(ctx, c); err != nil {
 			return err
 		}
+	}
+	if err = c.negotiateFeatures(ctx); err != nil {
+		return err
 	}
 	panic("xmpp: Not yet implemented.")
 }
