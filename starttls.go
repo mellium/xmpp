@@ -29,7 +29,8 @@ func StartTLS() StreamFeature {
 			}
 
 			if (conn.state & Received) == Received {
-				panic("server startTLS not yet implemented")
+				fmt.Fprint(conn, `<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
+				conn.rwc = tls.Server(conn.rwc.(net.Conn), conn.config.TLSConfig)
 			} else {
 				// Select starttls for negotiation.
 				fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
