@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"net"
 )
 
 var (
@@ -23,7 +24,7 @@ func StartTLS(cfg *tls.Config) StreamFeature {
 	return StreamFeature{
 		Name: xml.Name{Local: "starttls", Space: NSStartTLS},
 		Handler: func(ctx context.Context, conn *Conn) (mask SessionState, err error) {
-			if conn.conn == nil {
+			if _, ok := conn.rwc.(net.Conn); !ok {
 				return mask, ErrTLSUpgradeFailed
 			}
 
@@ -48,8 +49,7 @@ func StartTLS(cfg *tls.Config) StreamFeature {
 						if err = conn.in.d.Skip(); err != nil {
 							return EndStream, InvalidXML
 						}
-						conn.conn = tls.Client(conn.conn, cfg)
-						conn.rwc = conn.conn
+						conn.rwc = tls.Client(conn.rwc.(net.Conn), cfg)
 					case tok.Name.Local == "failure":
 						// Skip the </failure> token.
 						if err = conn.in.d.Skip(); err != nil {
@@ -65,8 +65,6 @@ func StartTLS(cfg *tls.Config) StreamFeature {
 				default:
 					return mask, RestrictedXML
 				}
-				mask = Secure | StreamRestartRequired
-				return mask, nil
 			}
 			mask = Secure | StreamRestartRequired
 			return

@@ -18,11 +18,8 @@ import (
 type Conn struct {
 	config *Config
 	rwc    io.ReadWriteCloser
-	// Keep a reference to the connection so it can be used to create a TLS
-	// connection later.
-	conn  net.Conn
-	state SessionState
-	in    struct {
+	state  SessionState
+	in     struct {
 		stream
 		d *xml.Decoder
 	}
@@ -39,14 +36,7 @@ type Conn struct {
 func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn, error) {
 	c := &Conn{
 		config: config,
-	}
-	switch rwcconn := rwc.(type) {
-	case net.Conn:
-		c.rwc = rwc
-		c.conn = rwcconn
-	default:
-		c.rwc = rwc
-		c.conn = nil
+		rwc:    rwc,
 	}
 
 	return c, c.negotiateStreams(ctx)
