@@ -74,7 +74,6 @@ func (c *Conn) LocalAddr() net.Addr {
 	if (c.state & Received) == Received {
 		return c.config.Location
 	}
-
 	return c.config.Origin
 }
 
