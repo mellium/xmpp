@@ -19,11 +19,36 @@ var (
 
 // StartTLS returns a new stream feature that can be used for negotiating TLS.
 // For StartTLS to work, the underlying connection must support TLS (it must
-// implement net.Conn) and the connections config must have a TLSConfig.
-func StartTLS() StreamFeature {
+// implement net.Conn) and the connection config must have a TLSConfig.
+func StartTLS(required bool) StreamFeature {
 	return StreamFeature{
-		Name: xml.Name{Local: "starttls", Space: NSStartTLS},
-		Handler: func(ctx context.Context, conn *Conn) (mask SessionState, err error) {
+		Name:       xml.Name{Local: "starttls", Space: NSStartTLS},
+		Prohibited: Secure,
+		List: func(ctx context.Context, conn *Conn) (err error) {
+			if required {
+				_, err = fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'><required/></starttls>`)
+				return
+			}
+			_, err = fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
+			return
+		},
+		Parse: func(ctx context.Context, conn *Conn, start *xml.StartElement) (bool, interface{}, error) {
+			parsed := struct {
+				XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls starttls"`
+				Required struct {
+					XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls required"`
+				}
+			}{}
+			err := conn.in.d.DecodeElement(&parsed, start)
+			switch {
+			case err != nil:
+				return false, nil, err
+			case parsed.Required.XMLName.Local != "required" || parsed.Required.XMLName.Space == NSStartTLS:
+				return false, nil, BadFormat
+			}
+			return true, nil, nil
+		},
+		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, err error) {
 			if _, ok := conn.rwc.(net.Conn); !ok {
 				return mask, ErrTLSUpgradeFailed
 			}
@@ -70,6 +95,5 @@ func StartTLS() StreamFeature {
 			mask = Secure | StreamRestartRequired
 			return
 		},
-		Required: true,
 	}
 }

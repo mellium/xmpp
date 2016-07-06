@@ -144,9 +144,7 @@ func sendNewStream(c *Conn, id string) error {
 	return nil
 }
 
-// Fetch a token from the given decoder. If it is not a new stream start element
-// (or an XML header followed by a stream), error. Clear the
-// StreamRestartRequired bit afterwards.
+// Fetch a token from the given decoder.
 func expectNewStream(ctx context.Context, c *Conn) error {
 	var foundHeader bool
 	c.in.d = xml.NewDecoder(c.rwc)
