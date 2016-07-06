@@ -52,12 +52,12 @@ const (
 )
 
 type stream struct {
-	to      *jid.JID         `xml:"to,attr"`
-	from    *jid.JID         `xml:"from,attr"`
-	id      string           `xml:"id,attr,ommitempty"`
-	version internal.Version `xml:"version,attr,ommitempty"`
-	xmlns   string           `xml:"xmlns,attr"`
-	lang    language.Tag     `xml:"http://www.w3.org/XML/1998/namespace lang"`
+	to      *jid.JID
+	from    *jid.JID
+	id      string
+	version internal.Version
+	xmlns   string
+	lang    language.Tag
 }
 
 // This MUST only return stream errors.

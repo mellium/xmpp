@@ -72,7 +72,6 @@ func (c *Conn) negotiateFeatures(ctx context.Context) error {
 	} else {
 		panic("Receiving stream:features not yet implemented")
 	}
-	return nil
 }
 
 // Get a <stream:feature> list. If the next token is not a <stream:feature>
