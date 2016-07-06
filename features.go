@@ -30,20 +30,11 @@ type StreamFeature struct {
 	// set this to "Authn".
 	Prohibited SessionState
 
-	// Used to send the feature in a features list for server connections, or to
-	// decode a feature in a features list for client connections. If this is the
-	// initiating side of the connection, start will be the start element that
-	// triggered the List call (for use with DecodeElement). List may optionally
-	// return data to be passed to the Negotiate function if the feature is
-	// selected (eg. a list of mechanisms if the feature is SASL). List should
-	// never return an error, but it may panic if it is used on a type of
-	// connection which it doesn't support (for example, if a client-only feature
-	// is used on a server-side connection). Required means that the value read
-	// from (or written too) the stream:fature list indicates that this is a
-	// required feature.
+	// Used to send the feature in a features list for server connections.
 	List func(ctx context.Context, conn *Conn) error
 
-	// Used to parse the feature that begins with the given xml start element.
+	// Used to parse the feature that begins with the given xml start element
+	// (which should have a Name that matches this stream feature's Name).
 	// Returns whether or not the feature is required, and any data that will be
 	// needed if the feature is selected for negotiation (eg. the list of
 	// mechanisms if the feature was SASL). If the context expires or is canceled,
