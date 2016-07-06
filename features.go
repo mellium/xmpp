@@ -80,15 +80,15 @@ func (c *Conn) negotiateFeatures(ctx context.Context) error {
 func (c *Conn) parseFeatures() (data map[xml.Name]interface{}, err error) {
 	t, err := c.in.d.Token()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	switch tok := t.(type) {
 	case xml.StartElement:
 		switch {
 		case tok.Name.Local != "features":
-			return InvalidXML
+			return nil, InvalidXML
 		case tok.Name.Space != NSStream:
-			return BadNamespacePrefix
+			return nil, BadNamespacePrefix
 		}
 		// TODO:
 		// Start grabbing tokens; for each one, if it's the end features list break,
@@ -100,5 +100,5 @@ func (c *Conn) parseFeatures() (data map[xml.Name]interface{}, err error) {
 		// to Negotiate.
 		panic("Not yet implemented")
 	}
-	return BadFormat
+	return nil, BadFormat
 }

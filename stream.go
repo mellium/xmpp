@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"io"
 
 	"golang.org/x/text/language"
 	"mellium.im/xmpp/internal"
@@ -100,14 +101,14 @@ func streamFromStartElement(s xml.StartElement) (stream, error) {
 // because we can guarantee well-formedness of the XML with a print in this case
 // and printing is much faster than encoding. Afterwards, clear the
 // StreamRestartRequired bit and set the output stream information.
-func sendNewStream(c *Conn, id string) error {
+func sendNewStream(w io.Writer, cfg *Config, id string) error {
 	stream := stream{
-		to:      c.config.Location,
-		from:    c.config.Origin,
-		lang:    c.config.Lang,
-		version: c.config.Version,
+		to:      cfg.Location,
+		from:    cfg.Origin,
+		lang:    cfg.Lang,
+		version: cfg.Version,
 	}
-	switch c.config.S2S {
+	switch cfg.S2S {
 	case true:
 		stream.xmlns = NSServer
 	case false:
@@ -121,26 +122,28 @@ func sendNewStream(c *Conn, id string) error {
 		id = ` id='` + id + `' `
 	}
 
-	_, err := fmt.Fprint(c, xml.Header)
+	_, err := fmt.Fprint(w, xml.Header)
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(c,
+	_, err = fmt.Fprintf(w,
 		`<stream:stream%sto='%s' from='%s' version='%s' xml:lang='%s' xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
 		id,
-		c.config.Location.String(),
-		c.config.Origin.String(),
-		c.config.Version,
-		c.config.Lang,
+		cfg.Location.String(),
+		cfg.Origin.String(),
+		cfg.Version,
+		cfg.Lang,
 		stream.xmlns,
 	)
 	if err != nil {
 		return err
 	}
 
-	c.state &= ^StreamRestartRequired
-	c.out.stream = stream
-	c.out.e = xml.NewEncoder(c)
+	if conn, ok := w.(*Conn); ok {
+		conn.state &= ^StreamRestartRequired
+		conn.out.stream = stream
+		conn.out.e = xml.NewEncoder(w)
+	}
 	return nil
 }
 
@@ -200,11 +203,11 @@ func (c *Conn) negotiateStreams(ctx context.Context) (err error) {
 		if err = expectNewStream(ctx, c); err != nil {
 			return err
 		}
-		if err = sendNewStream(c, internal.RandomID(streamIDLength)); err != nil {
+		if err = sendNewStream(c, c.config, internal.RandomID(streamIDLength)); err != nil {
 			return err
 		}
 	} else {
-		if err := sendNewStream(c, ""); err != nil {
+		if err := sendNewStream(c, c.config, ""); err != nil {
 			return err
 		}
 		if err := expectNewStream(ctx, c); err != nil {
