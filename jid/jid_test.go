@@ -178,7 +178,7 @@ func TestUnescape(t *testing.T) {
 	if u := Unescape(allescaped); u != escape {
 		t.Errorf("Unescaped localpart should be `%s` but got: `%s`", escape, u)
 	}
-	if u := Unescape(`\20\aa\\\`); u != ` \aa\\\` {
-		t.Errorf("Unescaped localpart should be ` \\aa\\\\\\` but got: `%s`", u)
+	if u := Unescape(`\20\3c\3C\aa\\\`); u != ` <<\aa\\\` {
+		t.Errorf("Unescaped localpart should be ` <<\\aa\\\\\\` but got: `%s`", u)
 	}
 }

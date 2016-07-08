@@ -25,8 +25,7 @@ func shouldEscape(c byte) bool {
 // I just wrote these all out because it's a lot faster and not likely to
 // change; is it really worth the confusing logic though?
 func shouldUnescape(s string) bool {
-	return (s[0] == '2' && (s[1] == '0' || s[1] == '2' || s[1] == '6' || s[1] == '7' || s[1] == 'f')) || (s[0] == '3' && (s[1] == 'a' || s[1] == 'c' || s[1] == 'e')) || (s[0] == '4' && s[1] == '0') || (s[0] == '5' && s[1] == 'c')
-	// return s == `\20` || s == `\22` || s == `\26` || s == `\27` || s == `\2f` || s == `\3a` || s == `\3c` || s == `\3e` || s == `\40` || s == `\5c`
+	return (s[0] == '2' && (s[1] == '0' || s[1] == '2' || s[1] == '6' || s[1] == '7' || s[1] == 'f' || s[1] == 'F')) || (s[0] == '3' && (s[1] == 'a' || s[1] == 'A' || s[1] == 'c' || s[1] == 'C' || s[1] == 'e' || s[1] == 'E')) || (s[0] == '4' && s[1] == '0') || (s[0] == '5' && (s[1] == 'c' || s[1] == 'C'))
 }
 
 func unhex(c byte) byte {
