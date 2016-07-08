@@ -24,10 +24,10 @@ func StartTLS(required bool) StreamFeature {
 	return StreamFeature{
 		Name:       xml.Name{Local: "starttls", Space: NSStartTLS},
 		Prohibited: Secure,
-		List: func(ctx context.Context, conn *Conn) (err error) {
+		List: func(ctx context.Context, conn *Conn) (req bool, err error) {
 			if required {
 				_, err = fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'><required/></starttls>`)
-				return
+				return required, err
 			}
 			_, err = fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
 			return
