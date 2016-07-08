@@ -79,3 +79,28 @@ func TestMarshalEmpty(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestMustParsePanics(t *testing.T) {
+	handleErr := func(shouldPanic bool) {
+		r := recover()
+		switch {
+		case shouldPanic && r == nil:
+			t.Error("Must parse should panic on invalid JID")
+		case !shouldPanic && r != nil:
+			t.Error("Must parse should not panic on valid JID")
+		}
+	}
+	for _, t := range []struct {
+		jid         string
+		shouldPanic bool
+	}{
+		{"@me", true},
+		{"@`me", true},
+		{"e@example.net", false},
+	} {
+		func() {
+			defer handleErr(t.shouldPanic)
+			MustParse(t.jid)
+		}()
+	}
+}
