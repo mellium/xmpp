@@ -165,3 +165,20 @@ func TestCopy(t *testing.T) {
 		t.Error("Copying a JID should result in a different JID pointer")
 	}
 }
+
+const allescaped = `\20\22\26\27\2f\3a\3c\3e\40\5c`
+
+func TestEscape(t *testing.T) {
+	if e := Escape(escape); e != allescaped {
+		t.Errorf("Escaped localpart should be `%s` but got: `%s`", allescaped, e)
+	}
+}
+
+func TestUnescape(t *testing.T) {
+	if u := Unescape(allescaped); u != escape {
+		t.Errorf("Unescaped localpart should be `%s` but got: `%s`", escape, u)
+	}
+	if u := Unescape(`\20\aa\\\`); u != ` \aa\\\` {
+		t.Errorf("Unescaped localpart should be ` \\aa\\\\\\` but got: `%s`", u)
+	}
+}

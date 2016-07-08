@@ -58,3 +58,15 @@ func BenchmarkString(b *testing.B) {
 		_ = j.String()
 	}
 }
+
+func BenchmarkEscape(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = Escape(escape)
+	}
+}
+
+func BenchmarkUnescape(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = Unescape(allescaped)
+	}
+}
