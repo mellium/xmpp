@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net"
+	"strings"
 	"testing"
 )
 
@@ -30,28 +31,26 @@ func TestValidJIDs(t *testing.T) {
 		{"mercutio@example.net/@", "mercutio", "example.net", "@"},
 		{"mercutio@example.net//@", "mercutio", "example.net", "/@"},
 		{"mercutio@example.net//@//", "mercutio", "example.net", "/@//"},
+		{"[::1]", "", "[::1]", ""},
 	} {
 		j, err := Parse(jid.jid)
 		switch {
 		case err != nil:
-			t.Log(err)
-			t.Fail()
+			t.Error(err)
 		case j.Domainpart() != jid.dp:
-			t.Logf("Got domainpart %s but expected %s", j.Domainpart(), jid.dp)
-			t.Fail()
+			t.Errorf("Got domainpart %s but expected %s", j.Domainpart(), jid.dp)
 		case j.Localpart() != jid.lp:
-			t.Logf("Got localpart %s but expected %s", j.Localpart(), jid.lp)
-			t.Fail()
+			t.Errorf("Got localpart %s but expected %s", j.Localpart(), jid.lp)
 		case j.Resourcepart() != jid.rp:
-			t.Logf("Got resourcepart %s but expected %s", j.Resourcepart(), jid.rp)
-			t.Fail()
+			t.Errorf("Got resourcepart %s but expected %s", j.Resourcepart(), jid.rp)
 		}
 	}
 }
 
 var invalidutf8 = string([]byte{0xff, 0xfe, 0xfd})
 
-func TestInvalidJIDs(t *testing.T) {
+func TestInvalidParseJIDs(t *testing.T) {
+
 	for _, jid := range []string{
 		"test@/test",
 		invalidutf8 + "@example.com/rp",
@@ -59,11 +58,34 @@ func TestInvalidJIDs(t *testing.T) {
 		invalidutf8,
 		"example.com/" + invalidutf8,
 		"lp@/rp",
+		`b"d@example.net`,
+		`b&d@example.net`,
+		`b'd@example.net`,
+		`b:d@example.net`,
+		`b<d@example.net`,
+		`b>d@example.net`,
+		`e@example.net/`,
 	} {
 		_, err := Parse(jid)
 		if err == nil {
-			t.Logf("Expected JID %s to fail", jid)
-			t.Fail()
+			t.Errorf("Expected JID %s to fail", jid)
+		}
+	}
+}
+
+func TestInvalidNewJIDs(t *testing.T) {
+	for _, jid := range []struct {
+		lp, dp, rp string
+	}{
+		{strings.Repeat("a", 1024), "example.net", ""},
+		{"e", "example.net", strings.Repeat("a", 1024)},
+		{"b/d", "example.net", ""},
+		{"b@d", "example.net", ""},
+		{"e", "[example.net]", ""},
+	} {
+		_, err := New(jid.lp, jid.dp, jid.rp)
+		if err == nil {
+			t.Errorf("Expected composition of JID parts %s to fail", jid)
 		}
 	}
 }
@@ -102,5 +124,44 @@ func TestMustParsePanics(t *testing.T) {
 			defer handleErr(t.shouldPanic)
 			MustParse(t.jid)
 		}()
+	}
+}
+
+func TestEqual(t *testing.T) {
+	m := MustParse("mercutio@example.net/test")
+	for _, test := range []struct {
+		j1, j2 *JID
+		eq     bool
+	}{
+		{m, MustParse("mercutio@example.net/test"), true},
+		{m.Bare(), MustParse("mercutio@example.net"), true},
+		{m.Domain(), MustParse("example.net"), true},
+		{m, MustParse("mercutio@example.net/nope"), false},
+		{m, MustParse("mercutio@e.com/test"), false},
+		{m, MustParse("m@example.net/test"), false},
+	} {
+		switch {
+		case test.eq && !test.j1.Equal(test.j2):
+			t.Errorf("JIDs %s and %s should be equal", test.j1, test.j2)
+		case !test.eq && test.j1.Equal(test.j2):
+			t.Errorf("JIDs %s and %s should not be equal", test.j1, test.j2)
+		}
+	}
+}
+
+func TestNetwork(t *testing.T) {
+	if MustParse("test").Network() != "xmpp" {
+		t.Error("Network should be `xmpp`")
+	}
+}
+
+func TestCopy(t *testing.T) {
+	m := MustParse("mercutio@example.net/test")
+	m2 := m.Copy()
+	switch {
+	case !m.Equal(m2):
+		t.Error("Copying a JID should still result in equal JIDs")
+	case m == m2:
+		t.Error("Copying a JID should result in a different JID pointer")
 	}
 }
