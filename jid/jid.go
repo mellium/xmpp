@@ -40,12 +40,13 @@ func unhex(c byte) byte {
 	return 0
 }
 
+// BUG(ssw): Unescape does not fail on invalid escape codes.
+
 // Unescape returns an unescaped version of the specified localpart using the
 // escaping mechanism defined in XEP-0106: JID Escaping. It only unescapes
 // sequences documented in XEP-0106 and does not guarantee that the resulting
 // localpart is well formed.
 func Unescape(s string) string {
-	// Count well-formed \.
 	n := 0
 	for i := 0; i < len(s); i++ {
 		if len(s) < i+3 {
