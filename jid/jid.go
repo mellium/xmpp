@@ -176,7 +176,7 @@ func (j *JID) String() string {
 }
 
 // Equal performs an octet-for-octet comparison with the given JID.
-func (j *JID) Equal(j2 JID) bool {
+func (j *JID) Equal(j2 *JID) bool {
 	return j.Localpart() == j2.Localpart() &&
 		j.Domainpart() == j2.Domainpart() && j.Resourcepart() == j2.Resourcepart()
 }
