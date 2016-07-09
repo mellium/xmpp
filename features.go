@@ -195,6 +195,4 @@ parsefeatures:
 			return nil, RestrictedXML
 		}
 	}
-
-	return sf, nil
 }
