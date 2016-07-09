@@ -13,10 +13,10 @@ import (
 	"mellium.im/sasl"
 )
 
-// Sasl returns a stream feature for performing authentication using the Simple
+// SASL returns a stream feature for performing authentication using the Simple
 // Authentication and Security Layer (SASL) as defined in RFC 4422. It panics if
 // no mechanisms are specified.
-func Sasl(mechanisms ...*sasl.Mechanism) *StreamFeature {
+func SASL(mechanisms ...*sasl.Mechanism) *StreamFeature {
 	if len(mechanisms) == 0 {
 		panic("xmpp: Must specify at least 1 SASL mechanism")
 	}
