@@ -6,6 +6,7 @@ package xmpp
 
 const (
 	NSClient   = "jabber:client"
+	NSSASL     = "urn:ietf:params:xml:ns:xmpp-sasl"
 	NSServer   = "jabber:server"
 	NSStartTLS = "urn:ietf:params:xml:ns:xmpp-tls"
 	NSStream   = "http://etherx.jabber.org/streams"
