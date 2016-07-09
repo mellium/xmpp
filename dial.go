@@ -100,13 +100,6 @@ func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Tim
 // For a description of the arguments see the DialClient function.
 func (d *Dialer) DialClient(ctx context.Context, network string, laddr *jid.JID) (*Conn, error) {
 	c := NewClientConfig(laddr)
-	// If we haven't specified any stream features, set some default ones.
-	if len(c.Features) == 0 {
-		stls := StartTLS(c.TLSConfig != nil)
-		c.Features = map[xml.Name]StreamFeature{
-			stls.Name: stls,
-		}
-	}
 	return d.Dial(ctx, network, c)
 }
 
@@ -136,6 +129,14 @@ func (d *Dialer) dial(
 	ctx context.Context, network string, config *Config) (*Conn, error) {
 	if ctx == nil {
 		panic("xmpp.Dial: nil context")
+	}
+
+	// If we haven't specified any stream features, set some default ones.
+	if config.Features == nil || len(config.Features) == 0 {
+		stls := StartTLS(config.TLSConfig != nil)
+		config.Features = map[xml.Name]StreamFeature{
+			stls.Name: stls,
+		}
 	}
 
 	if d.NoLookup {
