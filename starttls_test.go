@@ -96,14 +96,3 @@ func TestStartTLSParse(t *testing.T) {
 		}
 	}
 }
-
-//		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
-//			parsed := struct {
-//				XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls starttls"`
-//				Required struct {
-//					XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls required"`
-//				}
-//			}{}
-//			err := d.DecodeElement(&parsed, start)
-//			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == NSStartTLS, nil, err
-//		},
