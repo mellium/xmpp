@@ -33,6 +33,9 @@ func StartTLS(required bool) StreamFeature {
 			return
 		},
 		Parse: func(ctx context.Context, conn *Conn, start *xml.StartElement) (bool, interface{}, error) {
+			// TODO(ssw): It's probably dangerous to parse this with DecodeElement
+			// because it will ignore any unexpected fields. We should maybe tokenize
+			// this instead.
 			parsed := struct {
 				XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls starttls"`
 				Required struct {
@@ -40,13 +43,7 @@ func StartTLS(required bool) StreamFeature {
 				}
 			}{}
 			err := conn.in.d.DecodeElement(&parsed, start)
-			switch {
-			case err != nil:
-				return false, nil, err
-			case parsed.Required.XMLName.Local != "required" || parsed.Required.XMLName.Space == NSStartTLS:
-				return false, nil, BadFormat
-			}
-			return true, nil, nil
+			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == NSStartTLS, nil, err
 		},
 		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, err error) {
 			if _, ok := conn.rwc.(net.Conn); !ok {
