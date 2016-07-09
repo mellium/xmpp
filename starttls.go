@@ -78,7 +78,7 @@ func StartTLS(required bool) StreamFeature {
 						}
 						// Failure is not an "error", it's expected behavior. The server is
 						// telling us to end the stream. However, if we encounter bad XML
-						// while skipping the </feailure> token, return that error.
+						// while skipping the </failure> token, return that error.
 						return EndStream, err
 					default:
 						return mask, UnsupportedStanzaType
