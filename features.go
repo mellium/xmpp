@@ -103,12 +103,13 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, err error) {
 			return done, BadFormat
 		}
 		list, err := readStreamFeatures(ctx, c, start)
-		if err != nil {
-			return done, err
-		}
 
-		if list.total == 0 {
-			// If we received an empty list, we're done:
+		switch {
+		case err != nil:
+			return done, err
+		case list.total == 0 || list.cache == nil || len(list.cache) == 0:
+			// If we received an empty list (or one with no supported features, we're
+			// done.
 			return true, nil
 		}
 
