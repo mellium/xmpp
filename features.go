@@ -107,7 +107,7 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, err error) {
 		switch {
 		case err != nil:
 			return done, err
-		case list.total == 0 || list.cache == nil || len(list.cache) == 0:
+		case list.total == 0 || len(list.cache) == 0:
 			// If we received an empty list (or one with no supported features, we're
 			// done.
 			return true, nil
