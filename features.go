@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"io"
 )
 
 // A StreamFeature represents a feature that may be selected during stream
@@ -32,7 +33,7 @@ type StreamFeature struct {
 	Prohibited SessionState
 
 	// Used to send the feature in a features list for server connections.
-	List func(ctx context.Context, conn *Conn) (req bool, err error)
+	List func(ctx context.Context, conn io.Writer) (req bool, err error)
 
 	// Used to parse the feature that begins with the given xml start element
 	// (which should have a Name that matches this stream feature's Name).
