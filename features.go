@@ -121,7 +121,7 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, err error) {
 			}
 		}
 		mask, err := data.feature.Negotiate(ctx, c, data.data)
-		if err != nil {
+		if err == nil {
 			c.state |= mask
 		}
 		return !list.req, err
