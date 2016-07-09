@@ -7,6 +7,7 @@ package xmpp
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 )
 
 // A StreamFeature represents a feature that may be selected during stream
@@ -59,36 +60,140 @@ type StreamFeature struct {
 
 func (c *Conn) negotiateFeatures(ctx context.Context) error {
 	if (c.state & Received) == Received {
+		_, _, err := writeStreamFeatures(ctx, c)
+		if err != nil {
+			return err
+		}
 		panic("Sending stream:features not yet implemented")
 	} else {
+		t, err := c.in.d.Token()
+		if err != nil {
+			return err
+		}
+		start, ok := t.(xml.StartElement)
+		if !ok {
+			return BadFormat
+		}
+		list, err := readStreamFeatures(ctx, c, start)
+		if err != nil {
+			return err
+		}
+
+		if list.total == 0 {
+			// If we received an empty list, we're done:
+			return nil
+		}
+
+		// If the list has any required items, negotiate the first required feature.
+		// Otherwise just negotiate the first feature in the list.
+		var data sfData
+		for _, v := range list.cache {
+			if !list.req || v.req {
+				data = v
+				break
+			}
+		}
+		mask, err := data.feature.Negotiate(ctx, c, data.data)
+		if err != nil {
+			return err
+		}
+		c.state &= mask
+
 		panic("Receiving stream:features not yet implemented")
 	}
 }
 
-// Get a <stream:feature> list. If the next token is not a <stream:feature>
-// start element, return an error.
-func (c *Conn) parseFeatures() (data map[xml.Name]interface{}, err error) {
-	t, err := c.in.d.Token()
-	if err != nil {
-		return nil, err
+type sfData struct {
+	req     bool
+	data    interface{}
+	feature StreamFeature
+}
+
+type streamFeaturesList struct {
+	total int
+	req   bool
+	cache map[xml.Name]sfData
+}
+
+func readStreamFeatures(ctx context.Context, conn *Conn, start xml.StartElement) (*streamFeaturesList, error) {
+	switch {
+	case start.Name.Local != "features":
+		return nil, InvalidXML
+	case start.Name.Space != "stream":
+		return nil, BadNamespacePrefix
 	}
-	switch tok := t.(type) {
-	case xml.StartElement:
-		switch {
-		case tok.Name.Local != "features":
-			return nil, InvalidXML
-		case tok.Name.Space != NSStream:
-			return nil, BadNamespacePrefix
+
+	sf := &streamFeaturesList{}
+
+parsefeatures:
+	for {
+		t, err := conn.in.d.Token()
+		if err != nil {
+			return nil, err
 		}
-		// TODO:
-		// Start grabbing tokens; for each one, if it's the end features list break,
-		// otherwise if the token is a start element loop over the stream features
-		// (possibly building a map for quicker lookups on subsequent iterations)
-		// and if any of the features have a name that matches the start element,
-		// call that features Parse method to consume the rest of the feature before
-		// continuing; save any data in a map to be returned and used in the calls
-		// to Negotiate.
-		panic("Not yet implemented")
+		switch tok := t.(type) {
+		case xml.StartElement:
+			// If the token is a new feature, see if it's one we handle. If so, parse
+			// it. Increment the total features count regardless.
+			sf.total += 1
+			if feature, ok := conn.config.Features[tok.Name]; ok && (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
+				req, data, err := feature.Parse(ctx, conn, &tok)
+				if err == nil {
+					return nil, err
+				}
+				sf.cache[tok.Name] = sfData{
+					req:     req,
+					data:    data,
+					feature: feature,
+				}
+				if req {
+					sf.req = true
+				}
+				continue parsefeatures
+			}
+			// If the feature is not one we support, skip it.
+			if err := conn.in.d.Skip(); err != nil {
+				return nil, err
+			}
+		case xml.EndElement:
+			if tok.Name.Local == "features" && tok.Name.Space == "stream" {
+				// We've reached the end of the features list!
+				return sf, nil
+			}
+			// Oops, how did that happen? We shouldn't have been able to hit an end
+			// element that wasn't the </stream:features> token.
+			return nil, InvalidXML
+		default:
+			return nil, RestrictedXML
+		}
 	}
-	return nil, BadFormat
+
+	return sf, nil
+}
+
+// Returns the number of stream features written (zero means we've reached the
+// end of negotiation), and the number of required features written (zero means
+// we've potentially reached the end of negotiation, but the client may
+// negotiate more optional features).
+func writeStreamFeatures(ctx context.Context, conn *Conn) (n int, req int, err error) {
+	if _, err = fmt.Fprint(conn, `<stream:features>`); err != nil {
+		return
+	}
+	for _, feature := range conn.config.Features {
+		// Check if all the necessary bits are set and none of the prohibited bits
+		// are set.
+		if (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
+			var r bool
+			r, err = feature.List(ctx, conn)
+			if err != nil {
+				return
+			}
+			if r {
+				req += 1
+			}
+			n += 1
+		}
+	}
+	_, err = fmt.Fprint(conn, `</stream:features>`)
+	return
 }
