@@ -39,9 +39,8 @@ type StreamFeature struct {
 	// (which should have a Name that matches this stream feature's Name).
 	// Returns whether or not the feature is required, and any data that will be
 	// needed if the feature is selected for negotiation (eg. the list of
-	// mechanisms if the feature was SASL). If the context expires or is canceled,
-	// parse should return the context's error.
-	Parse func(ctx context.Context, conn *Conn, start *xml.StartElement) (req bool, data interface{}, err error)
+	// mechanisms if the feature was SASL).
+	Parse func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (req bool, data interface{}, err error)
 
 	// A function that will take over the session temporarily while negotiating
 	// the feature. The "mask" SessionState represents the state bits that should
@@ -166,7 +165,7 @@ parsefeatures:
 			// it. Increment the total features count regardless.
 			sf.total += 1
 			if feature, ok := conn.config.Features[tok.Name]; ok && (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
-				req, data, err := feature.Parse(ctx, conn, &tok)
+				req, data, err := feature.Parse(ctx, conn.in.d, &tok)
 				if err != nil {
 					return nil, err
 				}

@@ -33,17 +33,14 @@ func StartTLS(required bool) StreamFeature {
 			_, err = fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
 			return
 		},
-		Parse: func(ctx context.Context, conn *Conn, start *xml.StartElement) (bool, interface{}, error) {
-			// TODO(ssw): It's probably dangerous to parse this with DecodeElement
-			// because it will ignore any unexpected fields. We should maybe tokenize
-			// this instead.
+		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls starttls"`
 				Required struct {
 					XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls required"`
 				}
 			}{}
-			err := conn.in.d.DecodeElement(&parsed, start)
+			err := d.DecodeElement(&parsed, start)
 			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == NSStartTLS, nil, err
 		},
 		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, err error) {
