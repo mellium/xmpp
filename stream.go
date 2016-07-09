@@ -214,8 +214,11 @@ func (c *Conn) negotiateStreams(ctx context.Context) (err error) {
 			return err
 		}
 	}
-	if err = c.negotiateFeatures(ctx); err != nil {
-		return err
+
+	for done := false; !done; done, err = c.negotiateFeatures(ctx) {
+		if err != nil {
+			return err
+		}
 	}
 	panic("xmpp: Not yet implemented.")
 }

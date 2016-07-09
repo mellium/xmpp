@@ -58,30 +58,57 @@ type StreamFeature struct {
 	Negotiate func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, err error)
 }
 
-func (c *Conn) negotiateFeatures(ctx context.Context) error {
+// Returns the number of stream features written (zero means we've reached the
+// end of negotiation), and the number of required features written (zero means
+// we've potentially reached the end of negotiation, but the client may
+// negotiate more optional features).
+func writeStreamFeatures(ctx context.Context, conn *Conn) (n int, req int, err error) {
+	if _, err = fmt.Fprint(conn, `<stream:features>`); err != nil {
+		return
+	}
+	for _, feature := range conn.config.Features {
+		// Check if all the necessary bits are set and none of the prohibited bits
+		// are set.
+		if (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
+			var r bool
+			r, err = feature.List(ctx, conn)
+			if err != nil {
+				return
+			}
+			if r {
+				req += 1
+			}
+			n += 1
+		}
+	}
+	_, err = fmt.Fprint(conn, `</stream:features>`)
+	return
+}
+
+func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, err error) {
 	if (c.state & Received) == Received {
-		_, _, err := writeStreamFeatures(ctx, c)
+		_, _, err = writeStreamFeatures(ctx, c)
 		if err != nil {
-			return err
+			return true, err
 		}
 		panic("Sending stream:features not yet implemented")
 	} else {
 		t, err := c.in.d.Token()
 		if err != nil {
-			return err
+			return true, err
 		}
 		start, ok := t.(xml.StartElement)
 		if !ok {
-			return BadFormat
+			return true, BadFormat
 		}
 		list, err := readStreamFeatures(ctx, c, start)
 		if err != nil {
-			return err
+			return true, err
 		}
 
 		if list.total == 0 {
 			// If we received an empty list, we're done:
-			return nil
+			return true, nil
 		}
 
 		// If the list has any required items, negotiate the first required feature.
@@ -95,11 +122,10 @@ func (c *Conn) negotiateFeatures(ctx context.Context) error {
 		}
 		mask, err := data.feature.Negotiate(ctx, c, data.data)
 		if err != nil {
-			return err
+			return true, err
 		}
 		c.state &= mask
-
-		panic("Receiving stream:features not yet implemented")
+		return !list.req, nil
 	}
 }
 
@@ -123,7 +149,9 @@ func readStreamFeatures(ctx context.Context, conn *Conn, start xml.StartElement)
 		return nil, BadNamespacePrefix
 	}
 
-	sf := &streamFeaturesList{}
+	sf := &streamFeaturesList{
+		cache: make(map[xml.Name]sfData),
+	}
 
 parsefeatures:
 	for {
@@ -169,31 +197,4 @@ parsefeatures:
 	}
 
 	return sf, nil
-}
-
-// Returns the number of stream features written (zero means we've reached the
-// end of negotiation), and the number of required features written (zero means
-// we've potentially reached the end of negotiation, but the client may
-// negotiate more optional features).
-func writeStreamFeatures(ctx context.Context, conn *Conn) (n int, req int, err error) {
-	if _, err = fmt.Fprint(conn, `<stream:features>`); err != nil {
-		return
-	}
-	for _, feature := range conn.config.Features {
-		// Check if all the necessary bits are set and none of the prohibited bits
-		// are set.
-		if (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
-			var r bool
-			r, err = feature.List(ctx, conn)
-			if err != nil {
-				return
-			}
-			if r {
-				req += 1
-			}
-			n += 1
-		}
-	}
-	_, err = fmt.Fprint(conn, `</stream:features>`)
-	return
 }
