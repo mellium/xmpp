@@ -13,6 +13,9 @@ import (
 	"mellium.im/sasl"
 )
 
+// BUG(ssw): We can't support server side SASL yet until the SASL library
+//           supports it.
+
 // SASL returns a stream feature for performing authentication using the Simple
 // Authentication and Security Layer (SASL) as defined in RFC 4422. It panics if
 // no mechanisms are specified.
@@ -45,7 +48,12 @@ func SASL(mechanisms ...*sasl.Mechanism) *StreamFeature {
 			return
 		},
 		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
-			panic("Parsing mechanisms not yet implemented")
+			parsed := struct {
+				XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl mechanisms"`
+				List    []string `xml:"urn:ietf:params:xml:ns:xmpp-sasl mechanism"`
+			}{}
+			err := d.DecodeElement(&parsed, start)
+			return true, parsed.List, err
 		},
 		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (SessionState, error) {
 			if (conn.state & Received) == Received {
