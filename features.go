@@ -166,7 +166,7 @@ parsefeatures:
 			sf.total += 1
 			if feature, ok := conn.config.Features[tok.Name]; ok && (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
 				req, data, err := feature.Parse(ctx, conn, &tok)
-				if err == nil {
+				if err != nil {
 					return nil, err
 				}
 				sf.cache[tok.Name] = sfData{
