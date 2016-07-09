@@ -89,21 +89,21 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, err error) {
 	if (c.state & Received) == Received {
 		_, _, err = writeStreamFeatures(ctx, c)
 		if err != nil {
-			return true, err
+			return
 		}
 		panic("Sending stream:features not yet implemented")
 	} else {
 		t, err := c.in.d.Token()
 		if err != nil {
-			return true, err
+			return done, err
 		}
 		start, ok := t.(xml.StartElement)
 		if !ok {
-			return true, BadFormat
+			return done, BadFormat
 		}
 		list, err := readStreamFeatures(ctx, c, start)
 		if err != nil {
-			return true, err
+			return done, err
 		}
 
 		if list.total == 0 {
@@ -121,11 +121,8 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, err error) {
 			}
 		}
 		mask, err := data.feature.Negotiate(ctx, c, data.data)
-		if err != nil {
-			return true, err
-		}
-		c.state &= mask
-		return !list.req, nil
+		c.state |= mask
+		return !list.req, err
 	}
 }
 

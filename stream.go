@@ -216,8 +216,15 @@ func (c *Conn) negotiateStreams(ctx context.Context) (err error) {
 	}
 
 	for done := false; !done; done, err = c.negotiateFeatures(ctx) {
-		if err != nil {
+		switch {
+		case err != nil:
 			return err
+		case c.state&StreamRestartRequired == StreamRestartRequired:
+			// If we require a stream restart, do so…
+
+			// BUG(ssw): Negotiating streams can lead to a stack overflow when
+			//           connecting to a malicious endpoint.
+			return c.negotiateStreams(ctx)
 		}
 	}
 	panic("xmpp: Not yet implemented.")
