@@ -13,7 +13,7 @@ import (
 
 // There is no room for variation on the starttls feature negotiation, so step
 // through the list process token for token.
-func TestList(t *testing.T) {
+func TestStartTLSList(t *testing.T) {
 	for _, req := range []bool{true, false} {
 		stls := StartTLS(req)
 		var b bytes.Buffer
@@ -67,3 +67,43 @@ func TestList(t *testing.T) {
 		}
 	}
 }
+
+func TestStartTLSParse(t *testing.T) {
+	stls := StartTLS(true)
+	for _, test := range []struct {
+		msg string
+		req bool
+		err bool
+	}{
+		{`<starttls xmlns="urn:ietf:params:xml:ns:xmpp-tls"/>`, false, false},
+		{`<starttls xmlns="urn:ietf:params:xml:ns:xmpp-tls"></starttls>`, false, false},
+		{`<starttls xmlns="urn:ietf:params:xml:ns:xmpp-tls"><required/></starttls>`, true, false},
+		{`<starttls xmlns="urn:ietf:params:xml:ns:xmpp-tls"><required></required></starttls>`, true, false},
+		{`<endtls xmlns="urn:ietf:params:xml:ns:xmpp-tls"/>`, false, true},
+		{`<starttls xmlns="badurn"/>`, false, true},
+	} {
+		d := xml.NewDecoder(bytes.NewBufferString(test.msg))
+		tok, _ := d.Token()
+		se := tok.(xml.StartElement)
+		req, _, err := stls.Parse(context.Background(), d, &se)
+		switch {
+		case test.err && (err == nil):
+			t.Error("Expected starttls.Parse to error")
+		case !test.err && (err != nil):
+			t.Error(err)
+		case req != test.req:
+			t.Errorf("STARTTLS required was wrong; expected %v but got %v", test.req, req)
+		}
+	}
+}
+
+//		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+//			parsed := struct {
+//				XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls starttls"`
+//				Required struct {
+//					XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls required"`
+//				}
+//			}{}
+//			err := d.DecodeElement(&parsed, start)
+//			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == NSStartTLS, nil, err
+//		},
