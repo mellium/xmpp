@@ -36,6 +36,11 @@ func SASL(mechanisms ...*sasl.Mechanism) *StreamFeature {
 				return
 			}
 			for _, m := range mechanisms {
+				select {
+				case <-ctx.Done():
+					return true, ctx.Err()
+				default:
+				}
 				if _, err = fmt.Fprint(conn, `<mechanism>`); err != nil {
 					return
 				}
