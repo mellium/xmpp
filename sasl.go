@@ -15,6 +15,8 @@ import (
 
 // BUG(ssw): We can't support server side SASL yet until the SASL library
 //           supports it.
+//
+// BUG(ssw): SASL feature does not have security layer byte precision.
 
 // SASL returns a stream feature for performing authentication using the Simple
 // Authentication and Security Layer (SASL) as defined in RFC 4422. It panics if
