@@ -174,7 +174,7 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 			case tok.Name.Local != "stream":
 				return BadFormat
 			case tok.Name.Space != "stream":
-				return BadNamespacePrefix
+				return InvalidNamespace
 			}
 
 			stream, err := streamFromStartElement(tok)
