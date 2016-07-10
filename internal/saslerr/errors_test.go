@@ -11,6 +11,15 @@ import (
 	"golang.org/x/text/language"
 )
 
+// Compile time tests that interfaces are satisfied
+var (
+	_ error           = Failure{}
+	_ error           = (*Failure)(nil)
+	_ xml.Marshaler   = Failure{}
+	_ xml.Marshaler   = (*Failure)(nil)
+	_ xml.Unmarshaler = (*Failure)(nil)
+)
+
 func TestErrorTextOrCondition(t *testing.T) {
 	f := Failure{
 		Condition: MechanismTooWeak,
