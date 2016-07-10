@@ -5,6 +5,7 @@
 package xmpp
 
 const (
+	NSBind     = "urn:ietf:params:xml:ns:xmpp-bind"
 	NSClient   = "jabber:client"
 	NSSASL     = "urn:ietf:params:xml:ns:xmpp-sasl"
 	NSServer   = "jabber:server"
