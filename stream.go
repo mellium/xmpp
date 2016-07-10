@@ -147,17 +147,24 @@ func sendNewStream(w io.Writer, cfg *Config, id string) error {
 	return nil
 }
 
-// Fetch a token from the given decoder.
-func expectNewStream(ctx context.Context, c *Conn) error {
+func expectNewStream(ctx context.Context, r io.Reader) error {
 	var foundHeader bool
-	c.in.d = xml.NewDecoder(c.rwc)
+	var d *xml.Decoder
+	if conn, ok := r.(*Conn); ok {
+		if conn.in.d == nil {
+			conn.in.d = xml.NewDecoder(r)
+		}
+		d = conn.in.d
+	} else {
+		d = xml.NewDecoder(r)
+	}
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
-		t, err := c.in.d.RawToken()
+		t, err := d.RawToken()
 		if err != nil {
 			return err
 		}
@@ -171,17 +178,22 @@ func expectNewStream(ctx context.Context, c *Conn) error {
 			}
 
 			stream, err := streamFromStartElement(tok)
-			if err != nil {
-				return err
-			}
 			switch {
+			case err != nil:
+				return err
 			case stream.version != internal.DefaultVersion:
 				return UnsupportedVersion
-			case (c.state&Received) != Received && stream.id == "":
-				// if we are the initiating entity and there is no stream ID…
-				return BadFormat
 			}
-			c.in.stream = stream
+
+			if conn, ok := r.(*Conn); ok {
+				if (conn.state&Received) != Received && stream.id == "" {
+					// if we are the initiating entity and there is no stream ID…
+					return BadFormat
+				}
+				conn.state &= ^StreamRestartRequired
+				conn.in.stream = stream
+				conn.in.d = xml.NewDecoder(r)
+			}
 			return nil
 		case xml.ProcInst:
 			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8
