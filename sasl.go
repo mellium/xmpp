@@ -7,10 +7,12 @@ package xmpp
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 
 	"mellium.im/sasl"
+	"mellium.im/xmpp/internal/saslerr"
 )
 
 // BUG(ssw): We can't support server side SASL yet until the SASL library
@@ -18,9 +20,16 @@ import (
 //
 // BUG(ssw): SASL feature does not have security layer byte precision.
 
+const (
+	saslAbort = `<abort xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>`
+	saslAuth  = "<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='%s'>%s</auth>"
+	saslResp  = "<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>%s</response>"
+)
+
 // SASL returns a stream feature for performing authentication using the Simple
 // Authentication and Security Layer (SASL) as defined in RFC 4422. It panics if
-// no mechanisms are specified.
+// no mechanisms are specified. The order in which mechanisms are specified will
+// be the prefered order, so stronger mechanisms should be listed first.
 func SASL(mechanisms ...*sasl.Mechanism) *StreamFeature {
 	if len(mechanisms) == 0 {
 		panic("xmpp: Must specify at least 1 SASL mechanism")
@@ -62,13 +71,90 @@ func SASL(mechanisms ...*sasl.Mechanism) *StreamFeature {
 			err := d.DecodeElement(&parsed, start)
 			return true, parsed.List, err
 		},
-		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (SessionState, error) {
+		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, err error) {
 			if (conn.state & Received) == Received {
-				panic("sendMechanisms not yet implemented")
+				panic("SASL server not yet implemented")
 			} else {
-				panic("readMechanisms not yet implemented")
+				var selected *sasl.Mechanism
+				// Select a mechanism, prefering the client order.
+			selectmechanism:
+				for _, m := range mechanisms {
+					for _, name := range data.([]string) {
+						if name == m.Name {
+							selected = m
+							break selectmechanism
+						}
+					}
+				}
+				// No matching mechanism found…
+				if selected == nil {
+					return mask, errors.New(`No matching SASL mechanisms found`)
+				}
+				more, resp, err := selected.Step(nil)
+				if err != nil {
+					return mask, err
+				}
+
+				// Send <auth/> and the initial payload to start SASL auth.
+				if _, err = fmt.Fprintf(conn, saslAuth, selected.Name, resp); err != nil {
+					return mask, err
+				}
+
+				for more {
+					select {
+					case <-ctx.Done():
+						return mask, ctx.Err()
+					default:
+					}
+					tok, err := conn.in.d.Token()
+					if err != nil {
+						return mask, err
+					}
+					var challenge []byte
+					if t, ok := tok.(xml.StartElement); ok {
+						success := false
+						challenge, success, err = decodeSASLChallenge(conn.in.d, t)
+						switch {
+						case err != nil:
+							return mask, err
+						case success:
+							break
+						}
+					} else {
+						return mask, BadFormat
+					}
+					if more, resp, err = selected.Step(challenge); err != nil {
+						return mask, err
+					}
+					if _, err = fmt.Fprintf(conn, saslResp, resp); err != nil {
+						return mask, err
+					}
+				}
+				return Authn | StreamRestartRequired, nil
 			}
-			return Authn | StreamRestartRequired, nil
 		},
+	}
+}
+
+func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement) (challenge []byte, success bool, err error) {
+	switch start.Name {
+	case xml.Name{Space: NSSASL, Local: "challenge"}:
+		challenge := struct {
+			Data []byte `xml:",chardata"`
+		}{}
+		if err = d.DecodeElement(&challenge, &start); err != nil {
+			return nil, false, err
+		}
+		return challenge.Data, false, nil
+	case xml.Name{Space: NSSASL, Local: "failure"}:
+		fail := saslerr.Failure{}
+		if err = d.DecodeElement(&fail, &start); err != nil {
+			return nil, false, err
+		}
+		return nil, false, fail
+	case xml.Name{Space: NSSASL, Local: "success"}:
+		return nil, true, nil
+	default:
+		return nil, false, UnsupportedStanzaType
 	}
 }
