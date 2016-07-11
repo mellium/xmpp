@@ -4,7 +4,7 @@
 
 // Package saslerr provides error conditions for the XMPP profile of SASL as
 // defined by RFC 6120 §6.5.
-package saslerr
+package saslerr // import "mellium.im/xmpp/internal/saslerr"
 
 // TODO(ssw): I think these errors should really be created via code generation
 //            in case more are added in the future and so that we can store them
