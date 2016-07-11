@@ -100,18 +100,12 @@ func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
 					return mask, err
 				}
 
-				resp = nil
-
+				success := false
 				for more {
 					select {
 					case <-ctx.Done():
 						return mask, ctx.Err()
 					default:
-					}
-					if resp != nil {
-						if _, err = fmt.Fprintf(conn, saslResp, resp); err != nil {
-							return mask, err
-						}
 					}
 					tok, err := conn.in.d.Token()
 					if err != nil {
@@ -119,7 +113,7 @@ func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
 					}
 					var challenge []byte
 					if t, ok := tok.(xml.StartElement); ok {
-						challenge, _, err = decodeSASLChallenge(conn.in.d, t)
+						challenge, success, err = decodeSASLChallenge(conn.in.d, t)
 						if err != nil {
 							return mask, err
 						}
@@ -127,6 +121,13 @@ func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
 						return mask, BadFormat
 					}
 					if more, resp, err = selected.Step(challenge); err != nil {
+						return mask, err
+					}
+					if !more && success {
+						break
+					}
+					// TODO: What happens if there's more and success (broken server)?
+					if _, err = fmt.Fprintf(conn, saslResp, resp); err != nil {
 						return mask, err
 					}
 				}
