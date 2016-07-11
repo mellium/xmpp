@@ -30,13 +30,13 @@ const (
 // Authentication and Security Layer (SASL) as defined in RFC 4422. It panics if
 // no mechanisms are specified. The order in which mechanisms are specified will
 // be the prefered order, so stronger mechanisms should be listed first.
-func SASL(mechanisms ...*sasl.Mechanism) *StreamFeature {
+func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
 	if len(mechanisms) == 0 {
 		panic("xmpp: Must specify at least 1 SASL mechanism")
 	}
-	return &StreamFeature{
-		Name:       xml.Name{Space: NSSASL, Local: "mechanisms"},
-		Necessary:  Secure,
+	return StreamFeature{
+		Name: xml.Name{Space: NSSASL, Local: "mechanisms"},
+		// Necessary:  Secure,
 		Prohibited: Authn,
 		List: func(ctx context.Context, conn io.Writer) (req bool, err error) {
 			req = true
@@ -100,11 +100,18 @@ func SASL(mechanisms ...*sasl.Mechanism) *StreamFeature {
 					return mask, err
 				}
 
+				resp = nil
+
 				for more {
 					select {
 					case <-ctx.Done():
 						return mask, ctx.Err()
 					default:
+					}
+					if resp != nil {
+						if _, err = fmt.Fprintf(conn, saslResp, resp); err != nil {
+							return mask, err
+						}
 					}
 					tok, err := conn.in.d.Token()
 					if err != nil {
@@ -112,21 +119,14 @@ func SASL(mechanisms ...*sasl.Mechanism) *StreamFeature {
 					}
 					var challenge []byte
 					if t, ok := tok.(xml.StartElement); ok {
-						success := false
-						challenge, success, err = decodeSASLChallenge(conn.in.d, t)
-						switch {
-						case err != nil:
+						challenge, _, err = decodeSASLChallenge(conn.in.d, t)
+						if err != nil {
 							return mask, err
-						case success:
-							break
 						}
 					} else {
 						return mask, BadFormat
 					}
 					if more, resp, err = selected.Step(challenge); err != nil {
-						return mask, err
-					}
-					if _, err = fmt.Fprintf(conn, saslResp, resp); err != nil {
 						return mask, err
 					}
 				}
@@ -138,22 +138,20 @@ func SASL(mechanisms ...*sasl.Mechanism) *StreamFeature {
 
 func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement) (challenge []byte, success bool, err error) {
 	switch start.Name {
-	case xml.Name{Space: NSSASL, Local: "challenge"}:
+	case xml.Name{Space: NSSASL, Local: "challenge"}, xml.Name{Space: NSSASL, Local: "success"}:
 		challenge := struct {
 			Data []byte `xml:",chardata"`
 		}{}
 		if err = d.DecodeElement(&challenge, &start); err != nil {
 			return nil, false, err
 		}
-		return challenge.Data, false, nil
+		return challenge.Data, start.Name.Local == "success", nil
 	case xml.Name{Space: NSSASL, Local: "failure"}:
 		fail := saslerr.Failure{}
 		if err = d.DecodeElement(&fail, &start); err != nil {
 			return nil, false, err
 		}
 		return nil, false, fail
-	case xml.Name{Space: NSSASL, Local: "success"}:
-		return nil, true, nil
 	default:
 		return nil, false, UnsupportedStanzaType
 	}
