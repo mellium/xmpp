@@ -145,7 +145,7 @@ func readStreamFeatures(ctx context.Context, conn *Conn, start xml.StartElement)
 	switch {
 	case start.Name.Local != "features":
 		return nil, InvalidXML
-	case start.Name.Space != "stream":
+	case start.Name.Space != NSStream:
 		return nil, BadNamespacePrefix
 	}
 
@@ -184,7 +184,7 @@ parsefeatures:
 				return nil, err
 			}
 		case xml.EndElement:
-			if tok.Name.Local == "features" && tok.Name.Space == "stream" {
+			if tok.Name.Local == "features" && tok.Name.Space == NSStream {
 				// We've reached the end of the features list!
 				return sf, nil
 			}

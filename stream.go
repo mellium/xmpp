@@ -164,7 +164,7 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 			return ctx.Err()
 		default:
 		}
-		t, err := d.RawToken()
+		t, err := d.Token()
 		if err != nil {
 			return err
 		}
@@ -173,7 +173,7 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 			switch {
 			case tok.Name.Local != "stream":
 				return BadFormat
-			case tok.Name.Space != "stream":
+			case tok.Name.Space != NSStream:
 				return InvalidNamespace
 			}
 
@@ -190,9 +190,11 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 					// if we are the initiating entity and there is no stream ID…
 					return BadFormat
 				}
-				conn.state &= ^StreamRestartRequired
-				conn.in.stream = stream
-				conn.in.d = xml.NewDecoder(r)
+				if (conn.state & StreamRestartRequired) == StreamRestartRequired {
+					conn.state &= ^StreamRestartRequired
+					conn.in.stream = stream
+					conn.in.d = xml.NewDecoder(r)
+				}
 			}
 			return nil
 		case xml.ProcInst:
@@ -211,33 +213,35 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 }
 
 func (c *Conn) negotiateStreams(ctx context.Context) (err error) {
-	if (c.state & Received) == Received {
-		if err = expectNewStream(ctx, c); err != nil {
-			return err
+restartstream:
+	for {
+		if (c.state & Received) == Received {
+			if err = expectNewStream(ctx, c); err != nil {
+				return err
+			}
+			if err = sendNewStream(c, c.config, internal.RandomID(streamIDLength)); err != nil {
+				return err
+			}
+		} else {
+			if err := sendNewStream(c, c.config, ""); err != nil {
+				return err
+			}
+			if err := expectNewStream(ctx, c); err != nil {
+				return err
+			}
 		}
-		if err = sendNewStream(c, c.config, internal.RandomID(streamIDLength)); err != nil {
-			return err
-		}
-	} else {
-		if err := sendNewStream(c, c.config, ""); err != nil {
-			return err
-		}
-		if err := expectNewStream(ctx, c); err != nil {
-			return err
-		}
-	}
 
-	for done := false; !done; done, err = c.negotiateFeatures(ctx) {
-		switch {
-		case err != nil:
-			return err
-		case c.state&StreamRestartRequired == StreamRestartRequired:
-			// If we require a stream restart, do so…
-
-			// BUG(ssw): Negotiating streams can lead to a stack overflow when
-			//           connecting to a malicious endpoint.
-			return c.negotiateStreams(ctx)
+		for done := false; !done; {
+			done, err = c.negotiateFeatures(ctx)
+			switch {
+			case err != nil:
+				return err
+			case c.state&StreamRestartRequired == StreamRestartRequired:
+				// If we require a stream restart, do so…
+				continue restartstream
+			}
 		}
+		break
 	}
 	panic("xmpp: Not yet implemented.")
 }
