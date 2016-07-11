@@ -7,6 +7,7 @@ package xmpp
 import (
 	"context"
 	"encoding/xml"
+	"strings"
 
 	"mellium.im/xmpp/jid"
 )
@@ -43,7 +44,7 @@ const (
 )
 
 func (t iqType) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
-	return xml.Attr{Name: name, Value: t.String()}, nil
+	return xml.Attr{Name: name, Value: strings.ToLower(t.String())}, nil
 }
 
 // TODO: Should this be variadic and accept many payloads or many to's?

@@ -4,7 +4,7 @@ package xmpp
 
 import "fmt"
 
-const _iqType_name = "getsetresulterror"
+const _iqType_name = "GetSetResultError"
 
 var _iqType_index = [...]uint8{0, 3, 6, 12, 17}
 
