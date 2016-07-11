@@ -18,7 +18,11 @@ type Config struct {
 	// An XMPP server address.
 	Location *jid.JID
 
-	// An XMPP connection origin (local address).
+	// An XMPP connection origin (local address). If the origin has a resource
+	// part and this is a client config, the given resource will be requested (but
+	// not necessarily assigned) during the initial connection handshake.
+	// Generally it is recommended to leave this a bare JID and let the server
+	// assign a resource part.
 	Origin *jid.JID
 
 	// The supported stream features.

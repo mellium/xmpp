@@ -11,16 +11,16 @@ import (
 	"io"
 )
 
-// BindResource returns a stream feature that can be used for binding a
-// resource. The provided resource may (and probably "should") be empty, and is
-// merely a suggestion; the server may return a completely different resource to
-// prevent conflicts. If BindResource is used on a server connection, the
-// resource argument is ignored.
-func BindResource(resource string) *StreamFeature {
-	return &StreamFeature{
+// TODO: Strictly speaking, there's no reason for BindResource to be a function.
+//       I have a vague feeling that it should still be one though and need to
+//       figure out why…
+
+// BindResource is a stream feature that can be used for binding a resource.
+func BindResource() StreamFeature {
+	return StreamFeature{
 		Name:       xml.Name{Space: NSBind, Local: "bind"},
-		Necessary:  Secure,
-		Prohibited: Authn,
+		Necessary:  Authn,
+		Prohibited: Bind | Ready,
 		List: func(ctx context.Context, w io.Writer) (bool, error) {
 			_, err := fmt.Fprintf(w, `<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>`)
 			return true, err
@@ -32,7 +32,17 @@ func BindResource(resource string) *StreamFeature {
 			return true, nil, d.DecodeElement(&parsed, start)
 		},
 		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, err error) {
-			panic("Not yet implemented")
+			if (conn.state & Received) == Received {
+				panic("xmpp: bind not yet implemented")
+			} else {
+				resource := conn.config.Origin.Resourcepart()
+				if resource == "" {
+					// Send a request for the server to set a resource part.
+				} else {
+					// Request the provided resource part.
+				}
+				panic("bind negotiation: Not yet implemented")
+			}
 		},
 	}
 }

@@ -14,7 +14,7 @@ import (
 
 func TestBindList(t *testing.T) {
 	buf := &bytes.Buffer{}
-	bind := BindResource("")
+	bind := BindResource()
 	req, err := bind.List(context.Background(), buf)
 	if err != nil {
 		t.Fatal(err)
@@ -28,6 +28,7 @@ func TestBindList(t *testing.T) {
 }
 
 func TestBindParse(t *testing.T) {
+	bind := BindResource()
 	for _, test := range []struct {
 		XML string
 		err bool
@@ -42,29 +43,27 @@ func TestBindParse(t *testing.T) {
 		// Run each test twice, once without a requested resource and once for a
 		// requested resource (which should be ignored, making the results
 		// identical).
-		for _, bind := range []*StreamFeature{BindResource(""), BindResource("ignored")} {
-			d := xml.NewDecoder(strings.NewReader(test.XML))
-			tok, err := d.Token()
-			if err != nil {
-				// We screwed up the test string…
-				panic(err)
-			}
-			start := tok.(xml.StartElement)
-			req, data, err := bind.Parse(context.Background(), d, &start)
-			switch {
-			case test.err && err == nil:
-				t.Error("Expected error from parse")
-				continue
-			case !test.err && err != nil:
-				t.Error(err)
-				continue
-			}
-			if !req {
-				t.Error("Expected parsed bind feature to be required")
-			}
-			if data != nil {
-				t.Error("Expected bind data to be nil")
-			}
+		d := xml.NewDecoder(strings.NewReader(test.XML))
+		tok, err := d.Token()
+		if err != nil {
+			// We screwed up the test string…
+			panic(err)
+		}
+		start := tok.(xml.StartElement)
+		req, data, err := bind.Parse(context.Background(), d, &start)
+		switch {
+		case test.err && err == nil:
+			t.Error("Expected error from parse")
+			continue
+		case !test.err && err != nil:
+			t.Error(err)
+			continue
+		}
+		if !req {
+			t.Error("Expected parsed bind feature to be required")
+		}
+		if data != nil {
+			t.Error("Expected bind data to be nil")
 		}
 	}
 }

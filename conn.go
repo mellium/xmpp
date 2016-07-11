@@ -11,6 +11,8 @@ import (
 	"io"
 	"net"
 	"time"
+
+	"mellium.im/xmpp/jid"
 )
 
 // A Conn represents an XMPP connection that can perform SRV lookups for a given
@@ -19,7 +21,13 @@ type Conn struct {
 	config *Config
 	rwc    io.ReadWriteCloser
 	state  SessionState
-	in     struct {
+
+	// The actual origin of this conn (we don't want to mutate the config, so if
+	// this origin exists and is different from the one in config, eg. because the
+	// server did not assign us the resourcepart we requested, this is canonical).
+	origin *jid.JID
+
+	in struct {
 		stream
 		d *xml.Decoder
 	}
@@ -73,6 +81,9 @@ func (c *Conn) State() SessionState {
 func (c *Conn) LocalAddr() net.Addr {
 	if (c.state & Received) == Received {
 		return c.config.Location
+	}
+	if c.origin != nil {
+		return c.origin
 	}
 	return c.config.Origin
 }
