@@ -7,3 +7,6 @@
 //
 // Be advised: This API is still unstable and is subject to change.
 package xmpp // import "mellium.im/xmpp"
+
+//go:generate stringer -type=iqType
+//go:generate stringer -type=errorType

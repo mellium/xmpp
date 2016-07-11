@@ -10,8 +10,6 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-//go:generate stringer -type=errorType
-
 type errorType int
 
 const (
