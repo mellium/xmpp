@@ -7,8 +7,14 @@ package xmpp
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/xml"
+	"io"
+	"net"
+	"reflect"
+	"strings"
 	"testing"
+	"time"
 )
 
 // There is no room for variation on the starttls feature negotiation, so step
@@ -93,6 +99,116 @@ func TestStartTLSParse(t *testing.T) {
 			t.Error(err)
 		case req != test.req:
 			t.Errorf("STARTTLS required was wrong; expected %v but got %v", test.req, req)
+		}
+	}
+}
+
+type nopRWC struct {
+	io.Reader
+	io.Writer
+}
+
+func (nopRWC) Close() error {
+	return nil
+}
+
+type dummyConn struct {
+	io.ReadWriteCloser
+}
+
+func (dummyConn) LocalAddr() net.Addr {
+	return nil
+}
+
+func (dummyConn) RemoteAddr() net.Addr {
+	return nil
+}
+
+func (dummyConn) SetDeadline(t time.Time) error {
+	return nil
+}
+
+func (dummyConn) SetReadDeadline(t time.Time) error {
+	return nil
+}
+
+func (dummyConn) SetWriteDeadline(t time.Time) error {
+	return nil
+}
+
+// We can't create a tls.Client or tls.Server for a generic RWC, so ensure that
+// we fail (with a specific error) if this is the case.
+func TestNegotiationFailsForNonNetConn(t *testing.T) {
+	stls := StartTLS(true)
+	var b bytes.Buffer
+	_, err := stls.Negotiate(context.Background(), &Conn{rwc: nopRWC{&b, &b}}, nil)
+	if err != ErrTLSUpgradeFailed {
+		t.Errorf("Expected error `%v` but got `%v`", ErrTLSUpgradeFailed, err)
+	}
+}
+
+func TestNegotiateServer(t *testing.T) {
+	stls := StartTLS(true)
+	var b bytes.Buffer
+	c := &Conn{state: Received, rwc: dummyConn{nopRWC{&b, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
+	_, err := stls.Negotiate(context.Background(), c, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The server should send a proceed element.
+	proceed := struct {
+		XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls proceed"`
+	}{}
+	d := xml.NewDecoder(&b)
+	if err = d.Decode(&proceed); err != nil {
+		t.Error(err)
+	}
+
+	// The server should upgrade the connection to a tls.Conn
+	if _, ok := c.rwc.(*tls.Conn); !ok {
+		t.Errorf("Expected server conn to have been upgraded to a *tls.Conn but got %s", reflect.TypeOf(c.rwc))
+	}
+}
+
+func TestNegotiateClient(t *testing.T) {
+	for _, test := range []struct {
+		responses []string
+		err       bool
+		state     SessionState
+	}{
+		{[]string{`<proceed xmlns="badns"/>`}, true, Secure | StreamRestartRequired},
+		{[]string{`<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`}, false, Secure | StreamRestartRequired},
+		{[]string{`<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'></bad>`}, true, 0},
+		{[]string{`<failure xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`}, false, EndStream},
+		{[]string{`<failure xmlns='urn:ietf:params:xml:ns:xmpp-tls'></bad>`}, true, 0},
+		{[]string{`</somethingbadhappened>`}, true, 0},
+		{[]string{`<notproceedorfailure xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`}, true, 0},
+		{[]string{`chardata not start element`}, true, 0},
+	} {
+		stls := StartTLS(true)
+		r := strings.NewReader(strings.Join(test.responses, "\n"))
+		var b bytes.Buffer
+		c := &Conn{rwc: dummyConn{nopRWC{r, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
+		c.in.d = xml.NewDecoder(c.rwc)
+		mask, err := stls.Negotiate(context.Background(), c, nil)
+		switch {
+		case test.err && err == nil:
+			t.Error("Expected an error from starttls client negotiation")
+			continue
+		case !test.err && err != nil:
+			t.Error(err)
+			continue
+		case test.err && err != nil:
+			continue
+		case b.String() != `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`:
+			t.Errorf("Expected client to send starttls element but got `%s`", b.String())
+		case test.state != mask:
+			t.Errorf("Expected session state mask %v but got %v", test.state, mask)
+		}
+		// The client should upgrade the connection to a tls.Conn
+		if _, ok := c.rwc.(*tls.Conn); test.state&Secure == Secure && !ok {
+			t.Errorf("Expected client conn to have been upgraded to a *tls.Conn but got %s", reflect.TypeOf(c.rwc))
 		}
 	}
 }

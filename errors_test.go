@@ -6,6 +6,7 @@ package xmpp
 
 import (
 	"fmt"
+	"testing"
 )
 
 var (
@@ -14,3 +15,10 @@ var (
 	_ fmt.Stringer = (*errorType)(nil)
 	_ fmt.Stringer = Auth
 )
+
+func TestErrorReturnsCondition(t *testing.T) {
+	s := StanzaError{Condition: "leprosy"}
+	if s.Condition != s.Error() {
+		t.Errorf("Expected stanza error to return condition `leprosy` but got %s", s.Error())
+	}
+}

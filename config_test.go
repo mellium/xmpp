@@ -23,3 +23,11 @@ func TestS2SConnType(t *testing.T) {
 		t.Errorf("Wrong s2s value for conntype; expected xmpp-server but got %s", ct)
 	}
 }
+
+// New configs should populate the features map with no duplicates.
+func TestNewConfigShouldPopulateFeatures(t *testing.T) {
+	c := NewServerConfig(nil, nil, BindResource(), BindResource(), StartTLS(true))
+	if len(c.Features) != 2 {
+		t.Errorf("Expected two features (Bind and StartTLS) but got: %v", c.Features)
+	}
+}
