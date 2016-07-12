@@ -37,11 +37,11 @@ func TestUnmarshalMessage(t *testing.T) {
 </message>
 	`)
 	m := &Message{
-		stanza{
+		Stanza: Stanza{
 			To:   &jid.JID{},
 			From: &jid.JID{},
 		},
-		xml.Name{},
+		XMLName: xml.Name{},
 	}
 	err := xml.Unmarshal(mb, m)
 	if err != nil {
@@ -49,16 +49,16 @@ func TestUnmarshalMessage(t *testing.T) {
 		t.Fail()
 	}
 
-	if m.stanza.To.String() != "romeo@example.net" {
-		t.Logf("Expected %s but got %s", "romeo@example.net", m.stanza.To.String())
+	if m.Stanza.To.String() != "romeo@example.net" {
+		t.Logf("Expected %s but got %s", "romeo@example.net", m.Stanza.To.String())
 		t.Fail()
 	}
-	if m.stanza.To.String() != "romeo@example.net" {
-		t.Logf("Expected %s but got %s", "romeo@example.net", m.stanza.To.String())
+	if m.Stanza.To.String() != "romeo@example.net" {
+		t.Logf("Expected %s but got %s", "romeo@example.net", m.Stanza.To.String())
 		t.Fail()
 	}
-	if m.stanza.ID != "ktx72v49" {
-		t.Logf("Expected %s but got %s", "ktx72v49", m.stanza.To.String())
+	if m.Stanza.ID != "ktx72v49" {
+		t.Logf("Expected %s but got %s", "ktx72v49", m.Stanza.To.String())
 		t.Fail()
 	}
 }
@@ -67,12 +67,12 @@ func TestUnmarshalMessage(t *testing.T) {
 func TestMarshalMessage(t *testing.T) {
 	j := jid.MustParse("feste@shakespeare.lit")
 	m := Message{
-		stanza{
+		Stanza: Stanza{
 			ID:   "1234",
 			To:   j,
 			Lang: "en",
 		},
-		xml.Name{Space: "jabber:client", Local: "message"},
+		XMLName: xml.Name{Space: "jabber:client", Local: "message"},
 	}
 	// TODO: Check the output; is the order guaranteed?
 	if _, err := xml.Marshal(m); err != nil {

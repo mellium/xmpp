@@ -8,21 +8,16 @@ import (
 	"encoding/xml"
 	"errors"
 	"strings"
-
-	"mellium.im/xmpp/jid"
 )
 
 // IQ ("Information Query") is used as a general request response mechanism.
 // IQ's are one-to-one, provide get and set semantics, and always require a
 // response in the form of a result or an error.
 type IQ struct {
-	From     *jid.JID `xml:"from,attr"`
-	To       *jid.JID `xml:"to,attr"`
-	ID       string   `xml:"id,attr"`
-	Lang     string   `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
-	InnerXML []byte   `xml:",innerxml"`
-	Type     iqType   `xml:"type,attr"`
-	XMLName  xml.Name `xml:"iq"`
+	Stanza
+
+	Type    iqType   `xml:"type,attr"`
+	XMLName xml.Name `xml:"iq"`
 }
 
 type iqType int

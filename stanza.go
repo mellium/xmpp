@@ -11,9 +11,9 @@ import (
 // The default length of stanza IDs
 const idLen = 16
 
-// stanza contains fields common to any any top level XMPP stanza (Presence,
+// Stanza contains fields common to any any top level XMPP stanza (Presence,
 // Message, or IQ).
-type stanza struct {
+type Stanza struct {
 	ID    string   `xml:"id,attr"`
 	Inner string   `xml:",innerxml"`
 	To    *jid.JID `xml:"to,attr"`

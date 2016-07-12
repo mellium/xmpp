@@ -13,9 +13,10 @@ import (
 // availability, and advertise entity capabilities. It can be directed
 // (one-to-one), or used as a broadcast mechanism (one-to-many).
 type Presence struct {
-	stanza
+	Stanza
 
-	XMLName xml.Name `xml:"presence"`
+	Type    presenceType `xml:"type,attr,omitempty"`
+	XMLName xml.Name     `xml:"presence"`
 }
 
 type presenceType int

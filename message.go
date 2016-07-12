@@ -13,9 +13,10 @@ import (
 // messages to an individual or group chat server, or for notifications and
 // alerts that don't require a response.
 type Message struct {
-	stanza
+	Stanza
 
-	XMLName xml.Name `xml:"message"`
+	Type    messageType `xml:"type,attr,omitempty"`
+	XMLName xml.Name    `xml:"message"`
 }
 
 type messageType int
