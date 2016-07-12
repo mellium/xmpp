@@ -8,6 +8,9 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
+// The default length of stanza IDs
+const idLen = 16
+
 // stanza contains fields common to any any top level XMPP stanza (Presence,
 // Message, or IQ).
 type stanza struct {
