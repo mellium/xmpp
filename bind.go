@@ -11,10 +11,6 @@ import (
 	"io"
 )
 
-// TODO: Strictly speaking, there's no reason for BindResource to be a function.
-//       I have a vague feeling that it should still be one though and need to
-//       figure out why…
-
 // BindResource is a stream feature that can be used for binding a resource.
 func BindResource() StreamFeature {
 	return StreamFeature{
