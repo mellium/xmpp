@@ -6,9 +6,15 @@ package xmpp
 
 import (
 	"encoding/xml"
+	"fmt"
 	"testing"
 
 	"mellium.im/xmpp/jid"
+)
+
+var (
+	_ fmt.Stringer = (*messageType)(nil)
+	_ fmt.Stringer = NormalMessage
 )
 
 // TODO: Make this a table test and add some more complicated messages.

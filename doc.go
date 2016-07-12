@@ -8,5 +8,4 @@
 // Be advised: This API is still unstable and is subject to change.
 package xmpp // import "mellium.im/xmpp"
 
-//go:generate stringer -type=iqType
-//go:generate stringer -type=errorType
+//go:generate stringer -type=iqType,errorType,messageType,presenceType -output stanzatype_string.go

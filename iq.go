@@ -23,35 +23,36 @@ type IQ struct {
 type iqType int
 
 const (
-	// A Get IQ is used to query another entity for information.
-	Get iqType = iota
+	// A GetIQ is used to query another entity for information.
+	GetIQ iqType = iota
 
-	// A Set IQ is used to provide data to another entity, set new values, and
+	// A SetIQ is used to provide data to another entity, set new values, and
 	// replace existing values.
-	Set
+	SetIQ
 
-	// A Result IQ is sent in response to a successful get or set IQ.
-	Result
+	// A ResultIQ is sent in response to a successful get or set IQ.
+	ResultIQ
 
-	// An Error IQ is sent to report that an error occured during the delivery or
+	// An ErrorIQ is sent to report that an error occured during the delivery or
 	// processing of a get or set IQ.
-	Error
+	ErrorIQ
 )
 
 func (t iqType) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
-	return xml.Attr{Name: name, Value: strings.ToLower(t.String())}, nil
+	s := t.String()
+	return xml.Attr{Name: name, Value: strings.ToLower(s[:len(s)-2])}, nil
 }
 
 func (t *iqType) UnmarshalXMLAttr(attr xml.Attr) error {
 	switch attr.Value {
 	case "get":
-		*t = Get
+		*t = GetIQ
 	case "set":
-		*t = Set
+		*t = SetIQ
 	case "result":
-		*t = Result
+		*t = ResultIQ
 	case "error":
-		*t = Error
+		*t = ErrorIQ
 	default:
 		// TODO: This should be a stanza error with the bad-request condition.
 		return errors.New("bad-request")

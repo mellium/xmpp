@@ -9,8 +9,6 @@ import (
 )
 
 var (
-	_ error        = (*StanzaError)(nil)
-	_ error        = StanzaError{}
-	_ fmt.Stringer = (*errorType)(nil)
-	_ fmt.Stringer = Auth
+	_ fmt.Stringer = (*presenceType)(nil)
+	_ fmt.Stringer = ProbePresence
 )

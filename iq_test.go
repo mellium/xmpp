@@ -6,13 +6,16 @@ package xmpp
 
 import (
 	"encoding/xml"
+	"fmt"
 	"testing"
 )
 
 var (
-	_ xml.MarshalerAttr   = (*iqType)(nil)
-	_ xml.MarshalerAttr   = Get
 	_ xml.UnmarshalerAttr = (*iqType)(nil)
+	_ xml.MarshalerAttr   = (*iqType)(nil)
+	_ xml.MarshalerAttr   = GetIQ
+	_ fmt.Stringer        = (*iqType)(nil)
+	_ fmt.Stringer        = GetIQ
 )
 
 func TestMarshalIQTypeAttr(t *testing.T) {
@@ -20,7 +23,7 @@ func TestMarshalIQTypeAttr(t *testing.T) {
 	for _, test := range []struct {
 		iqtype iqType
 		value  string
-	}{{Get, "get"}, {Set, "set"}, {Result, "result"}, {Error, "error"}} {
+	}{{GetIQ, "get"}, {SetIQ, "set"}, {ResultIQ, "result"}, {ErrorIQ, "error"}} {
 		attr, err := test.iqtype.MarshalXMLAttr(n)
 		if err != nil {
 			t.Error(err)
@@ -41,11 +44,11 @@ func TestUnmarshalIQTypeAttr(t *testing.T) {
 		iqtype iqType
 		err    bool
 	}{
-		{xml.Attr{Name: xml.Name{}, Value: "get"}, Get, false},
-		{xml.Attr{Name: xml.Name{Space: "", Local: "type"}, Value: "set"}, Set, false},
-		{xml.Attr{Name: xml.Name{Space: "urn", Local: "loc"}, Value: "result"}, Result, false},
-		{xml.Attr{Name: xml.Name{}, Value: "error"}, Error, false},
-		{xml.Attr{Name: xml.Name{}, Value: "stuff"}, Error, true},
+		{xml.Attr{Name: xml.Name{}, Value: "get"}, GetIQ, false},
+		{xml.Attr{Name: xml.Name{Space: "", Local: "type"}, Value: "set"}, SetIQ, false},
+		{xml.Attr{Name: xml.Name{Space: "urn", Local: "loc"}, Value: "result"}, ResultIQ, false},
+		{xml.Attr{Name: xml.Name{}, Value: "error"}, ErrorIQ, false},
+		{xml.Attr{Name: xml.Name{}, Value: "stuff"}, ErrorIQ, true},
 	} {
 		iqtype := iqType(0)
 		switch err := (&iqtype).UnmarshalXMLAttr(test.attr); {

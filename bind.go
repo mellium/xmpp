@@ -78,9 +78,9 @@ func BindResource() StreamFeature {
 					// TODO: Do we actually care about this? Should this be a stanza error
 					// instead?
 					return mask, UndefinedCondition
-				case resp.Type == Result:
+				case resp.Type == ResultIQ:
 					panic("Bind result processing not yet implemented")
-				case resp.Type == Error:
+				case resp.Type == ErrorIQ:
 					panic("Bind error processing not yet implemented")
 				}
 				return mask, nil
