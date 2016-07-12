@@ -7,6 +7,7 @@ package xmpp
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"strings"
 
 	"mellium.im/xmpp/jid"
@@ -17,10 +18,10 @@ import (
 // response in the form of a result or an error.
 type IQ struct {
 	From     *jid.JID `xml:"from,attr"`
-	ID       string   `xml:"id,attr"`
-	InnerXML []byte   `xml:",innerxml"`
-	Lang     string   `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 	To       *jid.JID `xml:"to,attr"`
+	ID       string   `xml:"id,attr"`
+	Lang     string   `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
+	InnerXML []byte   `xml:",innerxml"`
 	Type     iqType   `xml:"type,attr"`
 	XMLName  xml.Name `xml:"iq"`
 }
@@ -45,6 +46,23 @@ const (
 
 func (t iqType) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	return xml.Attr{Name: name, Value: strings.ToLower(t.String())}, nil
+}
+
+func (t *iqType) UnmarshalXMLAttr(attr xml.Attr) error {
+	switch attr.Value {
+	case "get":
+		*t = Get
+	case "set":
+		*t = Set
+	case "result":
+		*t = Result
+	case "error":
+		*t = Error
+	default:
+		// TODO: This should be a stanza error with the bad-request condition.
+		return errors.New("bad-request")
+	}
+	return nil
 }
 
 // TODO: Should this be variadic and accept many payloads or many to's?
