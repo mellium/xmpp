@@ -5,6 +5,7 @@
 package jid
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"net"
@@ -16,6 +17,8 @@ import (
 var _ fmt.Stringer = (*JID)(nil)
 var _ xml.MarshalerAttr = (*JID)(nil)
 var _ xml.UnmarshalerAttr = (*JID)(nil)
+var _ xml.Marshaler = (*JID)(nil)
+var _ xml.Unmarshaler = (*JID)(nil)
 var _ net.Addr = (*JID)(nil)
 
 func TestValidJIDs(t *testing.T) {
@@ -90,7 +93,7 @@ func TestInvalidNewJIDs(t *testing.T) {
 	}
 }
 
-func TestMarshalEmpty(t *testing.T) {
+func TestMarshalAttrEmpty(t *testing.T) {
 	attr, err := ((*JID)(nil)).MarshalXMLAttr(xml.Name{})
 	switch {
 	case err != nil:
@@ -193,6 +196,69 @@ func TestUnescape(t *testing.T) {
 	} {
 		if u := Unescape(test.escaped); u != test.unescaped {
 			t.Errorf("Unescaped localpart should be `%s` but got: `%s`", test.unescaped, u)
+		}
+	}
+}
+
+func TestMarshalXML(t *testing.T) {
+	// Test default marshaling
+	j := MustParse("feste@shakespeare.lit")
+	b, err := xml.Marshal(j)
+	switch expected := `<JID>feste@shakespeare.lit</JID>`; {
+	case err != nil:
+		t.Error(err)
+	case string(b) != expected:
+		t.Errorf("Error marshaling JID, expected `%s` but got `%s`", expected, string(b))
+	}
+
+	// Test encoding with a custom element
+	j = MustParse("feste@shakespeare.lit/ilyria")
+	var buf bytes.Buffer
+	start := xml.StartElement{xml.Name{Space: "", Local: "item"}, []xml.Attr{}}
+	e := xml.NewEncoder(&buf)
+	err = e.EncodeElement(j, start)
+	switch expected := `<item>feste@shakespeare.lit/ilyria</item>`; {
+	case err != nil:
+		t.Error(err)
+	case buf.String() != expected:
+		t.Errorf("Error encoding JID, expected `%s` but got `%s`", expected, buf.String())
+	}
+
+	// Test encoding a nil JID
+	j = (*JID)(nil)
+	b, err = xml.Marshal(j)
+	switch expected := ``; {
+	case err != nil:
+		t.Error(err)
+	case string(b) != expected:
+		t.Errorf("Error marshaling JID, expected `%s` but got `%s`", expected, string(b))
+	}
+}
+
+func TestUnmarshal(t *testing.T) {
+	for _, test := range []struct {
+		xml string
+		jid *JID
+		err bool
+	}{
+		{`<item>feste@shakespeare.lit/ilyria</item>`, MustParse("feste@shakespeare.lit/ilyria"), false},
+		{`<jid>feste@shakespeare.lit</jid>`, MustParse("feste@shakespeare.lit"), false},
+		{`<oops>feste@shakespeare.lit</bad>`, nil, true},
+		{`<item></item>`, nil, true},
+	} {
+		j := &JID{}
+		err := xml.Unmarshal([]byte(test.xml), j)
+		switch {
+		case test.err && err == nil:
+			t.Errorf("Expected unmarshaling `%s` as a JID to return an error", test.xml)
+			continue
+		case !test.err && err != nil:
+			t.Error(err)
+			continue
+		case err != nil:
+			continue
+		case !test.jid.Equal(j):
+			t.Errorf("Expected JID to unmarshal to `%s` but got `%s`", test.jid, j)
 		}
 	}
 }

@@ -275,8 +275,44 @@ func (j *JID) Equal(j2 *JID) bool {
 		j.Domainpart() == j2.Domainpart() && j.Resourcepart() == j2.Resourcepart()
 }
 
-// MarshalXMLAttr satisfies the MarshalerAttr interface and marshals the JID as
-// an XML attribute.
+// MarshalXML satisfies the xml.Marshaler interface and marshals the JID as
+// XML chardata.
+func (j *JID) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
+	if err = e.EncodeToken(start); err != nil {
+		return
+	}
+	if err = e.EncodeToken(xml.CharData(j.String())); err != nil {
+		return
+	}
+	if err = e.EncodeToken(start.End()); err != nil {
+		return
+	}
+	err = e.Flush()
+	return
+}
+
+// UnmarshalXML satisfies the xml.Unmarshaler interface and unmarshals the JID
+// from the elements chardata.
+func (j *JID) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
+	data := struct {
+		CharData string `xml:",chardata"`
+	}{}
+	if err = d.DecodeElement(&data, &start); err != nil {
+		return
+	}
+	j2, err := Parse(data.CharData)
+
+	if err == nil {
+		j.localpart = j2.localpart
+		j.domainpart = j2.domainpart
+		j.resourcepart = j2.resourcepart
+	}
+
+	return
+}
+
+// MarshalXMLAttr satisfies the xml.MarshalerAttr interface and marshals the JID
+// as an XML attribute.
 func (j *JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	if j == nil {
 		return xml.Attr{}, nil
@@ -284,8 +320,8 @@ func (j *JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	return xml.Attr{Name: name, Value: j.String()}, nil
 }
 
-// UnmarshalXMLAttr satisfies the UnmarshalerAttr interface and unmarshals an
-// XML attribute into a valid JID (or returns an error).
+// UnmarshalXMLAttr satisfies the xml.UnmarshalerAttr interface and unmarshals
+// an XML attribute into a valid JID (or returns an error).
 func (j *JID) UnmarshalXMLAttr(attr xml.Attr) error {
 	jid, err := Parse(attr.Value)
 	j.localpart = jid.localpart
