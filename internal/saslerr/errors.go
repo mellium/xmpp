@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 
 	"golang.org/x/text/language"
+	"mellium.im/xmpp/ns"
 )
 
 // condition represents a SASL error condition that can be encapsulated by a
@@ -49,7 +50,7 @@ func (f Failure) Error() string {
 // MarshalXML satisfies the xml.Marshaler interface for a Failure.
 func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	failure := xml.StartElement{
-		Name: xml.Name{Space: `urn:ietf:params:xml:ns:xmpp-sasl`, Local: "failure"},
+		Name: xml.Name{Space: ns.SASL, Local: "failure"},
 	}
 	if err = e.EncodeToken(failure); err != nil {
 		return
@@ -68,7 +69,7 @@ func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) 
 			Name: xml.Name{Space: "", Local: "text"},
 			Attr: []xml.Attr{
 				xml.Attr{
-					Name:  xml.Name{Space: "http://www.w3.org/XML/1998/namespace", Local: "lang"},
+					Name:  xml.Name{Space: ns.XML, Local: "lang"},
 					Value: f.Lang.String(),
 				},
 			},
