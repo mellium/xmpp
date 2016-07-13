@@ -142,6 +142,9 @@ func TestEqual(t *testing.T) {
 		{m, MustParse("mercutio@example.net/nope"), false},
 		{m, MustParse("mercutio@e.com/test"), false},
 		{m, MustParse("m@example.net/test"), false},
+		{(*JID)(nil), (*JID)(nil), true},
+		{m, (*JID)(nil), false},
+		{(*JID)(nil), m, false},
 	} {
 		switch {
 		case test.eq && !test.j1.Equal(test.j2):

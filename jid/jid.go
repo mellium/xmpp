@@ -271,6 +271,9 @@ func (j *JID) String() string {
 
 // Equal performs an octet-for-octet comparison with the given JID.
 func (j *JID) Equal(j2 *JID) bool {
+	if j == nil || j2 == nil {
+		return j == j2
+	}
 	return j.Localpart() == j2.Localpart() &&
 		j.Domainpart() == j2.Domainpart() && j.Resourcepart() == j2.Resourcepart()
 }
@@ -323,6 +326,9 @@ func (j *JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 // UnmarshalXMLAttr satisfies the xml.UnmarshalerAttr interface and unmarshals
 // an XML attribute into a valid JID (or returns an error).
 func (j *JID) UnmarshalXMLAttr(attr xml.Attr) error {
+	if attr.Value == "" {
+		return nil
+	}
 	jid, err := Parse(attr.Value)
 	j.localpart = jid.localpart
 	j.domainpart = jid.domainpart
