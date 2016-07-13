@@ -214,7 +214,7 @@ func TestMarshalXML(t *testing.T) {
 	// Test encoding with a custom element
 	j = MustParse("feste@shakespeare.lit/ilyria")
 	var buf bytes.Buffer
-	start := xml.StartElement{xml.Name{Space: "", Local: "item"}, []xml.Attr{}}
+	start := xml.StartElement{Name: xml.Name{Space: "", Local: "item"}, Attr: []xml.Attr{}}
 	e := xml.NewEncoder(&buf)
 	err = e.EncodeElement(j, start)
 	switch expected := `<item>feste@shakespeare.lit/ilyria</item>`; {
