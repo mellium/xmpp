@@ -152,3 +152,90 @@ func (se StanzaError) MarshalXML(e *xml.Encoder, start xml.StartElement) (err er
 	e.EncodeToken(start.End())
 	return nil
 }
+
+func (se *StanzaError) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	decoded := struct {
+		Condition struct {
+			XMLName xml.Name
+		} `xml:",any"`
+		Type errorType `xml:"type,attr"`
+		By   *jid.JID  `xml:"by,attr"`
+		Text []struct {
+			Lang string `xml:"http://www.w3.org/XML/1998/namespace lang,attr"`
+			Data string `xml:",chardata"`
+		} `xml:"urn:ietf:params:xml:ns:xmpp-stanzas text"`
+	}{}
+	if err := d.DecodeElement(&decoded, &start); err != nil {
+		return err
+	}
+	se.Type = decoded.Type
+	se.By = decoded.By
+	// TODO: Oh god why… maybe I should transform the String() output instead.
+	switch decoded.Condition.XMLName.Local {
+	case "bad-request":
+		se.Condition = BadRequest
+	case "conflict":
+		se.Condition = Conflict
+	case "feature-not-implemented":
+		se.Condition = FeatureNotImplemented
+	case "forbidden":
+		se.Condition = Forbidden
+	case "gone":
+		se.Condition = Gone
+	case "internal-server-error":
+		se.Condition = InternalServerError
+	case "item-not-found":
+		se.Condition = ItemNotFound
+	case "jid-malformed":
+		se.Condition = JIDMalformed
+	case "not-acceptable":
+		se.Condition = NotAcceptable
+	case "not-allowed":
+		se.Condition = NotAllowed
+	case "not-authorized":
+		se.Condition = NotAuthorized
+	case "policy-violation":
+		se.Condition = PolicyViolation
+	case "recipient-unavailable":
+		se.Condition = RecipientUnavailable
+	case "redirect":
+		se.Condition = Redirect
+	case "registration-required":
+		se.Condition = RegistrationRequired
+	case "remote-server-not-found":
+		se.Condition = RemoteServerNotFound
+	case "remote-server-timeout":
+		se.Condition = RemoteServerTimeout
+	case "resource-constraint":
+		se.Condition = ResourceConstraint
+	case "service-unavailable":
+		se.Condition = ServiceUnavailable
+	case "subscription-required":
+		se.Condition = SubscriptionRequired
+	case "undefined-condition":
+		se.Condition = UndefinedCondition
+	case "unexpected-request":
+		se.Condition = UnexpectedRequest
+	default:
+		if decoded.Condition.XMLName.Space == ns.Stanza {
+			se.Condition = condition(decoded.Condition.XMLName.Local)
+		}
+	}
+
+	// TODO: Dedup this (and probably a lot of other stuff) with the saslerr
+	// logic.
+	tags := make([]language.Tag, 0, len(decoded.Text))
+	data := make(map[language.Tag]string)
+	for _, text := range decoded.Text {
+		tag, err := language.Parse(text.Lang)
+		if err != nil {
+			continue
+		}
+		tags = append(tags, tag)
+		data[tag] = text.Data
+	}
+	tag, _, _ := language.NewMatcher(tags).Match(se.Lang)
+	se.Lang = tag
+	se.Text, _ = data[tag]
+	return nil
+}
