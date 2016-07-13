@@ -30,7 +30,7 @@ func TestMarshalSeeOtherHost(t *testing.T) {
 		xb, err := xml.Marshal(soh)
 		switch xbs := string(xb); {
 		case test.err && err == nil:
-			t.Error("Expected marshaling SeeOtherHost error for address `%v` to fail", test.ipaddr)
+			t.Errorf("Expected marshaling SeeOtherHost error for address `%v` to fail", test.ipaddr)
 			continue
 		case !test.err && err != nil:
 			t.Error(err)
