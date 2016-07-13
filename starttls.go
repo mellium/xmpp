@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+
+	"mellium.im/xmpp/streamerror"
 )
 
 // BUG(ssw): STARTTLS feature does not have security layer byte precision.
@@ -67,27 +69,27 @@ func StartTLS(required bool) StreamFeature {
 				case xml.StartElement:
 					switch {
 					case tok.Name.Space != NSStartTLS:
-						return mask, UnsupportedStanzaType
+						return mask, streamerror.UnsupportedStanzaType
 					case tok.Name.Local == "proceed":
 						// Skip the </proceed> token.
 						if err = conn.in.d.Skip(); err != nil {
-							return EndStream, InvalidXML
+							return EndStream, streamerror.InvalidXML
 						}
 						conn.rwc = tls.Client(netconn, conn.config.TLSConfig)
 					case tok.Name.Local == "failure":
 						// Skip the </failure> token.
 						if err = conn.in.d.Skip(); err != nil {
-							err = InvalidXML
+							err = streamerror.InvalidXML
 						}
 						// Failure is not an "error", it's expected behavior. The server is
 						// telling us to end the stream. However, if we encounter bad XML
 						// while skipping the </failure> token, return that error.
 						return EndStream, err
 					default:
-						return mask, UnsupportedStanzaType
+						return mask, streamerror.UnsupportedStanzaType
 					}
 				default:
-					return mask, RestrictedXML
+					return mask, streamerror.RestrictedXML
 				}
 			}
 			mask = Secure | StreamRestartRequired

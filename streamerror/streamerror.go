@@ -2,7 +2,14 @@
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
-package xmpp
+// The streamerror package contains XMPP stream errors as defined by RFC 6120
+// §4.9.
+//
+// These error conditions are not in the main xmpp package to prevent naming
+// conflicts with similarly named stanza error conditions and because they are
+// less frequently used. Most people will want to use the facilities of the
+// mellium.im/xmpp package and not create stream errors directly.
+package streamerror // import "mellium.im/xmpp/streamerror"
 
 import (
 	"encoding/xml"
@@ -199,7 +206,7 @@ func (s *StreamError) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error
 // MarshalXML satisfies the xml package's Marshaler interface and allows
 // StreamError's to be correctly marshaled back into XML.
 func (s StreamError) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	e.EncodeElement(
+	return e.EncodeElement(
 		struct {
 			Err struct {
 				XMLName  xml.Name
@@ -219,5 +226,4 @@ func (s StreamError) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 			Attr: []xml.Attr{},
 		},
 	)
-	return nil
 }

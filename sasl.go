@@ -13,6 +13,7 @@ import (
 
 	"mellium.im/sasl"
 	"mellium.im/xmpp/internal/saslerr"
+	"mellium.im/xmpp/streamerror"
 )
 
 // BUG(ssw): We can't support server side SASL yet until the SASL library
@@ -118,7 +119,7 @@ func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
 							return mask, err
 						}
 					} else {
-						return mask, BadFormat
+						return mask, streamerror.BadFormat
 					}
 					if more, resp, err = selected.Step(challenge); err != nil {
 						return mask, err
@@ -154,6 +155,6 @@ func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement) (challenge []by
 		}
 		return nil, false, fail
 	default:
-		return nil, false, UnsupportedStanzaType
+		return nil, false, streamerror.UnsupportedStanzaType
 	}
 }

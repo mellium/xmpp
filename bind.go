@@ -12,6 +12,7 @@ import (
 
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/streamerror"
 )
 
 const (
@@ -56,7 +57,7 @@ func BindResource() StreamFeature {
 				}
 				start, ok := tok.(xml.StartElement)
 				if !ok {
-					return mask, BadFormat
+					return mask, streamerror.BadFormat
 				}
 				resp := struct {
 					IQ
@@ -70,14 +71,12 @@ func BindResource() StreamFeature {
 						return mask, err
 					}
 				default:
-					return mask, BadFormat
+					return mask, streamerror.BadFormat
 				}
 
 				switch {
 				case resp.ID != reqID:
-					// TODO: Do we actually care about this? Should this be a stanza error
-					// instead?
-					return mask, UndefinedCondition
+					return mask, streamerror.UndefinedCondition
 				case resp.Type == ResultIQ:
 					conn.origin = resp.Bind.JID
 				case resp.Type == ErrorIQ:

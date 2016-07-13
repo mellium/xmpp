@@ -13,6 +13,7 @@ import (
 	"golang.org/x/text/language"
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/streamerror"
 )
 
 const streamIDLength = 16
@@ -68,12 +69,12 @@ func streamFromStartElement(s xml.StartElement) (stream, error) {
 		case xml.Name{Space: "", Local: "to"}:
 			stream.to = &jid.JID{}
 			if err := stream.to.UnmarshalXMLAttr(attr); err != nil {
-				return stream, ImproperAddressing
+				return stream, streamerror.ImproperAddressing
 			}
 		case xml.Name{Space: "", Local: "from"}:
 			stream.from = &jid.JID{}
 			if err := stream.from.UnmarshalXMLAttr(attr); err != nil {
-				return stream, ImproperAddressing
+				return stream, streamerror.ImproperAddressing
 			}
 		case xml.Name{Space: "", Local: "id"}:
 			stream.id = attr.Value
@@ -81,12 +82,12 @@ func streamFromStartElement(s xml.StartElement) (stream, error) {
 			(&stream.version).UnmarshalXMLAttr(attr)
 		case xml.Name{Space: "", Local: "xmlns"}:
 			if attr.Value != "jabber:client" && attr.Value != "jabber:server" {
-				return stream, InvalidNamespace
+				return stream, streamerror.InvalidNamespace
 			}
 			stream.xmlns = attr.Value
 		case xml.Name{Space: "xmlns", Local: "stream"}:
 			if attr.Value != NSStream {
-				return stream, InvalidNamespace
+				return stream, streamerror.InvalidNamespace
 			}
 		case xml.Name{Space: "xml", Local: "lang"}:
 			stream.lang = language.Make(attr.Value)
@@ -172,9 +173,9 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 		case xml.StartElement:
 			switch {
 			case tok.Name.Local != "stream":
-				return BadFormat
+				return streamerror.BadFormat
 			case tok.Name.Space != NSStream:
-				return InvalidNamespace
+				return streamerror.InvalidNamespace
 			}
 
 			stream, err := streamFromStartElement(tok)
@@ -182,13 +183,13 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 			case err != nil:
 				return err
 			case stream.version != internal.DefaultVersion:
-				return UnsupportedVersion
+				return streamerror.UnsupportedVersion
 			}
 
 			if conn, ok := r.(*Conn); ok {
 				if (conn.state&Received) != Received && stream.id == "" {
 					// if we are the initiating entity and there is no stream ID…
-					return BadFormat
+					return streamerror.BadFormat
 				}
 				if (conn.state & StreamRestartRequired) == StreamRestartRequired {
 					conn.state &= ^StreamRestartRequired
@@ -203,11 +204,11 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 				foundHeader = true
 				continue
 			}
-			return RestrictedXML
+			return streamerror.RestrictedXML
 		case xml.EndElement:
-			return NotWellFormed
+			return streamerror.NotWellFormed
 		default:
-			return RestrictedXML
+			return streamerror.RestrictedXML
 		}
 	}
 }

@@ -9,6 +9,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+
+	"mellium.im/xmpp/streamerror"
 )
 
 // A StreamFeature represents a feature that may be selected during stream
@@ -99,7 +101,7 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, err error) {
 		}
 		start, ok := t.(xml.StartElement)
 		if !ok {
-			return done, BadFormat
+			return done, streamerror.BadFormat
 		}
 		list, err := readStreamFeatures(ctx, c, start)
 
@@ -144,9 +146,9 @@ type streamFeaturesList struct {
 func readStreamFeatures(ctx context.Context, conn *Conn, start xml.StartElement) (*streamFeaturesList, error) {
 	switch {
 	case start.Name.Local != "features":
-		return nil, InvalidXML
+		return nil, streamerror.InvalidXML
 	case start.Name.Space != NSStream:
-		return nil, BadNamespacePrefix
+		return nil, streamerror.BadNamespacePrefix
 	}
 
 	sf := &streamFeaturesList{
@@ -190,9 +192,9 @@ parsefeatures:
 			}
 			// Oops, how did that happen? We shouldn't have been able to hit an end
 			// element that wasn't the </stream:features> token.
-			return nil, InvalidXML
+			return nil, streamerror.InvalidXML
 		default:
-			return nil, RestrictedXML
+			return nil, streamerror.RestrictedXML
 		}
 	}
 }
