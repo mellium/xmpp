@@ -9,6 +9,8 @@ import (
 	"fmt"
 )
 
+const IDLen = 16
+
 // TODO: This will be called a lot, and probably needs to be faster than we can
 //       get when reading from getrandom(2). Should we use a fast userspace
 //       CSPRNG and just seed with data from the OS?

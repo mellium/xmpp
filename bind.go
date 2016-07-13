@@ -44,7 +44,7 @@ func BindResource() StreamFeature {
 			if (conn.state & Received) == Received {
 				panic("xmpp: bind not yet implemented")
 			} else {
-				reqID := internal.RandomID(idLen)
+				reqID := internal.RandomID(internal.IDLen)
 				if resource := conn.config.Origin.Resourcepart(); resource == "" {
 					// Send a request for the server to set a resource part.
 					_, err = fmt.Fprintf(conn, bindIQServerGeneratedRP, reqID)
