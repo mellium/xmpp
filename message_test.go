@@ -43,10 +43,8 @@ func TestUnmarshalMessage(t *testing.T) {
 </message>
 	`)
 	m := &Message{
-		Stanza: Stanza{
-			To:   &jid.JID{},
-			From: &jid.JID{},
-		},
+		To:      &jid.JID{},
+		From:    &jid.JID{},
 		XMLName: xml.Name{},
 	}
 	err := xml.Unmarshal(mb, m)
@@ -55,16 +53,16 @@ func TestUnmarshalMessage(t *testing.T) {
 		t.Fail()
 	}
 
-	if m.Stanza.To.String() != "romeo@example.net" {
-		t.Logf("Expected %s but got %s", "romeo@example.net", m.Stanza.To.String())
+	if m.To.String() != "romeo@example.net" {
+		t.Logf("Expected %s but got %s", "romeo@example.net", m.To.String())
 		t.Fail()
 	}
-	if m.Stanza.To.String() != "romeo@example.net" {
-		t.Logf("Expected %s but got %s", "romeo@example.net", m.Stanza.To.String())
+	if m.To.String() != "romeo@example.net" {
+		t.Logf("Expected %s but got %s", "romeo@example.net", m.To.String())
 		t.Fail()
 	}
-	if m.Stanza.ID != "ktx72v49" {
-		t.Logf("Expected %s but got %s", "ktx72v49", m.Stanza.To.String())
+	if m.ID != "ktx72v49" {
+		t.Logf("Expected %s but got %s", "ktx72v49", m.To.String())
 		t.Fail()
 	}
 }
@@ -73,11 +71,9 @@ func TestUnmarshalMessage(t *testing.T) {
 func TestMarshalMessage(t *testing.T) {
 	j := jid.MustParse("feste@shakespeare.lit")
 	m := Message{
-		Stanza: Stanza{
-			ID:   "1234",
-			To:   j,
-			Lang: "en",
-		},
+		ID:      "1234",
+		To:      j,
+		Lang:    "en",
 		XMLName: xml.Name{Space: "jabber:client", Local: "message"},
 	}
 	// TODO: Check the output; is the order guaranteed?

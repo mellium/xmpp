@@ -6,6 +6,8 @@ package xmpp
 
 import (
 	"encoding/xml"
+
+	"mellium.im/xmpp/jid"
 )
 
 // Message is an XMPP stanza that contains a payload for direct one-to-one
@@ -13,8 +15,11 @@ import (
 // messages to an individual or group chat server, or for notifications and
 // alerts that don't require a response.
 type Message struct {
-	Stanza
-
+	ID      string      `xml:"id,attr"`
+	Inner   string      `xml:",innerxml"`
+	To      *jid.JID    `xml:"to,attr"`
+	From    *jid.JID    `xml:"from,attr"`
+	Lang    string      `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 	Type    messageType `xml:"type,attr,omitempty"`
 	XMLName xml.Name    `xml:"message"`
 }
