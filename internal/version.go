@@ -23,6 +23,15 @@ type Version struct {
 	Minor uint8
 }
 
+// MustParseVersion parses a version string and panics if an error is returned.
+func MustParseVersion(s string) Version {
+	v, err := ParseVersion(s)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 // ParseVersion parses a string of the form "Major.Minor" into a Version struct
 // or returns an error.
 func ParseVersion(s string) (Version, error) {
