@@ -18,7 +18,11 @@ var (
 
 func TestErrorReturnsCondition(t *testing.T) {
 	s := StanzaError{Condition: "leprosy"}
-	if s.Condition != s.Error() {
+	if string(s.Condition) != s.Error() {
 		t.Errorf("Expected stanza error to return condition `leprosy` but got %s", s.Error())
+	}
+	s = StanzaError{Condition: "nope", Text: "Text"}
+	if s.Text != s.Error() {
+		t.Errorf("Expected stanza error to return text `Text` but got %s", s.Error())
 	}
 }
