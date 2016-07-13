@@ -13,12 +13,6 @@ import (
 	"mellium.im/xmpp/internal"
 )
 
-// TODO: How do we do handle retries in Bind? Should Negotiate() have an attempt
-//       int? What about checking if there's an existing resource on the server
-//       side (to prevent collisions or enforce a resource constraint)? Maybe we
-//       just don't provide an API for it and let users that need one implement
-//       their own bind feature that wraps this one decorator style?
-
 const (
 	bindIQServerGeneratedRP = `<iq id='%s' type='set'><bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/></iq>`
 	bindIQClientRequestedRP = `<iq id='%s' type='set'><bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'><resource>%s</resource></bind></iq>`
