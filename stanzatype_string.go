@@ -15,9 +15,9 @@ func (i iqType) String() string {
 	return _iqType_name[_iqType_index[i]:_iqType_index[i+1]]
 }
 
-const _errorType_name = "AuthCancelContinueModifyWait"
+const _errorType_name = "CancelAuthContinueModifyWait"
 
-var _errorType_index = [...]uint8{0, 4, 10, 18, 24, 28}
+var _errorType_index = [...]uint8{0, 6, 10, 18, 24, 28}
 
 func (i errorType) String() string {
 	if i < 0 || i >= errorType(len(_errorType_index)-1) {

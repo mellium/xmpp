@@ -16,13 +16,13 @@ import (
 type errorType int
 
 const (
-	// An error with type Auth indicates that an operation should be retried after
-	// providing credentials.
-	Auth errorType = iota
-
 	// An error with type Cancel indicates that the error cannot be remedied and
 	// the operation should not be retried.
-	Cancel
+	Cancel errorType = iota
+
+	// An error with type Auth indicates that an operation should be retried after
+	// providing credentials.
+	Auth
 
 	// An error with type Continue indicates that the operation can proceed (the
 	// condition was only a warning).
@@ -106,18 +106,16 @@ func (e StanzaError) Error() string {
 	return string(e.Condition)
 }
 
-func (se StanzaError) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+func (se StanzaError) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	start = xml.StartElement{
 		Name: xml.Name{Space: ``, Local: "error"},
 		Attr: []xml.Attr{},
 	}
-	typattr, err := se.Type.MarshalXMLAttr(xml.Name{Space: "", Local: "type"})
-	if err != nil {
-		return err
-	}
+	typattr, _ := se.Type.MarshalXMLAttr(xml.Name{Space: "", Local: "type"})
 	start.Attr = append(start.Attr, typattr)
 	if se.By != nil {
-		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Space: "", Local: "by"}, Value: ""})
+		a, _ := se.By.MarshalXMLAttr(xml.Name{Space: "", Local: "by"})
+		start.Attr = append(start.Attr, a)
 	}
 	if err = e.EncodeToken(start); err != nil {
 		return err
