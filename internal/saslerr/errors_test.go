@@ -38,9 +38,10 @@ func TestErrorTextOrCondition(t *testing.T) {
 }
 
 func TestMarshalCondition(t *testing.T) {
-	for _, test := range []struct {
+	for i, test := range []struct {
 		Failure   Failure
 		Marshaled string
+		err       bool
 	}{
 		{
 			Failure{
@@ -49,15 +50,22 @@ func TestMarshalCondition(t *testing.T) {
 				Lang:      language.BrazilianPortuguese,
 			},
 			`<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><mechanism-too-weak></mechanism-too-weak><text xml:lang="pt-BR">Test</text></failure>`,
+			false,
 		},
-		{Failure{Condition: IncorrectEncoding}, `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><incorrect-encoding></incorrect-encoding></failure>`},
-		{Failure{Condition: Aborted, Lang: language.Polish}, `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted></failure>`},
+		{Failure{Condition: IncorrectEncoding}, `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><incorrect-encoding></incorrect-encoding></failure>`, false},
+		{Failure{Condition: Aborted, Lang: language.Polish}, `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted></failure>`, false},
 	} {
 		b, err := xml.Marshal(test.Failure)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(b) != test.Marshaled {
+		switch {
+		case test.err && err == nil:
+			t.Errorf("Expected error when marshaling condition %d", i)
+			continue
+		case !test.err && err != nil:
+			t.Error(err)
+			continue
+		case err != nil:
+			continue
+		case string(b) != test.Marshaled:
 			t.Errorf("Expected %s but got %s", test.Marshaled, b)
 		}
 	}

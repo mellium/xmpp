@@ -6,10 +6,6 @@
 // defined by RFC 6120 §6.5.
 package saslerr // import "mellium.im/xmpp/internal/saslerr"
 
-// TODO(ssw): I think these errors should really be created via code generation
-//            in case more are added in the future and so that we can store them
-//            in a more efficient way that doesn't require a giant switch.
-
 import (
 	"encoding/xml"
 
@@ -51,16 +47,22 @@ func (f Failure) Error() string {
 }
 
 // MarshalXML satisfies the xml.Marshaler interface for a Failure.
-func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	failure := xml.StartElement{
 		Name: xml.Name{Space: `urn:ietf:params:xml:ns:xmpp-sasl`, Local: "failure"},
 	}
-	e.EncodeToken(failure)
+	if err = e.EncodeToken(failure); err != nil {
+		return
+	}
 	condition := xml.StartElement{
 		Name: xml.Name{Space: "", Local: string(f.Condition)},
 	}
-	e.EncodeToken(condition)
-	e.EncodeToken(condition.End())
+	if err = e.EncodeToken(condition); err != nil {
+		return
+	}
+	if err = e.EncodeToken(condition.End()); err != nil {
+		return
+	}
 	if f.Text != "" {
 		text := xml.StartElement{
 			Name: xml.Name{Space: "", Local: "text"},
@@ -71,12 +73,17 @@ func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 				},
 			},
 		}
-		e.EncodeToken(text)
-		e.EncodeToken(xml.CharData(f.Text))
-		e.EncodeToken(text.End())
+		if err = e.EncodeToken(text); err != nil {
+			return
+		}
+		if err = e.EncodeToken(xml.CharData(f.Text)); err != nil {
+			return
+		}
+		if err = e.EncodeToken(text.End()); err != nil {
+			return
+		}
 	}
-	e.EncodeToken(failure.End())
-	return nil
+	return e.EncodeToken(failure.End())
 }
 
 // UnmarshalXML satisfies the xml.Unmarshaler interface for a Failure. If
