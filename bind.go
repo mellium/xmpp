@@ -11,6 +11,7 @@ import (
 	"io"
 
 	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/jid"
 )
 
 const (
@@ -57,7 +58,12 @@ func BindResource() StreamFeature {
 				if !ok {
 					return mask, BadFormat
 				}
-				resp := IQ{}
+				resp := struct {
+					IQ
+					Bind struct {
+						JID *jid.JID `xml:"jid"`
+					} `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
+				}{}
 				switch start.Name {
 				case xml.Name{Space: NSClient, Local: "iq"}:
 					if err = conn.in.d.DecodeElement(&resp, &start); err != nil {
@@ -73,11 +79,14 @@ func BindResource() StreamFeature {
 					// instead?
 					return mask, UndefinedCondition
 				case resp.Type == ResultIQ:
-					panic("Bind result processing not yet implemented")
+					conn.origin = resp.Bind.JID
 				case resp.Type == ErrorIQ:
 					panic("Bind error processing not yet implemented")
+				default:
+					// bad-request
+					panic("Bind invalid request processing not yet implemented")
 				}
-				return mask, nil
+				return Bind, nil
 			}
 		},
 	}
