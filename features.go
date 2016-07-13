@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 
+	"mellium.im/xmpp/ns"
 	"mellium.im/xmpp/streamerror"
 )
 
@@ -147,7 +148,7 @@ func readStreamFeatures(ctx context.Context, conn *Conn, start xml.StartElement)
 	switch {
 	case start.Name.Local != "features":
 		return nil, streamerror.InvalidXML
-	case start.Name.Space != NSStream:
+	case start.Name.Space != ns.Stream:
 		return nil, streamerror.BadNamespacePrefix
 	}
 
@@ -186,7 +187,7 @@ parsefeatures:
 				return nil, err
 			}
 		case xml.EndElement:
-			if tok.Name.Local == "features" && tok.Name.Space == NSStream {
+			if tok.Name.Local == "features" && tok.Name.Space == ns.Stream {
 				// We've reached the end of the features list!
 				return sf, nil
 			}

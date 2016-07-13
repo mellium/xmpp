@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"mellium.im/sasl"
+	"mellium.im/xmpp/ns"
 )
 
 func TestSASLPanicsNoMechanisms(t *testing.T) {
@@ -49,7 +50,7 @@ func TestSASLList(t *testing.T) {
 		t.Fatal(err)
 	}
 	se := tok.(xml.StartElement)
-	if se.Name.Local != "mechanisms" || se.Name.Space != NSSASL {
+	if se.Name.Local != "mechanisms" || se.Name.Space != ns.SASL {
 		t.Errorf("Unexpected name for mechanisms start element: %+v", se.Name)
 	}
 	// Skip two mechanisms

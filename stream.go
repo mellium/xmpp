@@ -13,6 +13,7 @@ import (
 	"golang.org/x/text/language"
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/ns"
 	"mellium.im/xmpp/streamerror"
 )
 
@@ -86,7 +87,7 @@ func streamFromStartElement(s xml.StartElement) (stream, error) {
 			}
 			stream.xmlns = attr.Value
 		case xml.Name{Space: "xmlns", Local: "stream"}:
-			if attr.Value != NSStream {
+			if attr.Value != ns.Stream {
 				return stream, streamerror.InvalidNamespace
 			}
 		case xml.Name{Space: "xml", Local: "lang"}:
@@ -111,9 +112,9 @@ func sendNewStream(w io.Writer, cfg *Config, id string) error {
 	}
 	switch cfg.S2S {
 	case true:
-		stream.xmlns = NSServer
+		stream.xmlns = ns.Server
 	case false:
-		stream.xmlns = NSClient
+		stream.xmlns = ns.Client
 	}
 
 	stream.id = id
@@ -174,7 +175,7 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 			switch {
 			case tok.Name.Local != "stream":
 				return streamerror.BadFormat
-			case tok.Name.Space != NSStream:
+			case tok.Name.Space != ns.Stream:
 				return streamerror.InvalidNamespace
 			}
 

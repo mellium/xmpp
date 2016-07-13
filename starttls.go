@@ -13,6 +13,7 @@ import (
 	"io"
 	"net"
 
+	"mellium.im/xmpp/ns"
 	"mellium.im/xmpp/streamerror"
 )
 
@@ -27,7 +28,7 @@ var (
 // implement net.Conn) and the connection config must have a TLSConfig.
 func StartTLS(required bool) StreamFeature {
 	return StreamFeature{
-		Name:       xml.Name{Local: "starttls", Space: NSStartTLS},
+		Name:       xml.Name{Local: "starttls", Space: ns.StartTLS},
 		Prohibited: Secure,
 		List: func(ctx context.Context, conn io.Writer) (req bool, err error) {
 			if required {
@@ -45,7 +46,7 @@ func StartTLS(required bool) StreamFeature {
 				}
 			}{}
 			err := d.DecodeElement(&parsed, start)
-			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == NSStartTLS, nil, err
+			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == ns.StartTLS, nil, err
 		},
 		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, err error) {
 			netconn, ok := conn.rwc.(net.Conn)
@@ -68,7 +69,7 @@ func StartTLS(required bool) StreamFeature {
 				switch tok := t.(type) {
 				case xml.StartElement:
 					switch {
-					case tok.Name.Space != NSStartTLS:
+					case tok.Name.Space != ns.StartTLS:
 						return mask, streamerror.UnsupportedStanzaType
 					case tok.Name.Local == "proceed":
 						// Skip the </proceed> token.

@@ -12,6 +12,7 @@ import (
 
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/ns"
 	"mellium.im/xmpp/streamerror"
 )
 
@@ -23,7 +24,7 @@ const (
 // BindResource is a stream feature that can be used for binding a resource.
 func BindResource() StreamFeature {
 	return StreamFeature{
-		Name:       xml.Name{Space: NSBind, Local: "bind"},
+		Name:       xml.Name{Space: ns.Bind, Local: "bind"},
 		Necessary:  Authn,
 		Prohibited: Bind | Ready,
 		List: func(ctx context.Context, w io.Writer) (bool, error) {
@@ -66,7 +67,7 @@ func BindResource() StreamFeature {
 					} `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
 				}{}
 				switch start.Name {
-				case xml.Name{Space: NSClient, Local: "iq"}:
+				case xml.Name{Space: ns.Client, Local: "iq"}:
 					if err = conn.in.d.DecodeElement(&resp, &start); err != nil {
 						return mask, err
 					}

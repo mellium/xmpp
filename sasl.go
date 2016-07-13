@@ -13,6 +13,7 @@ import (
 
 	"mellium.im/sasl"
 	"mellium.im/xmpp/internal/saslerr"
+	"mellium.im/xmpp/ns"
 	"mellium.im/xmpp/streamerror"
 )
 
@@ -36,7 +37,7 @@ func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
 		panic("xmpp: Must specify at least 1 SASL mechanism")
 	}
 	return StreamFeature{
-		Name: xml.Name{Space: NSSASL, Local: "mechanisms"},
+		Name: xml.Name{Space: ns.SASL, Local: "mechanisms"},
 		// Necessary:  Secure,
 		Prohibited: Authn,
 		List: func(ctx context.Context, conn io.Writer) (req bool, err error) {
@@ -140,7 +141,7 @@ func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
 
 func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement) (challenge []byte, success bool, err error) {
 	switch start.Name {
-	case xml.Name{Space: NSSASL, Local: "challenge"}, xml.Name{Space: NSSASL, Local: "success"}:
+	case xml.Name{Space: ns.SASL, Local: "challenge"}, xml.Name{Space: ns.SASL, Local: "success"}:
 		challenge := struct {
 			Data []byte `xml:",chardata"`
 		}{}
@@ -148,7 +149,7 @@ func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement) (challenge []by
 			return nil, false, err
 		}
 		return challenge.Data, start.Name.Local == "success", nil
-	case xml.Name{Space: NSSASL, Local: "failure"}:
+	case xml.Name{Space: ns.SASL, Local: "failure"}:
 		fail := saslerr.Failure{}
 		if err = d.DecodeElement(&fail, &start); err != nil {
 			return nil, false, err

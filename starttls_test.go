@@ -15,6 +15,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"mellium.im/xmpp/ns"
 )
 
 // There is no room for variation on the starttls feature negotiation, so step
@@ -38,8 +40,8 @@ func TestStartTLSList(t *testing.T) {
 		}
 		se := tok.(xml.StartElement)
 		switch {
-		case se.Name != xml.Name{Space: NSStartTLS, Local: "starttls"}:
-			t.Errorf("Expected starttls to start with %+v token but got %+v", NSStartTLS, se.Name)
+		case se.Name != xml.Name{Space: ns.StartTLS, Local: "starttls"}:
+			t.Errorf("Expected starttls to start with %+v token but got %+v", ns.StartTLS, se.Name)
 		case len(se.Attr) != 1:
 			t.Errorf("Expected starttls start element to have 1 attribute (xmlns), but got %+v", se.Attr)
 		}
@@ -50,7 +52,7 @@ func TestStartTLSList(t *testing.T) {
 			}
 			se := tok.(xml.StartElement)
 			switch {
-			case se.Name != xml.Name{Space: NSStartTLS, Local: "required"}:
+			case se.Name != xml.Name{Space: ns.StartTLS, Local: "required"}:
 				t.Errorf("Expected required start element but got %+v", se)
 			case len(se.Attr) > 0:
 				t.Errorf("Expected starttls required to have no attributes but got %d", len(se.Attr))
@@ -58,7 +60,7 @@ func TestStartTLSList(t *testing.T) {
 			tok, err = d.Token()
 			ee := tok.(xml.EndElement)
 			switch {
-			case se.Name != xml.Name{Space: NSStartTLS, Local: "required"}:
+			case se.Name != xml.Name{Space: ns.StartTLS, Local: "required"}:
 				t.Errorf("Expected required end element but got %+v", ee)
 			}
 		}
@@ -68,7 +70,7 @@ func TestStartTLSList(t *testing.T) {
 		}
 		ee := tok.(xml.EndElement)
 		switch {
-		case se.Name != xml.Name{Space: NSStartTLS, Local: "starttls"}:
+		case se.Name != xml.Name{Space: ns.StartTLS, Local: "starttls"}:
 			t.Errorf("Expected starttls end element but got %+v", ee)
 		}
 	}
