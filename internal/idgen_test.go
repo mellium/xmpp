@@ -4,7 +4,10 @@
 
 package internal
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func BenchmarkRandomIDEven(b *testing.B) {
 	for n := 0; n < b.N; n++ {
@@ -25,4 +28,34 @@ func TestRandomIDLength(t *testing.T) {
 			t.Fail()
 		}
 	}
+}
+
+type errorReader struct{}
+
+func (errorReader) Read(p []byte) (int, error) {
+	return 0, errors.New("Expected error from error reader")
+}
+
+type nopReader struct{}
+
+func (nopReader) Read(p []byte) (int, error) {
+	return 0, nil
+}
+
+func TestRandomPanicsIfRandReadFails(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected randomID to panic if reading random bytes failed")
+		}
+	}()
+	randomID(16, errorReader{})
+}
+
+func TestRandomPanicsIfRandReadWrongLen(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected randomID to panic if no random bytes were read")
+		}
+	}()
+	randomID(16, nopReader{})
 }

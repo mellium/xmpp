@@ -7,6 +7,7 @@ package internal
 import (
 	"crypto/rand"
 	"fmt"
+	"io"
 )
 
 const IDLen = 16
@@ -19,10 +20,23 @@ const IDLen = 16
 // entropy pool isn't initialized, or we can't generate random numbers for some
 // other reason, panic.
 func RandomID(n int) string {
+	return randomID(n, cryptoReader{})
+}
+
+func randomID(n int, r io.Reader) string {
 	b := make([]byte, (n/2)+(n&1))
-	if _, err := rand.Read(b); err != nil {
+	switch n, err := r.Read(b); {
+	case err != nil:
 		panic(err)
+	case n != len(b):
+		panic("Could not read enough randomness")
 	}
 
 	return fmt.Sprintf("%x", b)[:n]
+}
+
+type cryptoReader struct{}
+
+func (cryptoReader) Read(p []byte) (int, error) {
+	return rand.Read(p)
 }
