@@ -65,6 +65,7 @@ func BindResource() StreamFeature {
 					Bind struct {
 						JID *jid.JID `xml:"jid"`
 					} `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
+					Err StanzaError `xml:"error"`
 				}{}
 				switch start.Name {
 				case xml.Name{Space: ns.Client, Local: "iq"}:
@@ -81,10 +82,9 @@ func BindResource() StreamFeature {
 				case resp.Type == ResultIQ:
 					conn.origin = resp.Bind.JID
 				case resp.Type == ErrorIQ:
-					panic("Bind error processing not yet implemented")
+					return mask, resp.Err
 				default:
-					// bad-request
-					panic("Bind invalid request processing not yet implemented")
+					return mask, StanzaError{Condition: BadRequest}
 				}
 				return Bind, nil
 			}
