@@ -6,7 +6,6 @@ package xmpp
 
 import (
 	"context"
-	"encoding/xml"
 	"net"
 	"strconv"
 	"time"
@@ -132,12 +131,23 @@ func (d *Dialer) dial(
 	}
 
 	// If we haven't specified any stream features, set some default ones.
-	if config.Features == nil || len(config.Features) == 0 {
-		stls := StartTLS(config.TLSConfig != nil)
-		config.Features = map[xml.Name]StreamFeature{
-			stls.Name: stls,
-		}
-	}
+	// if config.Features == nil || len(config.Features) == 0 {
+	// 	stls := StartTLS(config.TLSConfig != nil)
+	// 	bind := BindResource()
+	// 	username, password := config.Origin.Domain().String(), config.Secret
+	// 	sasl := SASL(
+	// 		sasl.Plain("",           username, "password"),
+	// 		sasl.ScramSha256("",     username, "password"),
+	// 		sasl.ScramSha256Plus("", username, "password"),
+	// 		sasl.ScramSha1("",       username, "password"),
+	// 		sasl.ScramSha1Plus("",   username, "password"),
+	// 	)
+	// 	config.Features = map[xml.Name]StreamFeature{
+	// 		stls.Name: stls,
+	// 		sasl.Name: sasl,
+	// 		bind.Name: bind,
+	// 	}
+	// }
 
 	if d.NoLookup {
 		p, err := lookupPort(network, config.connType())
