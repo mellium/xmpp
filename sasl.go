@@ -108,11 +108,40 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 					return mask, err
 				}
 
+				// RFC6120 §6.4.2:
+				//     If the initiating entity needs to send a zero-length initial
+				//     response, it MUST transmit the response as a single equals sign
+				//     character ("="), which indicates that the response is present but
+				//     contains no data.
+				if len(resp) == 0 {
+					resp = []byte{'='}
+				}
+
 				// Send <auth/> and the initial payload to start SASL auth.
 				if _, err = fmt.Fprintf(conn,
 					`<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='%s'>%s</auth>`,
-					selected.Name, resp); err != nil {
+					selected.Name, resp,
+				); err != nil {
 					return mask, err
+				}
+
+				// If we're already done after the first step, decode the <success/> or
+				// <failure/> before we exit.
+				if !more {
+					tok, err := conn.in.d.Token()
+					if err != nil {
+						return mask, err
+					}
+					if t, ok := tok.(xml.StartElement); ok {
+						// TODO: Handle the additional data that could be returned if
+						// success?
+						_, _, err := decodeSASLChallenge(conn.in.d, t, false)
+						if err != nil {
+							return mask, err
+						}
+					} else {
+						return mask, streamerror.BadFormat
+					}
 				}
 
 				success := false
@@ -128,7 +157,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 					}
 					var challenge []byte
 					if t, ok := tok.(xml.StartElement); ok {
-						challenge, success, err = decodeSASLChallenge(conn.in.d, t)
+						challenge, success, err = decodeSASLChallenge(conn.in.d, t, true)
 						if err != nil {
 							return mask, err
 						}
@@ -139,6 +168,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 						return mask, err
 					}
 					if !more && success {
+						// We're done with SASL and we're successful
 						break
 					}
 					// TODO: What happens if there's more and success (broken server)?
@@ -153,9 +183,12 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 	}
 }
 
-func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement) (challenge []byte, success bool, err error) {
+func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement, allowChallenge bool) (challenge []byte, success bool, err error) {
 	switch start.Name {
 	case xml.Name{Space: ns.SASL, Local: "challenge"}, xml.Name{Space: ns.SASL, Local: "success"}:
+		if !allowChallenge && start.Name.Local == "challenge" {
+			return nil, false, streamerror.UnsupportedStanzaType
+		}
 		challenge := struct {
 			Data []byte `xml:",chardata"`
 		}{}
