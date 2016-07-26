@@ -173,6 +173,12 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 		switch tok := t.(type) {
 		case xml.StartElement:
 			switch {
+			case tok.Name.Local == "error" && tok.Name.Space == ns.Stream:
+				se := streamerror.StreamError{}
+				if err := d.DecodeElement(&se, &tok); err != nil {
+					return err
+				}
+				return se
 			case tok.Name.Local != "stream":
 				return streamerror.BadFormat
 			case tok.Name.Space != ns.Stream:
