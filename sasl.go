@@ -6,6 +6,7 @@ package xmpp
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -22,23 +23,17 @@ import (
 //
 // BUG(ssw): SASL feature does not have security layer byte precision.
 
-const (
-	saslAbort = `<abort xmlns='urn:ietf:params:xml:ns:xmpp-sasl'/>`
-	saslAuth  = "<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='%s'>%s</auth>"
-	saslResp  = "<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>%s</response>"
-)
-
 // SASL returns a stream feature for performing authentication using the Simple
 // Authentication and Security Layer (SASL) as defined in RFC 4422. It panics if
 // no mechanisms are specified. The order in which mechanisms are specified will
 // be the prefered order, so stronger mechanisms should be listed first.
-func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
+func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 	if len(mechanisms) == 0 {
 		panic("xmpp: Must specify at least 1 SASL mechanism")
 	}
 	return StreamFeature{
-		Name: xml.Name{Space: ns.SASL, Local: "mechanisms"},
-		// Necessary:  Secure,
+		Name:       xml.Name{Space: ns.SASL, Local: "mechanisms"},
+		Necessary:  Secure,
 		Prohibited: Authn,
 		List: func(ctx context.Context, conn io.Writer) (req bool, err error) {
 			req = true
@@ -46,12 +41,14 @@ func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
 			if err != nil {
 				return
 			}
+
 			for _, m := range mechanisms {
 				select {
 				case <-ctx.Done():
 					return true, ctx.Err()
 				default:
 				}
+
 				if _, err = fmt.Fprint(conn, `<mechanism>`); err != nil {
 					return
 				}
@@ -77,7 +74,7 @@ func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
 			if (conn.state & Received) == Received {
 				panic("SASL server not yet implemented")
 			} else {
-				var selected *sasl.Mechanism
+				var selected sasl.Mechanism
 				// Select a mechanism, prefering the client order.
 			selectmechanism:
 				for _, m := range mechanisms {
@@ -89,16 +86,32 @@ func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
 					}
 				}
 				// No matching mechanism found…
-				if selected == nil {
+				if selected.Name == "" {
 					return mask, errors.New(`No matching SASL mechanisms found`)
 				}
-				more, resp, err := selected.Step(nil)
+
+				var client sasl.Negotiator
+				// Create the SASL Client
+				if tlsconn, ok := conn.rwc.(*tls.Conn); ok {
+					client = sasl.NewClient(selected,
+						sasl.RemoteMechanisms(data.([]string)...),
+						sasl.ConnState(tlsconn.ConnectionState()),
+					)
+				} else {
+					client = sasl.NewClient(selected,
+						sasl.RemoteMechanisms(data.([]string)...),
+					)
+				}
+
+				more, resp, err := client.Step(nil)
 				if err != nil {
 					return mask, err
 				}
 
 				// Send <auth/> and the initial payload to start SASL auth.
-				if _, err = fmt.Fprintf(conn, saslAuth, selected.Name, resp); err != nil {
+				if _, err = fmt.Fprintf(conn,
+					`<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='%s'>%s</auth>`,
+					selected.Name, resp); err != nil {
 					return mask, err
 				}
 
@@ -122,14 +135,15 @@ func SASL(mechanisms ...*sasl.Mechanism) StreamFeature {
 					} else {
 						return mask, streamerror.BadFormat
 					}
-					if more, resp, err = selected.Step(challenge); err != nil {
+					if more, resp, err = client.Step(challenge); err != nil {
 						return mask, err
 					}
 					if !more && success {
 						break
 					}
 					// TODO: What happens if there's more and success (broken server)?
-					if _, err = fmt.Fprintf(conn, saslResp, resp); err != nil {
+					if _, err = fmt.Fprintf(conn,
+						`<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>%s</response>`, resp); err != nil {
 						return mask, err
 					}
 				}
