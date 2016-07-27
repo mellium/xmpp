@@ -251,5 +251,5 @@ restartstream:
 		}
 		break
 	}
-	panic("xmpp: Not yet implemented.")
+	return nil
 }

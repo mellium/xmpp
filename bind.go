@@ -86,7 +86,7 @@ func BindResource() StreamFeature {
 				default:
 					return mask, StanzaError{Condition: BadRequest}
 				}
-				return Bind, nil
+				return Bind | Ready, nil
 			}
 		},
 	}
