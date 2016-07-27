@@ -15,13 +15,13 @@ import (
 // availability, and advertise entity capabilities. It can be directed
 // (one-to-one), or used as a broadcast mechanism (one-to-many).
 type Presence struct {
+	XMLName xml.Name     `xml:"presence"`
 	ID      string       `xml:"id,attr"`
 	Inner   string       `xml:",innerxml"`
 	To      *jid.JID     `xml:"to,attr"`
 	From    *jid.JID     `xml:"from,attr"`
 	Lang    string       `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 	Type    presenceType `xml:"type,attr,omitempty"`
-	XMLName xml.Name     `xml:"presence"`
 }
 
 type presenceType int

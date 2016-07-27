@@ -16,13 +16,13 @@ import (
 // IQ's are one-to-one, provide get and set semantics, and always require a
 // response in the form of a result or an error.
 type IQ struct {
+	XMLName xml.Name `xml:"iq"`
 	ID      string   `xml:"id,attr"`
 	Inner   string   `xml:",innerxml"`
 	To      *jid.JID `xml:"to,attr"`
 	From    *jid.JID `xml:"from,attr"`
 	Lang    string   `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 	Type    iqType   `xml:"type,attr"`
-	XMLName xml.Name `xml:"iq"`
 }
 
 type iqType int
