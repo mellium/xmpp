@@ -12,9 +12,9 @@ If you want to contribute a pull request, make sure you do the following first:
 
 If you're not sure where to begin, grab any of the issues labeled
 [`trivial`][trivial], and if you need help with any of this, don't be afraid to
-ask! Try joining [mellium@conference.samwhited.com][joinmuc].
+ask! Try joining [dev@muc.mellium.im][joinmuc].
 
 
 [issues]: https://bitbucket.org/mellium/xmpp/issues?status=new&status=open
 [trivial]: https://bitbucket.org/mellium/xmpp/issues?priority=trivial
-[joinmuc]: xmpp:mellium@conference.samwhited.com?join
+[joinmuc]: xmpp:dev@muc.mellium.im?join
