@@ -10,6 +10,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"mellium.im/xmpp/jid"
@@ -29,6 +30,7 @@ type Conn struct {
 
 	// The stream features advertised for the current streams.
 	features map[xml.Name]struct{}
+	flock    sync.Mutex
 
 	in struct {
 		stream
@@ -38,6 +40,15 @@ type Conn struct {
 		stream
 		e *xml.Encoder
 	}
+}
+
+// Features returns a set of the currently available stream features (including
+// those that have already been negotiated).
+func (c *Conn) Features() map[xml.Name]struct{} {
+	c.flock.Lock()
+	defer c.flock.Unlock()
+
+	return c.features
 }
 
 // NewConn attempts to use an existing connection (or any io.ReadWriteCloser) to
