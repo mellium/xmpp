@@ -11,4 +11,4 @@ If you want to contribute a pull request, make sure you do the following first:
   - Follow Go best practices
 
 
-[issues]: https://bitbucket.org/mellium/mel/issues?status=new&status=open
+[issues]: https://bitbucket.org/mellium/xmpp/issues?status=new&status=open
