@@ -27,6 +27,9 @@ type Conn struct {
 	// server did not assign us the resourcepart we requested, this is canonical).
 	origin *jid.JID
 
+	// The stream features advertised for the current streams.
+	features map[xml.Name]struct{}
+
 	in struct {
 		stream
 		d *xml.Decoder
@@ -45,6 +48,7 @@ func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn
 	c := &Conn{
 		config: config,
 		rwc:    rwc,
+		state:  StreamRestartRequired,
 	}
 
 	return c, c.negotiateStreams(ctx)

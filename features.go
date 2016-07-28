@@ -167,6 +167,7 @@ parsefeatures:
 			// If the token is a new feature, see if it's one we handle. If so, parse
 			// it. Increment the total features count regardless.
 			sf.total += 1
+			conn.features[tok.Name] = struct{}{}
 			if feature, ok := conn.config.Features[tok.Name]; ok && (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
 				req, data, err := feature.Parse(ctx, conn.in.d, &tok)
 				if err != nil {
