@@ -114,8 +114,7 @@ func (d *Dialer) DialServer(ctx context.Context, network string, raddr, laddr *j
 // Dial connects to the address on the named network using the provided config.
 //
 // For a description of the arguments see the Dial function.
-func (d *Dialer) Dial(
-	ctx context.Context, network string, config *Config) (*Conn, error) {
+func (d *Dialer) Dial(ctx context.Context, network string, config *Config) (*Conn, error) {
 	c, err := d.dial(ctx, network, config)
 	if err != nil {
 		return c, err
