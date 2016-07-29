@@ -39,6 +39,12 @@ type Config struct {
 
 	// XMPP protocol version
 	Version internal.Version
+
+	// The authorization identity, username, and password to authenticate with.
+	// Identity is used when a user wants to act on behalf of another user. For
+	// instance, an admin might want to log in as another user to help them
+	// troubleshoot an issue. Normally it is left blank.
+	Identity, Username, Password string
 }
 
 // NewClientConfig constructs a new client-to-server session configuration with

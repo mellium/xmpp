@@ -87,18 +87,20 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 					return mask, errors.New(`No matching SASL mechanisms found`)
 				}
 
-				var client sasl.Negotiator
-				// Create the SASL Client
-				if tlsconn, ok := conn.rwc.(*tls.Conn); ok {
-					client = sasl.NewClient(selected,
-						sasl.RemoteMechanisms(data.([]string)...),
-						sasl.ConnState(tlsconn.ConnectionState()),
-					)
-				} else {
-					client = sasl.NewClient(selected,
-						sasl.RemoteMechanisms(data.([]string)...),
-					)
+				conf := conn.Config()
+				saslconf := sasl.Config{
+					RemoteMechanisms: data.([]string),
+					Identity:         conf.Identity,
+					Username:         conf.Username,
+					Password:         conf.Password,
 				}
+				if tlsconn, ok := conn.rwc.(*tls.Conn); ok {
+					connstate := tlsconn.ConnectionState()
+					saslconf.TLSState = &connstate
+				}
+
+				// Create the SASL Client
+				client := sasl.NewClient(selected, saslconf)
 
 				more, resp, err := client.Step(nil)
 				if err != nil {

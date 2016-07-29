@@ -26,7 +26,7 @@ func TestSASLPanicsNoMechanisms(t *testing.T) {
 
 func TestSASLList(t *testing.T) {
 	var b bytes.Buffer
-	s := SASL(sasl.Plain("", "user", "pass"), sasl.ScramSha256("", "user", "pass"))
+	s := SASL(sasl.Plain, sasl.ScramSha256)
 	req, err := s.List(context.Background(), &b)
 	switch {
 	case err != nil:
@@ -74,7 +74,7 @@ func TestSASLList(t *testing.T) {
 }
 
 func TestSASLParse(t *testing.T) {
-	s := SASL(sasl.Plain("", "", ""))
+	s := SASL(sasl.Plain)
 	for _, test := range []struct {
 		xml   string
 		items []string
