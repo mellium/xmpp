@@ -84,20 +84,3 @@ type rwNopCloser struct {
 }
 
 func (rwNopCloser) Close() error { return nil }
-
-func TestSendNewS2SClearsStreamRestartBit(t *testing.T) {
-	var b bytes.Buffer
-	rwc := rwNopCloser{&b}
-	config := NewClientConfig(jid.MustParse("test@example.net"))
-	conn := &Conn{
-		state: StreamRestartRequired | Bind,
-		rwc:   rwc,
-	}
-	err := sendNewStream(conn, config, "abc")
-	if err != nil {
-		t.Error(err)
-	}
-	if conn.state&StreamRestartRequired != 0 {
-		t.Error("Expected sending a new stream to clear the StreamRestartRequired bit.")
-	}
-}
