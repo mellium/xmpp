@@ -76,6 +76,11 @@ func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn
 	return c, c.negotiateStreams(ctx)
 }
 
+// Raw returns the Conn's backing net.Conn or other ReadWriteCloser.
+func (c *Conn) Raw() io.ReadWriteCloser {
+	return c.rwc
+}
+
 // Config returns the connections config.
 func (c *Conn) Config() *Config {
 	return c.config
