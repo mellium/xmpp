@@ -21,7 +21,12 @@ import (
 type Conn struct {
 	config *Config
 	rwc    io.ReadWriteCloser
-	state  SessionState
+
+	// If the initial rwc is a conn, save a reference to that as well so that we
+	// can set deadlines on it later even if the rwc is upgraded.
+	conn net.Conn
+
+	state SessionState
 
 	// The actual origin of this conn (we don't want to mutate the config, so if
 	// this origin exists and is different from the one in config, eg. because the
@@ -62,6 +67,10 @@ func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn
 		config: config,
 		rwc:    rwc,
 		state:  StreamRestartRequired,
+	}
+
+	if conn, ok := rwc.(net.Conn); ok {
+		c.conn = conn
 	}
 
 	return c, c.negotiateStreams(ctx)
@@ -142,8 +151,8 @@ var errSetDeadline = errors.New("xmpp: cannot set deadline: not using a net.Conn
 //
 // A zero value for t means I/O operations will not time out.
 func (c *Conn) SetDeadline(t time.Time) error {
-	if conn, ok := c.rwc.(net.Conn); ok {
-		return conn.SetDeadline(t)
+	if c.conn != nil {
+		return c.conn.SetDeadline(t)
 	}
 	return errSetDeadline
 }
@@ -151,8 +160,8 @@ func (c *Conn) SetDeadline(t time.Time) error {
 // SetReadDeadline sets the deadline for future Read calls. A zero value for t
 // means Read will not time out.
 func (c *Conn) SetReadDeadline(t time.Time) error {
-	if conn, ok := c.rwc.(net.Conn); ok {
-		return conn.SetReadDeadline(t)
+	if c.conn != nil {
+		return c.conn.SetReadDeadline(t)
 	}
 	return errSetDeadline
 }
@@ -161,8 +170,8 @@ func (c *Conn) SetReadDeadline(t time.Time) error {
 // times out, it may return n > 0, indicating that some of the data was
 // successfully written. A zero value for t means Write will not time out.
 func (c *Conn) SetWriteDeadline(t time.Time) error {
-	if conn, ok := c.rwc.(net.Conn); ok {
-		return conn.SetWriteDeadline(t)
+	if c.conn != nil {
+		return c.conn.SetWriteDeadline(t)
 	}
 	return errSetDeadline
 }
