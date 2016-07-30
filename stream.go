@@ -47,11 +47,6 @@ const (
 	// Indicates that the input stream has been closed with a stream end tag. When
 	// set all read operations will return an error.
 	InputStreamClosed
-
-	// Indicates that the session's streams must be restarted. This bit will
-	// trigger an automatic restart and will be flipped back to off as soon as the
-	// stream is restarted.
-	StreamRestartRequired
 )
 
 type stream struct {
@@ -214,16 +209,16 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 	}
 }
 
-func (c *Conn) negotiateStreams(ctx context.Context) (err error) {
-
+func (c *Conn) negotiateStreams(ctx context.Context, rwc io.ReadWriteCloser) (err error) {
 	// Loop for as long as we're not done negotiating features or a stream restart
 	// is still required.
-	for done := false; !done || c.state&StreamRestartRequired == StreamRestartRequired; {
-		if c.state&StreamRestartRequired == StreamRestartRequired {
+	for done := false; !done || rwc != nil; {
+		if rwc != nil {
 			c.features = make(map[xml.Name]struct{})
+			c.rwc = rwc
 			c.in.d = xml.NewDecoder(c.rwc)
 			c.out.e = xml.NewEncoder(c.rwc)
-			c.state &= ^StreamRestartRequired
+			rwc = nil
 
 			if (c.state & Received) == Received {
 				// If we're the receiving entity wait for a new stream, then send one in
@@ -246,7 +241,7 @@ func (c *Conn) negotiateStreams(ctx context.Context) (err error) {
 			}
 		}
 
-		if done, err = c.negotiateFeatures(ctx); err != nil {
+		if done, rwc, err = c.negotiateFeatures(ctx); err != nil {
 			return err
 		}
 	}

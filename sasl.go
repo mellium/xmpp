@@ -67,7 +67,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 			err := d.DecodeElement(&parsed, start)
 			return true, parsed.List, err
 		},
-		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, err error) {
+		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
 			if (conn.state & Received) == Received {
 				panic("SASL server not yet implemented")
 			} else {
@@ -84,7 +84,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 				}
 				// No matching mechanism found…
 				if selected.Name == "" {
-					return mask, errors.New(`No matching SASL mechanisms found`)
+					return mask, nil, errors.New(`No matching SASL mechanisms found`)
 				}
 
 				c := conn.Config()
@@ -100,7 +100,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 
 				more, resp, err := client.Step(nil)
 				if err != nil {
-					return mask, err
+					return mask, nil, err
 				}
 
 				// RFC6120 §6.4.2:
@@ -117,7 +117,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 					`<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='%s'>%s</auth>`,
 					selected.Name, resp,
 				); err != nil {
-					return mask, err
+					return mask, nil, err
 				}
 
 				// If we're already done after the first step, decode the <success/> or
@@ -125,17 +125,17 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 				if !more {
 					tok, err := conn.in.d.Token()
 					if err != nil {
-						return mask, err
+						return mask, nil, err
 					}
 					if t, ok := tok.(xml.StartElement); ok {
 						// TODO: Handle the additional data that could be returned if
 						// success?
 						_, _, err := decodeSASLChallenge(conn.in.d, t, false)
 						if err != nil {
-							return mask, err
+							return mask, nil, err
 						}
 					} else {
-						return mask, streamerror.BadFormat
+						return mask, nil, streamerror.BadFormat
 					}
 				}
 
@@ -143,24 +143,24 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 				for more {
 					select {
 					case <-ctx.Done():
-						return mask, ctx.Err()
+						return mask, nil, ctx.Err()
 					default:
 					}
 					tok, err := conn.in.d.Token()
 					if err != nil {
-						return mask, err
+						return mask, nil, err
 					}
 					var challenge []byte
 					if t, ok := tok.(xml.StartElement); ok {
 						challenge, success, err = decodeSASLChallenge(conn.in.d, t, true)
 						if err != nil {
-							return mask, err
+							return mask, nil, err
 						}
 					} else {
-						return mask, streamerror.BadFormat
+						return mask, nil, streamerror.BadFormat
 					}
 					if more, resp, err = client.Step(challenge); err != nil {
-						return mask, err
+						return mask, nil, err
 					}
 					if !more && success {
 						// We're done with SASL and we're successful
@@ -169,10 +169,10 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 					// TODO: What happens if there's more and success (broken server)?
 					if _, err = fmt.Fprintf(conn,
 						`<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>%s</response>`, resp); err != nil {
-						return mask, err
+						return mask, nil, err
 					}
 				}
-				return Authn | StreamRestartRequired, nil
+				return Authn, conn.Raw(), nil
 			}
 		},
 	}

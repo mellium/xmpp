@@ -49,16 +49,16 @@ type StreamFeature struct {
 	// the feature. The "mask" SessionState represents the state bits that should
 	// be flipped after negotiation of the feature is complete. For instance, if
 	// this feature creates a security layer (such as TLS) and performs
-	// authentication, mask would be set to Authn|Secure|StreamRestartRequired,
-	// but if it does not authenticate the connection it would return
-	// Secure|StreamRestartRequired. If the mask includes the StreamRestart bit,
-	// the stream will be restarted automatically after Negotiate returns (unless
-	// it returns an error). If this is an initiated connection and the features
-	// List call returned a value, that value is passed to the data parameter when
-	// Negotiate is called. For instance, in the case of compression this data
-	// parameter might be the list of supported algorithms as a slice of strings
-	// (or in whatever format the feature implementation has decided upon).
-	Negotiate func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, err error)
+	// authentication, mask would be set to Authn|Secure, but if it does not
+	// authenticate the connection it would just return Secure. If negotiate
+	// returns a new io.ReadWriteCloser (probably wrapping the old conn.Raw()) the
+	// stream will be restarted automatically after Negotiate returns using the
+	// new RWC. If this is an initiated connection and the features List call
+	// returned a value, that value is passed to the data parameter when Negotiate
+	// is called. For instance, in the case of compression this data parameter
+	// might be the list of supported algorithms as a slice of strings (or in
+	// whatever format the feature implementation has decided upon).
+	Negotiate func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error)
 }
 
 // Returns the number of stream features written (zero means we've reached the
@@ -88,31 +88,31 @@ func writeStreamFeatures(ctx context.Context, conn *Conn) (n int, req int, err e
 	return
 }
 
-func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, err error) {
+func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWriteCloser, err error) {
 	if (c.state & Received) == Received {
 		_, _, err = writeStreamFeatures(ctx, c)
 		if err != nil {
-			return
+			return false, nil, err
 		}
 		panic("Sending stream:features not yet implemented")
 	} else {
 		t, err := c.in.d.Token()
 		if err != nil {
-			return done, err
+			return done, nil, err
 		}
 		start, ok := t.(xml.StartElement)
 		if !ok {
-			return done, streamerror.BadFormat
+			return done, nil, streamerror.BadFormat
 		}
 		list, err := readStreamFeatures(ctx, c, start)
 
 		switch {
 		case err != nil:
-			return done, err
+			return done, nil, err
 		case list.total == 0 || len(list.cache) == 0:
 			// If we received an empty list (or one with no supported features, we're
 			// done.
-			return true, nil
+			return true, nil, nil
 		}
 
 		// If the list has any required items, negotiate the first required feature.
@@ -124,11 +124,11 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, err error) {
 				break
 			}
 		}
-		mask, err := data.feature.Negotiate(ctx, c, data.data)
+		mask, rwc, err := data.feature.Negotiate(ctx, c, data.data)
 		if err == nil {
 			c.state |= mask
 		}
-		return !list.req || (c.state&Ready == Ready), err
+		return !list.req || (c.state&Ready == Ready), rwc, err
 	}
 }
 

@@ -37,7 +37,7 @@ func BindResource() StreamFeature {
 			}{}
 			return true, nil, d.DecodeElement(&parsed, start)
 		},
-		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, err error) {
+		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
 			if (conn.state & Received) == Received {
 				panic("xmpp: bind not yet implemented")
 			} else {
@@ -50,15 +50,15 @@ func BindResource() StreamFeature {
 					_, err = fmt.Fprintf(conn, bindIQClientRequestedRP, reqID, resource)
 				}
 				if err != nil {
-					return mask, err
+					return mask, nil, err
 				}
 				tok, err := conn.in.d.Token()
 				if err != nil {
-					return mask, err
+					return mask, nil, err
 				}
 				start, ok := tok.(xml.StartElement)
 				if !ok {
-					return mask, streamerror.BadFormat
+					return mask, nil, streamerror.BadFormat
 				}
 				resp := struct {
 					IQ
@@ -70,23 +70,23 @@ func BindResource() StreamFeature {
 				switch start.Name {
 				case xml.Name{Space: ns.Client, Local: "iq"}:
 					if err = conn.in.d.DecodeElement(&resp, &start); err != nil {
-						return mask, err
+						return mask, nil, err
 					}
 				default:
-					return mask, streamerror.BadFormat
+					return mask, nil, streamerror.BadFormat
 				}
 
 				switch {
 				case resp.ID != reqID:
-					return mask, streamerror.UndefinedCondition
+					return mask, nil, streamerror.UndefinedCondition
 				case resp.Type == ResultIQ:
 					conn.origin = resp.Bind.JID
 				case resp.Type == ErrorIQ:
-					return mask, resp.Err
+					return mask, nil, resp.Err
 				default:
-					return mask, StanzaError{Condition: BadRequest}
+					return mask, nil, StanzaError{Condition: BadRequest}
 				}
-				return Ready, nil
+				return Ready, nil, nil
 			}
 		},
 	}

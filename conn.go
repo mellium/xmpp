@@ -65,15 +65,13 @@ func (c *Conn) Features() map[xml.Name]struct{} {
 func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn, error) {
 	c := &Conn{
 		config: config,
-		rwc:    rwc,
-		state:  StreamRestartRequired,
 	}
 
 	if conn, ok := rwc.(net.Conn); ok {
 		c.conn = conn
 	}
 
-	return c, c.negotiateStreams(ctx)
+	return c, c.negotiateStreams(ctx, rwc)
 }
 
 // Raw returns the Conn's backing net.Conn or other ReadWriteCloser.
