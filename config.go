@@ -71,8 +71,8 @@ func NewServerConfig(location, origin *jid.JID, features ...StreamFeature) (c *C
 	return c
 }
 
-func (config *Config) connType() string {
-	if config.S2S {
+func connType(s2s bool) string {
+	if s2s {
 		return "xmpp-server"
 	}
 	return "xmpp-client"

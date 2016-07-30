@@ -123,8 +123,7 @@ func (d *Dialer) Dial(ctx context.Context, network string, config *Config) (*Con
 	return c, err
 }
 
-func (d *Dialer) dial(
-	ctx context.Context, network string, config *Config) (*Conn, error) {
+func (d *Dialer) dial(ctx context.Context, network string, config *Config) (*Conn, error) {
 	if ctx == nil {
 		panic("xmpp.Dial: nil context")
 	}
@@ -149,7 +148,7 @@ func (d *Dialer) dial(
 	// }
 
 	if d.NoLookup {
-		p, err := lookupPort(network, config.connType())
+		p, err := lookupPort(network, connType(config.S2S))
 		if err != nil {
 			return nil, err
 		}
@@ -163,7 +162,7 @@ func (d *Dialer) dial(
 		return NewConn(ctx, config, conn)
 	}
 
-	addrs, err := lookupService(config.connType(), network, config.Location)
+	addrs, err := lookupService(connType(config.S2S), network, config.Location)
 	if err != nil {
 		return nil, err
 	}
