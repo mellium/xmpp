@@ -37,6 +37,7 @@ type Conn struct {
 		d *xml.Decoder
 	}
 	out struct {
+		sync.Mutex
 		stream
 		e *xml.Encoder
 	}
@@ -77,6 +78,13 @@ func (c *Conn) Read(b []byte) (n int, err error) {
 
 // Write writes data to the connection.
 func (c *Conn) Write(b []byte) (n int, err error) {
+	c.out.Lock()
+	defer c.out.Unlock()
+
+	if c.state&OutputStreamClosed == OutputStreamClosed {
+		return 0, errors.New("XML output stream is closed")
+	}
+
 	return c.rwc.Write(b)
 }
 
