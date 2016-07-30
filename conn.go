@@ -80,7 +80,7 @@ func (c *Conn) Write(b []byte) (n int, err error) {
 	return c.rwc.Write(b)
 }
 
-// Close closes the connection.
+// Close closes the underlying connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
 func (c *Conn) Close() error {
 	return c.rwc.Close()
