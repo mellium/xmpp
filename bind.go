@@ -26,7 +26,7 @@ func BindResource() StreamFeature {
 	return StreamFeature{
 		Name:       xml.Name{Space: ns.Bind, Local: "bind"},
 		Necessary:  Authn,
-		Prohibited: Bind | Ready,
+		Prohibited: Ready,
 		List: func(ctx context.Context, w io.Writer) (bool, error) {
 			_, err := fmt.Fprintf(w, `<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>`)
 			return true, err
@@ -86,7 +86,7 @@ func BindResource() StreamFeature {
 				default:
 					return mask, StanzaError{Condition: BadRequest}
 				}
-				return Bind | Ready, nil
+				return Ready, nil
 			}
 		},
 	}

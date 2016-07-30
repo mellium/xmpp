@@ -32,9 +32,6 @@ const (
 	// Indicates that the session has been authenticated (probably with SASL).
 	Authn
 
-	// Indicates that an XMPP resource has been bound.
-	Bind
-
 	// Indicates that the session is fully negotiated and that XMPP stanzas may be
 	// sent and received.
 	Ready
