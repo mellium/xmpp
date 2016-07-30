@@ -33,6 +33,7 @@ type Conn struct {
 	flock    sync.Mutex
 
 	in struct {
+		sync.Mutex
 		stream
 		d *xml.Decoder
 	}
@@ -73,6 +74,13 @@ func (c *Conn) Config() *Config {
 
 // Read reads data from the connection.
 func (c *Conn) Read(b []byte) (n int, err error) {
+	c.in.Lock()
+	defer c.in.Unlock()
+
+	if c.state&InputStreamClosed == InputStreamClosed {
+		return 0, errors.New("XML input stream is closed")
+	}
+
 	return c.rwc.Read(b)
 }
 
