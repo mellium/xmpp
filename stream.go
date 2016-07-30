@@ -21,7 +21,7 @@ const streamIDLength = 16
 
 // SessionState represents the current state of an XMPP session. For a
 // description of each bit, see the various SessionState typed constants.
-type SessionState int8
+type SessionState uint8
 
 const (
 	// Indicates that the underlying connection has been secured. For instance,
@@ -36,18 +36,22 @@ const (
 	// sent and received.
 	Ready
 
+	// Indicates that the session was initiated by a foreign entity.
+	Received
+
+	// Indicates that the output stream has been closed with a stream end tag.
+	// When set all write operations will return an error even if the underlying
+	// TCP connection is still open.
+	OutputStreamClosed
+
+	// Indicates that the input stream has been closed with a stream end tag. When
+	// set all read operations will return an error.
+	InputStreamClosed
+
 	// Indicates that the session's streams must be restarted. This bit will
 	// trigger an automatic restart and will be flipped back to off as soon as the
 	// stream is restarted.
 	StreamRestartRequired
-
-	// Indicates that the session was initiated by a foreign entity.
-	Received
-
-	// Indicates that the stream should be (or has been) terminated. After being
-	// flipped, this bit is left off unless the stream is restarted. This does not
-	// provide any information about the underlying TLS connection.
-	EndStream
 )
 
 type stream struct {

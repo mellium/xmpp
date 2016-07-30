@@ -74,7 +74,7 @@ func StartTLS(required bool) StreamFeature {
 					case tok.Name.Local == "proceed":
 						// Skip the </proceed> token.
 						if err = conn.in.d.Skip(); err != nil {
-							return EndStream, streamerror.InvalidXML
+							return mask, streamerror.InvalidXML
 						}
 						conn.rwc = tls.Client(netconn, conn.config.TLSConfig)
 					case tok.Name.Local == "failure":
@@ -82,10 +82,11 @@ func StartTLS(required bool) StreamFeature {
 						if err = conn.in.d.Skip(); err != nil {
 							err = streamerror.InvalidXML
 						}
-						// Failure is not an "error", it's expected behavior. The server is
-						// telling us to end the stream. However, if we encounter bad XML
-						// while skipping the </failure> token, return that error.
-						return EndStream, err
+						// Failure is not an "error", it's expected behavior. Immediately
+						// afterwards the server will end the stream. However, if we
+						// encounter bad XML while skipping the </failure> token, return
+						// that error.
+						return mask, err
 					default:
 						return mask, streamerror.UnsupportedStanzaType
 					}
