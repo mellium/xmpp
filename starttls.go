@@ -31,13 +31,23 @@ func StartTLS(required bool) StreamFeature {
 	return StreamFeature{
 		Name:       xml.Name{Local: "starttls", Space: ns.StartTLS},
 		Prohibited: Secure,
-		List: func(ctx context.Context, conn io.Writer) (req bool, err error) {
-			if required {
-				_, err = fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'><required/></starttls>`)
+		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+			if err = e.EncodeToken(start); err != nil {
 				return required, err
 			}
-			_, err = fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
-			return
+			if required {
+				startRequired := xml.StartElement{Name: xml.Name{Space: "", Local: "required"}}
+				if err = e.EncodeToken(startRequired); err != nil {
+					return required, err
+				}
+				if err = e.EncodeToken(startRequired.End()); err != nil {
+					return required, err
+				}
+			}
+			if err = e.EncodeToken(start.End()); err != nil {
+				return required, err
+			}
+			return required, e.Flush()
 		},
 		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {

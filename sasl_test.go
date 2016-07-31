@@ -26,8 +26,10 @@ func TestSASLPanicsNoMechanisms(t *testing.T) {
 
 func TestSASLList(t *testing.T) {
 	var b bytes.Buffer
+	e := xml.NewEncoder(&b)
+	start := xml.StartElement{Name: xml.Name{Space: ns.SASL, Local: "mechanisms"}}
 	s := SASL(sasl.Plain, sasl.ScramSha256)
-	req, err := s.List(context.Background(), &b)
+	req, err := s.List(context.Background(), e, start)
 	switch {
 	case err != nil:
 		t.Fatal(err)

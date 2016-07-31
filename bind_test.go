@@ -10,19 +10,23 @@ import (
 	"encoding/xml"
 	"strings"
 	"testing"
+
+	"mellium.im/xmpp/ns"
 )
 
 func TestBindList(t *testing.T) {
 	buf := &bytes.Buffer{}
 	bind := BindResource()
-	req, err := bind.List(context.Background(), buf)
+	e := xml.NewEncoder(buf)
+	start := xml.StartElement{Name: xml.Name{Space: ns.Bind, Local: "bind"}}
+	req, err := bind.List(context.Background(), e, start)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !req {
 		t.Error("Bind must always be required")
 	}
-	if buf.String() != `<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>` {
+	if buf.String() != `<bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"></bind>` {
 		t.Errorf("Got unexpected value for bind listing: `%s`", buf.String())
 	}
 }

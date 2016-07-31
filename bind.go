@@ -27,9 +27,17 @@ func BindResource() StreamFeature {
 		Name:       xml.Name{Space: ns.Bind, Local: "bind"},
 		Necessary:  Authn,
 		Prohibited: Ready,
-		List: func(ctx context.Context, w io.Writer) (bool, error) {
-			_, err := fmt.Fprintf(w, `<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>`)
-			return true, err
+		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+			req = true
+			if err = e.EncodeToken(start); err != nil {
+				return req, err
+			}
+			if err = e.EncodeToken(start.End()); err != nil {
+				return req, err
+			}
+
+			err = e.Flush()
+			return req, err
 		},
 		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {

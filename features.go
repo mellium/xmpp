@@ -35,8 +35,12 @@ type StreamFeature struct {
 	// set this to "Authn".
 	Prohibited SessionState
 
-	// Used to send the feature in a features list for server connections.
-	List func(ctx context.Context, conn io.Writer) (req bool, err error)
+	// Used to send the feature in a features list for server connections. The
+	// start element will have a name that matches the features name and should be
+	// used as the outermost tag in the stream (but also may be ignored). List
+	// implementations that call e.EncodeToken directly need to call e.Flush when
+	// finished to ensure that the XML is written to the underlying writer.
+	List func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error)
 
 	// Used to parse the feature that begins with the given xml start element
 	// (which should have a Name that matches this stream feature's Name).
@@ -74,7 +78,9 @@ func writeStreamFeatures(ctx context.Context, conn *Conn) (n int, req int, err e
 		// are set.
 		if (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
 			var r bool
-			r, err = feature.List(ctx, conn)
+			r, err = feature.List(ctx, conn.out.e, xml.StartElement{
+				Name: feature.Name,
+			})
 			if err != nil {
 				return
 			}

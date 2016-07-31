@@ -33,13 +33,13 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 		Name:       xml.Name{Space: ns.SASL, Local: "mechanisms"},
 		Necessary:  Secure,
 		Prohibited: Authn,
-		List: func(ctx context.Context, conn io.Writer) (req bool, err error) {
+		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
 			req = true
-			_, err = fmt.Fprint(conn, `<mechanisms xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>`)
-			if err != nil {
+			if err = e.EncodeToken(start); err != nil {
 				return
 			}
 
+			startMechanism := xml.StartElement{Name: xml.Name{Space: "", Local: "mechanism"}}
 			for _, m := range mechanisms {
 				select {
 				case <-ctx.Done():
@@ -47,17 +47,20 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 				default:
 				}
 
-				if _, err = fmt.Fprint(conn, `<mechanism>`); err != nil {
+				if err = e.EncodeToken(startMechanism); err != nil {
 					return
 				}
-				if err = xml.EscapeText(conn, []byte(m.Name)); err != nil {
+				if err = e.EncodeToken(xml.CharData(m.Name)); err != nil {
 					return
 				}
-				if _, err = fmt.Fprint(conn, `</mechanism>`); err != nil {
+				if err = e.EncodeToken(startMechanism.End()); err != nil {
 					return
 				}
 			}
-			_, err = fmt.Fprint(conn, `</mechanisms>`)
+			if err = e.EncodeToken(start.End()); err != nil {
+				return
+			}
+			err = e.Flush()
 			return
 		},
 		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {

@@ -24,7 +24,9 @@ func TestStartTLSList(t *testing.T) {
 	for _, req := range []bool{true, false} {
 		stls := StartTLS(req)
 		var b bytes.Buffer
-		r, err := stls.List(context.Background(), &b)
+		e := xml.NewEncoder(&b)
+		start := xml.StartElement{Name: xml.Name{Space: ns.StartTLS, Local: "starttls"}}
+		r, err := stls.List(context.Background(), e, start)
 		switch {
 		case err != nil:
 			t.Fatal(err)
