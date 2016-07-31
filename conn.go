@@ -37,6 +37,9 @@ type Conn struct {
 	features map[xml.Name]struct{}
 	flock    sync.Mutex
 
+	// The negotiated features for the current session.
+	negotiated map[xml.Name]struct{}
+
 	in struct {
 		sync.Mutex
 		stream

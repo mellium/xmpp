@@ -116,24 +116,52 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWri
 		case err != nil:
 			return done, nil, err
 		case list.total == 0 || len(list.cache) == 0:
-			// If we received an empty list (or one with no supported features, we're
+			// If we received an empty list (or one with no supported features), we're
 			// done.
 			return true, nil, nil
 		}
 
-		// If the list has any required items, negotiate the first required feature.
-		// Otherwise just negotiate the first feature in the list.
-		var data sfData
-		for _, v := range list.cache {
-			if !list.req || v.req {
-				data = v
+		// If the list has any optional items that we support, negotiate them first
+		// before moving on to the required items.
+		for {
+			var data sfData
+			for _, v := range list.cache {
+				if _, ok := c.negotiated[v.feature.Name]; ok {
+					// If this feature has already been negotiated, skip it (servers
+					// shouldn't list them in this case, but you never know).
+					continue
+				}
+
+				// If the feature is optional, select it.
+				if !v.req {
+					data = v
+					break
+				}
+
+				// If the feature is required, tentatively select it (but finish looking
+				// for optional features).
+				if v.req {
+					data = v
+				}
+			}
+			// No features that haven't already been negotiated were sent… we're done.
+			if data.feature.Name.Local == "" {
+				return true, nil, nil
+			}
+			var mask SessionState
+			mask, rwc, err = data.feature.Negotiate(ctx, c, data.data)
+			if err == nil {
+				c.state |= mask
+			}
+			c.negotiated[data.feature.Name] = struct{}{}
+
+			// If we negotiated a required feature or a stream restart is required
+			// we're done with this feature set.
+			if rwc != nil || data.req {
 				break
 			}
 		}
-		mask, rwc, err := data.feature.Negotiate(ctx, c, data.data)
-		if err == nil {
-			c.state |= mask
-		}
+
 		return !list.req || (c.state&Ready == Ready), rwc, err
 	}
 }
