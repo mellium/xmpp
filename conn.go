@@ -79,6 +79,16 @@ func (c *Conn) Raw() io.ReadWriteCloser {
 	return c.rwc
 }
 
+// Decoder returns the XML decoder that was used to negotiate the latest stream.
+func (c *Conn) Decoder() *xml.Decoder {
+	return c.in.d
+}
+
+// Encoder returns the XML encoder that was used to negotiate the latest stream.
+func (c *Conn) Encoder() *xml.Encoder {
+	return c.out.e
+}
+
 // Config returns the connections config.
 func (c *Conn) Config() *Config {
 	return c.config
