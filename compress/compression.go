@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	ErrNoMethods = errors.New("No supported compression methods were found")
+	errNoMethods = errors.New("No supported compression methods were found")
 )
 
 // New returns a new xmpp.StreamFeature that can be used to negotiate stream
@@ -77,7 +77,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 			//       we can ignore? If someone strips all security mechanisms do we
 			//       care that we'll effectively negotiate "none" compression?
 			if len(listed.Methods) == 0 {
-				return false, nil, ErrNoMethods
+				return false, nil, errNoMethods
 			}
 
 			return true, listed.Methods, nil
