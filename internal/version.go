@@ -12,6 +12,7 @@ import (
 	"strings"
 )
 
+// Common XMPP versions.
 var (
 	DefaultVersion = Version{1, 0} // The default version to send.
 	EmptyVersion   = Version{0, 9} // The value of a missing version attribute.
@@ -39,7 +40,7 @@ func ParseVersion(s string) (Version, error) {
 
 	versions := strings.Split(s, ".")
 	if len(versions) != 2 {
-		return v, errors.New("XMPP version must have a single separator.")
+		return v, errors.New("XMPP version must have a single separator")
 	}
 
 	// Parse major version number
@@ -61,8 +62,8 @@ func ParseVersion(s string) (Version, error) {
 
 // Less compares the major and minor version numbers, returning true if a is
 // less than b.
-func (a Version) Less(b Version) bool {
-	return a.Major < b.Major || (a.Major == b.Major && a.Minor < b.Minor)
+func (v Version) Less(b Version) bool {
+	return v.Major < b.Major || (v.Major == b.Major && v.Minor < b.Minor)
 }
 
 // Prints a string representation of the XMPP version in the form "Major.Minor".

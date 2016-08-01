@@ -10,6 +10,7 @@ import (
 	"io"
 )
 
+// IDLen is the standard length of stanza identifiers in bytes.
 const IDLen = 16
 
 // TODO: This will be called a lot, and probably needs to be faster than we can

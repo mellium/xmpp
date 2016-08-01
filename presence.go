@@ -31,32 +31,32 @@ const (
 	// stanza without a defined type (indicating availability on the network).
 	NoTypePresence presenceType = iota
 
-	// An ErrorPresence indicates that an error has occurred regarding processing
-	// of a previously sent presence stanza; if the presence stanza is of type
+	// ErrorPresence indicates that an error has occurred regarding processing of
+	// a previously sent presence stanza; if the presence stanza is of type
 	// "error", it MUST include an <error/> child element
 	ErrorPresence presenceType = iota
 
-	// A ProbePresence is a request for an entity's current presence. It should
+	// ProbePresence is a request for an entity's current presence. It should
 	// generally only be generated and sent by servers on behalf of a user.
 	ProbePresence
 
-	// A SubscribePresence is sent when the sender wishes to subscribe to the
+	// SubscribePresence is sent when the sender wishes to subscribe to the
 	// recipient's presence.
 	SubscribePresence
 
-	// A SubscribedPresence indicates that the sender has allowed the recipient to
+	// SubscribedPresence indicates that the sender has allowed the recipient to
 	// receive future presence broadcasts.
 	SubscribedPresence
 
-	// An UnavailablePresence indicates that the sender is no longer available for
+	// UnavailablePresence indicates that the sender is no longer available for
 	// communication.
 	UnavailablePresence
 
-	// An UnsubscribePresence indicates that the sender is unsubscribing from the
+	// UnsubscribePresence indicates that the sender is unsubscribing from the
 	// receiver's presence.
 	UnsubscribePresence
 
-	// An UnsubscribedPresence indicates that the subscription request has been
+	// UnsubscribedPresence indicates that the subscription request has been
 	// denied, or a previously granted subscription has been revoked.
 	UnsubscribedPresence
 )

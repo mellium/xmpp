@@ -2,7 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
-// The compress package implements stream compression as specified in XEP-0138.
+// Package compress implements stream compression as specified in XEP-0138.
 package compress
 
 import (
@@ -16,6 +16,7 @@ import (
 	"mellium.im/xmpp/streamerror"
 )
 
+// Namespaces used by stream compression.
 const (
 	FeaturesNS = "http://jabber.org/features/compress"
 	ProtocolNS = "http://jabber.org/protocol/compress"
@@ -83,6 +84,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 			return true, listed.Methods, nil
 		},
 		Negotiate: func(ctx context.Context, conn *xmpp.Conn, data interface{}) (mask xmpp.SessionState, rwc io.ReadWriteCloser, err error) {
+			// If we're a server.
 			if (conn.State() & xmpp.Received) == xmpp.Received {
 				clientSelected := struct {
 					XMLName xml.Name `xml:"http://jabber.org/protocol/compress compress"`
@@ -118,43 +120,44 @@ func New(methods ...Method) xmpp.StreamFeature {
 
 				rwc, err = selected.Wrapper(conn.Raw())
 				return mask, rwc, err
-			} else {
-				var selected Method
-			selectmethod:
-				for _, m := range methods {
-					for _, name := range data.([]string) {
-						if name == m.Name {
-							selected = m
-							break selectmethod
-						}
+			}
+
+			var selected Method
+		selectmethod:
+			for _, m := range methods {
+				for _, name := range data.([]string) {
+					if name == m.Name {
+						selected = m
+						break selectmethod
 					}
-				}
-
-				if selected.Name == "" {
-					return mask, nil, errors.New(`No matching compression method found`)
-				}
-
-				_, err = fmt.Fprintf(conn, `<compress xmlns='`+ProtocolNS+`'><method>%s</method></compress>`, selected.Name)
-				if err != nil {
-					return
-				}
-
-				d := conn.Decoder()
-				tok, err := d.Token()
-				if err != nil {
-					return mask, nil, err
-				}
-				if t, ok := tok.(xml.StartElement); ok && t.Name.Local == "compressed" && t.Name.Space == ProtocolNS {
-					if err = d.Skip(); err != nil {
-						return mask, nil, err
-					}
-					rwc, err = selected.Wrapper(conn.Raw())
-					return mask, rwc, err
-				} else {
-					// TODO: Use appropriate errors.
-					return mask, nil, streamerror.BadFormat
 				}
 			}
+
+			if selected.Name == "" {
+				return mask, nil, errors.New(`No matching compression method found`)
+			}
+
+			_, err = fmt.Fprintf(conn, `<compress xmlns='`+ProtocolNS+`'><method>%s</method></compress>`, selected.Name)
+			if err != nil {
+				return
+			}
+
+			d := conn.Decoder()
+			tok, err := d.Token()
+			if err != nil {
+				return mask, nil, err
+			}
+
+			if t, ok := tok.(xml.StartElement); ok && t.Name.Local == "compressed" && t.Name.Space == ProtocolNS {
+				if err = d.Skip(); err != nil {
+					return mask, nil, err
+				}
+				rwc, err = selected.Wrapper(conn.Raw())
+				return mask, rwc, err
+			}
+
+			// TODO: Use appropriate errors.
+			return mask, nil, streamerror.BadFormat
 		},
 	}
 }

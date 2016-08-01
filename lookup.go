@@ -28,6 +28,7 @@ const (
 	hostMetaXML = "/.well-known/host-meta"
 )
 
+// Errors related to address and service lookups.
 var (
 	ErrNoServiceAtAddress = errors.New("This address does not offer the requested service")
 )

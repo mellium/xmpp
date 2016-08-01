@@ -8,7 +8,7 @@ import (
 	"encoding/xml"
 )
 
-// Represents an Extensible Resource Descriptor (XRD) document of the form:
+// XRD represents an Extensible Resource Descriptor document of the form:
 //
 //    <?xml version='1.0' encoding=utf-9'?>
 //    <XRD xmlns='http://docs.oasis-open.org/ns/xri/xrd-1.0'>
@@ -26,6 +26,7 @@ type XRD struct {
 	Links   []Link   `xml:"Link"`
 }
 
+// Link is an individual hyperlink in an XRD document.
 type Link struct {
 	Rel  string `xml:"rel,attr"`
 	Href string `xml:"href,attr"`

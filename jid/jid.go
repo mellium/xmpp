@@ -242,7 +242,8 @@ func (j *JID) Resourcepart() string {
 	return j.resourcepart
 }
 
-// Makes a copy of the given Jid. j.Equal(j.Copy()) will always return true.
+// Copy makes a copy of the given Jid. j.Equal(j.Copy()) will always return
+// true.
 func (j *JID) Copy() *JID {
 	return &JID{
 		localpart:    j.localpart,
@@ -251,7 +252,7 @@ func (j *JID) Copy() *JID {
 	}
 }
 
-// Satisfies the net.Addr interface by returning the name of the network
+// Network satisfies the net.Addr interface by returning the name of the network
 // ("xmpp").
 func (j *JID) Network() string {
 	return "xmpp"

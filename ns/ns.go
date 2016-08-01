@@ -6,6 +6,7 @@
 // other internal packages.
 package ns // import "mellium.im/xmpp/ns"
 
+// Namespaces used by the mellium.im/xmpp package.
 const (
 	Bind     = "urn:ietf:params:xml:ns:xmpp-bind"
 	Client   = "jabber:client"

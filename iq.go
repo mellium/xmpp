@@ -28,17 +28,17 @@ type IQ struct {
 type iqType int
 
 const (
-	// A GetIQ is used to query another entity for information.
+	// GetIQ is used to query another entity for information.
 	GetIQ iqType = iota
 
-	// A SetIQ is used to provide data to another entity, set new values, and
+	// SetIQ is used to provide data to another entity, set new values, and
 	// replace existing values.
 	SetIQ
 
-	// A ResultIQ is sent in response to a successful get or set IQ.
+	// ResultIQ is sent in response to a successful get or set IQ.
 	ResultIQ
 
-	// An ErrorIQ is sent to report that an error occured during the delivery or
+	// ErrorIQ is sent to report that an error occured during the delivery or
 	// processing of a get or set IQ.
 	ErrorIQ
 )

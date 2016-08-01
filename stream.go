@@ -24,28 +24,29 @@ const streamIDLength = 16
 type SessionState uint8
 
 const (
-	// Indicates that the underlying connection has been secured. For instance,
-	// after STARTTLS has been performed or if a pre-secured connection is being
-	// used such as websockets over HTTPS.
+	// Secure indicates that the underlying connection has been secured. For
+	// instance, after STARTTLS has been performed or if a pre-secured connection
+	// is being used such as websockets over HTTPS.
 	Secure SessionState = 1 << iota
 
-	// Indicates that the session has been authenticated (probably with SASL).
+	// Authn indicates that the session has been authenticated (probably with
+	// SASL).
 	Authn
 
-	// Indicates that the session is fully negotiated and that XMPP stanzas may be
-	// sent and received.
+	// Ready indicates that the session is fully negotiated and that XMPP stanzas
+	// may be sent and received.
 	Ready
 
-	// Indicates that the session was initiated by a foreign entity.
+	// Received indicates that the session was initiated by a foreign entity.
 	Received
 
-	// Indicates that the output stream has been closed with a stream end tag.
-	// When set all write operations will return an error even if the underlying
-	// TCP connection is still open.
+	// OutputStreamClosed indicates that the output stream has been closed with a
+	// stream end tag.  When set all write operations will return an error even if
+	// the underlying TCP connection is still open.
 	OutputStreamClosed
 
-	// Indicates that the input stream has been closed with a stream end tag. When
-	// set all read operations will return an error.
+	// InputStreamClosed indicates that the input stream has been closed with a
+	// stream end tag. When set all read operations will return an error.
 	InputStreamClosed
 )
 

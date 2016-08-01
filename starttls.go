@@ -20,6 +20,7 @@ import (
 
 // BUG(ssw): STARTTLS feature does not have security layer byte precision.
 
+// Errors used by STARTTLS.
 var (
 	ErrTLSUpgradeFailed = errors.New("The underlying connection cannot be upgraded to TLS")
 )

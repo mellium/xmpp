@@ -17,6 +17,7 @@ import (
 // <failure/> element.
 type condition string
 
+// Standard SASL error conditions.
 const (
 	Aborted              condition = "aborted"
 	AccountDisabled      condition = "account-disabled"

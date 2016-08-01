@@ -16,23 +16,23 @@ import (
 type errorType int
 
 const (
-	// An error with type Cancel indicates that the error cannot be remedied and
-	// the operation should not be retried.
+	// Cancel indicates that the error cannot be remedied and the operation should
+	// not be retried.
 	Cancel errorType = iota
 
-	// An error with type Auth indicates that an operation should be retried after
-	// providing credentials.
+	// Auth indicates that an operation should be retried after providing
+	// credentials.
 	Auth
 
-	// An error with type Continue indicates that the operation can proceed (the
-	// condition was only a warning).
+	// Continue indicates that the operation can proceed (the condition was only a
+	// warning).
 	Continue
 
-	// An error with type Modify indicates that the operation can be retried after
-	// changing the data sent.
+	// Modify indicates that the operation can be retried after changing the data
+	// sent.
 	Modify
 
-	// An error with type Wait is temporary and may be retried after waiting.
+	// Wait is indicates that an error is temporary and may be retried.
 	Wait
 )
 
@@ -99,13 +99,14 @@ type StanzaError struct {
 
 // Error satisfies the error interface and returns the text if set, or the
 // condition otherwise.
-func (e StanzaError) Error() string {
-	if e.Text != "" {
-		return e.Text
+func (se StanzaError) Error() string {
+	if se.Text != "" {
+		return se.Text
 	}
-	return string(e.Condition)
+	return string(se.Condition)
 }
 
+// MarshalXML satisfies the xml.Marshaler interface for StanzaError.
 func (se StanzaError) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	start = xml.StartElement{
 		Name: xml.Name{Space: ``, Local: "error"},
@@ -153,6 +154,7 @@ func (se StanzaError) MarshalXML(e *xml.Encoder, start xml.StartElement) (err er
 	return nil
 }
 
+// UnmarshalXML satisfies the xml.Unmarshaler interface for StanzaError.
 func (se *StanzaError) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	decoded := struct {
 		Condition struct {

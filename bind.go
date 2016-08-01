@@ -48,54 +48,54 @@ func BindResource() StreamFeature {
 		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
 			if (conn.state & Received) == Received {
 				panic("xmpp: bind not yet implemented")
-			} else {
-				reqID := internal.RandomID(internal.IDLen)
-				if resource := conn.config.Origin.Resourcepart(); resource == "" {
-					// Send a request for the server to set a resource part.
-					_, err = fmt.Fprintf(conn, bindIQServerGeneratedRP, reqID)
-				} else {
-					// Request the provided resource part.
-					_, err = fmt.Fprintf(conn, bindIQClientRequestedRP, reqID, resource)
-				}
-				if err != nil {
-					return mask, nil, err
-				}
-				tok, err := conn.in.d.Token()
-				if err != nil {
-					return mask, nil, err
-				}
-				start, ok := tok.(xml.StartElement)
-				if !ok {
-					return mask, nil, streamerror.BadFormat
-				}
-				resp := struct {
-					IQ
-					Bind struct {
-						JID *jid.JID `xml:"jid"`
-					} `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
-					Err StanzaError `xml:"error"`
-				}{}
-				switch start.Name {
-				case xml.Name{Space: ns.Client, Local: "iq"}:
-					if err = conn.in.d.DecodeElement(&resp, &start); err != nil {
-						return mask, nil, err
-					}
-				default:
-					return mask, nil, streamerror.BadFormat
-				}
-
-				switch {
-				case resp.ID != reqID:
-					return mask, nil, streamerror.UndefinedCondition
-				case resp.Type == ResultIQ:
-					conn.origin = resp.Bind.JID
-				case resp.Type == ErrorIQ:
-					return mask, nil, resp.Err
-				default:
-					return mask, nil, StanzaError{Condition: BadRequest}
-				}
-				return Ready, nil, nil
 			}
+
+			reqID := internal.RandomID(internal.IDLen)
+			if resource := conn.config.Origin.Resourcepart(); resource == "" {
+				// Send a request for the server to set a resource part.
+				_, err = fmt.Fprintf(conn, bindIQServerGeneratedRP, reqID)
+			} else {
+				// Request the provided resource part.
+				_, err = fmt.Fprintf(conn, bindIQClientRequestedRP, reqID, resource)
+			}
+			if err != nil {
+				return mask, nil, err
+			}
+			tok, err := conn.in.d.Token()
+			if err != nil {
+				return mask, nil, err
+			}
+			start, ok := tok.(xml.StartElement)
+			if !ok {
+				return mask, nil, streamerror.BadFormat
+			}
+			resp := struct {
+				IQ
+				Bind struct {
+					JID *jid.JID `xml:"jid"`
+				} `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
+				Err StanzaError `xml:"error"`
+			}{}
+			switch start.Name {
+			case xml.Name{Space: ns.Client, Local: "iq"}:
+				if err = conn.in.d.DecodeElement(&resp, &start); err != nil {
+					return mask, nil, err
+				}
+			default:
+				return mask, nil, streamerror.BadFormat
+			}
+
+			switch {
+			case resp.ID != reqID:
+				return mask, nil, streamerror.UndefinedCondition
+			case resp.Type == ResultIQ:
+				conn.origin = resp.Bind.JID
+			case resp.Type == ErrorIQ:
+				return mask, nil, resp.Err
+			default:
+				return mask, nil, StanzaError{Condition: BadRequest}
+			}
+			return Ready, nil, nil
 		},
 	}
 }
