@@ -66,14 +66,20 @@ type StreamFeature struct {
 }
 
 func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWriteCloser, err error) {
-	if (c.state & Received) == Received {
-		_, err = writeStreamFeatures(ctx, c)
+	server := (c.state & Received) == Received
+
+	// If we're the server, write the initial stream features.
+	var list *streamFeaturesList
+	if server {
+		list, err = writeStreamFeatures(ctx, c)
 		if err != nil {
 			return false, nil, err
 		}
-		panic("Sending stream:features not yet implemented")
 	}
 
+	// Read a new start element token. If we're the client this will be the
+	// servers <stream:features>, if we're the server this will be the client
+	// sending a feature to select.
 	t, err := c.in.d.Token()
 	if err != nil {
 		return done, nil, err
@@ -82,7 +88,13 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWri
 	if !ok {
 		return done, nil, streamerror.BadFormat
 	}
-	list, err := readStreamFeatures(ctx, c, start)
+
+	if server {
+		panic("Sending stream:features not yet implemented")
+	}
+
+	// If we're the client read the rest of the stream features list.
+	list, err = readStreamFeatures(ctx, c, start)
 
 	switch {
 	case err != nil:
