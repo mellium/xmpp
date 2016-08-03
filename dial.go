@@ -13,6 +13,20 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
+// A Dialer contains options for connecting to an XMPP address.
+//
+// The zero value for each field is equivalent to dialing without that option.
+// Dialing with the zero value of Dialer is therefore equivalent to just calling
+// the DialClient function.
+type Dialer struct {
+	net.Dialer
+
+	// NoLookup stops the dialer from looking up SRV or TXT records for the given
+	// domain. It also prevents fetching of the host metadata file.
+	// Instead, it will try to connect to the domain directly.
+	NoLookup bool
+}
+
 // DialClient discovers and connects to the address on the named network that
 // services the given local address with a client-to-server (c2s) connection.
 //
@@ -47,20 +61,6 @@ func DialServer(ctx context.Context, network string, raddr, laddr *jid.JID) (*Co
 func Dial(ctx context.Context, network string, config *Config) (*Conn, error) {
 	var d Dialer
 	return d.Dial(ctx, network, config)
-}
-
-// A Dialer contains options for connecting to an XMPP address.
-//
-// The zero value for each field is equivalent to dialing without that option.
-// Dialing with the zero value of Dialer is therefore equivalent to just calling
-// the DialClient function.
-type Dialer struct {
-	net.Dialer
-
-	// NoLookup stops the dialer from looking up SRV or TXT records for the given
-	// domain. It also prevents fetching of the host metadata file.
-	// Instead, it will try to connect to the domain directly.
-	NoLookup bool
 }
 
 // Copied from the net package in the standard library. Copyright The Go

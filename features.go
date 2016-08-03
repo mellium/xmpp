@@ -77,62 +77,89 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWri
 		}
 	}
 
-	// Read a new start element token. If we're the client this will be the
-	// servers <stream:features>, if we're the server this will be the client
-	// sending a feature to select.
-	t, err := c.in.d.Token()
-	if err != nil {
-		return done, nil, err
-	}
-	start, ok := t.(xml.StartElement)
-	if !ok {
-		return done, nil, streamerror.BadFormat
+	var t xml.Token
+	var start xml.StartElement
+	var ok bool
+
+	if !server {
+		// Read a new startstream:features token.
+		t, err = c.in.d.Token()
+		if err != nil {
+			return done, nil, err
+		}
+		start, ok = t.(xml.StartElement)
+		if !ok {
+			return done, nil, streamerror.BadFormat
+		}
+
+		// If we're the client read the rest of the stream features list.
+		list, err = readStreamFeatures(ctx, c, start)
+
+		switch {
+		case err != nil:
+			return done, nil, err
+		case list.total == 0 || len(list.cache) == 0:
+			// If we received an empty list (or one with no supported features), we're
+			// done.
+			return true, nil, nil
+		}
 	}
 
-	if server {
-		panic("Sending stream:features not yet implemented")
-	}
-
-	// If we're the client read the rest of the stream features list.
-	list, err = readStreamFeatures(ctx, c, start)
-
-	switch {
-	case err != nil:
-		return done, nil, err
-	case list.total == 0 || len(list.cache) == 0:
-		// If we received an empty list (or one with no supported features), we're
-		// done.
-		return true, nil, nil
-	}
+	var mask SessionState
+	var sent bool
 
 	// If the list has any optional items that we support, negotiate them first
 	// before moving on to the required items.
 	for {
 		var data sfData
-		for _, v := range list.cache {
-			if _, ok := c.negotiated[v.feature.Name]; ok {
-				// If this feature has already been negotiated, skip it (servers
-				// shouldn't list them in this case, but you never know).
-				continue
+
+		if server {
+			// Read a new feature to negotiate.
+			t, err = c.in.d.Token()
+			if err != nil {
+				return done, nil, err
+			}
+			start, ok = t.(xml.StartElement)
+			if !ok {
+				return done, nil, streamerror.BadFormat
 			}
 
-			// If the feature is optional, select it.
-			if !v.req {
-				data = v
-				break
+			// If the feature was not sent or was already negotiated, error.
+
+			_, negotiated := c.negotiated[start.Name]
+			data, sent = list.cache[start.Name]
+			if !sent || negotiated {
+				// TODO: What should we return here?
+				return done, rwc, streamerror.PolicyViolation
+			}
+		} else {
+			// If we're the client, iterate through the cached features and select one
+			// to negotiate.
+			for _, v := range list.cache {
+				if _, ok := c.negotiated[v.feature.Name]; ok {
+					// If this feature has already been negotiated, skip it.
+					continue
+				}
+
+				// If the feature is optional, select it.
+				if !v.req {
+					data = v
+					break
+				}
+
+				// If the feature is required, tentatively select it (but finish looking
+				// for optional features).
+				if v.req {
+					data = v
+				}
 			}
 
-			// If the feature is required, tentatively select it (but finish looking
-			// for optional features).
-			if v.req {
-				data = v
+			// No features that haven't already been negotiated were sent… we're done.
+			if data.feature.Name.Local == "" {
+				return true, nil, nil
 			}
 		}
-		// No features that haven't already been negotiated were sent… we're done.
-		if data.feature.Name.Local == "" {
-			return true, nil, nil
-		}
-		var mask SessionState
+
 		mask, rwc, err = data.feature.Negotiate(ctx, c, data.data)
 		if err == nil {
 			c.state |= mask
