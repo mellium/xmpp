@@ -57,11 +57,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 					return
 				}
 			}
-			if err = e.EncodeToken(start.End()); err != nil {
-				return
-			}
-			err = e.Flush()
-			return
+			return req, e.EncodeToken(start.End())
 		},
 		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {

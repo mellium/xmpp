@@ -45,10 +45,7 @@ func StartTLS(required bool) StreamFeature {
 					return required, err
 				}
 			}
-			if err = e.EncodeToken(start.End()); err != nil {
-				return required, err
-			}
-			return required, e.Flush()
+			return required, e.EncodeToken(start.End())
 		},
 		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
