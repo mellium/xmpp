@@ -30,11 +30,12 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 		panic("xmpp: Must specify at least 1 SASL mechanism")
 	}
 	return StreamFeature{
-		Name:       xml.Name{Space: ns.SASL, Local: "mechanisms"},
+		Name:       xml.Name{Space: ns.SASL, Local: "auth"},
 		Necessary:  Secure,
 		Prohibited: Authn,
 		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
 			req = true
+			start = xml.StartElement{Name: xml.Name{Space: ns.SASL, Local: "mechanisms"}}
 			if err = e.EncodeToken(start); err != nil {
 				return
 			}
