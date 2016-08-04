@@ -7,7 +7,6 @@ package xmpp
 import (
 	"context"
 	"encoding/xml"
-	"fmt"
 	"io"
 
 	"mellium.im/xmpp/ns"
@@ -83,7 +82,7 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWri
 
 	if !server {
 		// Read a new startstream:features token.
-		t, err = c.in.d.Token()
+		t, err = c.Decoder().Token()
 		if err != nil {
 			return done, nil, err
 		}
@@ -115,7 +114,7 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWri
 
 		if server {
 			// Read a new feature to negotiate.
-			t, err = c.in.d.Token()
+			t, err = c.Decoder().Token()
 			if err != nil {
 				return done, nil, err
 			}
@@ -189,9 +188,13 @@ type streamFeaturesList struct {
 }
 
 func writeStreamFeatures(ctx context.Context, conn *Conn) (list *streamFeaturesList, err error) {
-	if _, err = fmt.Fprint(conn, `<stream:features>`); err != nil {
+	e := conn.Encoder()
+
+	start := xml.StartElement{Name: xml.Name{Space: "", Local: "stream:features"}}
+	if err = e.EncodeToken(start); err != nil {
 		return
 	}
+
 	// Lock the connection features list.
 	list = &streamFeaturesList{
 		cache: make(map[xml.Name]sfData),
@@ -219,7 +222,12 @@ func writeStreamFeatures(ctx context.Context, conn *Conn) (list *streamFeaturesL
 			list.total++
 		}
 	}
-	_, err = fmt.Fprint(conn, `</stream:features>`)
+	if err = e.EncodeToken(start.End()); err != nil {
+		return
+	}
+	if err = e.Flush(); err != nil {
+		return
+	}
 	return
 }
 
