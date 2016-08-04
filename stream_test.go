@@ -6,7 +6,6 @@ package xmpp
 
 import (
 	"bytes"
-	"encoding/xml"
 	"fmt"
 	"io"
 	"strings"
@@ -39,10 +38,10 @@ func TestSendNewS2S(t *testing.T) {
 			err := sendNewStream(&b, config, ids)
 
 			str := b.String()
-			if !strings.HasPrefix(str, xml.Header) {
+			if !strings.HasPrefix(str, xmlHeader) {
 				t.Errorf("Expected string to start with XML header but got: %s", str)
 			}
-			str = strings.TrimPrefix(str, xml.Header)
+			str = strings.TrimPrefix(str, xmlHeader)
 
 			switch {
 			case err != tc.err:

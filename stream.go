@@ -17,6 +17,10 @@ import (
 	"mellium.im/xmpp/streamerror"
 )
 
+const (
+	xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>`
+)
+
 const streamIDLength = 16
 
 // SessionState represents the current state of an XMPP session. For a
@@ -122,8 +126,7 @@ func sendNewStream(w io.Writer, cfg *Config, id string) error {
 	}
 
 	_, err := fmt.Fprintf(w,
-		xml.Header[0:len(xml.Header)-1]+
-			`<stream:stream%sto='%s' from='%s' version='%s' xml:lang='%s' xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
+		xmlHeader+`<stream:stream%sto='%s' from='%s' version='%s' xml:lang='%s' xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
 		id,
 		cfg.Location.String(),
 		cfg.Origin.String(),
