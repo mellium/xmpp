@@ -36,6 +36,9 @@ func TestSASLList(t *testing.T) {
 	case req != true:
 		t.Error("Expected SASL to be a required feature")
 	}
+	if err = e.Flush(); err != nil {
+		t.Fatal(err)
+	}
 
 	// Mechanisms should be printed exactly thus:
 	if !bytes.Contains((&b).Bytes(), []byte(`<mechanism>PLAIN</mechanism>`)) {

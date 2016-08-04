@@ -33,6 +33,9 @@ func TestStartTLSList(t *testing.T) {
 		case r != req:
 			t.Errorf("Expected StartTLS listing required to be %v but got %v", req, r)
 		}
+		if err = e.Flush(); err != nil {
+			t.Fatal(err)
+		}
 
 		d := xml.NewDecoder(&b)
 		tok, err := d.Token()
