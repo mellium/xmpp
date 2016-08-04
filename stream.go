@@ -121,12 +121,9 @@ func sendNewStream(w io.Writer, cfg *Config, id string) error {
 		id = ` id='` + id + `' `
 	}
 
-	_, err := fmt.Fprint(w, xml.Header)
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprintf(w,
-		`<stream:stream%sto='%s' from='%s' version='%s' xml:lang='%s' xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
+	_, err := fmt.Fprintf(w,
+		xml.Header[0:len(xml.Header)-1]+
+			`<stream:stream%sto='%s' from='%s' version='%s' xml:lang='%s' xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
 		id,
 		cfg.Location.String(),
 		cfg.Origin.String(),
