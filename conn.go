@@ -54,7 +54,7 @@ type Conn struct {
 
 // Feature checks if a feature with the given namespace was advertised
 // by the server for the current stream. If it was data will be the canonical
-// representation of the feature as returned by the features Parse function.
+// representation of the feature as returned by the feature's Parse function.
 func (c *Conn) Feature(namespace string) (data interface{}, ok bool) {
 	c.flock.Lock()
 	defer c.flock.Unlock()
