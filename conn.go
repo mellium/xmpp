@@ -34,7 +34,7 @@ type Conn struct {
 	origin *jid.JID
 
 	// The stream feature namespaces advertised for the current streams.
-	features map[string]struct{}
+	features map[string]interface{}
 	flock    sync.Mutex
 
 	// The negotiated features (by namespace) for the current session.
@@ -52,13 +52,16 @@ type Conn struct {
 	}
 }
 
-// Features returns a set of the currently available stream features namespaces
-// (including namespaces for features that have already been negotiated).
-func (c *Conn) Features() map[string]struct{} {
+// Feature checks if a feature with the given namespace was advertised
+// by the server for the current stream. If it was data will be the canonical
+// representation of the feature as returned by the features Parse function.
+func (c *Conn) Feature(namespace string) (data interface{}, ok bool) {
 	c.flock.Lock()
 	defer c.flock.Unlock()
 
-	return c.features
+	// TODO: Make the features struct actually store the parsed representation.
+	data, ok = c.features[namespace]
+	return
 }
 
 // NewConn attempts to use an existing connection (or any io.ReadWriteCloser) to

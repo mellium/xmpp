@@ -260,17 +260,28 @@ parsefeatures:
 			// If the token is a new feature, see if it's one we handle. If so, parse
 			// it. Increment the total features count regardless.
 			sf.total++
-			conn.features[tok.Name.Space] = struct{}{}
+
+			// Always add the feature to the list of features, even if we don't
+			// support it.
+			conn.features[tok.Name.Space] = nil
+
 			if feature, ok := conn.config.Features[tok.Name]; ok && (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
 				req, data, err := feature.Parse(ctx, conn.in.d, &tok)
 				if err != nil {
 					return nil, err
 				}
+
+				// TODO: Since we're storing the features data on conn.features we can
+				// probably remove it from this temporary cache.
 				sf.cache[tok.Name.Space] = sfData{
 					req:     req,
 					data:    data,
 					feature: feature,
 				}
+
+				// Since we do support the feature, add it to the connections list along
+				// with any data returned from Parse.
+				conn.features[tok.Name.Space] = data
 				if req {
 					sf.req = true
 				}
