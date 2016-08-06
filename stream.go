@@ -23,8 +23,9 @@ const (
 
 const streamIDLength = 16
 
-// SessionState represents the current state of an XMPP session. For a
-// description of each bit, see the various SessionState typed constants.
+// SessionState is a bitmask that represents the current state of an XMPP
+// session. For a description of each bit, see the various SessionState typed
+// constants.
 type SessionState uint8
 
 const (

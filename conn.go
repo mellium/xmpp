@@ -130,7 +130,8 @@ func (c *Conn) Close() error {
 	return c.rwc.Close()
 }
 
-// State returns the current state of the session.
+// State returns the current state of the session. For more information, see the
+// SessionState type.
 func (c *Conn) State() SessionState {
 	return c.state
 }
