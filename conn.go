@@ -33,12 +33,12 @@ type Conn struct {
 	// server did not assign us the resourcepart we requested, this is canonical).
 	origin *jid.JID
 
-	// The stream features advertised for the current streams.
-	features map[xml.Name]struct{}
+	// The stream feature namespaces advertised for the current streams.
+	features map[string]struct{}
 	flock    sync.Mutex
 
-	// The negotiated features for the current session.
-	negotiated map[xml.Name]struct{}
+	// The negotiated features (by namespace) for the current session.
+	negotiated map[string]struct{}
 
 	in struct {
 		sync.Mutex
@@ -52,9 +52,9 @@ type Conn struct {
 	}
 }
 
-// Features returns a set of the currently available stream features (including
-// those that have already been negotiated).
-func (c *Conn) Features() map[xml.Name]struct{} {
+// Features returns a set of the currently available stream features namespaces
+// (including namespaces for features that have already been negotiated).
+func (c *Conn) Features() map[string]struct{} {
 	c.flock.Lock()
 	defer c.flock.Unlock()
 

@@ -215,8 +215,8 @@ func (c *Conn) negotiateStreams(ctx context.Context, rwc io.ReadWriteCloser) (er
 	// is still required.
 	for done := false; !done || rwc != nil; {
 		if rwc != nil {
-			c.features = make(map[xml.Name]struct{})
-			c.negotiated = make(map[xml.Name]struct{})
+			c.features = make(map[string]struct{})
+			c.negotiated = make(map[string]struct{})
 			c.rwc = rwc
 			c.in.d = xml.NewDecoder(c.rwc)
 			c.out.e = xml.NewEncoder(c.rwc)

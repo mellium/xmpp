@@ -125,8 +125,8 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWri
 
 			// If the feature was not sent or was already negotiated, error.
 
-			_, negotiated := c.negotiated[start.Name]
-			data, sent = list.cache[start.Name]
+			_, negotiated := c.negotiated[start.Name.Space]
+			data, sent = list.cache[start.Name.Space]
 			if !sent || negotiated {
 				// TODO: What should we return here?
 				return done, rwc, streamerror.PolicyViolation
@@ -135,7 +135,7 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWri
 			// If we're the client, iterate through the cached features and select one
 			// to negotiate.
 			for _, v := range list.cache {
-				if _, ok := c.negotiated[v.feature.Name]; ok {
+				if _, ok := c.negotiated[v.feature.Name.Space]; ok {
 					// If this feature has already been negotiated, skip it.
 					continue
 				}
@@ -163,7 +163,7 @@ func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWri
 		if err == nil {
 			c.state |= mask
 		}
-		c.negotiated[data.feature.Name] = struct{}{}
+		c.negotiated[data.feature.Name.Space] = struct{}{}
 
 		// If we negotiated a required feature or a stream restart is required
 		// we're done with this feature set.
@@ -184,7 +184,9 @@ type sfData struct {
 type streamFeaturesList struct {
 	total int
 	req   bool
-	cache map[xml.Name]sfData
+
+	// Namespace to sfData
+	cache map[string]sfData
 }
 
 func writeStreamFeatures(ctx context.Context, conn *Conn) (list *streamFeaturesList, err error) {
@@ -197,7 +199,7 @@ func writeStreamFeatures(ctx context.Context, conn *Conn) (list *streamFeaturesL
 
 	// Lock the connection features list.
 	list = &streamFeaturesList{
-		cache: make(map[xml.Name]sfData),
+		cache: make(map[string]sfData),
 	}
 
 	for _, feature := range conn.config.Features {
@@ -211,7 +213,7 @@ func writeStreamFeatures(ctx context.Context, conn *Conn) (list *streamFeaturesL
 			if err != nil {
 				return
 			}
-			list.cache[feature.Name] = sfData{
+			list.cache[feature.Name.Space] = sfData{
 				req:     r,
 				data:    nil,
 				feature: feature,
@@ -244,7 +246,7 @@ func readStreamFeatures(ctx context.Context, conn *Conn, start xml.StartElement)
 	defer conn.flock.Unlock()
 
 	sf := &streamFeaturesList{
-		cache: make(map[xml.Name]sfData),
+		cache: make(map[string]sfData),
 	}
 
 parsefeatures:
@@ -258,13 +260,13 @@ parsefeatures:
 			// If the token is a new feature, see if it's one we handle. If so, parse
 			// it. Increment the total features count regardless.
 			sf.total++
-			conn.features[tok.Name] = struct{}{}
+			conn.features[tok.Name.Space] = struct{}{}
 			if feature, ok := conn.config.Features[tok.Name]; ok && (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
 				req, data, err := feature.Parse(ctx, conn.in.d, &tok)
 				if err != nil {
 					return nil, err
 				}
-				sf.cache[tok.Name] = sfData{
+				sf.cache[tok.Name.Space] = sfData{
 					req:     req,
 					data:    data,
 					feature: feature,
