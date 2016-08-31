@@ -21,7 +21,7 @@ const IDLen = 16
 // entropy pool isn't initialized, or we can't generate random numbers for some
 // other reason, panic.
 func RandomID(n int) string {
-	return randomID(n, cryptoReader{})
+	return randomID(n, rand.Reader)
 }
 
 func randomID(n int, r io.Reader) string {
@@ -34,10 +34,4 @@ func randomID(n int, r io.Reader) string {
 	}
 
 	return fmt.Sprintf("%x", b)[:n]
-}
-
-type cryptoReader struct{}
-
-func (cryptoReader) Read(p []byte) (int, error) {
-	return rand.Read(p)
 }
