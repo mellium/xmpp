@@ -17,7 +17,7 @@ import (
 //
 // The zero value for each field is equivalent to dialing without that option.
 // Dialing with the zero value of Dialer is therefore equivalent to just calling
-// the DialClient function.
+// the Dial function.
 type Dialer struct {
 	net.Dialer
 
@@ -27,29 +27,19 @@ type Dialer struct {
 	NoLookup bool
 }
 
-// DialClient discovers and connects to the address on the named network that
-// services the given local address with a client-to-server (c2s) connection.
+// Dial discovers and connects to the address on the named network that services
+// the given local address with a client-to-server (c2s) connection.
 //
 // laddr is the clients origin address. The remote address is taken from the
 // origins domain part or from the domains SRV records. For a description of the
 // ctx and network arguments, see the Dial function.
-func DialClient(ctx context.Context, network string, laddr *jid.JID) (*Conn, error) {
+func Dial(ctx context.Context, network string, laddr *jid.JID) (*Conn, error) {
 	var d Dialer
-	return d.DialClient(ctx, network, laddr)
+	return d.Dial(ctx, network, laddr)
 }
 
-// DialServer connects to the address on the named network with a
-// server-to-server (s2s) connection.
-//
-// raddr is the remote servers address and laddr is the local servers origin
-// address. For a description of the ctx and network arguments, see the Dial
-// function.
-func DialServer(ctx context.Context, network string, raddr, laddr *jid.JID) (*Conn, error) {
-	var d Dialer
-	return d.DialServer(ctx, network, raddr, laddr)
-}
-
-// Dial connects to the address on the named network using the provided config.
+// DialConfig connects to the address on the named network using the provided
+// config.
 //
 // The context must be non-nil. If the context expires before the connection is
 // complete, an error is returned. Once successfully connected, any expiration
@@ -58,9 +48,9 @@ func DialServer(ctx context.Context, network string, raddr, laddr *jid.JID) (*Co
 // Network may be any of the network types supported by net.Dial, but you almost
 // certainly want to use one of the tcp connection types ("tcp", "tcp4", or
 // "tcp6").
-func Dial(ctx context.Context, network string, config *Config) (*Conn, error) {
+func DialConfig(ctx context.Context, network string, config *Config) (*Conn, error) {
 	var d Dialer
-	return d.Dial(ctx, network, config)
+	return d.DialConfig(ctx, network, config)
 }
 
 // Copied from the net package in the standard library. Copyright The Go
@@ -93,28 +83,20 @@ func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Tim
 	return minNonzeroTime(earliest, d.Deadline)
 }
 
-// DialClient discovers and connects to the address on the named network that
-// services the given local address with a client-to-server (c2s) connection.
-//
-// For a description of the arguments see the DialClient function.
-func (d *Dialer) DialClient(ctx context.Context, network string, laddr *jid.JID) (*Conn, error) {
-	c := NewClientConfig(laddr)
-	return d.Dial(ctx, network, c)
-}
-
-// DialServer connects to the address on the named network with a
-// server-to-server (s2s) connection.
-//
-// For a description of the arguments see the DialServer function.
-func (d *Dialer) DialServer(ctx context.Context, network string, raddr, laddr *jid.JID) (*Conn, error) {
-	c := NewServerConfig(raddr, laddr)
-	return d.Dial(ctx, network, c)
-}
-
-// Dial connects to the address on the named network using the provided config.
+// Dial discovers and connects to the address on the named network that services
+// the given local address with a client-to-server (c2s) connection.
 //
 // For a description of the arguments see the Dial function.
-func (d *Dialer) Dial(ctx context.Context, network string, config *Config) (*Conn, error) {
+func (d *Dialer) Dial(ctx context.Context, network string, laddr *jid.JID) (*Conn, error) {
+	c := NewClientConfig(laddr)
+	return d.DialConfig(ctx, network, c)
+}
+
+// DialConfig connects to the address on the named network using the provided
+// config.
+//
+// For a description of the arguments see the Dial function.
+func (d *Dialer) DialConfig(ctx context.Context, network string, config *Config) (*Conn, error) {
 	c, err := d.dial(ctx, network, config)
 	if err != nil {
 		return c, err
