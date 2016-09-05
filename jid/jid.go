@@ -220,6 +220,10 @@ func (j *JID) Bare() *JID {
 
 // Domain returns a copy of the Jid without a resourcepart or localpart.
 func (j *JID) Domain() *JID {
+	if j == nil {
+		return j
+	}
+
 	return &JID{
 		localpart:    "",
 		domainpart:   j.domainpart,
@@ -229,6 +233,9 @@ func (j *JID) Domain() *JID {
 
 // Localpart gets the localpart of a JID (eg "username").
 func (j *JID) Localpart() string {
+	if j == nil {
+		return ""
+	}
 	return j.localpart
 }
 
@@ -239,12 +246,19 @@ func (j *JID) Domainpart() string {
 
 // Resourcepart gets the resourcepart of a JID (eg. "someclient-abc123").
 func (j *JID) Resourcepart() string {
+	if j == nil {
+		return ""
+	}
 	return j.resourcepart
 }
 
 // Copy makes a copy of the given Jid. j.Equal(j.Copy()) will always return
 // true.
 func (j *JID) Copy() *JID {
+	if j == nil {
+		return j
+	}
+
 	return &JID{
 		localpart:    j.localpart,
 		domainpart:   j.domainpart,
@@ -254,12 +268,15 @@ func (j *JID) Copy() *JID {
 
 // Network satisfies the net.Addr interface by returning the name of the network
 // ("xmpp").
-func (j *JID) Network() string {
+func (*JID) Network() string {
 	return "xmpp"
 }
 
 // String converts an JID to its string representation.
 func (j *JID) String() string {
+	if j == nil {
+		return ""
+	}
 	s := j.domainpart
 	if j.localpart != "" {
 		s = j.localpart + "@" + s
