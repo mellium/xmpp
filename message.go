@@ -6,6 +6,8 @@ package xmpp
 
 import (
 	"encoding/xml"
+	"errors"
+	"strings"
 
 	"mellium.im/xmpp/jid"
 )
@@ -61,3 +63,27 @@ const (
 	// to reply).
 	HeadlineMessage
 )
+
+func (t messageType) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+	s := t.String()
+	return xml.Attr{Name: name, Value: strings.ToLower(s[:len(s)-len("Message")])}, nil
+}
+
+func (t *messageType) UnmarshalXMLAttr(attr xml.Attr) error {
+	switch attr.Value {
+	case "normal":
+		*t = NormalMessage
+	case "chat":
+		*t = ChatMessage
+	case "error":
+		*t = ErrorMessage
+	case "groupchat":
+		*t = GroupChatMessage
+	case "headline":
+		*t = HeadlineMessage
+	default:
+		// TODO: This should be a stanza error with the bad-request condition.
+		return errors.New("bad-request")
+	}
+	return nil
+}

@@ -13,8 +13,11 @@ import (
 )
 
 var (
-	_ fmt.Stringer = (*messageType)(nil)
-	_ fmt.Stringer = NormalMessage
+	_ fmt.Stringer        = (*messageType)(nil)
+	_ fmt.Stringer        = NormalMessage
+	_ xml.MarshalerAttr   = NormalMessage
+	_ xml.MarshalerAttr   = (*messageType)(nil)
+	_ xml.UnmarshalerAttr = (*messageType)(nil)
 )
 
 // TODO: Make this a table test and add some more complicated messages.
@@ -53,6 +56,10 @@ func TestUnmarshalMessage(t *testing.T) {
 		t.Fail()
 	}
 
+	if m.Type != ChatMessage {
+		t.Logf("Expected %s but got %s", ChatMessage, m.Type)
+		t.Fail()
+	}
 	if m.To.String() != "romeo@example.net" {
 		t.Logf("Expected %s but got %s", "romeo@example.net", m.To.String())
 		t.Fail()
