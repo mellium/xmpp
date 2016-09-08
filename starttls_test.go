@@ -118,6 +118,8 @@ func (nopRWC) Close() error {
 	return nil
 }
 
+var _ net.Conn = dummyConn{}
+
 type dummyConn struct {
 	io.ReadWriteCloser
 }
@@ -156,7 +158,8 @@ func TestNegotiationFailsForNonNetSession(t *testing.T) {
 func TestNegotiateServer(t *testing.T) {
 	stls := StartTLS(true)
 	var b bytes.Buffer
-	c := &Session{state: Received, rwc: dummyConn{nopRWC{&b, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
+	c := &Session{state: Received, conn: dummyConn{nopRWC{&b, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
+	c.rwc = c.conn
 	_, rwc, err := stls.Negotiate(context.Background(), c, nil)
 	switch {
 	case err != nil:
@@ -194,7 +197,8 @@ func TestNegotiateClient(t *testing.T) {
 		stls := StartTLS(true)
 		r := strings.NewReader(strings.Join(test.responses, "\n"))
 		var b bytes.Buffer
-		c := &Session{rwc: dummyConn{nopRWC{r, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
+		c := &Session{conn: dummyConn{nopRWC{r, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
+		c.rwc = c.conn
 		c.in.d = xml.NewDecoder(c.rwc)
 		mask, rwc, err := stls.Negotiate(context.Background(), c, nil)
 		switch {

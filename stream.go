@@ -107,8 +107,8 @@ func sendNewStream(w io.Writer, cfg *Config, id string) error {
 		return err
 	}
 
-	if conn, ok := w.(*Session); ok {
-		conn.out.stream = stream
+	if session, ok := w.(*Session); ok {
+		session.out.stream = stream
 	}
 	return nil
 }
@@ -118,8 +118,8 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 
 	// If the reader is a Session, use its decoder, otherwise make a new one.
 	var d *xml.Decoder
-	if conn, ok := r.(*Session); ok {
-		d = conn.in.d
+	if session, ok := r.(*Session); ok {
+		d = session.in.d
 	} else {
 		d = xml.NewDecoder(r)
 	}
@@ -156,12 +156,12 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 				return streamerror.UnsupportedVersion
 			}
 
-			if conn, ok := r.(*Session); ok {
-				if (conn.state&Received) != Received && stream.id == "" {
+			if session, ok := r.(*Session); ok {
+				if (session.state&Received) != Received && stream.id == "" {
 					// if we are the initiating entity and there is no stream ID…
 					return streamerror.BadFormat
 				}
-				conn.in.stream = stream
+				session.in.stream = stream
 			}
 			return nil
 		case xml.ProcInst:
@@ -179,40 +179,40 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 	}
 }
 
-func (c *Session) negotiateStreams(ctx context.Context, rwc io.ReadWriteCloser) (err error) {
+func (s *Session) negotiateStreams(ctx context.Context, rwc io.ReadWriteCloser) (err error) {
 	// Loop for as long as we're not done negotiating features or a stream restart
 	// is still required.
 	for done := false; !done || rwc != nil; {
 		if rwc != nil {
-			c.features = make(map[string]interface{})
-			c.negotiated = make(map[string]struct{})
-			c.rwc = rwc
-			c.in.d = xml.NewDecoder(c.rwc)
-			c.out.e = xml.NewEncoder(c.rwc)
+			s.features = make(map[string]interface{})
+			s.negotiated = make(map[string]struct{})
+			s.rwc = rwc
+			s.in.d = xml.NewDecoder(s.rwc)
+			s.out.e = xml.NewEncoder(s.rwc)
 			rwc = nil
 
-			if (c.state & Received) == Received {
+			if (s.state & Received) == Received {
 				// If we're the receiving entity wait for a new stream, then send one in
 				// response.
-				if err = expectNewStream(ctx, c); err != nil {
+				if err = expectNewStream(ctx, s); err != nil {
 					return err
 				}
-				if err = sendNewStream(c, c.config, internal.RandomID(streamIDLength)); err != nil {
+				if err = sendNewStream(s, s.config, internal.RandomID(streamIDLength)); err != nil {
 					return err
 				}
 			} else {
 				// If we're the initiating entity, send a new stream and then wait for one
 				// in response.
-				if err := sendNewStream(c, c.config, ""); err != nil {
+				if err := sendNewStream(s, s.config, ""); err != nil {
 					return err
 				}
-				if err := expectNewStream(ctx, c); err != nil {
+				if err := expectNewStream(ctx, s); err != nil {
 					return err
 				}
 			}
 		}
 
-		if done, rwc, err = c.negotiateFeatures(ctx); err != nil {
+		if done, rwc, err = s.negotiateFeatures(ctx); err != nil {
 			return err
 		}
 	}

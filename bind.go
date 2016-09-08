@@ -45,13 +45,15 @@ func BindResource() StreamFeature {
 			}{}
 			return true, nil, d.DecodeElement(&parsed, start)
 		},
-		Negotiate: func(ctx context.Context, conn *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
-			if (conn.state & Received) == Received {
+		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
+			if (session.state & Received) == Received {
 				panic("xmpp: bind not yet implemented")
 			}
 
+			conn := session.Raw()
+
 			reqID := internal.RandomID(internal.IDLen)
-			if resource := conn.config.Origin.Resourcepart(); resource == "" {
+			if resource := session.config.Origin.Resourcepart(); resource == "" {
 				// Send a request for the server to set a resource part.
 				_, err = fmt.Fprintf(conn, bindIQServerGeneratedRP, reqID)
 			} else {
@@ -61,7 +63,7 @@ func BindResource() StreamFeature {
 			if err != nil {
 				return mask, nil, err
 			}
-			tok, err := conn.in.d.Token()
+			tok, err := session.in.d.Token()
 			if err != nil {
 				return mask, nil, err
 			}
@@ -78,7 +80,7 @@ func BindResource() StreamFeature {
 			}{}
 			switch start.Name {
 			case xml.Name{Space: ns.Client, Local: "iq"}:
-				if err = conn.in.d.DecodeElement(&resp, &start); err != nil {
+				if err = session.in.d.DecodeElement(&resp, &start); err != nil {
 					return mask, nil, err
 				}
 			default:
@@ -89,7 +91,7 @@ func BindResource() StreamFeature {
 			case resp.ID != reqID:
 				return mask, nil, streamerror.UndefinedCondition
 			case resp.Type == ResultIQ:
-				conn.origin = resp.Bind.JID
+				session.origin = resp.Bind.JID
 			case resp.Type == ErrorIQ:
 				return mask, nil, resp.Err
 			default:

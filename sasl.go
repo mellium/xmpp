@@ -67,10 +67,12 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 			err := d.DecodeElement(&parsed, start)
 			return true, parsed.List, err
 		},
-		Negotiate: func(ctx context.Context, conn *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
-			if (conn.state & Received) == Received {
+		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
+			if (session.state & Received) == Received {
 				panic("SASL server not yet implemented")
 			}
+
+			conn := session.Raw()
 
 			var selected sasl.Mechanism
 			// Select a mechanism, prefering the client order.
@@ -88,13 +90,13 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 				return mask, nil, errors.New(`No matching SASL mechanisms found`)
 			}
 
-			c := conn.Config()
+			c := session.Config()
 			opts := []sasl.Option{
 				sasl.Authz(c.Identity),
-				sasl.Credentials(conn.LocalAddr().(*jid.JID).Localpart(), c.Password),
+				sasl.Credentials(session.LocalAddr().(*jid.JID).Localpart(), c.Password),
 				sasl.RemoteMechanisms(data.([]string)...),
 			}
-			if tlsconn, ok := conn.rwc.(*tls.Conn); ok {
+			if tlsconn, ok := conn.(*tls.Conn); ok {
 				opts = append(opts, sasl.ConnState(tlsconn.ConnectionState()))
 			}
 			client := sasl.NewClient(selected, opts...)
@@ -124,14 +126,14 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 			// If we're already done after the first step, decode the <success/> or
 			// <failure/> before we exit.
 			if !more {
-				tok, err := conn.in.d.Token()
+				tok, err := session.in.d.Token()
 				if err != nil {
 					return mask, nil, err
 				}
 				if t, ok := tok.(xml.StartElement); ok {
 					// TODO: Handle the additional data that could be returned if
 					// success?
-					_, _, err := decodeSASLChallenge(conn.in.d, t, false)
+					_, _, err := decodeSASLChallenge(session.in.d, t, false)
 					if err != nil {
 						return mask, nil, err
 					}
@@ -147,13 +149,13 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 					return mask, nil, ctx.Err()
 				default:
 				}
-				tok, err := conn.in.d.Token()
+				tok, err := session.in.d.Token()
 				if err != nil {
 					return mask, nil, err
 				}
 				var challenge []byte
 				if t, ok := tok.(xml.StartElement); ok {
-					challenge, success, err = decodeSASLChallenge(conn.in.d, t, true)
+					challenge, success, err = decodeSASLChallenge(session.in.d, t, true)
 					if err != nil {
 						return mask, nil, err
 					}
@@ -173,7 +175,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 					return mask, nil, err
 				}
 			}
-			return Authn, conn.Raw(), nil
+			return Authn, conn, nil
 		},
 	}
 }

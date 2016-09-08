@@ -64,13 +64,13 @@ type StreamFeature struct {
 	Negotiate func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error)
 }
 
-func (c *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWriteCloser, err error) {
-	server := (c.state & Received) == Received
+func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWriteCloser, err error) {
+	server := (s.state & Received) == Received
 
 	// If we're the server, write the initial stream features.
 	var list *streamFeaturesList
 	if server {
-		list, err = writeStreamFeatures(ctx, c)
+		list, err = writeStreamFeatures(ctx, s)
 		if err != nil {
 			return false, nil, err
 		}
@@ -82,7 +82,7 @@ func (c *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.Read
 
 	if !server {
 		// Read a new startstream:features token.
-		t, err = c.Decoder().Token()
+		t, err = s.Decoder().Token()
 		if err != nil {
 			return done, nil, err
 		}
@@ -92,7 +92,7 @@ func (c *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.Read
 		}
 
 		// If we're the client read the rest of the stream features list.
-		list, err = readStreamFeatures(ctx, c, start)
+		list, err = readStreamFeatures(ctx, s, start)
 
 		switch {
 		case err != nil:
@@ -114,7 +114,7 @@ func (c *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.Read
 
 		if server {
 			// Read a new feature to negotiate.
-			t, err = c.Decoder().Token()
+			t, err = s.Decoder().Token()
 			if err != nil {
 				return done, nil, err
 			}
@@ -125,7 +125,7 @@ func (c *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.Read
 
 			// If the feature was not sent or was already negotiated, error.
 
-			_, negotiated := c.negotiated[start.Name.Space]
+			_, negotiated := s.negotiated[start.Name.Space]
 			data, sent = list.cache[start.Name.Space]
 			if !sent || negotiated {
 				// TODO: What should we return here?
@@ -135,7 +135,7 @@ func (c *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.Read
 			// If we're the client, iterate through the cached features and select one
 			// to negotiate.
 			for _, v := range list.cache {
-				if _, ok := c.negotiated[v.feature.Name.Space]; ok {
+				if _, ok := s.negotiated[v.feature.Name.Space]; ok {
 					// If this feature has already been negotiated, skip it.
 					continue
 				}
@@ -159,11 +159,11 @@ func (c *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.Read
 			}
 		}
 
-		mask, rwc, err = data.feature.Negotiate(ctx, c, data.data)
+		mask, rwc, err = data.feature.Negotiate(ctx, s, data.data)
 		if err == nil {
-			c.state |= mask
+			s.state |= mask
 		}
-		c.negotiated[data.feature.Name.Space] = struct{}{}
+		s.negotiated[data.feature.Name.Space] = struct{}{}
 
 		// If we negotiated a required feature or a stream restart is required
 		// we're done with this feature set.
@@ -172,7 +172,7 @@ func (c *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.Read
 		}
 	}
 
-	return !list.req || (c.state&Ready == Ready), rwc, err
+	return !list.req || (s.state&Ready == Ready), rwc, err
 }
 
 type sfData struct {

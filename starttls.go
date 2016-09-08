@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/ns"
@@ -57,31 +56,31 @@ func StartTLS(required bool) StreamFeature {
 			err := d.DecodeElement(&parsed, start)
 			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == ns.StartTLS, nil, err
 		},
-		Negotiate: func(ctx context.Context, conn *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
-			netconn, ok := conn.Raw().(net.Conn)
-			if !ok {
+		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
+			conn := session.conn
+			if conn == nil {
 				return mask, nil, ErrTLSUpgradeFailed
 			}
 
 			// Fetch or create a TLSConfig to use.
 			var tlsconf *tls.Config
-			if conn.config.TLSConfig == nil {
+			if session.config.TLSConfig == nil {
 				tlsconf = &tls.Config{
-					ServerName: conn.LocalAddr().(*jid.JID).Domain().String(),
+					ServerName: session.LocalAddr().(*jid.JID).Domain().String(),
 				}
 			} else {
-				tlsconf = conn.config.TLSConfig
+				tlsconf = session.config.TLSConfig
 			}
 
-			if (conn.state & Received) == Received {
+			if (session.state & Received) == Received {
 				fmt.Fprint(conn, `<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
-				rwc = tls.Server(netconn, tlsconf)
+				rwc = tls.Server(conn, tlsconf)
 			} else {
 				// Select starttls for negotiation.
 				fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
 
 				// Receive a <proceed/> or <failure/> response from the server.
-				t, err := conn.in.d.Token()
+				t, err := session.in.d.Token()
 				if err != nil {
 					return mask, nil, err
 				}
@@ -92,13 +91,13 @@ func StartTLS(required bool) StreamFeature {
 						return mask, nil, streamerror.UnsupportedStanzaType
 					case tok.Name.Local == "proceed":
 						// Skip the </proceed> token.
-						if err = conn.in.d.Skip(); err != nil {
+						if err = session.in.d.Skip(); err != nil {
 							return mask, nil, streamerror.InvalidXML
 						}
-						rwc = tls.Client(netconn, tlsconf)
+						rwc = tls.Client(conn, tlsconf)
 					case tok.Name.Local == "failure":
 						// Skip the </failure> token.
-						if err = conn.in.d.Skip(); err != nil {
+						if err = session.in.d.Skip(); err != nil {
 							err = streamerror.InvalidXML
 						}
 						// Failure is not an "error", it's expected behavior. Immediately

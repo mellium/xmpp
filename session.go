@@ -87,12 +87,12 @@ type Session struct {
 // Feature checks if a feature with the given namespace was advertised
 // by the server for the current stream. If it was data will be the canonical
 // representation of the feature as returned by the feature's Parse function.
-func (c *Session) Feature(namespace string) (data interface{}, ok bool) {
-	c.flock.Lock()
-	defer c.flock.Unlock()
+func (s *Session) Feature(namespace string) (data interface{}, ok bool) {
+	s.flock.Lock()
+	defer s.flock.Unlock()
 
 	// TODO: Make the features struct actually store the parsed representation.
-	data, ok = c.features[namespace]
+	data, ok = s.features[namespace]
 	return
 }
 
@@ -101,92 +101,92 @@ func (c *Session) Feature(namespace string) (data interface{}, ok bool) {
 // is canceled before stream negotiation is complete an error is returned. After
 // stream negotiation if the context is canceled it has no effect.
 func NewSession(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Session, error) {
-	c := &Session{
+	s := &Session{
 		config: config,
 	}
 
 	if conn, ok := rwc.(net.Conn); ok {
-		c.conn = conn
+		s.conn = conn
 	}
 
-	return c, c.negotiateStreams(ctx, rwc)
+	return s, s.negotiateStreams(ctx, rwc)
 }
 
 // Raw returns the Session's backing net.Conn or other ReadWriteCloser.
-func (c *Session) Raw() io.ReadWriteCloser {
-	return c.rwc
+func (s *Session) Raw() io.ReadWriteCloser {
+	return s.rwc
 }
 
 // Decoder returns the XML decoder that was used to negotiate the latest stream.
-func (c *Session) Decoder() *xml.Decoder {
-	return c.in.d
+func (s *Session) Decoder() *xml.Decoder {
+	return s.in.d
 }
 
 // Encoder returns the XML encoder that was used to negotiate the latest stream.
-func (c *Session) Encoder() *xml.Encoder {
-	return c.out.e
+func (s *Session) Encoder() *xml.Encoder {
+	return s.out.e
 }
 
 // Config returns the connections config.
-func (c *Session) Config() *Config {
-	return c.config
+func (s *Session) Config() *Config {
+	return s.config
 }
 
 // Read reads data from the connection.
-func (c *Session) Read(b []byte) (n int, err error) {
-	c.in.Lock()
-	defer c.in.Unlock()
+func (s *Session) Read(b []byte) (n int, err error) {
+	s.in.Lock()
+	defer s.in.Unlock()
 
-	if c.state&InputStreamClosed == InputStreamClosed {
+	if s.state&InputStreamClosed == InputStreamClosed {
 		return 0, errors.New("XML input stream is closed")
 	}
 
-	return c.rwc.Read(b)
+	return s.rwc.Read(b)
 }
 
 // Write writes data to the connection.
-func (c *Session) Write(b []byte) (n int, err error) {
-	c.out.Lock()
-	defer c.out.Unlock()
+func (s *Session) Write(b []byte) (n int, err error) {
+	s.out.Lock()
+	defer s.out.Unlock()
 
-	if c.state&OutputStreamClosed == OutputStreamClosed {
+	if s.state&OutputStreamClosed == OutputStreamClosed {
 		return 0, errors.New("XML output stream is closed")
 	}
 
-	return c.rwc.Write(b)
+	return s.rwc.Write(b)
 }
 
 // Close closes the underlying connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
-func (c *Session) Close() error {
-	return c.rwc.Close()
+func (s *Session) Close() error {
+	return s.rwc.Close()
 }
 
 // State returns the current state of the session. For more information, see the
 // SessionState type.
-func (c *Session) State() SessionState {
-	return c.state
+func (s *Session) State() SessionState {
+	return s.state
 }
 
 // LocalAddr returns the Origin address for initiated connections, or the
 // Location for received connections.
-func (c *Session) LocalAddr() net.Addr {
-	if (c.state & Received) == Received {
-		return c.config.Location
+func (s *Session) LocalAddr() net.Addr {
+	if (s.state & Received) == Received {
+		return s.config.Location
 	}
-	if c.origin != nil {
-		return c.origin
+	if s.origin != nil {
+		return s.origin
 	}
-	return c.config.Origin
+	return s.config.Origin
 }
 
 // RemoteAddr returns the Location address for initiated connections, or the
 // Origin address for received connections.
-func (c *Session) RemoteAddr() net.Addr {
-	if (c.state & Received) == Received {
-		return c.config.Origin
+func (s *Session) RemoteAddr() net.Addr {
+	if (s.state & Received) == Received {
+		return s.config.Origin
 	}
-	return c.config.Location
+	return s.config.Location
 }
 
 var errSetDeadline = errors.New("xmpp: cannot set deadline: not using a net.Conn")
@@ -202,18 +202,18 @@ var errSetDeadline = errors.New("xmpp: cannot set deadline: not using a net.Conn
 // successful Read or Write calls.
 //
 // A zero value for t means I/O operations will not time out.
-func (c *Session) SetDeadline(t time.Time) error {
-	if c.conn != nil {
-		return c.conn.SetDeadline(t)
+func (s *Session) SetDeadline(t time.Time) error {
+	if s.conn != nil {
+		return s.conn.SetDeadline(t)
 	}
 	return errSetDeadline
 }
 
 // SetReadDeadline sets the deadline for future Read calls. A zero value for t
 // means Read will not time out.
-func (c *Session) SetReadDeadline(t time.Time) error {
-	if c.conn != nil {
-		return c.conn.SetReadDeadline(t)
+func (s *Session) SetReadDeadline(t time.Time) error {
+	if s.conn != nil {
+		return s.conn.SetReadDeadline(t)
 	}
 	return errSetDeadline
 }
@@ -221,9 +221,9 @@ func (c *Session) SetReadDeadline(t time.Time) error {
 // SetWriteDeadline sets the deadline for future Write calls. Even if write
 // times out, it may return n > 0, indicating that some of the data was
 // successfully written. A zero value for t means Write will not time out.
-func (c *Session) SetWriteDeadline(t time.Time) error {
-	if c.conn != nil {
-		return c.conn.SetWriteDeadline(t)
+func (s *Session) SetWriteDeadline(t time.Time) error {
+	if s.conn != nil {
+		return s.conn.SetWriteDeadline(t)
 	}
 	return errSetDeadline
 }
