@@ -61,10 +61,10 @@ type StreamFeature struct {
 	// is called. For instance, in the case of compression this data parameter
 	// might be the list of supported algorithms as a slice of strings (or in
 	// whatever format the feature implementation has decided upon).
-	Negotiate func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error)
+	Negotiate func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error)
 }
 
-func (c *Conn) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWriteCloser, err error) {
+func (c *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWriteCloser, err error) {
 	server := (c.state & Received) == Received
 
 	// If we're the server, write the initial stream features.
@@ -189,8 +189,8 @@ type streamFeaturesList struct {
 	cache map[string]sfData
 }
 
-func writeStreamFeatures(ctx context.Context, conn *Conn) (list *streamFeaturesList, err error) {
-	e := conn.Encoder()
+func writeStreamFeatures(ctx context.Context, s *Session) (list *streamFeaturesList, err error) {
+	e := s.Encoder()
 
 	start := xml.StartElement{Name: xml.Name{Space: "", Local: "stream:features"}}
 	if err = e.EncodeToken(start); err != nil {
@@ -202,12 +202,12 @@ func writeStreamFeatures(ctx context.Context, conn *Conn) (list *streamFeaturesL
 		cache: make(map[string]sfData),
 	}
 
-	for _, feature := range conn.config.Features {
+	for _, feature := range s.config.Features {
 		// Check if all the necessary bits are set and none of the prohibited bits
 		// are set.
-		if (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
+		if (s.state&feature.Necessary) == feature.Necessary && (s.state&feature.Prohibited) == 0 {
 			var r bool
-			r, err = feature.List(ctx, conn.out.e, xml.StartElement{
+			r, err = feature.List(ctx, s.out.e, xml.StartElement{
 				Name: feature.Name,
 			})
 			if err != nil {
@@ -233,7 +233,7 @@ func writeStreamFeatures(ctx context.Context, conn *Conn) (list *streamFeaturesL
 	return
 }
 
-func readStreamFeatures(ctx context.Context, conn *Conn, start xml.StartElement) (*streamFeaturesList, error) {
+func readStreamFeatures(ctx context.Context, s *Session, start xml.StartElement) (*streamFeaturesList, error) {
 	switch {
 	case start.Name.Local != "features":
 		return nil, streamerror.InvalidXML
@@ -242,8 +242,8 @@ func readStreamFeatures(ctx context.Context, conn *Conn, start xml.StartElement)
 	}
 
 	// Lock the connection features list.
-	conn.flock.Lock()
-	defer conn.flock.Unlock()
+	s.flock.Lock()
+	defer s.flock.Unlock()
 
 	sf := &streamFeaturesList{
 		cache: make(map[string]sfData),
@@ -251,7 +251,7 @@ func readStreamFeatures(ctx context.Context, conn *Conn, start xml.StartElement)
 
 parsefeatures:
 	for {
-		t, err := conn.in.d.Token()
+		t, err := s.in.d.Token()
 		if err != nil {
 			return nil, err
 		}
@@ -263,15 +263,15 @@ parsefeatures:
 
 			// Always add the feature to the list of features, even if we don't
 			// support it.
-			conn.features[tok.Name.Space] = nil
+			s.features[tok.Name.Space] = nil
 
-			if feature, ok := conn.config.Features[tok.Name]; ok && (conn.state&feature.Necessary) == feature.Necessary && (conn.state&feature.Prohibited) == 0 {
-				req, data, err := feature.Parse(ctx, conn.in.d, &tok)
+			if feature, ok := s.config.Features[tok.Name]; ok && (s.state&feature.Necessary) == feature.Necessary && (s.state&feature.Prohibited) == 0 {
+				req, data, err := feature.Parse(ctx, s.in.d, &tok)
 				if err != nil {
 					return nil, err
 				}
 
-				// TODO: Since we're storing the features data on conn.features we can
+				// TODO: Since we're storing the features data on s.features we can
 				// probably remove it from this temporary cache.
 				sf.cache[tok.Name.Space] = sfData{
 					req:     req,
@@ -281,14 +281,14 @@ parsefeatures:
 
 				// Since we do support the feature, add it to the connections list along
 				// with any data returned from Parse.
-				conn.features[tok.Name.Space] = data
+				s.features[tok.Name.Space] = data
 				if req {
 					sf.req = true
 				}
 				continue parsefeatures
 			}
 			// If the feature is not one we support, skip it.
-			if err := conn.in.d.Skip(); err != nil {
+			if err := s.in.d.Skip(); err != nil {
 				return nil, err
 			}
 		case xml.EndElement:

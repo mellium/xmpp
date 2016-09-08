@@ -16,9 +16,41 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-// A Conn represents an XMPP connection that can perform SRV lookups for a given
+// SessionState is a bitmask that represents the current state of an XMPP
+// session. For a description of each bit, see the various SessionState typed
+// constants.
+type SessionState uint8
+
+const (
+	// Secure indicates that the underlying connection has been secured. For
+	// instance, after STARTTLS has been performed or if a pre-secured connection
+	// is being used such as websockets over HTTPS.
+	Secure SessionState = 1 << iota
+
+	// Authn indicates that the session has been authenticated (probably with
+	// SASL).
+	Authn
+
+	// Ready indicates that the session is fully negotiated and that XMPP stanzas
+	// may be sent and received.
+	Ready
+
+	// Received indicates that the session was initiated by a foreign entity.
+	Received
+
+	// OutputStreamClosed indicates that the output stream has been closed with a
+	// stream end tag.  When set all write operations will return an error even if
+	// the underlying TCP connection is still open.
+	OutputStreamClosed
+
+	// InputStreamClosed indicates that the input stream has been closed with a
+	// stream end tag. When set all read operations will return an error.
+	InputStreamClosed
+)
+
+// A Session represents an XMPP connection that can perform SRV lookups for a given
 // server and connect to the correct ports.
-type Conn struct {
+type Session struct {
 	config *Config
 	rwc    io.ReadWriteCloser
 
@@ -55,7 +87,7 @@ type Conn struct {
 // Feature checks if a feature with the given namespace was advertised
 // by the server for the current stream. If it was data will be the canonical
 // representation of the feature as returned by the feature's Parse function.
-func (c *Conn) Feature(namespace string) (data interface{}, ok bool) {
+func (c *Session) Feature(namespace string) (data interface{}, ok bool) {
 	c.flock.Lock()
 	defer c.flock.Unlock()
 
@@ -64,12 +96,12 @@ func (c *Conn) Feature(namespace string) (data interface{}, ok bool) {
 	return
 }
 
-// NewConn attempts to use an existing connection (or any io.ReadWriteCloser) to
+// NewSession attempts to use an existing connection (or any io.ReadWriteCloser) to
 // negotiate an XMPP session based on the given config. If the provided context
 // is canceled before stream negotiation is complete an error is returned. After
 // stream negotiation if the context is canceled it has no effect.
-func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn, error) {
-	c := &Conn{
+func NewSession(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Session, error) {
+	c := &Session{
 		config: config,
 	}
 
@@ -80,28 +112,28 @@ func NewConn(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Conn
 	return c, c.negotiateStreams(ctx, rwc)
 }
 
-// Raw returns the Conn's backing net.Conn or other ReadWriteCloser.
-func (c *Conn) Raw() io.ReadWriteCloser {
+// Raw returns the Session's backing net.Conn or other ReadWriteCloser.
+func (c *Session) Raw() io.ReadWriteCloser {
 	return c.rwc
 }
 
 // Decoder returns the XML decoder that was used to negotiate the latest stream.
-func (c *Conn) Decoder() *xml.Decoder {
+func (c *Session) Decoder() *xml.Decoder {
 	return c.in.d
 }
 
 // Encoder returns the XML encoder that was used to negotiate the latest stream.
-func (c *Conn) Encoder() *xml.Encoder {
+func (c *Session) Encoder() *xml.Encoder {
 	return c.out.e
 }
 
 // Config returns the connections config.
-func (c *Conn) Config() *Config {
+func (c *Session) Config() *Config {
 	return c.config
 }
 
 // Read reads data from the connection.
-func (c *Conn) Read(b []byte) (n int, err error) {
+func (c *Session) Read(b []byte) (n int, err error) {
 	c.in.Lock()
 	defer c.in.Unlock()
 
@@ -113,7 +145,7 @@ func (c *Conn) Read(b []byte) (n int, err error) {
 }
 
 // Write writes data to the connection.
-func (c *Conn) Write(b []byte) (n int, err error) {
+func (c *Session) Write(b []byte) (n int, err error) {
 	c.out.Lock()
 	defer c.out.Unlock()
 
@@ -126,19 +158,19 @@ func (c *Conn) Write(b []byte) (n int, err error) {
 
 // Close closes the underlying connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
-func (c *Conn) Close() error {
+func (c *Session) Close() error {
 	return c.rwc.Close()
 }
 
 // State returns the current state of the session. For more information, see the
 // SessionState type.
-func (c *Conn) State() SessionState {
+func (c *Session) State() SessionState {
 	return c.state
 }
 
 // LocalAddr returns the Origin address for initiated connections, or the
 // Location for received connections.
-func (c *Conn) LocalAddr() net.Addr {
+func (c *Session) LocalAddr() net.Addr {
 	if (c.state & Received) == Received {
 		return c.config.Location
 	}
@@ -150,7 +182,7 @@ func (c *Conn) LocalAddr() net.Addr {
 
 // RemoteAddr returns the Location address for initiated connections, or the
 // Origin address for received connections.
-func (c *Conn) RemoteAddr() net.Addr {
+func (c *Session) RemoteAddr() net.Addr {
 	if (c.state & Received) == Received {
 		return c.config.Origin
 	}
@@ -170,7 +202,7 @@ var errSetDeadline = errors.New("xmpp: cannot set deadline: not using a net.Conn
 // successful Read or Write calls.
 //
 // A zero value for t means I/O operations will not time out.
-func (c *Conn) SetDeadline(t time.Time) error {
+func (c *Session) SetDeadline(t time.Time) error {
 	if c.conn != nil {
 		return c.conn.SetDeadline(t)
 	}
@@ -179,7 +211,7 @@ func (c *Conn) SetDeadline(t time.Time) error {
 
 // SetReadDeadline sets the deadline for future Read calls. A zero value for t
 // means Read will not time out.
-func (c *Conn) SetReadDeadline(t time.Time) error {
+func (c *Session) SetReadDeadline(t time.Time) error {
 	if c.conn != nil {
 		return c.conn.SetReadDeadline(t)
 	}
@@ -189,7 +221,7 @@ func (c *Conn) SetReadDeadline(t time.Time) error {
 // SetWriteDeadline sets the deadline for future Write calls. Even if write
 // times out, it may return n > 0, indicating that some of the data was
 // successfully written. A zero value for t means Write will not time out.
-func (c *Conn) SetWriteDeadline(t time.Time) error {
+func (c *Session) SetWriteDeadline(t time.Time) error {
 	if c.conn != nil {
 		return c.conn.SetWriteDeadline(t)
 	}

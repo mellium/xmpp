@@ -34,7 +34,7 @@ func (l *Listener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-	c := &Conn{conn: conn, state: Received, config: l.config}
+	c := &Session{conn: conn, state: Received, config: l.config}
 
 	// If the connection is a tls.Conn already, make sure we don't advertise
 	// StartTLS.
@@ -46,9 +46,9 @@ func (l *Listener) Accept() (net.Conn, error) {
 }
 
 // AcceptXMPP accepts the next incoming call and returns the new connection.
-func (l *Listener) AcceptXMPP() (*Conn, error) {
+func (l *Listener) AcceptXMPP() (*Session, error) {
 	c, err := l.Accept()
-	return c.(*Conn), err
+	return c.(*Session), err
 }
 
 func (l *Listener) Addr() net.Addr {

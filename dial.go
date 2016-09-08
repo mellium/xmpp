@@ -13,11 +13,41 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
+// DialClient discovers and connects to the address on the named network with a
+// client-to-server (c2s) connection.
+//
+// If the context expires before the connection is complete, an error is
+// returned. Once successfully connected, any expiration of the context will not
+// affect the connection.
+//
+// addr is a JID with a domainpart of the server we wish to connect too.
+// DialClient will attempt to look up SRV records for the given JIDs domainpart
+// or connect to the domainpart directly.
+//
+// Network may be any of the network types supported by net.Dial, but you almost
+// certainly want to use one of the tcp connection types ("tcp", "tcp4", or
+// "tcp6").
+func DialClient(ctx context.Context, network string, addr *jid.JID) (net.Conn, error) {
+	var d Dialer
+	return d.Dial(ctx, network, addr)
+}
+
+// DialServer discovers and connects to the address on the named network with a
+// server-to-server connection (s2s).
+//
+// For more info see the DialClient function.
+func DialServer(ctx context.Context, network string, addr *jid.JID) (net.Conn, error) {
+	d := Dialer{
+		S2S: true,
+	}
+	return d.Dial(ctx, network, addr)
+}
+
 // A Dialer contains options for connecting to an XMPP address.
 //
 // The zero value for each field is equivalent to dialing without that option.
 // Dialing with the zero value of Dialer is therefore equivalent to just calling
-// the Dial function.
+// the DialClient function.
 type Dialer struct {
 	net.Dialer
 
@@ -25,32 +55,51 @@ type Dialer struct {
 	// domain. It also prevents fetching of the host metadata file.
 	// Instead, it will try to connect to the domain directly.
 	NoLookup bool
+
+	// Attempt to dial a server-to-server connection.
+	S2S bool
 }
 
-// Dial discovers and connects to the address on the named network that services
-// the given local address with a client-to-server (c2s) connection.
+// Dial discovers and connects to the address on the named network.
 //
-// laddr is the clients origin address. The remote address is taken from the
-// origins domain part or from the domains SRV records. For a description of the
-// ctx and network arguments, see the Dial function.
-func Dial(ctx context.Context, network string, laddr *jid.JID) (*Conn, error) {
-	var d Dialer
-	return d.Dial(ctx, network, laddr)
+// For a description of the arguments see the DialClient function.
+func (d *Dialer) Dial(ctx context.Context, network string, addr *jid.JID) (net.Conn, error) {
+	return d.dial(ctx, network, addr)
 }
 
-// DialConfig connects to the address on the named network using the provided
-// config.
-//
-// The context must be non-nil. If the context expires before the connection is
-// complete, an error is returned. Once successfully connected, any expiration
-// of the context will not affect the connection.
-//
-// Network may be any of the network types supported by net.Dial, but you almost
-// certainly want to use one of the tcp connection types ("tcp", "tcp4", or
-// "tcp6").
-func DialConfig(ctx context.Context, network string, config *Config) (*Conn, error) {
-	var d Dialer
-	return d.DialConfig(ctx, network, config)
+func (d *Dialer) dial(ctx context.Context, network string, addr *jid.JID) (net.Conn, error) {
+	if d.NoLookup {
+		p, err := lookupPort(network, connType(d.S2S))
+		if err != nil {
+			return nil, err
+		}
+		return d.Dialer.DialContext(ctx, network, net.JoinHostPort(
+			addr.Domainpart(),
+			strconv.FormatUint(uint64(p), 10),
+		))
+	}
+
+	addrs, err := lookupService(connType(d.S2S), network, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try dialing all of the SRV records we know about, breaking as soon as the
+	// connection is established.
+	for _, addr := range addrs {
+		conn, e := d.Dialer.DialContext(
+			ctx, network, net.JoinHostPort(
+				addr.Target, strconv.FormatUint(uint64(addr.Port), 10),
+			),
+		)
+		if e != nil {
+			err = e
+			continue
+		}
+
+		return conn, nil
+	}
+	return nil, err
 }
 
 // Copied from the net package in the standard library. Copyright The Go
@@ -83,85 +132,9 @@ func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Tim
 	return minNonzeroTime(earliest, d.Deadline)
 }
 
-// Dial discovers and connects to the address on the named network that services
-// the given local address with a client-to-server (c2s) connection.
-//
-// For a description of the arguments see the Dial function.
-func (d *Dialer) Dial(ctx context.Context, network string, laddr *jid.JID) (*Conn, error) {
-	c := NewClientConfig(laddr)
-	return d.DialConfig(ctx, network, c)
-}
-
-// DialConfig connects to the address on the named network using the provided
-// config.
-//
-// For a description of the arguments see the Dial function.
-func (d *Dialer) DialConfig(ctx context.Context, network string, config *Config) (*Conn, error) {
-	c, err := d.dial(ctx, network, config)
-	if err != nil {
-		return c, err
+func connType(s2s bool) string {
+	if s2s {
+		return "xmpp-server"
 	}
-
-	return c, err
-}
-
-func (d *Dialer) dial(ctx context.Context, network string, config *Config) (*Conn, error) {
-	if ctx == nil {
-		panic("xmpp.Dial: nil context")
-	}
-
-	// If we haven't specified any stream features, set some default ones.
-	// if config.Features == nil || len(config.Features) == 0 {
-	// 	stls := StartTLS(config.TLSConfig != nil)
-	// 	bind := BindResource()
-	// 	username, password := config.Origin.Domain().String(), config.Secret
-	// 	sasl := SASL(
-	// 		sasl.Plain("",           username, "password"),
-	// 		sasl.ScramSha256("",     username, "password"),
-	// 		sasl.ScramSha256Plus("", username, "password"),
-	// 		sasl.ScramSha1("",       username, "password"),
-	// 		sasl.ScramSha1Plus("",   username, "password"),
-	// 	)
-	// 	config.Features = map[xml.Name]StreamFeature{
-	// 		stls.Name: stls,
-	// 		sasl.Name: sasl,
-	// 		bind.Name: bind,
-	// 	}
-	// }
-
-	if d.NoLookup {
-		p, err := lookupPort(network, connType(config.S2S))
-		if err != nil {
-			return nil, err
-		}
-		conn, err := d.Dialer.DialContext(ctx, network, net.JoinHostPort(
-			config.Location.Domainpart(),
-			strconv.FormatUint(uint64(p), 10),
-		))
-		if err != nil {
-			return nil, err
-		}
-		return NewConn(ctx, config, conn)
-	}
-
-	addrs, err := lookupService(connType(config.S2S), network, config.Location)
-	if err != nil {
-		return nil, err
-	}
-
-	// Try dialing all of the SRV records we know about, breaking as soon as the
-	// connection is established.
-	for _, addr := range addrs {
-		if conn, e := d.Dialer.DialContext(
-			ctx, network, net.JoinHostPort(
-				addr.Target, strconv.FormatUint(uint64(addr.Port), 10),
-			),
-		); e != nil {
-			err = e
-			continue
-		} else {
-			return NewConn(ctx, config, conn)
-		}
-	}
-	return nil, err
+	return "xmpp-client"
 }

@@ -23,38 +23,6 @@ const (
 
 const streamIDLength = 16
 
-// SessionState is a bitmask that represents the current state of an XMPP
-// session. For a description of each bit, see the various SessionState typed
-// constants.
-type SessionState uint8
-
-const (
-	// Secure indicates that the underlying connection has been secured. For
-	// instance, after STARTTLS has been performed or if a pre-secured connection
-	// is being used such as websockets over HTTPS.
-	Secure SessionState = 1 << iota
-
-	// Authn indicates that the session has been authenticated (probably with
-	// SASL).
-	Authn
-
-	// Ready indicates that the session is fully negotiated and that XMPP stanzas
-	// may be sent and received.
-	Ready
-
-	// Received indicates that the session was initiated by a foreign entity.
-	Received
-
-	// OutputStreamClosed indicates that the output stream has been closed with a
-	// stream end tag.  When set all write operations will return an error even if
-	// the underlying TCP connection is still open.
-	OutputStreamClosed
-
-	// InputStreamClosed indicates that the input stream has been closed with a
-	// stream end tag. When set all read operations will return an error.
-	InputStreamClosed
-)
-
 type stream struct {
 	to      *jid.JID
 	from    *jid.JID
@@ -139,7 +107,7 @@ func sendNewStream(w io.Writer, cfg *Config, id string) error {
 		return err
 	}
 
-	if conn, ok := w.(*Conn); ok {
+	if conn, ok := w.(*Session); ok {
 		conn.out.stream = stream
 	}
 	return nil
@@ -148,9 +116,9 @@ func sendNewStream(w io.Writer, cfg *Config, id string) error {
 func expectNewStream(ctx context.Context, r io.Reader) error {
 	var foundHeader bool
 
-	// If the reader is a Conn, use its decoder, otherwise make a new one.
+	// If the reader is a Session, use its decoder, otherwise make a new one.
 	var d *xml.Decoder
-	if conn, ok := r.(*Conn); ok {
+	if conn, ok := r.(*Session); ok {
 		d = conn.in.d
 	} else {
 		d = xml.NewDecoder(r)
@@ -188,7 +156,7 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 				return streamerror.UnsupportedVersion
 			}
 
-			if conn, ok := r.(*Conn); ok {
+			if conn, ok := r.(*Session); ok {
 				if (conn.state&Received) != Received && stream.id == "" {
 					// if we are the initiating entity and there is no stream ID…
 					return streamerror.BadFormat
@@ -211,7 +179,7 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 	}
 }
 
-func (c *Conn) negotiateStreams(ctx context.Context, rwc io.ReadWriteCloser) (err error) {
+func (c *Session) negotiateStreams(ctx context.Context, rwc io.ReadWriteCloser) (err error) {
 	// Loop for as long as we're not done negotiating features or a stream restart
 	// is still required.
 	for done := false; !done || rwc != nil; {

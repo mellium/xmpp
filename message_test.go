@@ -52,8 +52,7 @@ func TestUnmarshalMessage(t *testing.T) {
 	}
 	err := xml.Unmarshal(mb, m)
 	if err != nil {
-		t.Log(err)
-		t.Fail()
+		t.Error(err)
 	}
 
 	if m.Type != ChatMessage {
@@ -61,16 +60,13 @@ func TestUnmarshalMessage(t *testing.T) {
 		t.Fail()
 	}
 	if m.To.String() != "romeo@example.net" {
-		t.Logf("Expected %s but got %s", "romeo@example.net", m.To.String())
-		t.Fail()
+		t.Errorf("Expected %s but got %s", "romeo@example.net", m.To.String())
 	}
 	if m.To.String() != "romeo@example.net" {
-		t.Logf("Expected %s but got %s", "romeo@example.net", m.To.String())
-		t.Fail()
+		t.Errorf("Expected %s but got %s", "romeo@example.net", m.To.String())
 	}
 	if m.ID != "ktx72v49" {
-		t.Logf("Expected %s but got %s", "ktx72v49", m.To.String())
-		t.Fail()
+		t.Errorf("Expected %s but got %s", "ktx72v49", m.To.String())
 	}
 }
 

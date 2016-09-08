@@ -57,7 +57,7 @@ func StartTLS(required bool) StreamFeature {
 			err := d.DecodeElement(&parsed, start)
 			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == ns.StartTLS, nil, err
 		},
-		Negotiate: func(ctx context.Context, conn *Conn, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
+		Negotiate: func(ctx context.Context, conn *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
 			netconn, ok := conn.Raw().(net.Conn)
 			if !ok {
 				return mask, nil, ErrTLSUpgradeFailed

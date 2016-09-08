@@ -34,14 +34,19 @@ func Example_rawSendMessage() {
 
 	log.Printf("Dialing upstream XMPP server as %s…\n", laddr)
 
-	c, err := xmpp.DialConfig(context.Background(), "tcp", config)
+	c, err := xmpp.DialClient(context.Background(), "tcp", laddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	s, err := xmpp.NewSession(context.Background(), config, c)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	log.Printf("Connected with JID `%s`\n", c.LocalAddr())
 
-	err = c.Encoder().Encode(struct {
+	err = s.Encoder().Encode(struct {
 		xmpp.Message
 		Body string `xml:"body"`
 	}{
@@ -56,7 +61,7 @@ func Example_rawSendMessage() {
 		log.Fatal(err)
 	}
 
-	err = c.Encoder().Flush()
+	err = s.Encoder().Flush()
 	if err != nil {
 		log.Fatal(err)
 	}

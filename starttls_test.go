@@ -144,10 +144,10 @@ func (dummyConn) SetWriteDeadline(t time.Time) error {
 
 // We can't create a tls.Client or tls.Server for a generic RWC, so ensure that
 // we fail (with a specific error) if this is the case.
-func TestNegotiationFailsForNonNetConn(t *testing.T) {
+func TestNegotiationFailsForNonNetSession(t *testing.T) {
 	stls := StartTLS(true)
 	var b bytes.Buffer
-	_, _, err := stls.Negotiate(context.Background(), &Conn{rwc: nopRWC{&b, &b}}, nil)
+	_, _, err := stls.Negotiate(context.Background(), &Session{rwc: nopRWC{&b, &b}}, nil)
 	if err != ErrTLSUpgradeFailed {
 		t.Errorf("Expected error `%v` but got `%v`", ErrTLSUpgradeFailed, err)
 	}
@@ -156,7 +156,7 @@ func TestNegotiationFailsForNonNetConn(t *testing.T) {
 func TestNegotiateServer(t *testing.T) {
 	stls := StartTLS(true)
 	var b bytes.Buffer
-	c := &Conn{state: Received, rwc: dummyConn{nopRWC{&b, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
+	c := &Session{state: Received, rwc: dummyConn{nopRWC{&b, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
 	_, rwc, err := stls.Negotiate(context.Background(), c, nil)
 	switch {
 	case err != nil:
@@ -194,7 +194,7 @@ func TestNegotiateClient(t *testing.T) {
 		stls := StartTLS(true)
 		r := strings.NewReader(strings.Join(test.responses, "\n"))
 		var b bytes.Buffer
-		c := &Conn{rwc: dummyConn{nopRWC{r, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
+		c := &Session{rwc: dummyConn{nopRWC{r, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
 		c.in.d = xml.NewDecoder(c.rwc)
 		mask, rwc, err := stls.Negotiate(context.Background(), c, nil)
 		switch {

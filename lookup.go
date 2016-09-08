@@ -106,14 +106,14 @@ func LookupBOSH(ctx context.Context, client *http.Client, addr *jid.JID) (urls [
 	return lookupEndpoint(ctx, client, addr, "bosh")
 }
 
-func validateConnTypeOrPanic(conntype string) {
+func validateSessionTypeOrPanic(conntype string) {
 	if conntype != "ws" && conntype != "bosh" {
 		panic("xmpp.lookupEndpoint: Invalid conntype specified")
 	}
 }
 
 func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, conntype string) (urls []string, err error) {
-	validateConnTypeOrPanic(conntype)
+	validateSessionTypeOrPanic(conntype)
 
 	var (
 		u  []string
@@ -166,7 +166,7 @@ func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, con
 // TODO(ssw): Rely on the OS DNS cache, or cache lookups ourselves?
 
 func lookupDNS(ctx context.Context, name, conntype string) (urls []string, err error) {
-	validateConnTypeOrPanic(conntype)
+	validateSessionTypeOrPanic(conntype)
 	select {
 	case <-ctx.Done():
 		return urls, ctx.Err()
@@ -203,7 +203,7 @@ func lookupDNS(ctx context.Context, name, conntype string) (urls []string, err e
 // TODO(ssw): Memoize the following functions?
 
 func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype string) (urls []string, err error) {
-	validateConnTypeOrPanic(conntype)
+	validateSessionTypeOrPanic(conntype)
 	select {
 	case <-ctx.Done():
 		return urls, ctx.Err()

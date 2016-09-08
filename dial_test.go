@@ -16,5 +16,21 @@ func TestDialClientPanicsIfNilContext(t *testing.T) {
 			t.Error("Expected Dial to panic when passed a nil context.")
 		}
 	}()
-	Dial(nil, "tcp", jid.MustParse("feste@shakespeare.lit"))
+	DialClient(nil, "tcp", jid.MustParse("feste@shakespeare.lit"))
+}
+
+// The default value of config.conntype should return "xmpp-client"
+func TestDefaultConnType(t *testing.T) {
+	c := &Config{}
+	if ct := connType(c.S2S); ct != "xmpp-client" {
+		t.Errorf("Wrong default value for conntype; expected xmpp-client but got %s", ct)
+	}
+}
+
+// If S2S is true, config.conntype should return "xmpp-server"
+func TestS2SConnType(t *testing.T) {
+	c := &Config{S2S: true}
+	if ct := connType(c.S2S); ct != "xmpp-server" {
+		t.Errorf("Wrong s2s value for conntype; expected xmpp-server but got %s", ct)
+	}
 }

@@ -9,7 +9,7 @@ import (
 )
 
 // The default value of config.conntype should return "xmpp-client"
-func TestDefaultConnType(t *testing.T) {
+func TestDefaultSessionType(t *testing.T) {
 	c := &Config{}
 	if ct := connType(c.S2S); ct != "xmpp-client" {
 		t.Errorf("Wrong default value for conntype; expected xmpp-client but got %s", ct)
@@ -17,7 +17,7 @@ func TestDefaultConnType(t *testing.T) {
 }
 
 // If S2S is true, config.conntype should return "xmpp-server"
-func TestS2SConnType(t *testing.T) {
+func TestS2SSessionType(t *testing.T) {
 	c := &Config{S2S: true}
 	if ct := connType(c.S2S); ct != "xmpp-server" {
 		t.Errorf("Wrong s2s value for conntype; expected xmpp-server but got %s", ct)

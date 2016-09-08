@@ -83,14 +83,16 @@ func New(methods ...Method) xmpp.StreamFeature {
 
 			return true, listed.Methods, nil
 		},
-		Negotiate: func(ctx context.Context, conn *xmpp.Conn, data interface{}) (mask xmpp.SessionState, rwc io.ReadWriteCloser, err error) {
+		Negotiate: func(ctx context.Context, session *xmpp.Session, data interface{}) (mask xmpp.SessionState, rwc io.ReadWriteCloser, err error) {
+			conn := session.Raw()
+
 			// If we're a server.
-			if (conn.State() & xmpp.Received) == xmpp.Received {
+			if (session.State() & xmpp.Received) == xmpp.Received {
 				clientSelected := struct {
 					XMLName xml.Name `xml:"http://jabber.org/protocol/compress compress"`
 					Method  string   `xml:"method"`
 				}{}
-				if err = conn.Decoder().Decode(&clientSelected); err != nil {
+				if err = session.Decoder().Decode(&clientSelected); err != nil {
 					return
 				}
 
@@ -118,7 +120,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 					return
 				}
 
-				rwc, err = selected.Wrapper(conn.Raw())
+				rwc, err = selected.Wrapper(conn)
 				return mask, rwc, err
 			}
 
@@ -142,7 +144,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 				return
 			}
 
-			d := conn.Decoder()
+			d := session.Decoder()
 			tok, err := d.Token()
 			if err != nil {
 				return mask, nil, err
@@ -152,7 +154,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 				if err = d.Skip(); err != nil {
 					return mask, nil, err
 				}
-				rwc, err = selected.Wrapper(conn.Raw())
+				rwc, err = selected.Wrapper(conn)
 				return mask, rwc, err
 			}
 
