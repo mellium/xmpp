@@ -34,7 +34,7 @@ func Example_rawSendMessage() {
 
 	log.Printf("Dialing upstream XMPP server as %s…\n", laddr)
 
-	c, err := xmpp.Dial(context.Background(), "tcp", config)
+	c, err := xmpp.DialConfig(context.Background(), "tcp", config)
 	if err != nil {
 		log.Fatal(err)
 	}

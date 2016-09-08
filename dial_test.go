@@ -16,5 +16,5 @@ func TestDialClientPanicsIfNilContext(t *testing.T) {
 			t.Error("Expected Dial to panic when passed a nil context.")
 		}
 	}()
-	DialClient(nil, "tcp", jid.MustParse("feste@shakespeare.lit"))
+	Dial(nil, "tcp", jid.MustParse("feste@shakespeare.lit"))
 }
