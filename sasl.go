@@ -72,7 +72,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 				panic("SASL server not yet implemented")
 			}
 
-			conn := session.Raw()
+			conn := session.Conn()
 
 			var selected sasl.Mechanism
 			// Select a mechanism, prefering the client order.

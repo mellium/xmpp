@@ -84,7 +84,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 			return true, listed.Methods, nil
 		},
 		Negotiate: func(ctx context.Context, session *xmpp.Session, data interface{}) (mask xmpp.SessionState, rwc io.ReadWriteCloser, err error) {
-			conn := session.Raw()
+			conn := session.Conn()
 
 			// If we're a server.
 			if (session.State() & xmpp.Received) == xmpp.Received {

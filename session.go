@@ -112,8 +112,8 @@ func NewSession(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*S
 	return s, s.negotiateStreams(ctx, rwc)
 }
 
-// Raw returns the Session's backing net.Conn or other ReadWriteCloser.
-func (s *Session) Raw() io.ReadWriteCloser {
+// Conn returns the Session's backing net.Conn or other ReadWriteCloser.
+func (s *Session) Conn() io.ReadWriteCloser {
 	return s.rwc
 }
 

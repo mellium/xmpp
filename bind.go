@@ -50,7 +50,7 @@ func BindResource() StreamFeature {
 				panic("xmpp: bind not yet implemented")
 			}
 
-			conn := session.Raw()
+			conn := session.Conn()
 
 			reqID := internal.RandomID(internal.IDLen)
 			if resource := session.config.Origin.Resourcepart(); resource == "" {

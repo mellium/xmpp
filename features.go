@@ -54,7 +54,7 @@ type StreamFeature struct {
 	// this feature creates a security layer (such as TLS) and performs
 	// authentication, mask would be set to Authn|Secure, but if it does not
 	// authenticate the connection it would just return Secure. If negotiate
-	// returns a new io.ReadWriteCloser (probably wrapping the old conn.Raw()) the
+	// returns a new io.ReadWriteCloser (probably wrapping the old conn.Conn()) the
 	// stream will be restarted automatically after Negotiate returns using the
 	// new RWC. If this is an initiated connection and the features List call
 	// returned a value, that value is passed to the data parameter when Negotiate
