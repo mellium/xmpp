@@ -168,7 +168,7 @@ func (s *Session) State() SessionState {
 
 // LocalAddr returns the Origin address for initiated connections, or the
 // Location for received connections.
-func (s *Session) LocalAddr() net.Addr {
+func (s *Session) LocalAddr() *jid.JID {
 	if (s.state & Received) == Received {
 		return s.config.Location
 	}
@@ -180,7 +180,7 @@ func (s *Session) LocalAddr() net.Addr {
 
 // RemoteAddr returns the Location address for initiated connections, or the
 // Origin address for received connections.
-func (s *Session) RemoteAddr() net.Addr {
+func (s *Session) RemoteAddr() *jid.JID {
 	if (s.state & Received) == Received {
 		return s.config.Origin
 	}

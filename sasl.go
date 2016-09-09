@@ -14,7 +14,6 @@ import (
 
 	"mellium.im/sasl"
 	"mellium.im/xmpp/internal/saslerr"
-	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/ns"
 	"mellium.im/xmpp/streamerror"
 )
@@ -93,7 +92,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 			c := session.Config()
 			opts := []sasl.Option{
 				sasl.Authz(c.Identity),
-				sasl.Credentials(session.LocalAddr().(*jid.JID).Localpart(), c.Password),
+				sasl.Credentials(session.LocalAddr().Localpart(), c.Password),
 				sasl.RemoteMechanisms(data.([]string)...),
 			}
 			if tlsconn, ok := conn.(*tls.Conn); ok {

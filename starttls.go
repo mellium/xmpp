@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"io"
 
-	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/ns"
 	"mellium.im/xmpp/streamerror"
 )
@@ -66,7 +65,7 @@ func StartTLS(required bool) StreamFeature {
 			var tlsconf *tls.Config
 			if session.config.TLSConfig == nil {
 				tlsconf = &tls.Config{
-					ServerName: session.LocalAddr().(*jid.JID).Domain().String(),
+					ServerName: session.LocalAddr().Domain().String(),
 				}
 			} else {
 				tlsconf = session.config.TLSConfig
