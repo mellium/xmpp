@@ -11,7 +11,6 @@ import (
 	"io"
 	"net"
 	"sync"
-	"time"
 
 	"mellium.im/xmpp/jid"
 )
@@ -154,9 +153,14 @@ func (s *Session) write(b []byte) (n int, err error) {
 	return s.rwc.Write(b)
 }
 
-// Close closes the underlying connection.
-// Any blocked Read or Write operations will be unblocked and return errors.
-func (s *Session) Close() error {
+// Close ends the output stream and blocks until the remote client closes the
+// input stream.
+func (s *Session) Close() (err error) {
+	_, err = s.write([]byte(`</stream:stream>`))
+	if err != nil {
+		return
+	}
+	// TODO: Block until input stream is closed?
 	return s.rwc.Close()
 }
 
@@ -185,43 +189,4 @@ func (s *Session) RemoteAddr() *jid.JID {
 		return s.config.Origin
 	}
 	return s.config.Location
-}
-
-var errSetDeadline = errors.New("xmpp: cannot set deadline: not using a net.Conn")
-
-// SetDeadline sets the read and write deadlines associated with the connection.
-// It is equivalent to calling both SetReadDeadline and SetWriteDeadline.
-//
-// A deadline is an absolute time after which I/O operations fail with a timeout
-// (see type Error) instead of blocking. The deadline applies to all future I/O,
-// not just the immediately following call to Read or Write.
-//
-// An idle timeout can be implemented by repeatedly extending the deadline after
-// successful Read or Write calls.
-//
-// A zero value for t means I/O operations will not time out.
-func (s *Session) SetDeadline(t time.Time) error {
-	if s.conn != nil {
-		return s.conn.SetDeadline(t)
-	}
-	return errSetDeadline
-}
-
-// SetReadDeadline sets the deadline for future Read calls. A zero value for t
-// means Read will not time out.
-func (s *Session) SetReadDeadline(t time.Time) error {
-	if s.conn != nil {
-		return s.conn.SetReadDeadline(t)
-	}
-	return errSetDeadline
-}
-
-// SetWriteDeadline sets the deadline for future Write calls. Even if write
-// times out, it may return n > 0, indicating that some of the data was
-// successfully written. A zero value for t means Write will not time out.
-func (s *Session) SetWriteDeadline(t time.Time) error {
-	if s.conn != nil {
-		return s.conn.SetWriteDeadline(t)
-	}
-	return errSetDeadline
 }
