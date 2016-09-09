@@ -132,8 +132,7 @@ func (s *Session) Config() *Config {
 	return s.config
 }
 
-// Read reads data from the connection.
-func (s *Session) Read(b []byte) (n int, err error) {
+func (s *Session) read(b []byte) (n int, err error) {
 	s.in.Lock()
 	defer s.in.Unlock()
 
@@ -144,8 +143,7 @@ func (s *Session) Read(b []byte) (n int, err error) {
 	return s.rwc.Read(b)
 }
 
-// Write writes data to the connection.
-func (s *Session) Write(b []byte) (n int, err error) {
+func (s *Session) write(b []byte) (n int, err error) {
 	s.out.Lock()
 	defer s.out.Unlock()
 
