@@ -169,17 +169,17 @@ func expectNewStream(ctx context.Context, s *Session) error {
 	}
 }
 
-func (s *Session) negotiateStreams(ctx context.Context, rwc io.ReadWriteCloser) (err error) {
+func (s *Session) negotiateStreams(ctx context.Context, rw io.ReadWriter) (err error) {
 	// Loop for as long as we're not done negotiating features or a stream restart
 	// is still required.
-	for done := false; !done || rwc != nil; {
-		if rwc != nil {
+	for done := false; !done || rw != nil; {
+		if rw != nil {
 			s.features = make(map[string]interface{})
 			s.negotiated = make(map[string]struct{})
-			s.rwc = rwc
-			s.in.d = xml.NewDecoder(s.rwc)
-			s.out.e = xml.NewEncoder(s.rwc)
-			rwc = nil
+			s.rw = rw
+			s.in.d = xml.NewDecoder(s.rw)
+			s.out.e = xml.NewEncoder(s.rw)
+			rw = nil
 
 			if (s.state & Received) == Received {
 				// If we're the receiving entity wait for a new stream, then send one in
@@ -202,7 +202,7 @@ func (s *Session) negotiateStreams(ctx context.Context, rwc io.ReadWriteCloser) 
 			}
 		}
 
-		if done, rwc, err = s.negotiateFeatures(ctx); err != nil {
+		if done, rw, err = s.negotiateFeatures(ctx); err != nil {
 			return err
 		}
 	}

@@ -54,17 +54,17 @@ type StreamFeature struct {
 	// this feature creates a security layer (such as TLS) and performs
 	// authentication, mask would be set to Authn|Secure, but if it does not
 	// authenticate the connection it would just return Secure. If negotiate
-	// returns a new io.ReadWriteCloser (probably wrapping the old conn.Conn()) the
+	// returns a new io.ReadWriter (probably wrapping the old session.Conn()) the
 	// stream will be restarted automatically after Negotiate returns using the
-	// new RWC. If this is an initiated connection and the features List call
-	// returned a value, that value is passed to the data parameter when Negotiate
-	// is called. For instance, in the case of compression this data parameter
-	// might be the list of supported algorithms as a slice of strings (or in
-	// whatever format the feature implementation has decided upon).
-	Negotiate func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error)
+	// new ReadWriter. If this is an initiated connection and the features List
+	// call returned a value, that value is passed to the data parameter when
+	// Negotiate is called. For instance, in the case of compression this data
+	// parameter might be the list of supported algorithms as a slice of strings
+	// (or in whatever format the feature implementation has decided upon).
+	Negotiate func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error)
 }
 
-func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.ReadWriteCloser, err error) {
+func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadWriter, err error) {
 	server := (s.state & Received) == Received
 
 	// If we're the server, write the initial stream features.
@@ -129,7 +129,7 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.Read
 			data, sent = list.cache[start.Name.Space]
 			if !sent || negotiated {
 				// TODO: What should we return here?
-				return done, rwc, streamerror.PolicyViolation
+				return done, rw, streamerror.PolicyViolation
 			}
 		} else {
 			// If we're the client, iterate through the cached features and select one
@@ -159,7 +159,7 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.Read
 			}
 		}
 
-		mask, rwc, err = data.feature.Negotiate(ctx, s, data.data)
+		mask, rw, err = data.feature.Negotiate(ctx, s, data.data)
 		if err == nil {
 			s.state |= mask
 		}
@@ -167,12 +167,12 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rwc io.Read
 
 		// If we negotiated a required feature or a stream restart is required
 		// we're done with this feature set.
-		if rwc != nil || data.req {
+		if rw != nil || data.req {
 			break
 		}
 	}
 
-	return !list.req || (s.state&Ready == Ready), rwc, err
+	return !list.req || (s.state&Ready == Ready), rw, err
 }
 
 type sfData struct {

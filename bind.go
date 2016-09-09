@@ -45,7 +45,7 @@ func BindResource() StreamFeature {
 			}{}
 			return true, nil, d.DecodeElement(&parsed, start)
 		},
-		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
+		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
 			if (session.state & Received) == Received {
 				panic("xmpp: bind not yet implemented")
 			}

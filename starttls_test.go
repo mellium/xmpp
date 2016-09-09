@@ -144,12 +144,12 @@ func (dummyConn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-// We can't create a tls.Client or tls.Server for a generic RWC, so ensure that
-// we fail (with a specific error) if this is the case.
+// We can't create a tls.Client or tls.Server for a generic ReadWriter, so
+// ensure that we fail (with a specific error) if this is the case.
 func TestNegotiationFailsForNonNetSession(t *testing.T) {
 	stls := StartTLS(true)
 	var b bytes.Buffer
-	_, _, err := stls.Negotiate(context.Background(), &Session{rwc: nopRWC{&b, &b}}, nil)
+	_, _, err := stls.Negotiate(context.Background(), &Session{rw: nopRWC{&b, &b}}, nil)
 	if err != ErrTLSUpgradeFailed {
 		t.Errorf("Expected error `%v` but got `%v`", ErrTLSUpgradeFailed, err)
 	}
@@ -159,13 +159,13 @@ func TestNegotiateServer(t *testing.T) {
 	stls := StartTLS(true)
 	var b bytes.Buffer
 	c := &Session{state: Received, conn: dummyConn{nopRWC{&b, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
-	c.rwc = c.conn
-	_, rwc, err := stls.Negotiate(context.Background(), c, nil)
+	c.rw = c.conn
+	_, rw, err := stls.Negotiate(context.Background(), c, nil)
 	switch {
 	case err != nil:
 		t.Fatal(err)
-	case rwc == nil:
-		t.Fatal("Expected a new RWC when negotiating STARTTLS as a server")
+	case rw == nil:
+		t.Fatal("Expected a new ReadWriter when negotiating STARTTLS as a server")
 	}
 
 	// The server should send a proceed element.
@@ -182,7 +182,7 @@ func TestNegotiateClient(t *testing.T) {
 	for _, test := range []struct {
 		responses []string
 		err       bool
-		rwc       bool
+		rw        bool
 		state     SessionState
 	}{
 		{[]string{`<proceed xmlns="badns"/>`}, true, false, Secure},
@@ -198,9 +198,9 @@ func TestNegotiateClient(t *testing.T) {
 		r := strings.NewReader(strings.Join(test.responses, "\n"))
 		var b bytes.Buffer
 		c := &Session{conn: dummyConn{nopRWC{r, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
-		c.rwc = c.conn
-		c.in.d = xml.NewDecoder(c.rwc)
-		mask, rwc, err := stls.Negotiate(context.Background(), c, nil)
+		c.rw = c.conn
+		c.in.d = xml.NewDecoder(c.rw)
+		mask, rw, err := stls.Negotiate(context.Background(), c, nil)
 		switch {
 		case test.err && err == nil:
 			t.Error("Expected an error from starttls client negotiation")
@@ -214,10 +214,10 @@ func TestNegotiateClient(t *testing.T) {
 			t.Errorf("Expected client to send starttls element but got `%s`", b.String())
 		case test.state != mask:
 			t.Errorf("Expected session state mask %v but got %v", test.state, mask)
-		case test.rwc && rwc == nil:
-			t.Error("Expected a new RWC when negotiating STARTTLS as a client")
-		case !test.rwc && rwc != nil:
-			t.Error("Did not expect a new RWC when negotiating STARTTLS as a client")
+		case test.rw && rw == nil:
+			t.Error("Expected a new ReadWriter when negotiating STARTTLS as a client")
+		case !test.rw && rw != nil:
+			t.Error("Did not expect a new ReadWriter when negotiating STARTTLS as a client")
 		}
 	}
 }

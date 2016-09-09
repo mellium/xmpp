@@ -47,15 +47,15 @@ const (
 	InputStreamClosed
 )
 
-// A Session represents an XMPP connection that can perform SRV lookups for a given
-// server and connect to the correct ports.
+// A Session represents an XMPP connection that can perform SRV lookups for a
+// given server and connect to the correct ports.
 type Session struct {
 	config *Config
-	rwc    io.ReadWriteCloser
 
-	// If the initial rwc is a conn, save a reference to that as well so that we
-	// can set deadlines on it later even if the rwc is upgraded.
+	// If the initial ReadWriter is a conn, save a reference to that as well so
+	// that we can use it directly without type casting constantly.
 	conn net.Conn
+	rw   io.ReadWriter
 
 	state SessionState
 
@@ -99,21 +99,22 @@ func (s *Session) Feature(namespace string) (data interface{}, ok bool) {
 // negotiate an XMPP session based on the given config. If the provided context
 // is canceled before stream negotiation is complete an error is returned. After
 // stream negotiation if the context is canceled it has no effect.
-func NewSession(ctx context.Context, config *Config, rwc io.ReadWriteCloser) (*Session, error) {
+func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session, error) {
 	s := &Session{
 		config: config,
+		rw:     rw,
 	}
 
-	if conn, ok := rwc.(net.Conn); ok {
+	if conn, ok := rw.(net.Conn); ok {
 		s.conn = conn
 	}
 
-	return s, s.negotiateStreams(ctx, rwc)
+	return s, s.negotiateStreams(ctx, rw)
 }
 
-// Conn returns the Session's backing net.Conn or other ReadWriteCloser.
-func (s *Session) Conn() io.ReadWriteCloser {
-	return s.rwc
+// Conn returns the Session's backing net.Conn or other ReadWriter.
+func (s *Session) Conn() io.ReadWriter {
+	return s.rw
 }
 
 // Decoder returns the XML decoder that was used to negotiate the latest stream.
@@ -139,7 +140,8 @@ func (s *Session) read(b []byte) (n int, err error) {
 		return 0, errors.New("XML input stream is closed")
 	}
 
-	return s.rwc.Read(b)
+	n, err = s.rw.Read(b)
+	return
 }
 
 func (s *Session) write(b []byte) (n int, err error) {
@@ -150,18 +152,16 @@ func (s *Session) write(b []byte) (n int, err error) {
 		return 0, errors.New("XML output stream is closed")
 	}
 
-	return s.rwc.Write(b)
+	n, err = s.rw.Write(b)
+	return
 }
 
 // Close ends the output stream and blocks until the remote client closes the
 // input stream.
 func (s *Session) Close() (err error) {
-	_, err = s.write([]byte(`</stream:stream>`))
-	if err != nil {
-		return
-	}
 	// TODO: Block until input stream is closed?
-	return s.rwc.Close()
+	_, err = s.write([]byte(`</stream:stream>`))
+	return
 }
 
 // State returns the current state of the session. For more information, see the

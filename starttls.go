@@ -55,7 +55,7 @@ func StartTLS(required bool) StreamFeature {
 			err := d.DecodeElement(&parsed, start)
 			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == ns.StartTLS, nil, err
 		},
-		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rwc io.ReadWriteCloser, err error) {
+		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
 			conn := session.conn
 			if conn == nil {
 				return mask, nil, ErrTLSUpgradeFailed
@@ -73,7 +73,7 @@ func StartTLS(required bool) StreamFeature {
 
 			if (session.state & Received) == Received {
 				fmt.Fprint(conn, `<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
-				rwc = tls.Server(conn, tlsconf)
+				rw = tls.Server(conn, tlsconf)
 			} else {
 				// Select starttls for negotiation.
 				fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
@@ -93,7 +93,7 @@ func StartTLS(required bool) StreamFeature {
 						if err = session.in.d.Skip(); err != nil {
 							return mask, nil, streamerror.InvalidXML
 						}
-						rwc = tls.Client(conn, tlsconf)
+						rw = tls.Client(conn, tlsconf)
 					case tok.Name.Local == "failure":
 						// Skip the </failure> token.
 						if err = session.in.d.Skip(); err != nil {
