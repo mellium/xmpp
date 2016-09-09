@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -35,7 +36,7 @@ func TestSendNewS2S(t *testing.T) {
 				ids = "abc"
 			}
 			config.S2S = tc.s2s
-			err := sendNewStream(&b, config, ids)
+			err := sendNewStream(&Session{rwc: rwNopCloser{&b}}, config, ids)
 
 			str := b.String()
 			if !strings.HasPrefix(str, xmlHeader) {
@@ -71,9 +72,21 @@ func (errWriter) Write(p []byte) (int, error) {
 	return 0, io.ErrUnexpectedEOF
 }
 
+type nopReader struct{}
+
+func (nopReader) Read(p []byte) (n int, err error) {
+	return 0, nil
+}
+
 func TestSendNewS2SReturnsWriteErr(t *testing.T) {
 	config := NewClientConfig(jid.MustParse("test@example.net"))
-	if err := sendNewStream(&errWriter{}, config, "abc"); err != io.ErrUnexpectedEOF {
+	if err := sendNewStream(&Session{rwc: struct {
+		io.ReadCloser
+		io.Writer
+	}{
+		ioutil.NopCloser(nopReader{}),
+		errWriter{},
+	}}, config, "abc"); err != io.ErrUnexpectedEOF {
 		t.Errorf("Expected errWriterErr (%s) but got `%s`", io.ErrUnexpectedEOF, err)
 	}
 }

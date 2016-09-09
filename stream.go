@@ -73,7 +73,7 @@ func streamFromStartElement(s xml.StartElement) (stream, error) {
 // because we can guarantee well-formedness of the XML with a print in this case
 // and printing is much faster than encoding. Afterwards, clear the
 // StreamRestartRequired bit and set the output stream information.
-func sendNewStream(w io.Writer, cfg *Config, id string) error {
+func sendNewStream(s *Session, cfg *Config, id string) error {
 	stream := stream{
 		to:      cfg.Location,
 		from:    cfg.Origin,
@@ -94,7 +94,7 @@ func sendNewStream(w io.Writer, cfg *Config, id string) error {
 		id = ` id='` + id + `' `
 	}
 
-	_, err := fmt.Fprintf(w,
+	_, err := fmt.Fprintf(s.Conn(),
 		xmlHeader+`<stream:stream%sto='%s' from='%s' version='%s' xml:lang='%s' xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
 		id,
 		cfg.Location.String(),
@@ -107,22 +107,14 @@ func sendNewStream(w io.Writer, cfg *Config, id string) error {
 		return err
 	}
 
-	if session, ok := w.(*Session); ok {
-		session.out.stream = stream
-	}
+	s.out.stream = stream
 	return nil
 }
 
-func expectNewStream(ctx context.Context, r io.Reader) error {
+func expectNewStream(ctx context.Context, s *Session) error {
 	var foundHeader bool
 
-	// If the reader is a Session, use its decoder, otherwise make a new one.
-	var d *xml.Decoder
-	if session, ok := r.(*Session); ok {
-		d = session.in.d
-	} else {
-		d = xml.NewDecoder(r)
-	}
+	d := s.in.d
 	for {
 		select {
 		case <-ctx.Done():
@@ -156,13 +148,11 @@ func expectNewStream(ctx context.Context, r io.Reader) error {
 				return streamerror.UnsupportedVersion
 			}
 
-			if session, ok := r.(*Session); ok {
-				if (session.state&Received) != Received && stream.id == "" {
-					// if we are the initiating entity and there is no stream ID…
-					return streamerror.BadFormat
-				}
-				session.in.stream = stream
+			if (s.state&Received) != Received && stream.id == "" {
+				// if we are the initiating entity and there is no stream ID…
+				return streamerror.BadFormat
 			}
+			s.in.stream = stream
 			return nil
 		case xml.ProcInst:
 			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8
