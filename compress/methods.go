@@ -16,7 +16,7 @@ import (
 // Editor: https://xmpp.org/registrar/compress.html
 type Method struct {
 	Name    string
-	Wrapper func(io.ReadWriteCloser) (io.ReadWriteCloser, error)
+	Wrapper func(io.ReadWriter) (io.ReadWriter, error)
 }
 
 type multiCloser []io.Closer
@@ -44,7 +44,7 @@ func (mc multiCloser) Close() (err error) {
 type zlibDelayedSetup struct {
 	wm, rm sync.Mutex
 
-	raw        io.ReadWriteCloser
+	raw        io.ReadWriter
 	zlibWriter *zlib.Writer
 	zlibReader io.ReadCloser
 }
@@ -78,7 +78,7 @@ func (r *zlibDelayedSetup) Read(p []byte) (n int, err error) {
 
 func (r *zlibDelayedSetup) Close() error {
 
-	mc := multiCloser{r.raw}
+	mc := multiCloser{}
 
 	r.rm.Lock()
 	defer r.rm.Unlock()
@@ -97,7 +97,7 @@ func (r *zlibDelayedSetup) Close() error {
 
 var zlibMethod = Method{
 	Name: "zlib",
-	Wrapper: func(rwc io.ReadWriteCloser) (io.ReadWriteCloser, error) {
-		return &zlibDelayedSetup{raw: rwc, zlibWriter: zlib.NewWriter(rwc)}, nil
+	Wrapper: func(rw io.ReadWriter) (io.ReadWriter, error) {
+		return &zlibDelayedSetup{raw: rw, zlibWriter: zlib.NewWriter(rw)}, nil
 	},
 }

@@ -83,7 +83,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 
 			return true, listed.Methods, nil
 		},
-		Negotiate: func(ctx context.Context, session *xmpp.Session, data interface{}) (mask xmpp.SessionState, rwc io.ReadWriteCloser, err error) {
+		Negotiate: func(ctx context.Context, session *xmpp.Session, data interface{}) (mask xmpp.SessionState, rw io.ReadWriter, err error) {
 			conn := session.Conn()
 
 			// If we're a server.
@@ -120,8 +120,8 @@ func New(methods ...Method) xmpp.StreamFeature {
 					return
 				}
 
-				rwc, err = selected.Wrapper(conn)
-				return mask, rwc, err
+				rw, err = selected.Wrapper(conn)
+				return mask, rw, err
 			}
 
 			var selected Method
@@ -154,8 +154,8 @@ func New(methods ...Method) xmpp.StreamFeature {
 				if err = d.Skip(); err != nil {
 					return mask, nil, err
 				}
-				rwc, err = selected.Wrapper(conn)
-				return mask, rwc, err
+				rw, err = selected.Wrapper(conn)
+				return mask, rw, err
 			}
 
 			// TODO: Use appropriate errors.
