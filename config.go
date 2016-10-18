@@ -28,6 +28,9 @@ type Config struct {
 	// The supported stream features.
 	Features map[xml.Name]StreamFeature
 
+	// Handler to invoke on stream reads.
+	Handler Handler
+
 	// The default language for any streams constructed using this config.
 	Lang language.Tag
 

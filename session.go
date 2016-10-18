@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/streamerror"
 )
 
 // SessionState is a bitmask that represents the current state of an XMPP
@@ -47,8 +48,8 @@ const (
 	InputStreamClosed
 )
 
-// A Session represents an XMPP connection that can perform SRV lookups for a
-// given server and connect to the correct ports.
+// A Session represents an XMPP session comprising an input and an output XML
+// stream.
 type Session struct {
 	config *Config
 
@@ -74,7 +75,9 @@ type Session struct {
 	in struct {
 		sync.Mutex
 		stream
-		d *xml.Decoder
+		d      *xml.Decoder
+		ctx    context.Context
+		cancel context.CancelFunc
 	}
 	out struct {
 		sync.Mutex
@@ -104,12 +107,55 @@ func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session
 		config: config,
 		rw:     rw,
 	}
+	s.in.ctx, s.in.cancel = context.WithCancel(context.Background())
 
 	if conn, ok := rw.(net.Conn); ok {
 		s.conn = conn
 	}
 
-	return s, s.negotiateStreams(ctx, rw)
+	err := s.negotiateStreams(ctx, rw)
+	if err != nil {
+		return nil, err
+	}
+	if config.Handler != nil {
+		go s.handleInputStream()
+	}
+	return s, err
+}
+
+func (s *Session) handleInputStream() {
+	for {
+		select {
+		case <-s.in.ctx.Done():
+			return
+		default:
+		}
+		// TODO: This needs to be cancelable somehow.
+		tok, err := s.Decoder().Token()
+		if err != nil {
+			select {
+			case <-s.in.ctx.Done():
+				return
+			default:
+				// TODO: We need a way to figure out if this was an XML error or an error
+				// with the underlying connection.
+				s.Encoder().Encode(streamerror.BadFormat)
+			}
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			s.config.Handler.HandleXMPP(s, &t)
+		default:
+			select {
+			case <-s.in.ctx.Done():
+				return
+			default:
+				// TODO: We need a way to figure out if this was an XML error or an error
+				// with the underlying connection.
+				s.Encoder().Encode(streamerror.BadFormat)
+			}
+		}
+	}
 }
 
 // Conn returns the Session's backing net.Conn or other ReadWriter.
