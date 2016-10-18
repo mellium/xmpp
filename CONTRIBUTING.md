@@ -16,5 +16,5 @@ ask! Try joining [dev@muc.mellium.im][joinmuc].
 
 
 [issues]: https://bitbucket.org/mellium/xmpp/issues?status=new&status=open
-[trivial]: https://bitbucket.org/mellium/xmpp/issues?priority=trivial
+[trivial]: https://bitbucket.org/mellium/xmpp/issues?priority=trivial&state=new&status=open
 [joinmuc]: xmpp:dev@muc.mellium.im?join
