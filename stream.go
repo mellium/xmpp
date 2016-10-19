@@ -33,6 +33,7 @@ type stream struct {
 }
 
 // This MUST only return stream errors.
+// TODO: Is the above true? Just make it return a StreamError?
 func streamFromStartElement(s xml.StartElement) (stream, error) {
 	stream := stream{}
 	for _, attr := range s.Attr {
