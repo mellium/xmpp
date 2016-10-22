@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-type zeroReader int
+type zeroReader struct{}
 
 func (z zeroReader) Read(b []byte) (n int, err error) {
 	for i := range b {
@@ -21,7 +21,7 @@ func (z zeroReader) Read(b []byte) (n int, err error) {
 
 func TestRandomIDLength(t *testing.T) {
 	for i := 0; i <= 15; i++ {
-		if s := randomID(i, zeroReader); len(s) != i {
+		if s := randomID(i, zeroReader{}); len(s) != i {
 			t.Logf("Expected length %d got %d", i, len(s))
 			t.Fail()
 		}
