@@ -12,6 +12,16 @@ type ping struct {
 	Ping struct{} `xml:"urn:xmpp:ping ping"`
 }
 
+type dummyMsg struct {
+	Message
+	Dummy struct{}
+}
+
+type dummyPresence struct {
+	Presence
+	Dummy struct{}
+}
+
 func newDummySession() (*bytes.Buffer, *Session) {
 	b := new(bytes.Buffer)
 	s := &Session{
@@ -23,7 +33,7 @@ func newDummySession() (*bytes.Buffer, *Session) {
 	return b, s
 }
 
-func TestSendEnforcesIQSemantics(t *testing.T) {
+func TestSendDoesNotMutateStanza(t *testing.T) {
 	_, s := newDummySession()
 	p := &ping{}
 	err := s.Send(p)
@@ -34,5 +44,33 @@ func TestSendEnforcesIQSemantics(t *testing.T) {
 	if *p != p2 {
 		t.Fatalf("Sending mutated original struct")
 	}
-	// TODO: Test to make sure we set the ID
+}
+
+func TestEnforceStanzaSemantics(t *testing.T) {
+	t.Run("IQ", func(t *testing.T) {
+		s := enforceStanzaSemantics(ping{})
+		if s.(ping).ID == "" {
+			t.Fatal("Expected ID to be set")
+		}
+	})
+	t.Run("Message", func(t *testing.T) {
+		s := enforceStanzaSemantics(dummyMsg{})
+		if s.(dummyMsg).ID == "" {
+			t.Fatal("Expected ID to be set")
+		}
+	})
+	t.Run("Message", func(t *testing.T) {
+		s := enforceStanzaSemantics(dummyPresence{})
+		if s.(dummyPresence).ID == "" {
+			t.Fatal("Expected ID to be set")
+		}
+	})
+	t.Run("Nonza", func(t *testing.T) {
+		var a interface{}
+		a = struct{}{}
+		b := enforceStanzaSemantics(a)
+		if a != b {
+			t.Fatal("Expected the same type of nonza to be returned")
+		}
+	})
 }

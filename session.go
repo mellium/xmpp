@@ -94,28 +94,58 @@ type Session struct {
 // and the from or id attributes are empty, an appropriate value is inserted in
 // the output XML.
 func (s *Session) Send(v interface{}) error {
+	v = enforceStanzaSemantics(v)
+	return s.out.e.Encode(v)
+}
 
+func enforceStanzaSemantics(v interface{}) interface{} {
 	// TODO: This is horrifying, and probably buggy. There has got to be a better
 	//       way that I haven't thought of…
 
+	var (
+		stanza    interface{}
+		fieldname string
+	)
 	switch copier := v.(type) {
 	case interface {
 		copyIQ() IQ
 	}:
 		iq := copier.copyIQ()
-		iq.ID = internal.RandomID()
-
-		val, err := getCopy(reflect.ValueOf(v))
-		if err != nil {
-			return nil
+		if iq.ID == "" {
+			iq.ID = internal.RandomID()
 		}
-		val.FieldByName("IQ").Set(reflect.ValueOf(iq))
-		v = val.Interface()
+		stanza = iq
+		fieldname = "IQ"
+	case interface {
+		copyMessage() Message
+	}:
+		m := copier.copyMessage()
+		if m.ID == "" {
+			m.ID = internal.RandomID()
+		}
+		stanza = m
+		fieldname = "Message"
+	case interface {
+		copyPresence() Presence
+	}:
+		p := copier.copyPresence()
+		if p.ID == "" {
+			p.ID = internal.RandomID()
+		}
+		stanza = p
+		fieldname = "Presence"
 	default:
-		panic("xmpp: not yet implemented")
+		return v
 	}
 
-	return s.out.e.Encode(v)
+	val, err := getCopy(reflect.ValueOf(v))
+	if err != nil {
+		return nil
+	}
+	val.FieldByName(fieldname).Set(reflect.ValueOf(stanza))
+	v = val.Interface()
+
+	return v
 }
 
 func getCopy(val reflect.Value) (v reflect.Value, err error) {

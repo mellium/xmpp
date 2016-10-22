@@ -24,6 +24,10 @@ type Presence struct {
 	Type    presenceType `xml:"type,attr,omitempty"`
 }
 
+func (p Presence) copyPresence() Presence {
+	return p
+}
+
 type presenceType int
 
 const (
