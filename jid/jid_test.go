@@ -265,3 +265,12 @@ func TestUnmarshal(t *testing.T) {
 		}
 	}
 }
+
+// TODO: Malloc tests may be flakey under GCC until it improves its escape
+//       analysis.
+
+func TestSplitMallocs(t *testing.T) {
+	if n := testing.AllocsPerRun(1000, func() { SplitString("olivia@example.net/ilyria") }); n > 0 {
+		t.Errorf("got %f allocs, want 0", n)
+	}
+}

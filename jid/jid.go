@@ -374,41 +374,38 @@ func SplitString(s string) (localpart, domainpart, resourcepart string, err erro
 	//
 	//    1.  Remove any portion from the first '/' character to the end of the
 	//        string (if there is a '/' character present).
-	parts := strings.SplitAfterN(
-		s, "/", 2,
-	)
+	sep := strings.Index(s, "/")
 
-	// If the resource part exists, make sure it isn't empty.
-	if strings.HasSuffix(parts[0], "/") {
-		if len(parts) == 2 && parts[1] != "" {
-			resourcepart = parts[1]
-		} else {
+	if sep == -1 {
+		sep = len(s)
+		resourcepart = ""
+	} else {
+		// If the resource part exists, make sure it isn't empty.
+		if sep == len(s)-1 {
 			err = errors.New("The resourcepart must be larger than 0 bytes")
 			return
 		}
-	} else {
-		resourcepart = ""
+		resourcepart = s[sep+1:]
+		s = s[:sep]
 	}
-
-	norp := strings.TrimSuffix(parts[0], "/")
 
 	//    2.  Remove any portion from the beginning of the string to the first
 	//        '@' character (if there is an '@' character present).
 
-	nolp := strings.SplitAfterN(norp, "@", 2)
+	sep = strings.Index(s, "@")
 
-	if nolp[0] == "@" {
+	switch sep {
+	case -1:
+		// There is no @ sign, and therefore no localpart.
+		localpart = ""
+		domainpart = s
+	case 0:
+		// The JID starts with an @ sign (invalid empty localpart)
 		err = errors.New("The localpart must be larger than 0 bytes")
 		return
-	}
-
-	switch len(nolp) {
-	case 1:
-		domainpart = nolp[0]
-		localpart = ""
-	case 2:
-		domainpart = nolp[1]
-		localpart = strings.TrimSuffix(nolp[0], "@")
+	default:
+		domainpart = s[sep+1:]
+		localpart = s[:sep]
 	}
 
 	// We'll throw out any trailing dots on domainparts, since they're ignored:
