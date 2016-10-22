@@ -111,6 +111,8 @@ func (s *Session) Send(v interface{}) error {
 		}
 		val.FieldByName("IQ").Set(reflect.ValueOf(iq))
 		v = val.Interface()
+	default:
+		panic("xmpp: not yet implemented")
 	}
 
 	return s.out.e.Encode(v)
