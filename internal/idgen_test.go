@@ -9,21 +9,19 @@ import (
 	"testing"
 )
 
-func BenchmarkRandomIDEven(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		RandomID(8)
-	}
-}
+type zeroReader int
 
-func BenchmarkRandomIDOdd(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		RandomID(9)
+func (z zeroReader) Read(b []byte) (n int, err error) {
+	for i := range b {
+		b[i] = 0
 	}
+
+	return len(b), nil
 }
 
 func TestRandomIDLength(t *testing.T) {
 	for i := 0; i <= 15; i++ {
-		if s := RandomID(i); len(s) != i {
+		if s := randomID(i, zeroReader); len(s) != i {
 			t.Logf("Expected length %d got %d", i, len(s))
 			t.Fail()
 		}

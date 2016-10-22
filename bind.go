@@ -52,7 +52,7 @@ func BindResource() StreamFeature {
 
 			conn := session.Conn()
 
-			reqID := internal.RandomID(internal.IDLen)
+			reqID := internal.RandomID()
 			if resource := session.config.Origin.Resourcepart(); resource == "" {
 				// Send a request for the server to set a resource part.
 				_, err = fmt.Fprintf(conn, bindIQServerGeneratedRP, reqID)

@@ -8,10 +8,13 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"net"
+	"reflect"
 	"sync"
 
+	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/streamerror"
 )
@@ -84,6 +87,43 @@ type Session struct {
 		stream
 		e *xml.Encoder
 	}
+}
+
+// Send is used to marshal an element into XML and transmit it over the egress
+// stream. If the interface is composed of a stanza (IQ, Message, or Presence)
+// and the from or id attributes are empty, an appropriate value is inserted in
+// the output XML.
+func (s *Session) Send(v interface{}) error {
+
+	// TODO: This is horrifying, and probably buggy. There has got to be a better
+	//       way that I haven't thought of…
+
+	switch copier := v.(type) {
+	case interface {
+		copyIQ() IQ
+	}:
+		iq := copier.copyIQ()
+		iq.ID = internal.RandomID()
+
+		val, err := getCopy(reflect.ValueOf(v))
+		if err != nil {
+			return nil
+		}
+		val.FieldByName("IQ").Set(reflect.ValueOf(iq))
+		v = val.Interface()
+	}
+
+	return s.out.e.Encode(v)
+}
+
+func getCopy(val reflect.Value) (v reflect.Value, err error) {
+	for val.Kind() == reflect.Interface || val.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return v, fmt.Errorf("Failed")
+		}
+		val = val.Elem()
+	}
+	return reflect.New(val.Type()).Elem(), nil
 }
 
 // Feature checks if a feature with the given namespace was advertised

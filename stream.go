@@ -21,8 +21,6 @@ const (
 	xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>`
 )
 
-const streamIDLength = 16
-
 type stream struct {
 	to      *jid.JID
 	from    *jid.JID
@@ -188,7 +186,7 @@ func (s *Session) negotiateStreams(ctx context.Context, rw io.ReadWriter) (err e
 				if err = expectNewStream(ctx, s); err != nil {
 					return err
 				}
-				if err = sendNewStream(s, s.config, internal.RandomID(streamIDLength)); err != nil {
+				if err = sendNewStream(s, s.config, internal.RandomID()); err != nil {
 					return err
 				}
 			} else {

@@ -17,11 +17,11 @@ const IDLen = 16
 //       get when reading from getrandom(2). Should we use a fast userspace
 //       CSPRNG and just seed with data from the OS?
 
-// RandomID generates a new random identifier of the given length. If the OS's
+// RandomID generates a new random identifier of length IDLen. If the OS's
 // entropy pool isn't initialized, or we can't generate random numbers for some
 // other reason, panic.
-func RandomID(n int) string {
-	return randomID(n, rand.Reader)
+func RandomID() string {
+	return randomID(IDLen, rand.Reader)
 }
 
 func randomID(n int, r io.Reader) string {
