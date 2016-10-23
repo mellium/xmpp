@@ -46,8 +46,8 @@ var (
 	// defined in XEP-0106: JID Escaping.
 	Escape Transformer = Transformer{escapeMapping{}}
 
-	// Unescape is a transform that maps escapable runes to their escaped form as
-	// defined in XEP-0106: JID Escaping.
+	// Unescape is a transform that maps valid escape sequences to their unescaped
+	// form as defined in XEP-0106: JID Escaping.
 	Unescape Transformer = Transformer{unescapeMapping{}}
 )
 
