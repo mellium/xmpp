@@ -172,37 +172,6 @@ func TestCopy(t *testing.T) {
 	}
 }
 
-const allescaped = `\20\22\26\27\2f\3a\3c\3e\40\5c`
-
-func TestEscape(t *testing.T) {
-	for _, test := range []struct {
-		unescaped, escaped string
-	}{
-		{escape, allescaped},
-		{`nothingtodohere`, `nothingtodohere`},
-		{"", ""},
-	} {
-		if e := Escape(test.unescaped); e != test.escaped {
-			t.Errorf("Escaped localpart should be `%s` but got: `%s`", test.escaped, e)
-		}
-	}
-}
-
-func TestUnescape(t *testing.T) {
-	for _, test := range []struct {
-		escaped, unescaped string
-	}{
-		{allescaped, escape},
-		{`\20\3c\3C\aa\\\`, ` <<\aa\\\`},
-		{"nothingtodohere", "nothingtodohere"},
-		{"", ""},
-	} {
-		if u := Unescape(test.escaped); u != test.unescaped {
-			t.Errorf("Unescaped localpart should be `%s` but got: `%s`", test.unescaped, u)
-		}
-	}
-}
-
 func TestMarshalXML(t *testing.T) {
 	// Test default marshaling
 	j := MustParse("feste@shakespeare.lit")

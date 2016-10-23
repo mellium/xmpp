@@ -60,13 +60,19 @@ func BenchmarkString(b *testing.B) {
 }
 
 func BenchmarkEscape(b *testing.B) {
+	src := []byte(escape)
+	dst := make([]byte, len(src)+18)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = Escape(escape)
+		Escape.Transform(dst, src, true)
 	}
 }
 
 func BenchmarkUnescape(b *testing.B) {
+	src := []byte(allescaped)
+	dst := make([]byte, len(src)/3)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = Unescape(allescaped)
+		Unescape.Transform(dst, src, true)
 	}
 }
