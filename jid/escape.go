@@ -91,7 +91,7 @@ func (t escapeMapping) Transform(dst, src []byte, atEOF bool) (nDst, nSrc int, e
 				"0123456789abcdef"[c&15],
 			})
 			nDst += n
-			nSrc += 1
+			nSrc++
 			if n != 3 {
 				return nDst, nSrc, transform.ErrShortDst
 			}
