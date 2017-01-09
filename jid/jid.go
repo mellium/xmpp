@@ -150,7 +150,7 @@ func (j *JID) Domainpart() string {
 	return j.domainpart
 }
 
-// Resourcepart gets the resourcepart of a JID (eg. "someclient-abc123").
+// Resourcepart gets the resourcepart of a JID.
 func (j *JID) Resourcepart() string {
 	if j == nil {
 		return ""
