@@ -114,7 +114,7 @@ func New(localpart, domainpart, resourcepart string) (*JID, error) {
 	}, nil
 }
 
-// Bare returns a copy of the Jid without a resourcepart. This is sometimes
+// Bare returns a copy of the JID without a resourcepart. This is sometimes
 // called a "bare" JID.
 func (j *JID) Bare() *JID {
 	return &JID{
@@ -124,7 +124,7 @@ func (j *JID) Bare() *JID {
 	}
 }
 
-// Domain returns a copy of the Jid without a resourcepart or localpart.
+// Domain returns a copy of the JID without a resourcepart or localpart.
 func (j *JID) Domain() *JID {
 	if j == nil {
 		return j
@@ -158,7 +158,7 @@ func (j *JID) Resourcepart() string {
 	return j.resourcepart
 }
 
-// Copy makes a copy of the given Jid. j.Equal(j.Copy()) will always return
+// Copy makes a copy of the given JID. j.Equal(j.Copy()) will always return
 // true.
 func (j *JID) Copy() *JID {
 	if j == nil {
