@@ -18,8 +18,8 @@ import (
 
 // Namespaces used by stream compression.
 const (
-	FeaturesNS = "http://jabber.org/features/compress"
-	ProtocolNS = "http://jabber.org/protocol/compress"
+	NSFeatures = "http://jabber.org/features/compress"
+	NSProtocol = "http://jabber.org/protocol/compress"
 )
 
 var (
@@ -33,7 +33,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 	// TODO: Throw them into a map to dedup and then iterate over that?
 	methods = append(methods, zlibMethod)
 	return xmpp.StreamFeature{
-		Name:      xml.Name{Local: "compression", Space: FeaturesNS},
+		Name:      xml.Name{Local: "compression", Space: NSFeatures},
 		Necessary: xmpp.Secure | xmpp.Authn,
 		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
 			if err = e.EncodeToken(start); err != nil {
@@ -98,7 +98,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 
 				// If no method was selected, or something weird happened with decoding…
 				if clientSelected.Method == "" {
-					_, err = fmt.Fprint(conn, `<failure xmlns='`+ProtocolNS+`'><setup-failed/></failure>`)
+					_, err = fmt.Fprint(conn, `<failure xmlns='`+NSProtocol+`'><setup-failed/></failure>`)
 					return
 				}
 
@@ -112,11 +112,11 @@ func New(methods ...Method) xmpp.StreamFeature {
 
 				// The client requested a method that we did not send…
 				if selected.Name == "" {
-					_, err = fmt.Fprint(conn, `<failure xmlns='`+ProtocolNS+`'><unsupported-method/></failure>`)
+					_, err = fmt.Fprint(conn, `<failure xmlns='`+NSProtocol+`'><unsupported-method/></failure>`)
 					return
 				}
 
-				if _, err = fmt.Fprint(conn, `<compressed xmlns='`+ProtocolNS+`'/>`); err != nil {
+				if _, err = fmt.Fprint(conn, `<compressed xmlns='`+NSProtocol+`'/>`); err != nil {
 					return
 				}
 
@@ -139,7 +139,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 				return mask, nil, errors.New(`No matching compression method found`)
 			}
 
-			_, err = fmt.Fprintf(conn, `<compress xmlns='`+ProtocolNS+`'><method>%s</method></compress>`, selected.Name)
+			_, err = fmt.Fprintf(conn, `<compress xmlns='`+NSProtocol+`'><method>%s</method></compress>`, selected.Name)
 			if err != nil {
 				return
 			}
@@ -150,7 +150,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 				return mask, nil, err
 			}
 
-			if t, ok := tok.(xml.StartElement); ok && t.Name.Local == "compressed" && t.Name.Space == ProtocolNS {
+			if t, ok := tok.(xml.StartElement); ok && t.Name.Local == "compressed" && t.Name.Space == NSProtocol {
 				if err = d.Skip(); err != nil {
 					return mask, nil, err
 				}
