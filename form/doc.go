@@ -3,4 +3,6 @@
 // found in the LICENSE file.
 
 // The form package is an implementation of XEP-0004: Data Forms.
+//
+// BE ADVISED: This API is unstable and subject to change.
 package form // import "mellium.im/xmpp/form"
