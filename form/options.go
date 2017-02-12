@@ -35,7 +35,7 @@ type FieldOption func(*field)
 var (
 	// Required flags the field as required in order for the form to be considered
 	// valid.
-	Required = required
+	Required FieldOption = required
 )
 
 var (
