@@ -38,102 +38,63 @@ func Boolean(varName string, o ...FieldOption) Option {
 	}
 }
 
-// Hidden fields are not shown by the form-submitting entity, but instead are
-// returned, generally unmodified, with the form.
-func Hidden(varName string, o ...FieldOption) Option {
+func fieldOpt(typ, varName string, o ...FieldOption) func(data *Data) {
 	return func(data *Data) {
 		f := field{
-			Typ: "hidden",
+			Typ: "typ",
 			Var: varName,
 		}
 		getFieldOpts(&f, o...)
 		data.children = append(data.children, f)
 	}
+}
+
+// Fixed is intended for data description (e.g., human-readable text such as
+// "section" headers) rather than data gathering or provision.
+func Fixed(o ...FieldOption) Option {
+	return fieldOpt("fixed", "")
+}
+
+// Hidden fields are not shown by the form-submitting entity, but instead are
+// returned, generally unmodified, with the form.
+func Hidden(varName string, o ...FieldOption) Option {
+	return fieldOpt("hidden", varName)
 }
 
 // JIDMulti enables an entity to gather or provide multiple Jabber IDs.
 func JIDMulti(varName string, o ...FieldOption) Option {
-	return func(data *Data) {
-		f := field{
-			Typ: "jid-multi",
-			Var: varName,
-		}
-		getFieldOpts(&f, o...)
-		data.children = append(data.children, f)
-	}
+	return fieldOpt("jid-multi", varName)
 }
 
 // JID enables an entity to gather or provide a Jabber ID.
 func JID(varName string, o ...FieldOption) Option {
-	return func(data *Data) {
-		f := field{
-			Typ: "jid-single",
-			Var: varName,
-		}
-		getFieldOpts(&f, o...)
-		data.children = append(data.children, f)
-	}
+	return fieldOpt("jid-single", varName)
 }
 
 // ListMulti enables an entity to gather or provide one or more entries from a
 // list.
 func ListMulti(varName string, o ...FieldOption) Option {
-	return func(data *Data) {
-		f := field{
-			Typ: "list-multi",
-			Var: varName,
-		}
-		getFieldOpts(&f, o...)
-		data.children = append(data.children, f)
-	}
+	return fieldOpt("list-multi", varName)
 }
 
 // ListSingle enables an entity to gather or provide a single entry from a list.
 func ListSingle(varName string, o ...FieldOption) Option {
-	return func(data *Data) {
-		f := field{
-			Typ: "list-single",
-			Var: varName,
-		}
-		getFieldOpts(&f, o...)
-		data.children = append(data.children, f)
-	}
+	return fieldOpt("list-single", varName)
 }
 
 // TextMulti enables an entity to gather or provide multiple lines of text.
 func TextMulti(varName string, o ...FieldOption) Option {
-	return func(data *Data) {
-		f := field{
-			Typ: "text-multi",
-			Var: varName,
-		}
-		getFieldOpts(&f, o...)
-		data.children = append(data.children, f)
-	}
+	return fieldOpt("text-multi", varName)
 }
 
 // TextPrivate enables an entity to gather or provide a line of text that should
 // be obscured in the submitting entities interface (eg. with multiple
 // asterisks).
 func TextPrivate(varName string, o ...FieldOption) Option {
-	return func(data *Data) {
-		f := field{
-			Typ: "text-private",
-			Var: varName,
-		}
-		getFieldOpts(&f, o...)
-		data.children = append(data.children, f)
-	}
+	return fieldOpt("text-private", varName)
 }
 
 // TextSingle enables an entity to gather or provide a line of text.
 func TextSingle(varName string, o ...FieldOption) Option {
-	return func(data *Data) {
-		f := field{
-			Typ: "text-single",
-			Var: varName,
-		}
-		getFieldOpts(&f, o...)
-		data.children = append(data.children, f)
-	}
+	return fieldOpt("text-single", varName)
 }
