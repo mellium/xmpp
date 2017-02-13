@@ -40,7 +40,7 @@ var (
 
 var (
 	required FieldOption = func(f *field) {
-		f.Required = struct{}{}
+		f.Required = &struct{}{}
 	}
 )
 
