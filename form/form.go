@@ -8,6 +8,9 @@ import (
 	"encoding/xml"
 )
 
+// NS is the data forms namespace.
+const NS = "jabber:x:data"
+
 var (
 	formName = xml.Name{Space: "jabber:x:data", Local: "x"}
 )
