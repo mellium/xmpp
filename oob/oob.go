@@ -2,13 +2,19 @@
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
-// The oob package implements XEP-0066: Out of Band Data.
+// Package oob implements XEP-0066: Out of Band Data.
 package oob // import "mellium.im/xmpp/oob"
 
 import (
 	"encoding/xml"
 
 	"mellium.im/xmpp"
+)
+
+// OOB namespaces provided as a convenience.
+const (
+	NS      = `jabber:x:oob`
+	NSQuery = `jabber:iq:oob`
 )
 
 // IQ represents an OOB data query; for instance:
