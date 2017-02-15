@@ -3,6 +3,10 @@
 // found in the LICENSE file.
 
 // Package ibr2 implements the Extensible In-Band Registration ProtoXEP.
+//
+// BE ADVISED: This API is incomplete and is subject to change.
+// Core functionality of this package is missing, and the entire package may be
+// removed at any time.
 package ibr2 // import "mellium.im/xmpp/ibr2"
 
 import (
