@@ -123,7 +123,7 @@ func TestParse(t *testing.T) {
 			}
 			start, ok := tok.(xml.StartElement)
 			if !ok {
-				t.Fatal("Marshaled bad XML; didn't get start element, got %#v", tok)
+				t.Fatalf("Marshaled bad XML; didn't get start element, got %#v", tok)
 			}
 			req, data, err := r.Parse(context.Background(), d, &start)
 
