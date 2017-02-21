@@ -213,11 +213,20 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 				return
 			}
 
+			respStart := xml.StartElement{
+				Name: xml.Name{Local: "response"},
+			}
+			if err = e.EncodeToken(respStart); err != nil {
+				return
+			}
 			if c.Respond != nil {
 				err = c.Respond(ctx, e)
 				if err != nil {
 					return
 				}
+			}
+			if err = e.EncodeToken(respStart.End()); err != nil {
+				return
 			}
 
 			break
