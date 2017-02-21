@@ -4,10 +4,24 @@
 
 package ibr2
 
+import (
+	"context"
+	"encoding/xml"
+)
+
 // Challenge is an IBR challenge.
-// API WARNING: The challenge struct is not complete or usable yet.
 type Challenge struct {
 	// Type is the type of the challenge as it appears in the server advertised
 	// challenges list.
 	Type string
+
+	// Send is used by the server to send the challenge to the client.
+	Send func(ctx context.Context, e *xml.Encoder) error
+
+	// Respond is used by the client to send a reponse or reply to the challenge.
+	Respond func(context.Context, *xml.Encoder) error
+
+	// Receive is used by the client to receive and decode the server's challenge
+	// and by the server to receive and decode the clients response.
+	Receive func(ctx context.Context, server bool, d *xml.Decoder, start *xml.StartElement) error
 }

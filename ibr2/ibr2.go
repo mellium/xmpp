@@ -16,6 +16,7 @@ import (
 	"io"
 
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/streamerror"
 )
 
 // Namespaces used by IBR.
@@ -26,6 +27,21 @@ const (
 var (
 	errNoChallenge = errors.New("No supported challenges were found")
 )
+
+func challengeStart(typ string) xml.StartElement {
+	return xml.StartElement{
+		Name: xml.Name{
+			Space: NS,
+			Local: "challenge",
+		},
+		Attr: []xml.Attr{
+			{
+				Name:  xml.Name{Local: "type"},
+				Value: typ,
+			},
+		},
+	}
+}
 
 func listFunc(challenges ...Challenge) func(context.Context, *xml.Encoder, xml.StartElement) (bool, error) {
 	return func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
@@ -89,6 +105,31 @@ func parseFunc(challenges ...Challenge) func(ctx context.Context, d *xml.Decoder
 	}
 }
 
+func decodeClientResp(ctx context.Context, d *xml.Decoder, decode func(ctx context.Context, server bool, d *xml.Decoder, start *xml.StartElement) error) (cancel bool, err error) {
+	var tok xml.Token
+	tok, err = d.Token()
+	if err != nil {
+		return
+	}
+	start, ok := tok.(xml.StartElement)
+	switch {
+	case !ok:
+		err = streamerror.RestrictedXML
+		return
+	case start.Name.Local == "cancel" && start.Name.Space == NS:
+		cancel = true
+		return
+	case start.Name.Local == "response" && start.Name.Space == NS:
+		err = decode(ctx, true, d, &start)
+		if err != nil {
+			return
+		}
+	}
+
+	err = streamerror.BadFormat
+	return
+}
+
 func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session, interface{}) (xmpp.SessionState, io.ReadWriter, error) {
 	return func(ctx context.Context, session *xmpp.Session, supported interface{}) (mask xmpp.SessionState, rw io.ReadWriter, err error) {
 		server := (session.State() & xmpp.Received) == xmpp.Received
@@ -100,8 +141,88 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 			return
 		}
 
-		// TODO:
-		panic("not yet supported")
+		var tok xml.Token
+		e := session.Encoder()
+		d := session.Decoder()
+
+		if server {
+			for _, c := range challenges {
+				// Send the challenge.
+				start := challengeStart(c.Type)
+				err = e.EncodeToken(start)
+				if err != nil {
+					return
+				}
+				err = c.Send(ctx, e)
+				if err != nil {
+					return
+				}
+				err = e.EncodeToken(start.End())
+				if err != nil {
+					return
+				}
+				err = e.Flush()
+				if err != nil {
+					return
+				}
+
+				// Decode the clients response
+				var cancel bool
+				cancel, err = decodeClientResp(ctx, d, c.Receive)
+				if err != nil || cancel {
+					return
+				}
+			}
+			return
+		}
+
+		// If we're the client, decode the challenge.
+		tok, err = d.Token()
+		if err != nil {
+			return
+		}
+		start, ok := tok.(xml.StartElement)
+		switch {
+		case !ok:
+			err = streamerror.RestrictedXML
+			return
+		case start.Name.Local != "challenge" || start.Name.Space != NS:
+			err = streamerror.BadFormat
+			return
+		}
+		var typ string
+		for _, attr := range start.Attr {
+			if attr.Name.Local == "type" {
+				typ = attr.Value
+				break
+			}
+		}
+		// If there was no type attr, an illegal challenge was sent.
+		if typ == "" {
+			err = streamerror.BadFormat
+			return
+		}
+
+		for _, c := range challenges {
+			if c.Type != typ {
+				continue
+			}
+
+			err = c.Receive(ctx, false, d, &start)
+			if err != nil {
+				return
+			}
+
+			if c.Respond != nil {
+				err = c.Respond(ctx, e)
+				if err != nil {
+					return
+				}
+			}
+
+			break
+		}
+		return
 	}
 }
 

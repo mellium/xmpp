@@ -5,6 +5,9 @@
 package ibr2
 
 import (
+	"context"
+	"encoding/xml"
+
 	"mellium.im/xmpp/oob"
 )
 
@@ -13,10 +16,12 @@ import (
 // If you are a client, f will be called and passed the parsed OOB data.
 // If f returns an error, the client considers the negotiation a failure.
 // The returned OOB data is ignored for clients.
-// For servers, f is also called, but its argument should be ignored and the
-// returned OOB data should be sent on the connection (error is also checked).
+// For servers, f is also called.
 func OOB(f func(*oob.Data) (*oob.Data, error)) Challenge {
 	return Challenge{
 		Type: oob.NS,
+		Send: func(ctx context.Context, e *xml.Encoder) error {
+			return nil
+		},
 	}
 }
