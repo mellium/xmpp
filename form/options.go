@@ -4,11 +4,11 @@
 
 package form
 
-// An Option is used to define the behavior and appearance of a data form.
-type Option func(*Data)
+// An Field is used to define the behavior and appearance of a data form.
+type Field func(*Data)
 
 // Title sets a form's title.
-func Title(s string) Option {
+func Title(s string) Field {
 	return func(data *Data) {
 		data.title.Text = s
 	}
@@ -16,30 +16,30 @@ func Title(s string) Option {
 
 // Instructions adds new textual instructions to the form.
 // Multiple uses of the option result in multiple sets of instructions.
-func Instructions(s string) Option {
+func Instructions(s string) Field {
 	return func(data *Data) {
 		data.children = append(data.children, instructions{Text: s})
 	}
 }
 
-func getOpts(data *Data, o ...Option) {
+func getOpts(data *Data, o ...Field) {
 	for _, f := range o {
 		f(data)
 	}
 	return
 }
 
-// A FieldOption is used to define the behavior and appearance of a form field.
-type FieldOption func(*field)
+// A Option is used to define the behavior and appearance of a form field.
+type Option func(*field)
 
 var (
 	// Required flags the field as required in order for the form to be considered
 	// valid.
-	Required FieldOption = required
+	Required Option = required
 )
 
 var (
-	required FieldOption = func(f *field) {
+	required Option = func(f *field) {
 		f.Required = &struct{}{}
 	}
 )
@@ -50,7 +50,7 @@ var (
 // Desc should not contain newlines (the \n and \r characters), since layout is
 // the responsibility of a user agent.
 // However, it does nothing to prevent them from being added.
-func Desc(s string) FieldOption {
+func Desc(s string) Option {
 	return func(f *field) {
 		f.Desc = s
 	}
@@ -62,23 +62,23 @@ func Desc(s string) FieldOption {
 // data form of type "result".
 // Fields of type ListMulti, JidMulti, TextMulti, and Hidden may contain more
 // than one Value; all other field types will only use the first Value.
-func Value(s string) FieldOption {
+func Value(s string) Option {
 	return func(f *field) {
 		f.Value = append(f.Value, s)
 	}
 }
 
-// ListOption is one of the values in a list.
+// ListField is one of the values in a list.
 // It has no effect on any non-list field type.
-func ListOption(s string) FieldOption {
+func ListField(s string) Option {
 	return func(f *field) {
-		f.Option = append(f.Option, fieldopt{
+		f.Field = append(f.Field, fieldopt{
 			Value: s,
 		})
 	}
 }
 
-func getFieldOpts(f *field, o ...FieldOption) {
+func getFieldOpts(f *field, o ...Option) {
 	for _, opt := range o {
 		opt(f)
 	}
