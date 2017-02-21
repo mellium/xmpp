@@ -25,11 +25,11 @@ type fieldopt struct {
 	Value   string   `xml:"value,omitempty"`
 }
 
-func newField(typ, varName string, o ...Option) func(data *Data) {
+func newField(typ, id string, o ...Option) func(data *Data) {
 	return func(data *Data) {
 		f := field{
 			Typ: typ,
-			Var: varName,
+			Var: id,
 		}
 		getFieldOpts(&f, o...)
 		data.children = append(data.children, f)
@@ -38,7 +38,7 @@ func newField(typ, varName string, o ...Option) func(data *Data) {
 
 // Boolean fields enable an entity to gather or provide an either-or choice
 // between two options.
-func Boolean(varName string, o ...Option) Field {
+func Boolean(id string, o ...Option) Field {
 	return newField("boolean", "", o...)
 }
 
@@ -50,44 +50,44 @@ func Fixed(o ...Option) Field {
 
 // Hidden fields are not shown by the form-submitting entity, but instead are
 // returned, generally unmodified, with the form.
-func Hidden(varName string, o ...Option) Field {
-	return newField("hidden", varName, o...)
+func Hidden(id string, o ...Option) Field {
+	return newField("hidden", id, o...)
 }
 
 // JIDMulti enables an entity to gather or provide multiple Jabber IDs.
-func JIDMulti(varName string, o ...Option) Field {
-	return newField("jid-multi", varName, o...)
+func JIDMulti(id string, o ...Option) Field {
+	return newField("jid-multi", id, o...)
 }
 
 // JID enables an entity to gather or provide a Jabber ID.
-func JID(varName string, o ...Option) Field {
-	return newField("jid-single", varName, o...)
+func JID(id string, o ...Option) Field {
+	return newField("jid-single", id, o...)
 }
 
 // ListMulti enables an entity to gather or provide one or more entries from a
 // list.
-func ListMulti(varName string, o ...Option) Field {
-	return newField("list-multi", varName, o...)
+func ListMulti(id string, o ...Option) Field {
+	return newField("list-multi", id, o...)
 }
 
 // ListSingle enables an entity to gather or provide a single entry from a list.
-func ListSingle(varName string, o ...Option) Field {
-	return newField("list-single", varName, o...)
+func ListSingle(id string, o ...Option) Field {
+	return newField("list-single", id, o...)
 }
 
 // TextMulti enables an entity to gather or provide multiple lines of text.
-func TextMulti(varName string, o ...Option) Field {
-	return newField("text-multi", varName, o...)
+func TextMulti(id string, o ...Option) Field {
+	return newField("text-multi", id, o...)
 }
 
 // TextPrivate enables an entity to gather or provide a line of text that should
 // be obscured in the submitting entities interface (eg. with multiple
 // asterisks).
-func TextPrivate(varName string, o ...Option) Field {
-	return newField("text-private", varName, o...)
+func TextPrivate(id string, o ...Option) Field {
+	return newField("text-private", id, o...)
 }
 
 // TextSingle enables an entity to gather or provide a line of text.
-func TextSingle(varName string, o ...Option) Field {
-	return newField("text-single", varName, o...)
+func TextSingle(id string, o ...Option) Field {
+	return newField("text-single", id, o...)
 }
