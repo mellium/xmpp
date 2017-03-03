@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 
 	"mellium.im/xmpp/ns"
 	"mellium.im/xmpp/streamerror"
@@ -56,22 +57,26 @@ func StartTLS(required bool) StreamFeature {
 			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == ns.StartTLS, nil, err
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
-			conn := session.conn
-			if conn == nil {
+			conn, ok := session.Conn().(net.Conn)
+			if !ok || conn == nil {
 				return mask, nil, ErrTLSUpgradeFailed
 			}
 
+			config := session.Config()
+			state := session.State()
+			d := session.Decoder()
+
 			// Fetch or create a TLSConfig to use.
 			var tlsconf *tls.Config
-			if session.config.TLSConfig == nil {
+			if config.TLSConfig == nil {
 				tlsconf = &tls.Config{
 					ServerName: session.LocalAddr().Domain().String(),
 				}
 			} else {
-				tlsconf = session.config.TLSConfig
+				tlsconf = config.TLSConfig
 			}
 
-			if (session.state & Received) == Received {
+			if (state & Received) == Received {
 				fmt.Fprint(conn, `<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
 				rw = tls.Server(conn, tlsconf)
 			} else {
@@ -79,7 +84,7 @@ func StartTLS(required bool) StreamFeature {
 				fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
 
 				// Receive a <proceed/> or <failure/> response from the server.
-				t, err := session.in.d.Token()
+				t, err := d.Token()
 				if err != nil {
 					return mask, nil, err
 				}
@@ -90,13 +95,13 @@ func StartTLS(required bool) StreamFeature {
 						return mask, nil, streamerror.UnsupportedStanzaType
 					case tok.Name.Local == "proceed":
 						// Skip the </proceed> token.
-						if err = session.in.d.Skip(); err != nil {
+						if err = d.Skip(); err != nil {
 							return mask, nil, streamerror.InvalidXML
 						}
 						rw = tls.Client(conn, tlsconf)
 					case tok.Name.Local == "failure":
 						// Skip the </failure> token.
-						if err = session.in.d.Skip(); err != nil {
+						if err = d.Skip(); err != nil {
 							err = streamerror.InvalidXML
 						}
 						// Failure is not an "error", it's expected behavior. Immediately

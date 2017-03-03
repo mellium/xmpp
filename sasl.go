@@ -67,7 +67,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 			return true, parsed.List, err
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
-			if (session.state & Received) == Received {
+			if (session.State() & Received) == Received {
 				panic("SASL server not yet implemented")
 			}
 
@@ -122,17 +122,19 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 				return mask, nil, err
 			}
 
+			d := session.Decoder()
+
 			// If we're already done after the first step, decode the <success/> or
 			// <failure/> before we exit.
 			if !more {
-				tok, err := session.in.d.Token()
+				tok, err := d.Token()
 				if err != nil {
 					return mask, nil, err
 				}
 				if t, ok := tok.(xml.StartElement); ok {
 					// TODO: Handle the additional data that could be returned if
 					// success?
-					_, _, err := decodeSASLChallenge(session.in.d, t, false)
+					_, _, err := decodeSASLChallenge(d, t, false)
 					if err != nil {
 						return mask, nil, err
 					}
@@ -148,13 +150,13 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 					return mask, nil, ctx.Err()
 				default:
 				}
-				tok, err := session.in.d.Token()
+				tok, err := d.Token()
 				if err != nil {
 					return mask, nil, err
 				}
 				var challenge []byte
 				if t, ok := tok.(xml.StartElement); ok {
-					challenge, success, err = decodeSASLChallenge(session.in.d, t, true)
+					challenge, success, err = decodeSASLChallenge(d, t, true)
 					if err != nil {
 						return mask, nil, err
 					}
