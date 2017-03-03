@@ -2,7 +2,8 @@
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
-// Package compress implements stream compression as specified in XEP-0138.
+// Package compress implements XEP-0138: Stream Compression and XEP-0229: Stream
+// Compression with LZW.
 package compress
 
 import (
@@ -27,8 +28,9 @@ var (
 )
 
 // New returns a new xmpp.StreamFeature that can be used to negotiate stream
-// compression. The returned stream feature always supports ZLIB compression;
-// other compression methods are optional.
+// compression.
+// The returned stream feature always supports ZLIB compression; other
+// compression methods are optional.
 func New(methods ...Method) xmpp.StreamFeature {
 	// TODO: Throw them into a map to dedup and then iterate over that?
 	methods = append(methods, zlibMethod)

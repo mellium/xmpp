@@ -5,15 +5,41 @@
 package compress
 
 import (
+	"compress/lzw"
 	"compress/zlib"
 	"io"
 	"sync"
 )
 
-// Method is a stream compression method. Custom methods may be defined, but
-// generally speaking the only supported methods will be those with names
-// defined in the "Stream Compression Methods Registry" maintained by the XSF
-// Editor: https://xmpp.org/registrar/compress.html
+var (
+	// LZW implements stream compression using the Lempel-Ziv-Welch (DCLZ)
+	// compressed data format.
+	LZW Method = lzwMethod
+)
+
+var lzwMethod = Method{
+	Name: "lzw",
+	Wrapper: func(rw io.ReadWriter) (io.ReadWriter, error) {
+		rc := lzw.NewReader(rw, lzw.LSB, 8)
+		wc := lzw.NewWriter(rw, lzw.LSB, 8)
+		return struct {
+			io.Reader
+			io.Writer
+			io.Closer
+		}{
+			Reader: rc,
+			Writer: wc,
+			Closer: &multiCloser{rc, wc},
+		}, nil
+	},
+}
+
+// Method is a stream compression method.
+// Custom methods may be defined, but generally speaking the only supported
+// methods will be those with names defined in the "Stream Compression Methods
+// Registry" maintained by the XSF Editor:
+// https://xmpp.org/registrar/compress.html
+// Since ZLIB is always supported, a Method is not defined for it.
 type Method struct {
 	Name    string
 	Wrapper func(io.ReadWriter) (io.ReadWriter, error)
@@ -21,9 +47,10 @@ type Method struct {
 
 type multiCloser []io.Closer
 
-// Close attempts to call every close method in the multiCloser. It always
-// attempts all of them (unless one of them panics), but it only returns the
-// last error if multiple of them error. There's probably a better way.
+// Close attempts to call every close method in the multiCloser.
+// It always attempts all of them (unless one of them panics), but it only
+// returns the last error if multiple of them error.
+// There's probably a better way.
 func (mc multiCloser) Close() (err error) {
 	var e error
 	for _, c := range mc {
