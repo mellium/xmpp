@@ -31,7 +31,7 @@ func newField(typ, id string, o ...Option) func(data *Data) {
 			Typ: typ,
 			Var: id,
 		}
-		getFieldOpts(&f, o...)
+		getOpts(&f, o...)
 		data.children = append(data.children, f)
 	}
 }

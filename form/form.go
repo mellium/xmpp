@@ -62,8 +62,8 @@ type instructions struct {
 }
 
 // New builds a new data form from the provided options.
-func New(o ...Field) *Data {
+func New(f ...Field) *Data {
 	form := &Data{typ: "form"}
-	getOpts(form, o...)
+	getFields(form, f...)
 	return form
 }

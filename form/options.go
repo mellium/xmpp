@@ -22,11 +22,11 @@ func Instructions(s string) Field {
 	}
 }
 
-func getOpts(data *Data, o ...Field) {
-	for _, f := range o {
+func getFields(data *Data, fields ...Field) error {
+	for _, f := range fields {
 		f(data)
 	}
-	return
+	return nil
 }
 
 // A Option is used to define the behavior and appearance of a form field.
@@ -78,7 +78,7 @@ func ListField(s string) Option {
 	}
 }
 
-func getFieldOpts(f *field, o ...Option) {
+func getOpts(f *field, o ...Option) {
 	for _, opt := range o {
 		opt(f)
 	}
