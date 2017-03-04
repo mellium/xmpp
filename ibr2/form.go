@@ -5,20 +5,25 @@
 package ibr2
 
 import (
+	"context"
+	"encoding/xml"
+
 	"mellium.im/xmpp/form"
 )
 
 // Form is a challenge that presents or receives a data form as specified in
 // XEP-0004.
-// If Form is used by a client, f is called and passed the form sent by the
-// server.
-// The returned form should be a response to the sent form.
-// If Form is used by a server, f is called once with a nil form and should
-// return a form to be sent to the client; it is then called again with the
-// clients response at which point a nil form can be returned to terminate the
-// exchange, or a second form to be sent to the client can be returned.
-func Form(f func(data *form.Data) (*form.Data, error)) Challenge {
+func Form(data *form.Data, f func(*form.Data) error) Challenge {
 	return Challenge{
 		Type: form.NS,
+		Send: func(ctx context.Context, e *xml.Encoder) error {
+			return e.Encode(data)
+		},
+		Respond: func(context.Context, *xml.Encoder) error {
+			return nil
+		},
+		Receive: func(ctx context.Context, server bool, d *xml.Decoder, start *xml.StartElement) error {
+			return nil
+		},
 	}
 }
