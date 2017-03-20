@@ -283,7 +283,6 @@ func SplitString(s string) (localpart, domainpart, resourcepart string, err erro
 	sep := strings.Index(s, "/")
 
 	if sep == -1 {
-		sep = len(s)
 		resourcepart = ""
 	} else {
 		// If the resource part exists, make sure it isn't empty.
