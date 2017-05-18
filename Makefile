@@ -2,7 +2,7 @@ PACKAGES=$$(go list ./... | grep -v '/vendor/')
 
 .PHONEY: test
 test:
-	go test -cover $(PACKAGES)
+	go test -cover $(PACKAGES) -race
 
 .PHONEY: bench
 bench:
