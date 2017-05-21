@@ -134,7 +134,7 @@ func (se StanzaError) MarshalXML(e *xml.Encoder, start xml.StartElement) (err er
 		text := xml.StartElement{
 			Name: xml.Name{Space: ns.Stanza, Local: "text"},
 			Attr: []xml.Attr{
-				xml.Attr{
+				{
 					Name:  xml.Name{Space: ns.XML, Local: "lang"},
 					Value: se.Lang.String(),
 				},

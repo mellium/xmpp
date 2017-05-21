@@ -69,7 +69,7 @@ func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) 
 		text := xml.StartElement{
 			Name: xml.Name{Space: "", Local: "text"},
 			Attr: []xml.Attr{
-				xml.Attr{
+				{
 					Name:  xml.Name{Space: ns.XML, Local: "lang"},
 					Value: f.Lang.String(),
 				},
