@@ -23,7 +23,7 @@ import (
 // SASL returns a stream feature for performing authentication using the Simple
 // Authentication and Security Layer (SASL) as defined in RFC 4422. It panics if
 // no mechanisms are specified. The order in which mechanisms are specified will
-// be the prefered order, so stronger mechanisms should be listed first.
+// be the preferred order, so stronger mechanisms should be listed first.
 func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 	if len(mechanisms) == 0 {
 		panic("xmpp: Must specify at least 1 SASL mechanism")
@@ -74,7 +74,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 			conn := session.Conn()
 
 			var selected sasl.Mechanism
-			// Select a mechanism, prefering the client order.
+			// Select a mechanism, preferring the client order.
 		selectmechanism:
 			for _, m := range mechanisms {
 				for _, name := range data.([]string) {

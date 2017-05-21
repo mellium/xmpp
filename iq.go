@@ -42,7 +42,7 @@ const (
 	// ResultIQ is sent in response to a successful get or set IQ.
 	ResultIQ
 
-	// ErrorIQ is sent to report that an error occured during the delivery or
+	// ErrorIQ is sent to report that an error occurred during the delivery or
 	// processing of a get or set IQ.
 	ErrorIQ
 )
