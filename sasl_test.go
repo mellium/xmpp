@@ -25,8 +25,8 @@ func TestSASLPanicsNoMechanisms(t *testing.T) {
 }
 
 func TestSASLList(t *testing.T) {
-	var b bytes.Buffer
-	e := xml.NewEncoder(&b)
+	b := &bytes.Buffer{}
+	e := xml.NewEncoder(b)
 	start := xml.StartElement{Name: xml.Name{Space: ns.SASL, Local: "mechanisms"}}
 	s := SASL(sasl.Plain, sasl.ScramSha256)
 	req, err := s.List(context.Background(), e, start)
@@ -41,15 +41,15 @@ func TestSASLList(t *testing.T) {
 	}
 
 	// Mechanisms should be printed exactly thus:
-	if !bytes.Contains((&b).Bytes(), []byte(`<mechanism>PLAIN</mechanism>`)) {
+	if !bytes.Contains(b.Bytes(), []byte(`<mechanism>PLAIN</mechanism>`)) {
 		t.Error("Expected mechanisms list to include PLAIN")
 	}
-	if !bytes.Contains((&b).Bytes(), []byte(`<mechanism>SCRAM-SHA-256</mechanism>`)) {
+	if !bytes.Contains(b.Bytes(), []byte(`<mechanism>SCRAM-SHA-256</mechanism>`)) {
 		t.Error("Expected mechanisms list to include SCRAM-SHA-256")
 	}
 
 	// The wrapper can be a bit more flexible as long as the mechanisms are there.
-	d := xml.NewDecoder(&b)
+	d := xml.NewDecoder(b)
 	tok, err := d.Token()
 	if err != nil {
 		t.Fatal(err)
