@@ -39,21 +39,21 @@ func BenchmarkNew(b *testing.B) {
 }
 
 func BenchmarkCopy(b *testing.B) {
-	j := &JID{"user", "example.com", "resource"}
+	j := &JID{4, 11, []byte("userexample.comresource")}
 	for i := 0; i < b.N; i++ {
 		j.Copy()
 	}
 }
 
 func BenchmarkBare(b *testing.B) {
-	j := &JID{"user", "example.com", "resource"}
+	j := &JID{4, 11, []byte("userexample.comresource")}
 	for i := 0; i < b.N; i++ {
 		j.Bare()
 	}
 }
 
 func BenchmarkString(b *testing.B) {
-	j := &JID{"user", "example.com", "resource"}
+	j := &JID{4, 11, []byte("userexample.comresource")}
 	for i := 0; i < b.N; i++ {
 		_ = j.String()
 	}

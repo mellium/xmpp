@@ -5,6 +5,7 @@
 package jid
 
 import (
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"net"
@@ -21,9 +22,9 @@ import (
 // UTF-8 and will be represented in their canonical form which gives comparison
 // the greatest chance of succeeding.
 type JID struct {
-	localpart    string
-	domainpart   string
-	resourcepart string
+	locallen  int
+	domainlen int
+	data      []byte
 }
 
 // Parse constructs a new JID from the given string representation.
@@ -89,28 +90,34 @@ func New(localpart, domainpart, resourcepart string) (*JID, error) {
 	// TODO: I have no idea what this is talking about… what rules? RFC 5892 is a
 	//       bunch of property lists. Maybe it meant RFC 5895?
 
+	var lenlocal int
+	data := make([]byte, 0, len(localpart)+len(domainpart)+len(resourcepart))
+
 	if localpart != "" {
-		localpart, err = precis.UsernameCaseMapped.String(localpart)
+		data, err = precis.UsernameCaseMapped.Append(data, []byte(localpart))
 		if err != nil {
 			return nil, err
 		}
+		lenlocal = len(data)
 	}
+
+	data = append(data, []byte(domainpart)...)
 
 	if resourcepart != "" {
-		resourcepart, err = precis.OpaqueString.String(resourcepart)
+		data, err = precis.OpaqueString.Append(data, []byte(resourcepart))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := commonChecks(localpart, domainpart, resourcepart); err != nil {
+	if err := commonChecks(data[:lenlocal], domainpart, data[lenlocal+len(domainpart):]); err != nil {
 		return nil, err
 	}
 
 	return &JID{
-		localpart:    localpart,
-		domainpart:   domainpart,
-		resourcepart: resourcepart,
+		locallen:  lenlocal,
+		domainlen: len(domainpart),
+		data:      data,
 	}, nil
 }
 
@@ -118,9 +125,9 @@ func New(localpart, domainpart, resourcepart string) (*JID, error) {
 // called a "bare" JID.
 func (j *JID) Bare() *JID {
 	return &JID{
-		localpart:    j.localpart,
-		domainpart:   j.domainpart,
-		resourcepart: "",
+		locallen:  j.locallen,
+		domainlen: j.domainlen,
+		data:      j.data[:j.domainlen+j.locallen],
 	}
 }
 
@@ -131,9 +138,8 @@ func (j *JID) Domain() *JID {
 	}
 
 	return &JID{
-		localpart:    "",
-		domainpart:   j.domainpart,
-		resourcepart: "",
+		domainlen: j.domainlen,
+		data:      j.data[j.locallen : j.domainlen+j.locallen],
 	}
 }
 
@@ -142,12 +148,12 @@ func (j *JID) Localpart() string {
 	if j == nil {
 		return ""
 	}
-	return j.localpart
+	return string(j.data[:j.locallen])
 }
 
 // Domainpart gets the domainpart of a JID (eg. "example.net").
 func (j *JID) Domainpart() string {
-	return j.domainpart
+	return string(j.data[j.locallen : j.locallen+j.domainlen])
 }
 
 // Resourcepart gets the resourcepart of a JID.
@@ -155,7 +161,7 @@ func (j *JID) Resourcepart() string {
 	if j == nil {
 		return ""
 	}
-	return j.resourcepart
+	return string(j.data[j.locallen+j.domainlen:])
 }
 
 // Copy makes a copy of the given JID. j.Equal(j.Copy()) will always return
@@ -166,9 +172,9 @@ func (j *JID) Copy() *JID {
 	}
 
 	return &JID{
-		localpart:    j.localpart,
-		domainpart:   j.domainpart,
-		resourcepart: j.resourcepart,
+		locallen:  j.locallen,
+		domainlen: j.domainlen,
+		data:      j.data,
 	}
 }
 
@@ -183,12 +189,12 @@ func (j *JID) String() string {
 	if j == nil {
 		return ""
 	}
-	s := j.domainpart
-	if j.localpart != "" {
-		s = j.localpart + "@" + s
+	s := string(j.data[:j.locallen])
+	if len(s) > 0 {
+		s = s + "@" + string(j.data[j.locallen:j.locallen+j.domainlen])
 	}
-	if j.resourcepart != "" {
-		s = s + "/" + j.resourcepart
+	if len(s) != len(j.data)+1 {
+		s = s + "/" + string(j.data[j.locallen+j.domainlen:])
 	}
 	return s
 }
@@ -198,8 +204,15 @@ func (j *JID) Equal(j2 *JID) bool {
 	if j == nil || j2 == nil {
 		return j == j2
 	}
-	return j.Localpart() == j2.Localpart() &&
-		j.Domainpart() == j2.Domainpart() && j.Resourcepart() == j2.Resourcepart()
+	if len(j.data) != len(j2.data) {
+		return false
+	}
+	for i := 0; i < len(j.data); i++ {
+		if j.data[i] != j2.data[i] {
+			return false
+		}
+	}
+	return j.locallen == j2.locallen && j.domainlen == j2.domainlen
 }
 
 // MarshalXML satisfies the xml.Marshaler interface and marshals the JID as
@@ -230,9 +243,9 @@ func (j *JID) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 	j2, err := Parse(data.CharData)
 
 	if err == nil {
-		j.localpart = j2.localpart
-		j.domainpart = j2.domainpart
-		j.resourcepart = j2.resourcepart
+		j.locallen = j2.locallen
+		j.domainlen = j2.domainlen
+		j.data = j2.data
 	}
 
 	return
@@ -254,9 +267,9 @@ func (j *JID) UnmarshalXMLAttr(attr xml.Attr) error {
 		return nil
 	}
 	jid, err := Parse(attr.Value)
-	j.localpart = jid.localpart
-	j.domainpart = jid.domainpart
-	j.resourcepart = jid.resourcepart
+	j.locallen = jid.locallen
+	j.domainlen = jid.domainlen
+	j.data = jid.data
 	return err
 }
 
@@ -339,7 +352,7 @@ func checkIP6String(domainpart string) error {
 	return nil
 }
 
-func commonChecks(localpart, domainpart, resourcepart string) error {
+func commonChecks(localpart []byte, domainpart string, resourcepart []byte) error {
 	l := len(localpart)
 	if l > 1023 {
 		return errors.New("The localpart must be smaller than 1024 bytes")
@@ -348,7 +361,7 @@ func commonChecks(localpart, domainpart, resourcepart string) error {
 	// RFC 7622 §3.3.1 provides a small table of characters which are still not
 	// allowed in localpart's even though the IdentifierClass base class and the
 	// UsernameCaseMapped profile don't forbid them; disallow them here.
-	if strings.ContainsAny(localpart, `"&'/:<>@`) {
+	if bytes.ContainsAny(localpart, `"&'/:<>@`) {
 		return errors.New("Localpart contains forbidden characters")
 	}
 
