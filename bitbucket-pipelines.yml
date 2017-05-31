@@ -1,4 +1,4 @@
-image: golang:1.7
+image: golang:1.8
 pipelines:
   default:
     - step:
