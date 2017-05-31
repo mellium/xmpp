@@ -8,7 +8,7 @@ pipelines:
           - cd "$GOPATH/src/mellium.im/xmpp"
           - go-wrapper download
           - go version
+          - go env
           - make vet
           - make test
-          - go build -race
           - make bench
