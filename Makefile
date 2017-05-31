@@ -6,7 +6,7 @@ test:
 
 .PHONEY: bench
 bench:
-	go test -cover -bench . -benchmem -run 'Benchmark.*' $(PACKAGES)
+	go test -bench . -benchmem -run NONE $(PACKAGES)
 
 .PHONEY: vet
 vet:
