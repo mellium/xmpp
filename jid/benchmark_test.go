@@ -32,9 +32,21 @@ func BenchmarkParseStringIPv6(b *testing.B) {
 	}
 }
 
-func BenchmarkNew(b *testing.B) {
+func BenchmarkNewFull(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		New("user", "example.com", "resource")
+	}
+}
+
+func BenchmarkNewBare(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		New("user", "example.com", "")
+	}
+}
+
+func BenchmarkNewDomain(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		New("", "example.com", "")
 	}
 }
 
