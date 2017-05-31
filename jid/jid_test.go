@@ -251,8 +251,17 @@ func TestString(t *testing.T) {
 			}
 
 			// Check that String() does not allocate
-			if n := testing.AllocsPerRun(1000, func() { _ = j.String() }); n > 0 {
-				t.Errorf("got %f allocs, want 0", n)
+
+			// If the code is instrumented for coverage, allocations that happen there
+			// break this test. This is annoying, but I'm not sure of a better way to
+			// fix it.
+			var okallocs float64
+			if testing.CoverMode() != "" {
+				okallocs = 3.0
+			}
+
+			if n := testing.AllocsPerRun(1000, func() { _ = j.String() }); n > okallocs {
+				t.Errorf("got %f allocs, want %f", n, okallocs)
 			}
 		})
 	}
