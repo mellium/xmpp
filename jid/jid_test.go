@@ -235,8 +235,30 @@ func TestUnmarshal(t *testing.T) {
 	}
 }
 
-// TODO: Malloc tests may be flakey under GCC until it improves its escape
-//       analysis.
+func TestString(t *testing.T) {
+	for i, tc := range [...]string{
+		0: "example.com",
+		1: "feste@example.com",
+		2: "feste@example.com/testabc",
+		3: "example.com/test",
+	} {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			j := MustParse(tc)
+
+			// Check that String() and Parse() are inverse functions
+			if js := j.String(); js != tc {
+				t.Errorf("want=%s, got=%s", tc, js)
+			}
+
+			// Check that String() does not allocate
+			if n := testing.AllocsPerRun(1000, func() { _ = j.String() }); n > 0 {
+				t.Errorf("got %f allocs, want 0", n)
+			}
+		})
+	}
+}
+
+// Malloc tests may be flakey under GCC until it improves its escape analysis.
 
 func TestSplitMallocs(t *testing.T) {
 	if n := testing.AllocsPerRun(1000, func() { SplitString("olivia@example.net/ilyria") }); n > 0 {

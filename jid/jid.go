@@ -189,11 +189,13 @@ func (j *JID) String() string {
 	if j == nil {
 		return ""
 	}
-	s := string(j.data[:j.locallen])
-	if len(s) > 0 {
-		s = s + "@" + string(j.data[j.locallen:j.locallen+j.domainlen])
+	s := string(j.data[j.locallen : j.locallen+j.domainlen])
+	var addsep int
+	if j.locallen > 0 {
+		s = string(j.data[:j.locallen]) + "@" + s
+		addsep = 1
 	}
-	if len(s) != len(j.data)+1 {
+	if len(s) != len(j.data)+addsep {
 		s = s + "/" + string(j.data[j.locallen+j.domainlen:])
 	}
 	return s
