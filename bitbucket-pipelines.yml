@@ -3,6 +3,7 @@ pipelines:
   default:
     - step:
         script:
+          - uname -a; true
           - mkdir -p "$GOPATH/src/mellium.im/"
           - ln -s "`pwd`" "$GOPATH/src/mellium.im/xmpp"
           - cd "$GOPATH/src/mellium.im/xmpp"
