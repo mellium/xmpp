@@ -190,12 +190,12 @@ func (s *Session) negotiateStreams(ctx context.Context, rw io.ReadWriter) (err e
 					return err
 				}
 			} else {
-				// If we're the initiating entity, send a new stream and then wait for one
-				// in response.
-				if err := sendNewStream(s, s.config, ""); err != nil {
+				// If we're the initiating entity, send a new stream and then wait for
+				// one in response.
+				if err = sendNewStream(s, s.config, ""); err != nil {
 					return err
 				}
-				if err := expectNewStream(ctx, s); err != nil {
+				if err = expectNewStream(ctx, s); err != nil {
 					return err
 				}
 			}
