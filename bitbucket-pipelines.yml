@@ -1,7 +1,9 @@
-image: golang:1.8
+image: golang:latest
 pipelines:
   default:
     - step:
+        caches:
+          - gopath
         script:
           - mkdir -p "$GOPATH/src/mellium.im/"
           - ln -s "`pwd`" "$GOPATH/src/mellium.im/xmpp"
@@ -12,3 +14,6 @@ pipelines:
           - make vet
           - make test
           - make bench
+definitions:
+  caches:
+    gopath: mkdir -p "$GOPATH/src/"
