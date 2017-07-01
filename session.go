@@ -8,13 +8,10 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"net"
-	"reflect"
 	"sync"
 
-	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/streamerror"
 )
@@ -87,75 +84,6 @@ type Session struct {
 		stream
 		e *xml.Encoder
 	}
-}
-
-// Send is used to marshal an element into XML and transmit it over the egress
-// stream. If the interface is composed of a stanza (IQ, Message, or Presence)
-// and the from or id attributes are empty, an appropriate value is inserted in
-// the output XML.
-func (s *Session) Send(v interface{}) error {
-	v = enforceStanzaSemantics(v)
-	return s.out.e.Encode(v)
-}
-
-func enforceStanzaSemantics(v interface{}) interface{} {
-	// TODO: This is horrifying, and probably buggy. There has got to be a better
-	//       way that I haven't thought of…
-
-	var (
-		stanza    interface{}
-		fieldname string
-	)
-	switch copier := v.(type) {
-	case interface {
-		copyIQ() IQ
-	}:
-		iq := copier.copyIQ()
-		if iq.ID == "" {
-			iq.ID = internal.RandomID()
-		}
-		stanza = iq
-		fieldname = "IQ"
-	case interface {
-		copyMessage() Message
-	}:
-		m := copier.copyMessage()
-		if m.ID == "" {
-			m.ID = internal.RandomID()
-		}
-		stanza = m
-		fieldname = "Message"
-	case interface {
-		copyPresence() Presence
-	}:
-		p := copier.copyPresence()
-		if p.ID == "" {
-			p.ID = internal.RandomID()
-		}
-		stanza = p
-		fieldname = "Presence"
-	default:
-		return v
-	}
-
-	val, err := getCopy(reflect.ValueOf(v))
-	if err != nil {
-		return nil
-	}
-	val.FieldByName(fieldname).Set(reflect.ValueOf(stanza))
-	v = val.Interface()
-
-	return v
-}
-
-func getCopy(val reflect.Value) (v reflect.Value, err error) {
-	for val.Kind() == reflect.Interface || val.Kind() == reflect.Ptr {
-		if val.IsNil() {
-			return v, fmt.Errorf("Failed")
-		}
-		val = val.Elem()
-	}
-	return reflect.New(val.Type()).Elem(), nil
 }
 
 // Feature checks if a feature with the given namespace was advertised

@@ -25,10 +25,6 @@ type IQ struct {
 	Type    iqType   `xml:"type,attr"`
 }
 
-func (iq IQ) copyIQ() IQ {
-	return iq
-}
-
 type iqType int
 
 const (

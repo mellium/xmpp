@@ -26,10 +26,6 @@ type Message struct {
 	Type    messageType `xml:"type,attr,omitempty"`
 }
 
-func (m Message) copyMessage() Message {
-	return m
-}
-
 type messageType int
 
 const (
