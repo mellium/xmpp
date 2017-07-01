@@ -86,18 +86,6 @@ type Session struct {
 	}
 }
 
-// Feature checks if a feature with the given namespace was advertised
-// by the server for the current stream. If it was data will be the canonical
-// representation of the feature as returned by the feature's Parse function.
-func (s *Session) Feature(namespace string) (data interface{}, ok bool) {
-	s.flock.Lock()
-	defer s.flock.Unlock()
-
-	// TODO: Make the features struct actually store the parsed representation.
-	data, ok = s.features[namespace]
-	return
-}
-
 // NewSession attempts to use an existing connection (or any io.ReadWriteCloser) to
 // negotiate an XMPP session based on the given config. If the provided context
 // is canceled before stream negotiation is complete an error is returned. After
@@ -117,45 +105,29 @@ func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session
 	if err != nil {
 		return nil, err
 	}
-	if config.Handler != nil {
-		go s.handleInputStream()
-	}
 	return s, err
 }
 
-func (s *Session) handleInputStream() {
-	for {
-		select {
-		case <-s.in.ctx.Done():
-			return
-		default:
-		}
-		// TODO: This needs to be cancelable somehow.
-		tok, err := s.Decoder().Token()
-		if err != nil {
-			select {
-			case <-s.in.ctx.Done():
-				return
-			default:
-				// TODO: We need a way to figure out if this was an XML error or an error
-				// with the underlying connection.
-				s.Encoder().Encode(streamerror.BadFormat)
-			}
-		}
-		switch t := tok.(type) {
-		case xml.StartElement:
-			s.config.Handler.HandleXMPP(s, &t)
-		default:
-			select {
-			case <-s.in.ctx.Done():
-				return
-			default:
-				// TODO: We need a way to figure out if this was an XML error or an error
-				// with the underlying connection.
-				s.Encoder().Encode(streamerror.BadFormat)
-			}
-		}
-	}
+// Serve decodes incoming XML tokens from the connection and delegates handling
+// them to the provided handler.
+// If an error is returned from the handler and it is of type StanzaError or
+// streamerror.StreamError, the error is marshaled and sent over the XML stream.
+// If any other error type is returned, it is marshaled as an
+// undefined-condition StreamError.
+func Serve(s *Session, handler Handler) {
+	s.handleInputStream(handler)
+}
+
+// Feature checks if a feature with the given namespace was advertised
+// by the server for the current stream. If it was data will be the canonical
+// representation of the feature as returned by the feature's Parse function.
+func (s *Session) Feature(namespace string) (data interface{}, ok bool) {
+	s.flock.Lock()
+	defer s.flock.Unlock()
+
+	// TODO: Make the features struct actually store the parsed representation.
+	data, ok = s.features[namespace]
+	return
 }
 
 // Conn returns the Session's backing net.Conn or other ReadWriter.
@@ -235,4 +207,46 @@ func (s *Session) RemoteAddr() *jid.JID {
 		return s.config.Origin
 	}
 	return s.config.Location
+}
+
+func (s *Session) handleInputStream(handler Handler) {
+	for {
+		select {
+		case <-s.in.ctx.Done():
+			return
+		default:
+		}
+		tok, err := s.Decoder().Token()
+		if err != nil {
+			select {
+			case <-s.in.ctx.Done():
+				return
+			default:
+				// TODO: We need a way to figure out if this was an XML error or an
+				// error with the underlying connection.
+				s.Encoder().Encode(streamerror.BadFormat)
+			}
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			if err = handler.HandleXMPP(s, &t); err != nil {
+				switch err.(type) {
+				case StanzaError, streamerror.StreamError:
+					s.Encoder().Encode(err)
+				default:
+					// TODO: Should this error have a payload?
+					s.Encoder().Encode(streamerror.UndefinedCondition)
+				}
+			}
+		default:
+			select {
+			case <-s.in.ctx.Done():
+				return
+			default:
+				// TODO: We need a way to figure out if this was an XML error or an
+				// error with the underlying connection.
+				s.Encoder().Encode(streamerror.BadFormat)
+			}
+		}
+	}
 }
