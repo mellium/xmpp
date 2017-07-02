@@ -225,6 +225,7 @@ func (s *Session) handleInputStream(handler Handler) {
 				// TODO: We need a way to figure out if this was an XML error or an
 				// error with the underlying connection.
 				s.Encoder().Encode(streamerror.BadFormat)
+				return
 			}
 		}
 		switch t := tok.(type) {
