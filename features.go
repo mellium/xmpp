@@ -9,6 +9,7 @@ import (
 	"encoding/xml"
 	"io"
 
+	"mellium.im/xmpp/codec"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stream"
 )
@@ -39,14 +40,14 @@ type StreamFeature struct {
 	// used as the outermost tag in the stream (but also may be ignored). List
 	// implementations that call e.EncodeToken directly need to call e.Flush when
 	// finished to ensure that the XML is written to the underlying writer.
-	List func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error)
+	List func(ctx context.Context, e codec.Encoder, start xml.StartElement) (req bool, err error)
 
 	// Used to parse the feature that begins with the given xml start element
 	// (which should have a Name that matches this stream feature's Name).
 	// Returns whether or not the feature is required, and any data that will be
 	// needed if the feature is selected for negotiation (eg. the list of
 	// mechanisms if the feature was SASL).
-	Parse func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (req bool, data interface{}, err error)
+	Parse func(ctx context.Context, d codec.Decoder, start *xml.StartElement) (req bool, data interface{}, err error)
 
 	// A function that will take over the session temporarily while negotiating
 	// the feature. The "mask" SessionState represents the state bits that should

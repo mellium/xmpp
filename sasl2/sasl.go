@@ -20,6 +20,7 @@ import (
 
 	"mellium.im/sasl"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/codec"
 	"mellium.im/xmpp/internal/saslerr"
 	"mellium.im/xmpp/stream"
 )
@@ -48,7 +49,7 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 		Name:       xml.Name{Space: NS, Local: "mechanisms"},
 		Necessary:  xmpp.Secure,
 		Prohibited: xmpp.Authn,
-		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+		List: func(ctx context.Context, e codec.Encoder, start xml.StartElement) (req bool, err error) {
 			req = true
 			if err = e.EncodeToken(start); err != nil {
 				return
@@ -74,7 +75,7 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 			}
 			return req, e.EncodeToken(start.End())
 		},
-		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, d codec.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName xml.Name `xml:"urn:xmpp:sasl:0 mechanisms"`
 				List    []string `xml:"urn:xmpp:sasl:0 mechanism"`
@@ -201,7 +202,7 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 	}
 }
 
-func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement, allowChallenge bool) (challenge []byte, success bool, err error) {
+func decodeSASLChallenge(d codec.Decoder, start xml.StartElement, allowChallenge bool) (challenge []byte, success bool, err error) {
 	switch start.Name {
 	case xml.Name{Space: NS, Local: "challenge"}:
 		if !allowChallenge {

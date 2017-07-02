@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/xml"
 
+	"mellium.im/xmpp/codec"
 	"mellium.im/xmpp/oob"
 )
 
@@ -19,10 +20,10 @@ import (
 func OOB(data *oob.Data, f func(*oob.Data) error) Challenge {
 	return Challenge{
 		Type: oob.NS,
-		Send: func(ctx context.Context, e *xml.Encoder) error {
+		Send: func(ctx context.Context, e codec.Encoder) error {
 			return e.Encode(data)
 		},
-		Receive: func(ctx context.Context, server bool, d *xml.Decoder, start *xml.StartElement) error {
+		Receive: func(ctx context.Context, server bool, d codec.Decoder, start *xml.StartElement) error {
 			// The server does not receive a reply for this mechanism.
 			if server {
 				return nil

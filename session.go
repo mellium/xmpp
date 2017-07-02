@@ -12,6 +12,7 @@ import (
 	"net"
 	"sync"
 
+	"mellium.im/xmpp/codec"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stream"
 )
@@ -75,7 +76,7 @@ type Session struct {
 	in struct {
 		sync.Mutex
 		streamInfo
-		d      *xml.Decoder
+		d      codec.Decoder
 		ctx    context.Context
 		cancel context.CancelFunc
 	}
@@ -135,13 +136,13 @@ func (s *Session) Conn() io.ReadWriter {
 	return s.rw
 }
 
-// Decoder returns the XML decoder that was used to negotiate the latest stream.
-func (s *Session) Decoder() *xml.Decoder {
+// Decoder returns the decoder that was used to negotiate the latest stream.
+func (s *Session) Decoder() codec.Decoder {
 	return s.in.d
 }
 
-// Encoder returns the XML encoder that was used to negotiate the latest stream.
-func (s *Session) Encoder() *xml.Encoder {
+// Encoder returns the encoder that was used to negotiate the latest stream.
+func (s *Session) Encoder() codec.Encoder {
 	return s.out.e
 }
 

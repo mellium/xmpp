@@ -16,6 +16,7 @@ import (
 	"io"
 
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/codec"
 	"mellium.im/xmpp/stream"
 )
 
@@ -43,8 +44,8 @@ func challengeStart(typ string) xml.StartElement {
 	}
 }
 
-func listFunc(challenges ...Challenge) func(context.Context, *xml.Encoder, xml.StartElement) (bool, error) {
-	return func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+func listFunc(challenges ...Challenge) func(context.Context, codec.Encoder, xml.StartElement) (bool, error) {
+	return func(ctx context.Context, e codec.Encoder, start xml.StartElement) (req bool, err error) {
 		if err = e.EncodeToken(start); err != nil {
 			return
 		}
@@ -77,8 +78,8 @@ func listFunc(challenges ...Challenge) func(context.Context, *xml.Encoder, xml.S
 	}
 }
 
-func parseFunc(challenges ...Challenge) func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (req bool, supported interface{}, err error) {
-	return func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+func parseFunc(challenges ...Challenge) func(ctx context.Context, d codec.Decoder, start *xml.StartElement) (req bool, supported interface{}, err error) {
+	return func(ctx context.Context, d codec.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 		// Parse the list of challenge types sent down by the server.
 		parsed := struct {
 			Challenges []string `xml:"urn:xmpp:register:0 challenge"`
@@ -105,7 +106,7 @@ func parseFunc(challenges ...Challenge) func(ctx context.Context, d *xml.Decoder
 	}
 }
 
-func decodeClientResp(ctx context.Context, d *xml.Decoder, decode func(ctx context.Context, server bool, d *xml.Decoder, start *xml.StartElement) error) (cancel bool, err error) {
+func decodeClientResp(ctx context.Context, d codec.Decoder, decode func(ctx context.Context, server bool, d codec.Decoder, start *xml.StartElement) error) (cancel bool, err error) {
 	var tok xml.Token
 	tok, err = d.Token()
 	if err != nil {

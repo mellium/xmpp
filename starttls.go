@@ -13,6 +13,7 @@ import (
 	"io"
 	"net"
 
+	"mellium.im/xmpp/codec"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stream"
 )
@@ -31,7 +32,7 @@ func StartTLS(required bool) StreamFeature {
 	return StreamFeature{
 		Name:       xml.Name{Local: "starttls", Space: ns.StartTLS},
 		Prohibited: Secure,
-		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+		List: func(ctx context.Context, e codec.Encoder, start xml.StartElement) (req bool, err error) {
 			if err = e.EncodeToken(start); err != nil {
 				return required, err
 			}
@@ -46,7 +47,7 @@ func StartTLS(required bool) StreamFeature {
 			}
 			return required, e.EncodeToken(start.End())
 		},
-		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, d codec.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls starttls"`
 				Required struct {

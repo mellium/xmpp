@@ -14,6 +14,7 @@ import (
 	"io"
 
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/codec"
 	"mellium.im/xmpp/stream"
 )
 
@@ -37,7 +38,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 	return xmpp.StreamFeature{
 		Name:      xml.Name{Local: "compression", Space: NSFeatures},
 		Necessary: xmpp.Secure | xmpp.Authn,
-		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+		List: func(ctx context.Context, e codec.Encoder, start xml.StartElement) (req bool, err error) {
 			if err = e.EncodeToken(start); err != nil {
 				return
 			}
@@ -67,7 +68,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 			}
 			return false, e.Flush()
 		},
-		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, d codec.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			listed := struct {
 				XMLName xml.Name `xml:"http://jabber.org/features/compress compression"`
 				Methods []string `xml:"http://jabber.org/features/compress method"`

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 
+	"mellium.im/xmpp/codec"
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
@@ -27,7 +28,7 @@ func BindResource() StreamFeature {
 		Name:       xml.Name{Space: ns.Bind, Local: "bind"},
 		Necessary:  Authn,
 		Prohibited: Ready,
-		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+		List: func(ctx context.Context, e codec.Encoder, start xml.StartElement) (req bool, err error) {
 			req = true
 			if err = e.EncodeToken(start); err != nil {
 				return req, err
@@ -39,7 +40,7 @@ func BindResource() StreamFeature {
 			err = e.Flush()
 			return req, err
 		},
-		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, d codec.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
 			}{}
