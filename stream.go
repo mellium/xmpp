@@ -21,7 +21,7 @@ const (
 	xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>`
 )
 
-type stream struct {
+type streamInfo struct {
 	to      *jid.JID
 	from    *jid.JID
 	id      string
@@ -32,8 +32,8 @@ type stream struct {
 
 // This MUST only return stream errors.
 // TODO: Is the above true? Just make it return a StreamError?
-func streamFromStartElement(s xml.StartElement) (stream, error) {
-	stream := stream{}
+func streamFromStartElement(s xml.StartElement) (streamInfo, error) {
+	stream := streamInfo{}
 	for _, attr := range s.Attr {
 		switch attr.Name {
 		case xml.Name{Space: "", Local: "to"}:
@@ -73,7 +73,7 @@ func streamFromStartElement(s xml.StartElement) (stream, error) {
 // and printing is much faster than encoding. Afterwards, clear the
 // StreamRestartRequired bit and set the output stream information.
 func sendNewStream(s *Session, cfg *Config, id string) error {
-	stream := stream{
+	stream := streamInfo{
 		to:      cfg.Location,
 		from:    cfg.Origin,
 		lang:    cfg.Lang,
@@ -106,7 +106,7 @@ func sendNewStream(s *Session, cfg *Config, id string) error {
 		return err
 	}
 
-	s.out.stream = stream
+	s.out.streamInfo = stream
 	return nil
 }
 
@@ -151,7 +151,7 @@ func expectNewStream(ctx context.Context, s *Session) error {
 				// if we are the initiating entity and there is no stream ID…
 				return streamerror.BadFormat
 			}
-			s.in.stream = stream
+			s.in.streamInfo = stream
 			return nil
 		case xml.ProcInst:
 			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8

@@ -74,14 +74,14 @@ type Session struct {
 
 	in struct {
 		sync.Mutex
-		stream
+		streamInfo
 		d      *xml.Decoder
 		ctx    context.Context
 		cancel context.CancelFunc
 	}
 	out struct {
 		sync.Mutex
-		stream
+		streamInfo
 		e *xml.Encoder
 	}
 }
