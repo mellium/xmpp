@@ -86,7 +86,7 @@ type Session struct {
 	}
 }
 
-// NewSession attempts to use an existing connection (or any io.ReadWriteCloser) to
+// NewSession attempts to use an existing connection (or any io.ReadWriter) to
 // negotiate an XMPP session based on the given config. If the provided context
 // is canceled before stream negotiation is complete an error is returned. After
 // stream negotiation if the context is canceled it has no effect.
