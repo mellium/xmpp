@@ -232,7 +232,7 @@ func (s *Session) handleInputStream(handler Handler) {
 		case xml.StartElement:
 			if err = handler.HandleXMPP(s, &t); err != nil {
 				switch err.(type) {
-				case StanzaError, stream.StreamError:
+				case StanzaError, stream.Error:
 					s.Encoder().Encode(err)
 				default:
 					// TODO: Should this error have a payload?

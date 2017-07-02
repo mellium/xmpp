@@ -10,11 +10,11 @@ import (
 	"testing"
 )
 
-var _ error = (*StreamError)(nil)
-var _ error = StreamError{}
-var _ xml.Marshaler = (*StreamError)(nil)
-var _ xml.Marshaler = StreamError{}
-var _ xml.Unmarshaler = (*StreamError)(nil)
+var _ error = (*Error)(nil)
+var _ error = Error{}
+var _ xml.Marshaler = (*Error)(nil)
+var _ xml.Marshaler = Error{}
+var _ xml.Unmarshaler = (*Error)(nil)
 
 func TestMarshalSeeOtherHost(t *testing.T) {
 	for _, test := range []struct {
@@ -47,7 +47,7 @@ func TestMarshalSeeOtherHost(t *testing.T) {
 func TestUnmarshal(t *testing.T) {
 	for _, test := range []struct {
 		xml string
-		se  StreamError
+		se  Error
 		err bool
 	}{
 		{
@@ -59,7 +59,7 @@ func TestUnmarshal(t *testing.T) {
 			RestrictedXML, true,
 		},
 	} {
-		s := StreamError{}
+		s := Error{}
 		err := xml.Unmarshal([]byte(test.xml), &s)
 		switch {
 		case test.err && err == nil:

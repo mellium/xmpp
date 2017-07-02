@@ -22,12 +22,12 @@ var (
 	// such as <bad-namespace-prefix/>, <invalid-xml/>, <not-well-formed/>,
 	// <restricted-xml/>, and <unsupported-encoding/>. However, the more specific
 	// errors are RECOMMENDED.
-	BadFormat = StreamError{Err: "bad-format"}
+	BadFormat = Error{Err: "bad-format"}
 
 	// BadNamespacePrefix is sent when an entity has sent a namespace prefix that
 	// is unsupported, or has sent no namespace prefix, on an element that needs
 	// such a prefix.
-	BadNamespacePrefix = StreamError{Err: "bad-namespace-prefix"}
+	BadNamespacePrefix = Error{Err: "bad-namespace-prefix"}
 
 	// Conflict is sent when the server either (1) is closing the existing stream
 	// for this entity because a new stream has been initiated that conflicts with
@@ -36,68 +36,68 @@ var (
 	// (e.g., because the server allows only a certain number of connections from
 	// the same IP address or allows only one server-to-server stream for a given
 	// domain pair as a way of helping to ensure in-order processing.
-	Conflict = StreamError{Err: "conflict"}
+	Conflict = Error{Err: "conflict"}
 
 	// ConnectionTimeout results when one party is closing the stream because it
 	// has reason to believe that the other party has permanently lost the ability
 	// to communicate over the stream.
-	ConnectionTimeout = StreamError{Err: "connection-timeout"}
+	ConnectionTimeout = Error{Err: "connection-timeout"}
 
 	// HostGone is sent when the value of the 'to' attribute provided in the
 	// initial stream header corresponds to an FQDN that is no longer serviced by
 	// the receiving entity.
-	HostGone = StreamError{Err: "host-gone"}
+	HostGone = Error{Err: "host-gone"}
 
 	// HostUnknown is sent when the value of the 'to' attribute provided in the
 	// initial stream header does not correspond to an FQDN that is serviced by
 	// the receiving entity.
-	HostUnknown = StreamError{Err: "host-unknown"}
+	HostUnknown = Error{Err: "host-unknown"}
 
 	// ImproperAddressing is used when a stanza sent between two servers lacks a
 	// 'to' or 'from' attribute, the 'from' or 'to' attribute has no value, or the
 	// value violates the rules for XMPP addresses.
-	ImproperAddressing = StreamError{Err: "improper-addressing"}
+	ImproperAddressing = Error{Err: "improper-addressing"}
 
 	// InternalServerError is sent when the server has experienced a
 	// misconfiguration or other internal error that prevents it from servicing
 	// the stream.
-	InternalServerError = StreamError{Err: "internal-server-error"}
+	InternalServerError = Error{Err: "internal-server-error"}
 
 	// InvalidFrom is sent when data provided in a 'from' attribute does not match
 	// an authorized JID or validated domain as negotiated (1) between two servers
 	// using SASL or Server Dialback, or (2) between a client and a server via
 	// SASL authentication and resource binding.
-	InvalidFrom = StreamError{Err: "invalid-from"}
+	InvalidFrom = Error{Err: "invalid-from"}
 
 	// InvalidNamespace may be sent when the stream namespace name is something
 	// other than "http://etherx.jabber.org/streams" or the content namespace
 	// declared as the default namespace is not supported (e.g., something other
 	// than "jabber:client" or "jabber:server").
-	InvalidNamespace = StreamError{Err: "invalid-namespace"}
+	InvalidNamespace = Error{Err: "invalid-namespace"}
 
 	// InvalidXML may be sent when the entity has sent invalid XML over the stream
 	// to a server that performs validation.
-	InvalidXML = StreamError{Err: "invalid-xml"}
+	InvalidXML = Error{Err: "invalid-xml"}
 
 	// NotAuthorized may be sent when the entity has attempted to send XML stanzas
 	// or other outbound data before the stream has been authenticated, or
 	// otherwise is not authorized to perform an action related to stream
 	// negotiation; the receiving entity MUST NOT process the offending data
 	// before sending the stream error.
-	NotAuthorized = StreamError{Err: "not-authorized"}
+	NotAuthorized = Error{Err: "not-authorized"}
 
 	// NotWellFormed may be sent when the initiating entity has sent XML that
 	// violates the well-formedness rules of XML or XML namespaces.
-	NotWellFormed = StreamError{Err: "not-well-formed"}
+	NotWellFormed = Error{Err: "not-well-formed"}
 
 	// PolicyViolation may be sent when an entity has violated some local service
 	// policy (e.g., a stanza exceeds a configured size limit).
-	PolicyViolation = StreamError{Err: "policy-violation"}
+	PolicyViolation = Error{Err: "policy-violation"}
 
 	// RemoteConnectionFailed may be sent when the server is unable to properly
 	// connect to a remote entity that is needed for authentication or
 	// authorization
-	RemoteConnectionFailed = StreamError{Err: "remote-connection-failed"}
+	RemoteConnectionFailed = Error{Err: "remote-connection-failed"}
 
 	// server is closing the stream because it has new (typically
 	// security-critical) features to offer, because the keys or certificates used
@@ -105,34 +105,34 @@ var (
 	// revoked during the life of the stream, because the TLS sequence number has
 	// wrapped, etc. Encryption and authentication need to be negotiated again for
 	// the new stream (e.g., TLS session resumption cannot be used).
-	Reset = StreamError{Err: "reset"}
+	Reset = Error{Err: "reset"}
 
 	// ResourceConstraing may be sent when the server lacks the system resources
 	// necessary to service the stream.
-	ResourceConstraint = StreamError{Err: "resource-constraint"}
+	ResourceConstraint = Error{Err: "resource-constraint"}
 
 	// RestrictedXML may be sent when the entity has attempted to send restricted
 	// XML features such as a comment, processing instruction, DTD subset, or XML
 	// entity reference.
-	RestrictedXML = StreamError{Err: "restricted-xml"}
+	RestrictedXML = Error{Err: "restricted-xml"}
 
 	// SystemShutdown may be sent when server is being shut down and all active
 	// streams are being closed.
-	SystemShutdown = StreamError{Err: "system-shutdown"}
+	SystemShutdown = Error{Err: "system-shutdown"}
 
 	// UndefinedCondition may be sent when the error condition is not one of those
 	// defined by the other conditions in this list; this error condition should
 	// be used in conjunction with an application-specific condition.
-	UndefinedCondition = StreamError{Err: "undefined-condition"}
+	UndefinedCondition = Error{Err: "undefined-condition"}
 
 	// UnsupportedEncoding may be sent when initiating entity has encoded the
 	// stream in an encoding that is not UTF-8.
-	UnsupportedEncoding = StreamError{Err: "unsupported-encoding"}
+	UnsupportedEncoding = Error{Err: "unsupported-encoding"}
 
 	// UnsupportedFeature may be sent when receiving entity has advertised a
 	// mandatory-to-negotiate stream feature that the initiating entity does not
 	// support.
-	UnsupportedFeature = StreamError{Err: "unsupported-feature"}
+	UnsupportedFeature = Error{Err: "unsupported-feature"}
 
 	// UnsupportedStanzaType may be sent when the initiating entity has sent a
 	// first-level child of the stream that is not supported by the server, either
@@ -140,18 +140,18 @@ var (
 	// the receiving entity does not understand the element name for the
 	// applicable namespace (which might be the content namespace declared as the
 	// default namespace).
-	UnsupportedStanzaType = StreamError{Err: "unsupported-stanza-type"}
+	UnsupportedStanzaType = Error{Err: "unsupported-stanza-type"}
 
 	// UnsupportedVersion may be sent when the 'version' attribute provided by the
 	// initiating entity in the stream header specifies a version of XMPP that is
 	// not supported by the server.
-	UnsupportedVersion = StreamError{Err: "unsupported-version"}
+	UnsupportedVersion = Error{Err: "unsupported-version"}
 )
 
 // SeeOtherHostError returns a new see-other-host error with the given network
 // address as the host. If the address appears to be a raw IPv6 address (eg.
 // "::1"), the error wraps it in brackets ("[::1]").
-func SeeOtherHostError(addr net.Addr) StreamError {
+func SeeOtherHostError(addr net.Addr) Error {
 	var cdata string
 
 	// If the address looks like an IPv6 literal, wrap it in []
@@ -161,12 +161,12 @@ func SeeOtherHostError(addr net.Addr) StreamError {
 		cdata = addr.String()
 	}
 
-	return StreamError{"see-other-host", []byte(cdata)}
+	return Error{"see-other-host", []byte(cdata)}
 }
 
-// A StreamError represents an unrecoverable stream-level error that may include
+// A Error represents an unrecoverable stream-level error that may include
 // character data or arbitrary inner XML.
-type StreamError struct {
+type Error struct {
 	Err      string
 	InnerXML []byte
 }
@@ -179,13 +179,13 @@ type StreamError struct {
 //     </stream:error>
 //
 // Error() would return "restricted-xml".
-func (s StreamError) Error() string {
+func (s Error) Error() string {
 	return s.Err
 }
 
 // UnmarshalXML satisfies the xml package's Unmarshaler interface and allows
 // StreamError's to be correctly unmarshaled from XML.
-func (s *StreamError) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (s *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	se := struct {
 		XMLName xml.Name
 		Err     struct {
@@ -204,7 +204,7 @@ func (s *StreamError) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error
 
 // MarshalXML satisfies the xml package's Marshaler interface and allows
 // StreamError's to be correctly marshaled back into XML.
-func (s StreamError) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+func (s Error) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeElement(
 		struct {
 			Err struct {
