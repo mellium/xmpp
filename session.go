@@ -130,7 +130,7 @@ func (s *Session) Feature(namespace string) (data interface{}, ok bool) {
 	return
 }
 
-// Conn returns the Session's backing net.Conn or other ReadWriter.
+// Conn returns the Session's backing net.Conn or other io.ReadWriter.
 func (s *Session) Conn() io.ReadWriter {
 	return s.rw
 }
