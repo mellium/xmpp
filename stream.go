@@ -33,37 +33,37 @@ type streamInfo struct {
 // This MUST only return stream errors.
 // TODO: Is the above true? Just make it return a StreamError?
 func streamFromStartElement(s xml.StartElement) (streamInfo, error) {
-	stream := streamInfo{}
+	streamData := streamInfo{}
 	for _, attr := range s.Attr {
 		switch attr.Name {
 		case xml.Name{Space: "", Local: "to"}:
-			stream.to = &jid.JID{}
-			if err := stream.to.UnmarshalXMLAttr(attr); err != nil {
-				return stream, streamerror.ImproperAddressing
+			streamData.to = &jid.JID{}
+			if err := streamData.to.UnmarshalXMLAttr(attr); err != nil {
+				return streamData, streamerror.ImproperAddressing
 			}
 		case xml.Name{Space: "", Local: "from"}:
-			stream.from = &jid.JID{}
-			if err := stream.from.UnmarshalXMLAttr(attr); err != nil {
-				return stream, streamerror.ImproperAddressing
+			streamData.from = &jid.JID{}
+			if err := streamData.from.UnmarshalXMLAttr(attr); err != nil {
+				return streamData, streamerror.ImproperAddressing
 			}
 		case xml.Name{Space: "", Local: "id"}:
-			stream.id = attr.Value
+			streamData.id = attr.Value
 		case xml.Name{Space: "", Local: "version"}:
-			(&stream.version).UnmarshalXMLAttr(attr)
+			(&streamData.version).UnmarshalXMLAttr(attr)
 		case xml.Name{Space: "", Local: "xmlns"}:
 			if attr.Value != "jabber:client" && attr.Value != "jabber:server" {
-				return stream, streamerror.InvalidNamespace
+				return streamData, streamerror.InvalidNamespace
 			}
-			stream.xmlns = attr.Value
+			streamData.xmlns = attr.Value
 		case xml.Name{Space: "xmlns", Local: "stream"}:
 			if attr.Value != ns.Stream {
-				return stream, streamerror.InvalidNamespace
+				return streamData, streamerror.InvalidNamespace
 			}
 		case xml.Name{Space: "xml", Local: "lang"}:
-			stream.lang = language.Make(attr.Value)
+			streamData.lang = language.Make(attr.Value)
 		}
 	}
-	return stream, nil
+	return streamData, nil
 }
 
 // Sends a new XML header followed by a stream start element on the given
@@ -73,7 +73,7 @@ func streamFromStartElement(s xml.StartElement) (streamInfo, error) {
 // and printing is much faster than encoding. Afterwards, clear the
 // StreamRestartRequired bit and set the output stream information.
 func sendNewStream(s *Session, cfg *Config, id string) error {
-	stream := streamInfo{
+	streamData := streamInfo{
 		to:      cfg.Location,
 		from:    cfg.Origin,
 		lang:    cfg.Lang,
@@ -81,12 +81,12 @@ func sendNewStream(s *Session, cfg *Config, id string) error {
 	}
 	switch cfg.S2S {
 	case true:
-		stream.xmlns = ns.Server
+		streamData.xmlns = ns.Server
 	case false:
-		stream.xmlns = ns.Client
+		streamData.xmlns = ns.Client
 	}
 
-	stream.id = id
+	streamData.id = id
 	if id == "" {
 		id = " "
 	} else {
@@ -100,13 +100,13 @@ func sendNewStream(s *Session, cfg *Config, id string) error {
 		cfg.Origin.String(),
 		cfg.Version,
 		cfg.Lang,
-		stream.xmlns,
+		streamData.xmlns,
 	)
 	if err != nil {
 		return err
 	}
 
-	s.out.streamInfo = stream
+	s.out.streamInfo = streamData
 	return nil
 }
 
@@ -139,19 +139,19 @@ func expectNewStream(ctx context.Context, s *Session) error {
 				return streamerror.InvalidNamespace
 			}
 
-			stream, err := streamFromStartElement(tok)
+			streamData, err := streamFromStartElement(tok)
 			switch {
 			case err != nil:
 				return err
-			case stream.version != internal.DefaultVersion:
+			case streamData.version != internal.DefaultVersion:
 				return streamerror.UnsupportedVersion
 			}
 
-			if (s.state&Received) != Received && stream.id == "" {
+			if (s.state&Received) != Received && streamData.id == "" {
 				// if we are the initiating entity and there is no stream ID…
 				return streamerror.BadFormat
 			}
-			s.in.streamInfo = stream
+			s.in.streamInfo = streamData
 			return nil
 		case xml.ProcInst:
 			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8
