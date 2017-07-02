@@ -14,7 +14,7 @@ import (
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
-	"mellium.im/xmpp/streamerror"
+	"mellium.im/xmpp/stream"
 )
 
 const (
@@ -39,12 +39,12 @@ func streamFromStartElement(s xml.StartElement) (streamInfo, error) {
 		case xml.Name{Space: "", Local: "to"}:
 			streamData.to = &jid.JID{}
 			if err := streamData.to.UnmarshalXMLAttr(attr); err != nil {
-				return streamData, streamerror.ImproperAddressing
+				return streamData, stream.ImproperAddressing
 			}
 		case xml.Name{Space: "", Local: "from"}:
 			streamData.from = &jid.JID{}
 			if err := streamData.from.UnmarshalXMLAttr(attr); err != nil {
-				return streamData, streamerror.ImproperAddressing
+				return streamData, stream.ImproperAddressing
 			}
 		case xml.Name{Space: "", Local: "id"}:
 			streamData.id = attr.Value
@@ -52,12 +52,12 @@ func streamFromStartElement(s xml.StartElement) (streamInfo, error) {
 			(&streamData.version).UnmarshalXMLAttr(attr)
 		case xml.Name{Space: "", Local: "xmlns"}:
 			if attr.Value != "jabber:client" && attr.Value != "jabber:server" {
-				return streamData, streamerror.InvalidNamespace
+				return streamData, stream.InvalidNamespace
 			}
 			streamData.xmlns = attr.Value
 		case xml.Name{Space: "xmlns", Local: "stream"}:
 			if attr.Value != ns.Stream {
-				return streamData, streamerror.InvalidNamespace
+				return streamData, stream.InvalidNamespace
 			}
 		case xml.Name{Space: "xml", Local: "lang"}:
 			streamData.lang = language.Make(attr.Value)
@@ -128,15 +128,15 @@ func expectNewStream(ctx context.Context, s *Session) error {
 		case xml.StartElement:
 			switch {
 			case tok.Name.Local == "error" && tok.Name.Space == ns.Stream:
-				se := streamerror.StreamError{}
+				se := stream.StreamError{}
 				if err := d.DecodeElement(&se, &tok); err != nil {
 					return err
 				}
 				return se
 			case tok.Name.Local != "stream":
-				return streamerror.BadFormat
+				return stream.BadFormat
 			case tok.Name.Space != ns.Stream:
-				return streamerror.InvalidNamespace
+				return stream.InvalidNamespace
 			}
 
 			streamData, err := streamFromStartElement(tok)
@@ -144,12 +144,12 @@ func expectNewStream(ctx context.Context, s *Session) error {
 			case err != nil:
 				return err
 			case streamData.version != internal.DefaultVersion:
-				return streamerror.UnsupportedVersion
+				return stream.UnsupportedVersion
 			}
 
 			if (s.state&Received) != Received && streamData.id == "" {
 				// if we are the initiating entity and there is no stream ID…
-				return streamerror.BadFormat
+				return stream.BadFormat
 			}
 			s.in.streamInfo = streamData
 			return nil
@@ -159,11 +159,11 @@ func expectNewStream(ctx context.Context, s *Session) error {
 				foundHeader = true
 				continue
 			}
-			return streamerror.RestrictedXML
+			return stream.RestrictedXML
 		case xml.EndElement:
-			return streamerror.NotWellFormed
+			return stream.NotWellFormed
 		default:
-			return streamerror.RestrictedXML
+			return stream.RestrictedXML
 		}
 	}
 }

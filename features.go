@@ -10,7 +10,7 @@ import (
 	"io"
 
 	"mellium.im/xmpp/internal/ns"
-	"mellium.im/xmpp/streamerror"
+	"mellium.im/xmpp/stream"
 )
 
 // A StreamFeature represents a feature that may be selected during stream
@@ -88,7 +88,7 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 		}
 		start, ok = t.(xml.StartElement)
 		if !ok {
-			return done, nil, streamerror.BadFormat
+			return done, nil, stream.BadFormat
 		}
 
 		// If we're the client read the rest of the stream features list.
@@ -120,7 +120,7 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 			}
 			start, ok = t.(xml.StartElement)
 			if !ok {
-				return done, nil, streamerror.BadFormat
+				return done, nil, stream.BadFormat
 			}
 
 			// If the feature was not sent or was already negotiated, error.
@@ -129,7 +129,7 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 			data, sent = list.cache[start.Name.Space]
 			if !sent || negotiated {
 				// TODO: What should we return here?
-				return done, rw, streamerror.PolicyViolation
+				return done, rw, stream.PolicyViolation
 			}
 		} else {
 			// If we're the client, iterate through the cached features and select one
@@ -236,9 +236,9 @@ func writeStreamFeatures(ctx context.Context, s *Session) (list *streamFeaturesL
 func readStreamFeatures(ctx context.Context, s *Session, start xml.StartElement) (*streamFeaturesList, error) {
 	switch {
 	case start.Name.Local != "features":
-		return nil, streamerror.InvalidXML
+		return nil, stream.InvalidXML
 	case start.Name.Space != ns.Stream:
-		return nil, streamerror.BadNamespacePrefix
+		return nil, stream.BadNamespacePrefix
 	}
 
 	// Lock the connection features list.
@@ -298,9 +298,9 @@ parsefeatures:
 			}
 			// Oops, how did that happen? We shouldn't have been able to hit an end
 			// element that wasn't the </stream:features> token.
-			return nil, streamerror.InvalidXML
+			return nil, stream.InvalidXML
 		default:
-			return nil, streamerror.RestrictedXML
+			return nil, stream.RestrictedXML
 		}
 	}
 }

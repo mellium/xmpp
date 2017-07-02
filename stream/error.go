@@ -8,7 +8,7 @@
 // conflicts with similarly named stanza error conditions and because they are
 // less frequently used. Most people will want to use the facilities of the
 // mellium.im/xmpp package and not create stream errors directly.
-package streamerror // import "mellium.im/xmpp/streamerror"
+package stream // import "mellium.im/xmpp/stream"
 
 import (
 	"encoding/xml"

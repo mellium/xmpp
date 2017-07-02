@@ -21,7 +21,7 @@ import (
 	"mellium.im/sasl"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/saslerr"
-	"mellium.im/xmpp/streamerror"
+	"mellium.im/xmpp/stream"
 )
 
 // BUG(ssw): feature may provide a security layer, but is not byte precise.
@@ -159,7 +159,7 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 						return mask, nil, err
 					}
 				} else {
-					return mask, nil, streamerror.BadFormat
+					return mask, nil, stream.BadFormat
 				}
 			}
 
@@ -181,7 +181,7 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 						return mask, nil, err
 					}
 				} else {
-					return mask, nil, streamerror.BadFormat
+					return mask, nil, stream.BadFormat
 				}
 				if more, resp, err = client.Step(challenge); err != nil {
 					return mask, nil, err
@@ -205,7 +205,7 @@ func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement, allowChallenge 
 	switch start.Name {
 	case xml.Name{Space: NS, Local: "challenge"}:
 		if !allowChallenge {
-			return nil, false, streamerror.UnsupportedStanzaType
+			return nil, false, stream.UnsupportedStanzaType
 		}
 		challenge := struct {
 			Data []byte `xml:",chardata"`
@@ -230,6 +230,6 @@ func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement, allowChallenge 
 		}
 		return nil, false, fail
 	default:
-		return nil, false, streamerror.UnsupportedStanzaType
+		return nil, false, stream.UnsupportedStanzaType
 	}
 }

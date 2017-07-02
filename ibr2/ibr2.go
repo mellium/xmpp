@@ -16,7 +16,7 @@ import (
 	"io"
 
 	"mellium.im/xmpp"
-	"mellium.im/xmpp/streamerror"
+	"mellium.im/xmpp/stream"
 )
 
 // Namespaces used by IBR.
@@ -114,7 +114,7 @@ func decodeClientResp(ctx context.Context, d *xml.Decoder, decode func(ctx conte
 	start, ok := tok.(xml.StartElement)
 	switch {
 	case !ok:
-		err = streamerror.RestrictedXML
+		err = stream.RestrictedXML
 		return
 	case start.Name.Local == "cancel" && start.Name.Space == NS:
 		cancel = true
@@ -126,7 +126,7 @@ func decodeClientResp(ctx context.Context, d *xml.Decoder, decode func(ctx conte
 		}
 	}
 
-	err = streamerror.BadFormat
+	err = stream.BadFormat
 	return
 }
 
@@ -184,10 +184,10 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 		start, ok := tok.(xml.StartElement)
 		switch {
 		case !ok:
-			err = streamerror.RestrictedXML
+			err = stream.RestrictedXML
 			return
 		case start.Name.Local != "challenge" || start.Name.Space != NS:
-			err = streamerror.BadFormat
+			err = stream.BadFormat
 			return
 		}
 		var typ string
@@ -199,7 +199,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 		}
 		// If there was no type attr, an illegal challenge was sent.
 		if typ == "" {
-			err = streamerror.BadFormat
+			err = stream.BadFormat
 			return
 		}
 

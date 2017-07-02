@@ -13,7 +13,7 @@ import (
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
-	"mellium.im/xmpp/streamerror"
+	"mellium.im/xmpp/stream"
 )
 
 const (
@@ -70,7 +70,7 @@ func BindResource() StreamFeature {
 			}
 			start, ok := tok.(xml.StartElement)
 			if !ok {
-				return mask, nil, streamerror.BadFormat
+				return mask, nil, stream.BadFormat
 			}
 			resp := struct {
 				IQ
@@ -85,12 +85,12 @@ func BindResource() StreamFeature {
 					return mask, nil, err
 				}
 			default:
-				return mask, nil, streamerror.BadFormat
+				return mask, nil, stream.BadFormat
 			}
 
 			switch {
 			case resp.ID != reqID:
-				return mask, nil, streamerror.UndefinedCondition
+				return mask, nil, stream.UndefinedCondition
 			case resp.Type == ResultIQ:
 				session.origin = resp.Bind.JID
 			case resp.Type == ErrorIQ:

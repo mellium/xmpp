@@ -13,7 +13,7 @@ import (
 	"sync"
 
 	"mellium.im/xmpp/jid"
-	"mellium.im/xmpp/streamerror"
+	"mellium.im/xmpp/stream"
 )
 
 // SessionState is a bitmask that represents the current state of an XMPP
@@ -224,7 +224,7 @@ func (s *Session) handleInputStream(handler Handler) {
 			default:
 				// TODO: We need a way to figure out if this was an XML error or an
 				// error with the underlying connection.
-				s.Encoder().Encode(streamerror.BadFormat)
+				s.Encoder().Encode(stream.BadFormat)
 				return
 			}
 		}
@@ -232,11 +232,11 @@ func (s *Session) handleInputStream(handler Handler) {
 		case xml.StartElement:
 			if err = handler.HandleXMPP(s, &t); err != nil {
 				switch err.(type) {
-				case StanzaError, streamerror.StreamError:
+				case StanzaError, stream.StreamError:
 					s.Encoder().Encode(err)
 				default:
 					// TODO: Should this error have a payload?
-					s.Encoder().Encode(streamerror.UndefinedCondition)
+					s.Encoder().Encode(stream.UndefinedCondition)
 				}
 			}
 		default:
@@ -246,7 +246,7 @@ func (s *Session) handleInputStream(handler Handler) {
 			default:
 				// TODO: We need a way to figure out if this was an XML error or an
 				// error with the underlying connection.
-				s.Encoder().Encode(streamerror.BadFormat)
+				s.Encoder().Encode(stream.BadFormat)
 			}
 		}
 	}

@@ -14,7 +14,7 @@ import (
 	"io"
 
 	"mellium.im/xmpp"
-	"mellium.im/xmpp/streamerror"
+	"mellium.im/xmpp/stream"
 )
 
 // Namespaces used by stream compression.
@@ -161,7 +161,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 			}
 
 			// TODO: Use appropriate errors.
-			return mask, nil, streamerror.BadFormat
+			return mask, nil, stream.BadFormat
 		},
 	}
 }
