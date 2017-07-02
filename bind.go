@@ -11,8 +11,8 @@ import (
 	"io"
 
 	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
-	"mellium.im/xmpp/ns"
 	"mellium.im/xmpp/streamerror"
 )
 

@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"golang.org/x/text/language"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
-	"mellium.im/xmpp/ns"
 )
 
 type errorType int

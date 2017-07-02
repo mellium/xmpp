@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"mellium.im/sasl"
-	"mellium.im/xmpp/ns"
+	"mellium.im/xmpp/internal/ns"
 )
 
 func TestSASLPanicsNoMechanisms(t *testing.T) {

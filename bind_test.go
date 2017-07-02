@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"mellium.im/xmpp/ns"
+	"mellium.im/xmpp/internal/ns"
 )
 
 func TestBindList(t *testing.T) {

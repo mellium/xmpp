@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"mellium.im/xmpp/ns"
+	"mellium.im/xmpp/internal/ns"
 )
 
 // There is no room for variation on the starttls feature negotiation, so step

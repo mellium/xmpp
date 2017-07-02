@@ -13,8 +13,8 @@ import (
 	"io"
 
 	"mellium.im/sasl"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/saslerr"
-	"mellium.im/xmpp/ns"
 	"mellium.im/xmpp/streamerror"
 )
 

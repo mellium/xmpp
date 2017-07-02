@@ -4,9 +4,9 @@
 
 // Package ns provides namespace constants that are used by the xmpp package and
 // other internal packages.
-package ns // import "mellium.im/xmpp/ns"
+package ns // import "mellium.im/xmpp/internal/ns"
 
-// Namespaces used by the mellium.im/xmpp package.
+// List of commonly used namespaces.
 const (
 	Bind     = "urn:ietf:params:xml:ns:xmpp-bind"
 	Client   = "jabber:client"

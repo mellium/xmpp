@@ -10,7 +10,7 @@ import (
 	"encoding/xml"
 
 	"golang.org/x/text/language"
-	"mellium.im/xmpp/ns"
+	"mellium.im/xmpp/internal/ns"
 )
 
 // condition represents a SASL error condition that can be encapsulated by a

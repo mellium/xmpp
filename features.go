@@ -9,7 +9,7 @@ import (
 	"encoding/xml"
 	"io"
 
-	"mellium.im/xmpp/ns"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/streamerror"
 )
 
