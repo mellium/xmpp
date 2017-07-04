@@ -1,6 +1,4 @@
 *.sw[op]
 *.svg
 *.xml
-client.go
-server.go
 *.out
