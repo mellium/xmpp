@@ -7,11 +7,11 @@ package xmpp
 import (
 	"context"
 	"encoding/xml"
-	"errors"
 	"io"
 	"net"
 	"sync"
 
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stream"
 )
@@ -114,8 +114,12 @@ func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session
 // streamerror.StreamError, the error is marshaled and sent over the XML stream.
 // If any other error type is returned, it is marshaled as an
 // undefined-condition StreamError.
-func Serve(s *Session, handler Handler) {
-	s.handleInputStream(handler)
+// If a stream error is received while serving it is not passed to the handler.
+// Instead, Serve unmarshals the error, closes the session, and returns it
+// (handlers handle stanza level errors, the session handles stream
+// level errors).
+func Serve(s *Session, handler Handler) error {
+	return s.handleInputStream(handler)
 }
 
 // Feature checks if a feature with the given namespace was advertised
@@ -150,35 +154,19 @@ func (s *Session) Config() *Config {
 	return s.config
 }
 
-func (s *Session) read(b []byte) (n int, err error) {
-	s.in.Lock()
-	defer s.in.Unlock()
-
-	if s.state&InputStreamClosed == InputStreamClosed {
-		return 0, errors.New("XML input stream is closed")
-	}
-
-	n, err = s.rw.Read(b)
-	return
-}
-
-func (s *Session) write(b []byte) (n int, err error) {
+// Close ends the output stream (by sending a closing </stream:stream> token).
+// It does not close the underlying connection.
+// Calling Close() multiple times will only result in one closing
+// </stream:stream> being sent.
+func (s *Session) Close() (err error) {
 	s.out.Lock()
 	defer s.out.Unlock()
-
-	if s.state&OutputStreamClosed == OutputStreamClosed {
-		return 0, errors.New("XML output stream is closed")
+	if s.state&OutputStreamClosed != OutputStreamClosed {
+		s.Encoder().EncodeToken(xml.EndElement{
+			Name: xml.Name{Local: "stream:stream"},
+		})
 	}
 
-	n, err = s.rw.Write(b)
-	return
-}
-
-// Close ends the output stream and blocks until the remote client closes the
-// input stream.
-func (s *Session) Close() (err error) {
-	// TODO: Block until input stream is closed?
-	_, err = s.write([]byte(`</stream:stream>`))
 	return
 }
 
@@ -209,44 +197,65 @@ func (s *Session) RemoteAddr() *jid.JID {
 	return s.config.Location
 }
 
-func (s *Session) handleInputStream(handler Handler) {
+func (s *Session) handleInputStream(handler Handler) error {
+	s.in.Lock()
+	defer s.in.Unlock()
+	defer s.Close()
+
 	for {
 		select {
 		case <-s.in.ctx.Done():
-			return
+			return nil
 		default:
 		}
 		tok, err := s.Decoder().Token()
 		if err != nil {
 			select {
 			case <-s.in.ctx.Done():
-				return
+				return nil
 			default:
 				// TODO: We need a way to figure out if this was an XML error or an
 				// error with the underlying connection.
-				s.Encoder().Encode(stream.BadFormat)
-				return
+				return s.Encoder().Encode(stream.BadFormat)
 			}
 		}
 		switch t := tok.(type) {
 		case xml.StartElement:
+			if t.Name.Local == "error" && t.Name.Space == ns.Stream {
+				e := stream.Error{}
+				err = s.Decoder().DecodeElement(&e, &t)
+				if err != nil {
+					return err
+				}
+				return e
+			}
 			if err = handler.HandleXMPP(s, &t); err != nil {
 				switch err.(type) {
-				case StanzaError, stream.Error:
-					s.Encoder().Encode(err)
+				case StanzaError:
+					err = s.Encoder().Encode(err)
+					if err != nil {
+						return err
+					}
+				case stream.Error:
+					return s.Encoder().Encode(err)
 				default:
 					// TODO: Should this error have a payload?
-					s.Encoder().Encode(stream.UndefinedCondition)
+					return s.Encoder().Encode(stream.UndefinedCondition)
 				}
+			}
+		case xml.EndElement:
+			if t.Name.Space == ns.Stream && t.Name.Local == "stream" {
+				s.state |= InputStreamClosed
+				return nil
 			}
 		default:
 			select {
 			case <-s.in.ctx.Done():
-				return
+				return nil
 			default:
 				// TODO: We need a way to figure out if this was an XML error or an
 				// error with the underlying connection.
-				s.Encoder().Encode(stream.BadFormat)
+				return s.Encoder().Encode(stream.BadFormat)
 			}
 		}
 	}
