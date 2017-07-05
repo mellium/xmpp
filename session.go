@@ -118,7 +118,7 @@ func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session
 // Instead, Serve unmarshals the error, closes the session, and returns it
 // (handlers handle stanza level errors, the session handles stream
 // level errors).
-func Serve(s *Session, handler Handler) error {
+func (s *Session) Serve(handler Handler) error {
 	return s.handleInputStream(handler)
 }
 
