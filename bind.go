@@ -13,6 +13,7 @@ import (
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
 )
 
@@ -73,11 +74,11 @@ func BindResource() StreamFeature {
 				return mask, nil, stream.BadFormat
 			}
 			resp := struct {
-				IQ
+				stanza.IQ
 				Bind struct {
 					JID *jid.JID `xml:"jid"`
 				} `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
-				Err StanzaError `xml:"error"`
+				Err stanza.StanzaError `xml:"error"`
 			}{}
 			switch start.Name {
 			case xml.Name{Space: ns.Client, Local: "iq"}:
@@ -91,12 +92,12 @@ func BindResource() StreamFeature {
 			switch {
 			case resp.ID != reqID:
 				return mask, nil, stream.UndefinedCondition
-			case resp.Type == ResultIQ:
+			case resp.Type == stanza.ResultIQ:
 				session.origin = resp.Bind.JID
-			case resp.Type == ErrorIQ:
+			case resp.Type == stanza.ErrorIQ:
 				return mask, nil, resp.Err
 			default:
-				return mask, nil, StanzaError{Condition: BadRequest}
+				return mask, nil, stanza.StanzaError{Condition: stanza.BadRequest}
 			}
 			return Ready, nil, nil
 		},

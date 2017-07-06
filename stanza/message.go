@@ -2,7 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause license that can be
 // found in the LICENSE file.
 
-package xmpp
+package stanza
 
 import (
 	"encoding/xml"
@@ -13,7 +13,7 @@ import (
 )
 
 // Message is an XMPP stanza that contains a payload for direct one-to-one
-// communication with another network entity.  It is often used for sending chat
+// communication with another network entity. It is often used for sending chat
 // messages to an individual or group chat server, or for notifications and
 // alerts that don't require a response.
 type Message struct {

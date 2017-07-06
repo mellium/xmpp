@@ -8,7 +8,7 @@ package oob // import "mellium.im/xmpp/oob"
 import (
 	"encoding/xml"
 
-	"mellium.im/xmpp"
+	"mellium.im/xmpp/stanza"
 )
 
 // OOB namespaces provided as a convenience.
@@ -29,7 +29,7 @@ const (
 //       </query>
 //     </iq>
 type IQ struct {
-	xmpp.IQ
+	stanza.IQ
 	Query Query
 }
 
