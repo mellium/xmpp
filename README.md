@@ -21,5 +21,11 @@ To file a bug report or submit a feature request, please use the
 The package may be used under the terms of the BSD 2-Clause License a copy of
 which may be found in the file [LICENSE.md][LICENSE].
 
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you shall be licensed as above, without any
+additional terms or conditions.
+
 [issues]: https://bitbucket.org/mellium/xmpp/issues?status=new&status=open
 [LICENSE]: ./LICENSE.md
