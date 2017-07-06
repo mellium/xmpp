@@ -111,8 +111,8 @@ func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session
 
 // Serve decodes incoming XML tokens from the connection and delegates handling
 // them to the provided handler.
-// If an error is returned from the handler and it is of type stanza.StanzaError
-// or stream.Error, the error is marshaled and sent over the XML stream. If any
+// If an error is returned from the handler and it is of type stanza.Error or
+// stream.Error, the error is marshaled and sent over the XML stream. If any
 // other error type is returned, it is marshaled as an undefined-condition
 // StreamError. If a stream error is received while serving it is not passed to
 // the handler. Instead, Serve unmarshals the error, closes the session, and
@@ -231,7 +231,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 			}
 			if err = handler.HandleXMPP(s, &t); err != nil {
 				switch err.(type) {
-				case stanza.StanzaError:
+				case stanza.Error:
 					err = s.Encoder().Encode(err)
 					if err != nil {
 						return err

@@ -78,7 +78,7 @@ func BindResource() StreamFeature {
 				Bind struct {
 					JID *jid.JID `xml:"jid"`
 				} `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
-				Err stanza.StanzaError `xml:"error"`
+				Err stanza.Error `xml:"error"`
 			}{}
 			switch start.Name {
 			case xml.Name{Space: ns.Client, Local: "iq"}:
@@ -97,7 +97,7 @@ func BindResource() StreamFeature {
 			case resp.Type == stanza.ErrorIQ:
 				return mask, nil, resp.Err
 			default:
-				return mask, nil, stanza.StanzaError{Condition: stanza.BadRequest}
+				return mask, nil, stanza.Error{Condition: stanza.BadRequest}
 			}
 			return Ready, nil, nil
 		},

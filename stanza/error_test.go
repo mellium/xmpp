@@ -14,18 +14,18 @@ import (
 )
 
 var (
-	_ error        = (*StanzaError)(nil)
-	_ error        = StanzaError{}
+	_ error        = (*Error)(nil)
+	_ error        = Error{}
 	_ fmt.Stringer = (*errorType)(nil)
 	_ fmt.Stringer = Auth
 )
 
 func TestErrorReturnsCondition(t *testing.T) {
-	s := StanzaError{Condition: "leprosy"}
+	s := Error{Condition: "leprosy"}
 	if string(s.Condition) != s.Error() {
 		t.Errorf("Expected stanza error to return condition `leprosy` but got %s", s.Error())
 	}
-	s = StanzaError{Condition: "nope", Text: "Text"}
+	s = Error{Condition: "nope", Text: "Text"}
 	if s.Text != s.Error() {
 		t.Errorf("Expected stanza error to return text `Text` but got %s", s.Error())
 	}
@@ -33,16 +33,16 @@ func TestErrorReturnsCondition(t *testing.T) {
 
 func TestMarshalStanzaError(t *testing.T) {
 	for _, data := range []struct {
-		se  StanzaError
+		se  Error
 		xml string
 		err bool
 	}{
-		{StanzaError{}, "", true},
-		{StanzaError{Condition: UnexpectedRequest}, `<error type="cancel"><unexpected-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></unexpected-request></error>`, false},
-		{StanzaError{Type: Cancel, Condition: UnexpectedRequest}, `<error type="cancel"><unexpected-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></unexpected-request></error>`, false},
-		{StanzaError{Type: Wait, Condition: UndefinedCondition}, `<error type="wait"><undefined-condition xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></undefined-condition></error>`, false},
-		{StanzaError{Type: Modify, By: jid.MustParse("test@example.net"), Condition: SubscriptionRequired}, `<error type="modify" by="test@example.net"><subscription-required xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></subscription-required></error>`, false},
-		{StanzaError{Type: Continue, Condition: ServiceUnavailable, Text: "test"}, `<error type="continue"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="und">test</text></error>`, false},
+		{Error{}, "", true},
+		{Error{Condition: UnexpectedRequest}, `<error type="cancel"><unexpected-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></unexpected-request></error>`, false},
+		{Error{Type: Cancel, Condition: UnexpectedRequest}, `<error type="cancel"><unexpected-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></unexpected-request></error>`, false},
+		{Error{Type: Wait, Condition: UndefinedCondition}, `<error type="wait"><undefined-condition xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></undefined-condition></error>`, false},
+		{Error{Type: Modify, By: jid.MustParse("test@example.net"), Condition: SubscriptionRequired}, `<error type="modify" by="test@example.net"><subscription-required xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></subscription-required></error>`, false},
+		{Error{Type: Continue, Condition: ServiceUnavailable, Text: "test"}, `<error type="continue"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="und">test</text></error>`, false},
 	} {
 		b, err := xml.Marshal(data.se)
 		switch {
@@ -64,36 +64,36 @@ func TestUnmarshalStanzaError(t *testing.T) {
 	for _, data := range []struct {
 		xml  string
 		lang language.Tag
-		se   StanzaError
+		se   Error
 		err  bool
 	}{
-		{"", language.Und, StanzaError{}, true},
+		{"", language.Und, Error{}, true},
 		{`<error><unexpected-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></unexpected-request></error>`,
-			language.Und, StanzaError{Condition: UnexpectedRequest}, false},
+			language.Und, Error{Condition: UnexpectedRequest}, false},
 		{`<error type="cancel"><registration-required xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></registration-required></error>`,
-			language.Und, StanzaError{Condition: RegistrationRequired}, false},
+			language.Und, Error{Condition: RegistrationRequired}, false},
 		{`<error type="cancel"><redirect xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></redirect></error>`,
-			language.Und, StanzaError{Type: Cancel, Condition: Redirect}, false},
+			language.Und, Error{Type: Cancel, Condition: Redirect}, false},
 		{`<error type="wait"><undefined-condition xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></undefined-condition></error>`,
-			language.Und, StanzaError{Type: Wait, Condition: UndefinedCondition}, false},
+			language.Und, Error{Type: Wait, Condition: UndefinedCondition}, false},
 		{`<error type="modify" by="test@example.net"><subscription-required xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></subscription-required></error>`,
-			language.Und, StanzaError{Type: Modify, By: jid.MustParse("test@example.net"), Condition: SubscriptionRequired}, false},
+			language.Und, Error{Type: Modify, By: jid.MustParse("test@example.net"), Condition: SubscriptionRequired}, false},
 		{`<error type="continue"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="und">test</text></error>`,
-			language.Und, StanzaError{Type: Continue, Condition: ServiceUnavailable, Text: "test"}, false},
+			language.Und, Error{Type: Continue, Condition: ServiceUnavailable, Text: "test"}, false},
 		{`<error type="auth"><resource-constraint xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></resource-constraint><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="en">test</text></error>`,
-			language.Und, StanzaError{Type: Auth, Condition: ResourceConstraint, Text: "test", Lang: language.English}, false},
+			language.Und, Error{Type: Auth, Condition: ResourceConstraint, Text: "test", Lang: language.English}, false},
 		{`<error type="auth"><resource-constraint xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></resource-constraint><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="en">test</text><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="de">German</text></error>`,
-			language.German, StanzaError{Type: Auth, Condition: ResourceConstraint, Text: "German", Lang: language.German}, false},
+			language.German, Error{Type: Auth, Condition: ResourceConstraint, Text: "German", Lang: language.German}, false},
 		{`<error type="auth"><remote-server-timeout xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></remote-server-timeout><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="en">test</text><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="es">Spanish</text></error>`,
-			language.LatinAmericanSpanish, StanzaError{Type: Auth, Condition: RemoteServerTimeout, Text: "Spanish", Lang: language.Spanish}, false},
+			language.LatinAmericanSpanish, Error{Type: Auth, Condition: RemoteServerTimeout, Text: "Spanish", Lang: language.Spanish}, false},
 		{`<error by=""><remote-server-not-found xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></remote-server-not-found></error>`,
-			language.Und, StanzaError{By: &jid.JID{}, Condition: RemoteServerNotFound}, false},
+			language.Und, Error{By: &jid.JID{}, Condition: RemoteServerNotFound}, false},
 		{`<error><other xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></other></error>`,
-			language.Und, StanzaError{Condition: condition("other")}, false},
+			language.Und, Error{Condition: condition("other")}, false},
 		{`<error><recipient-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></recipient-unavailable><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="ac-u">test</text></error>`,
-			language.Und, StanzaError{Condition: RecipientUnavailable}, false},
+			language.Und, Error{Condition: RecipientUnavailable}, false},
 	} {
-		se2 := StanzaError{Lang: data.lang}
+		se2 := Error{Lang: data.lang}
 		err := xml.Unmarshal([]byte(data.xml), &se2)
 		j1, j2 := data.se.By, se2.By
 		data.se.By = nil

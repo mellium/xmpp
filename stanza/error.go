@@ -86,9 +86,9 @@ const (
 	UnexpectedRequest     condition = "unexpected-request"
 )
 
-// StanzaError is an implementation of error intended to be marshalable and
+// Error is an implementation of error intended to be marshalable and
 // unmarshalable as XML.
-type StanzaError struct {
+type Error struct {
 	XMLName   xml.Name
 	By        *jid.JID
 	Type      errorType
@@ -99,7 +99,7 @@ type StanzaError struct {
 
 // Error satisfies the error interface and returns the text if set, or the
 // condition otherwise.
-func (se StanzaError) Error() string {
+func (se Error) Error() string {
 	if se.Text != "" {
 		return se.Text
 	}
@@ -107,7 +107,7 @@ func (se StanzaError) Error() string {
 }
 
 // MarshalXML satisfies the xml.Marshaler interface for StanzaError.
-func (se StanzaError) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
+func (se Error) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	start = xml.StartElement{
 		Name: xml.Name{Space: ``, Local: "error"},
 		Attr: []xml.Attr{},
@@ -155,7 +155,7 @@ func (se StanzaError) MarshalXML(e *xml.Encoder, start xml.StartElement) (err er
 }
 
 // UnmarshalXML satisfies the xml.Unmarshaler interface for StanzaError.
-func (se *StanzaError) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (se *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	decoded := struct {
 		Condition struct {
 			XMLName xml.Name
