@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -33,41 +34,41 @@ func TestBindList(t *testing.T) {
 
 func TestBindParse(t *testing.T) {
 	bind := BindResource()
-	for _, test := range []struct {
+	for i, test := range []struct {
 		XML string
 		err bool
 	}{
-		{`<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>`, false},
-		{`<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'></bind>`, false},
-		{`<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>STUFF</bind>`, false},
-		{`<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'><test/></bind>`, false},
-		{`<notbind xmlns='urn:ietf:params:xml:ns:xmpp-bind'></notbind>`, true},
-		{`<bind xmlns='notbindns'></bind>`, true},
+		0: {`<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'/>`, false},
+		1: {`<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'></bind>`, false},
+		2: {`<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'>STUFF</bind>`, false},
+		3: {`<bind xmlns='urn:ietf:params:xml:ns:xmpp-bind'><test/></bind>`, false},
+		4: {`<notbind xmlns='urn:ietf:params:xml:ns:xmpp-bind'></notbind>`, true},
+		5: {`<bind xmlns='notbindns'></bind>`, true},
 	} {
-		// Run each test twice, once without a requested resource and once for a
-		// requested resource (which should be ignored, making the results
-		// identical).
-		d := xml.NewDecoder(strings.NewReader(test.XML))
-		tok, err := d.Token()
-		if err != nil {
-			// We screwed up the test string…
-			panic(err)
-		}
-		start := tok.(xml.StartElement)
-		req, data, err := bind.Parse(context.Background(), d, &start)
-		switch {
-		case test.err && err == nil:
-			t.Error("Expected error from parse")
-			continue
-		case !test.err && err != nil:
-			t.Error(err)
-			continue
-		}
-		if !req {
-			t.Error("Expected parsed bind feature to be required")
-		}
-		if data != nil {
-			t.Error("Expected bind data to be nil")
-		}
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+
+			d := xml.NewDecoder(strings.NewReader(test.XML))
+			tok, err := d.Token()
+			if err != nil {
+				// We screwed up the test string…
+				panic(err)
+			}
+			start := tok.(xml.StartElement)
+			req, data, err := bind.Parse(context.Background(), d, &start)
+			switch {
+			case test.err && err == nil:
+				t.Error("Expected error from parse")
+				return
+			case !test.err && err != nil:
+				t.Error(err)
+				return
+			}
+			if !req {
+				t.Error("Expected parsed bind feature to be required")
+			}
+			if data != nil {
+				t.Error("Expected bind data to be nil")
+			}
+		})
 	}
 }
