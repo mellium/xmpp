@@ -19,7 +19,6 @@ import (
 type Message struct {
 	XMLName xml.Name    `xml:"message"`
 	ID      string      `xml:"id,attr"`
-	Inner   string      `xml:",innerxml"`
 	To      *jid.JID    `xml:"to,attr"`
 	From    *jid.JID    `xml:"from,attr"`
 	Lang    string      `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
