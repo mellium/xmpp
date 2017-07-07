@@ -33,8 +33,10 @@ func BindResource() StreamFeature {
 
 // BindCustom is identical to BindResource when used on a client session, but
 // but for server sessions the server function is called to generate the JID
-// that should be returned to the client. If server is nil, BindCustom is
-// identical to BindResource.
+// that should be returned to the client. The server function is passed the
+// current client JID and the resource requested by the client (or an empty
+// string if a specific resource was not requested). If server is nil,
+// BindCustom is identical to BindResource.
 func BindCustom(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 	return StreamFeature{
 		Name:       xml.Name{Space: ns.Bind, Local: "bind"},
@@ -65,55 +67,68 @@ func BindCustom(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 			// Handle the server side of resource binding if we're on the receiving
 			// end of the connection.
 			if (session.State() & Received) == Received {
+				tok, err := d.Token()
+				if err != nil {
+					return mask, nil, err
+				}
+				start, ok := tok.(xml.StartElement)
+				if !ok {
+					return mask, nil, stream.BadFormat
+				}
+				resReq := bindIQ{}
+				switch start.Name {
+				case xml.Name{Space: ns.Client, Local: "iq"}:
+					if err = d.DecodeElement(&resReq, &start); err != nil {
+						return mask, nil, err
+					}
+				default:
+					return mask, nil, stream.BadFormat
+				}
+
+				iqid := internal.GetAttr(start.Attr, "id")
+
 				var j *jid.JID
-				var err error
 				if server != nil {
-					j, err = server(session.RemoteAddr(), data.(string))
+					j, err = server(session.RemoteAddr(), resReq.Bind.Resource)
 				} else {
 					// TODO: Add and use a method to *jid.JID to copy a JID, changing the
 					// resource (and only processing the resource).
 					j = session.RemoteAddr()
 					j, err = jid.New(j.Localpart(), j.Domainpart(), internal.RandomID())
 				}
-				if err != nil {
+				stanzaErr, ok := err.(stanza.Error)
+				if err != nil && !ok {
 					return mask, nil, err
 				}
-				bindStart := xml.StartElement{Name: xml.Name{Local: "bind", Space: ns.Bind}}
-				jidStart := xml.StartElement{Name: xml.Name{Local: "jid"}}
-				if err = e.EncodeToken(bindStart); err != nil {
-					return mask, nil, err
+
+				resp := bindIQ{
+					IQ: stanza.IQ{
+						ID:   iqid,
+						From: resReq.IQ.To,
+						To:   resReq.IQ.From,
+						Type: stanza.ResultIQ,
+					},
 				}
-				if err = e.EncodeToken(jidStart); err != nil {
-					return mask, nil, err
+
+				if ok {
+					// If a stanza error was returned:
+					resp.Err = stanzaErr
+				} else {
+
+					resp.Bind = bindPayload{JID: j}
 				}
-				if err = e.EncodeToken(xml.CharData(j.String())); err != nil {
-					return mask, nil, err
-				}
-				if err = e.EncodeToken(jidStart.End()); err != nil {
-					return mask, nil, err
-				}
-				if err = e.EncodeToken(bindStart.End()); err != nil {
-					return mask, nil, err
-				}
-				return mask, nil, e.Flush()
+
+				return mask, nil, e.Encode(resp)
 			}
 
 			// Client encodes an IQ requesting resource binding.
 			reqID := internal.RandomID()
-			err = e.Encode(struct {
-				stanza.IQ
-
-				Bind struct {
-					Resource string `xml:"resource,omitempty"`
-				} `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
-			}{
+			err = e.Encode(bindIQ{
 				IQ: stanza.IQ{
 					ID:   reqID,
 					Type: stanza.SetIQ,
 				},
-				Bind: struct {
-					Resource string `xml:"resource,omitempty"`
-				}{
+				Bind: bindPayload{
 					Resource: session.Config().Origin.Resourcepart(),
 				},
 			})
@@ -136,13 +151,7 @@ func BindCustom(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 			if !ok {
 				return mask, nil, stream.BadFormat
 			}
-			resp := struct {
-				stanza.IQ
-				Bind struct {
-					JID *jid.JID `xml:"jid"`
-				} `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
-				Err stanza.Error `xml:"error"`
-			}{}
+			resp := bindIQ{}
 			switch start.Name {
 			case xml.Name{Space: ns.Client, Local: "iq"}:
 				if err = d.DecodeElement(&resp, &start); err != nil {
@@ -165,4 +174,16 @@ func BindCustom(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 			return Ready, nil, nil
 		},
 	}
+}
+
+type bindIQ struct {
+	stanza.IQ
+
+	Bind bindPayload  `xml:"urn:ietf:params:xml:ns:xmpp-bind bind,omitempty"`
+	Err  stanza.Error `xml:"error,ommitempty"`
+}
+
+type bindPayload struct {
+	Resource string   `xml:"resource,omitempty"`
+	JID      *jid.JID `xml:"jid,omitempty"`
 }
