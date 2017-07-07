@@ -19,7 +19,7 @@ import (
 type StreamFeature struct {
 	// The XML name of the feature in the <stream:feature/> list. If a start
 	// element with this name is seen while the connection is reading the features
-	// list, it will trigger this StreamFeature's List function as a callback.
+	// list, it will trigger this StreamFeature's Parse function as a callback.
 	Name xml.Name
 
 	// Bits that are required before this feature is advertised. For instance, if
