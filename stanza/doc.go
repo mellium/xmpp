@@ -12,4 +12,27 @@
 // online, offline, or away), and IQ (Info-Query) is used as a request response
 // mechanism for data that requires a response (eg. fetching an avatar or a list
 // of client features).
+//
+//
+// Custom Stanzas
+//
+// The stanza types in this package aren't very useful by themselves. To
+// transmit meaningful data we need to add a payload. This payload could be
+// defined in an XMPP Extension Protocol (XEP), or a custom payload that we've
+// defined ourselve. To create a payload we use composition to create a new
+// struct that contains the fields from the stanza type we want to use. For
+// example, XEP-0199: XMPP Ping defines an IQ stanza with a payload named "ping"
+// qualified by the "urn:xmpp:ping" namespace. To implement this in our own code
+// we might create a Ping struct similar to the following:
+//
+//
+//    // PingIQ is an IQ stanza with an XEP-0199: XMPP Ping payload.
+//    type PingIQ struct {
+//        stanza.IQ
+//
+//        Ping struct{} `xml:"urn:xmpp:ping ping"`
+//    }
+//
+// For details on marshaling and the use of the xml tag, refer to the
+// encoding/xml package.
 package stanza // import "mellium.im/xmpp/stanza"

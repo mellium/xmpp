@@ -12,18 +12,16 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
-// Ping represents a ping or ping response from XEP-0199: XMPP Ping.
-type Ping struct {
+// PingIQ represents a ping or ping response from XEP-0199: XMPP Ping.
+type PingIQ struct {
 	stanza.IQ
 
-	Ping struct {
-		XMLName xml.Name `xml:"urn:xmpp:ping ping"`
-	}
+	Ping struct{} `xml:"urn:xmpp:ping ping"`
 }
 
 func Example_ping() {
 	e := xml.NewEncoder(os.Stdout)
-	err := e.Encode(Ping{})
+	err := e.Encode(PingIQ{})
 	if err != nil {
 		log.Fatal(err)
 	}
