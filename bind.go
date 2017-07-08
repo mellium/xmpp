@@ -17,7 +17,7 @@ import (
 )
 
 // BindResource is a stream feature that can be used for binding a resource
-// (client) to the stream.
+// (the name by which a particular client can be addressed) to the stream.
 //
 // Resource binding is the final feature negotiated when setting up a new
 // session and is required to allow communiation with other clients and servers
