@@ -14,8 +14,8 @@ import (
 )
 
 // A StreamFeature represents a feature that may be selected during stream
-// negotiation. Features should be stateless and usable from multiple goroutines
-// unless otherwise specified.
+// negotiation. Features should be stateless as they may be reused between
+// connection attempts.
 type StreamFeature struct {
 	// The XML name of the feature in the <stream:feature/> list. If a start
 	// element with this name is seen while the connection is reading the features
