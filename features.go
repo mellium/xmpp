@@ -14,7 +14,8 @@ import (
 )
 
 // A StreamFeature represents a feature that may be selected during stream
-// negotiation. Features should be stateless as they may be reused between
+// negotiation, eg. STARTTLS, compression, and SASL authentication are all
+// stream features. Features should be stateless as they may be reused between
 // connection attempts.
 type StreamFeature struct {
 	// The XML name of the feature in the <stream:feature/> list. If a start
