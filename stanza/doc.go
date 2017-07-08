@@ -17,13 +17,11 @@
 // Custom Stanzas
 //
 // The stanza types in this package aren't very useful by themselves. To
-// transmit meaningful data we need to add a payload. This payload could be
-// defined in an XMPP Extension Protocol (XEP), or a custom payload that we've
-// defined ourselve. To create a payload we use composition to create a new
-// struct that contains the fields from the stanza type we want to use. For
-// example, XEP-0199: XMPP Ping defines an IQ stanza with a payload named "ping"
-// qualified by the "urn:xmpp:ping" namespace. To implement this in our own code
-// we might create a Ping struct similar to the following:
+// transmit meaningful data we need to add a payload. To add a payload we use
+// composition to create a new struct that contains the payload as additional
+// fields. For example, XEP-0199: XMPP Ping defines an IQ stanza with a payload
+// named "ping" qualified by the "urn:xmpp:ping" namespace. To implement this in
+// our own code we might create a Ping struct similar to the following:
 //
 //
 //    // PingIQ is an IQ stanza with an XEP-0199: XMPP Ping payload.
