@@ -2,3 +2,5 @@
 *.svg
 *.xml
 *.out
+vendor/
+Gopkg.lock
