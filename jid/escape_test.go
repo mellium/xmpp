@@ -11,8 +11,6 @@ import (
 	"golang.org/x/text/transform"
 )
 
-var _ transform.SpanningTransformer = (*escapeMapping)(nil)
-
 const allescaped = `\20\22\26\27\2f\3a\3c\3e\40\5c`
 
 var escapeTestCases = [...]struct {
@@ -21,8 +19,8 @@ var escapeTestCases = [...]struct {
 	span               int
 	err, spanErr       error
 }{
-	0: {escape, allescaped, true, 0, nil, transform.ErrEndOfSpan},
-	1: {escape, allescaped, false, 0, nil, transform.ErrEndOfSpan},
+	0: {EscapedChars, allescaped, true, 0, nil, transform.ErrEndOfSpan},
+	1: {EscapedChars, allescaped, false, 0, nil, transform.ErrEndOfSpan},
 	2: {`nothingtodohere`, `nothingtodohere`, true, 15, nil, nil},
 	3: {`nothingtodohere`, `nothingtodohere`, false, 15, nil, nil},
 	4: {"", "", true, 0, nil, nil},
@@ -36,7 +34,7 @@ var unescapeTestCases = [...]struct {
 	span               int
 	err, spanErr       error
 }{
-	0: {allescaped, escape, true, 0, nil, transform.ErrEndOfSpan},
+	0: {allescaped, EscapedChars, true, 0, nil, transform.ErrEndOfSpan},
 	1: {`a\20`, `a `, true, 1, nil, transform.ErrEndOfSpan},
 	2: {`a\`, `a\`, true, 2, nil, nil},
 	3: {`a\`, `a`, false, 1, transform.ErrShortSrc, transform.ErrShortSrc},
@@ -94,7 +92,7 @@ func TestEscape(t *testing.T) {
 //       analysis.
 
 func TestEscapeMallocs(t *testing.T) {
-	src := []byte(escape)
+	src := []byte(EscapedChars)
 	dst := make([]byte, len(src)+18)
 
 	if n := testing.AllocsPerRun(1000, func() { Escape.Transform(dst, src, true) }); n > 0 {

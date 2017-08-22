@@ -71,8 +71,8 @@ func BenchmarkString(b *testing.B) {
 	}
 }
 
-func BenchmarkEscape(b *testing.B) {
-	src := []byte(escape)
+func BenchmarkEscapeTransform(b *testing.B) {
+	src := []byte(EscapedChars)
 	dst := make([]byte, len(src)+18)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -80,11 +80,27 @@ func BenchmarkEscape(b *testing.B) {
 	}
 }
 
-func BenchmarkUnescape(b *testing.B) {
+func BenchmarkUnescapeTransform(b *testing.B) {
 	src := []byte(allescaped)
 	dst := make([]byte, len(src)/3)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Unescape.Transform(dst, src, true)
+	}
+}
+
+func BenchmarkEscapeBytes(b *testing.B) {
+	src := []byte(EscapedChars)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = Escape.Bytes(src)
+	}
+}
+
+func BenchmarkUnescapeBytes(b *testing.B) {
+	src := []byte(allescaped)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = Unescape.Bytes(src)
 	}
 }
