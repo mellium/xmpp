@@ -4,7 +4,7 @@
 
 // Package compress implements XEP-0138: Stream Compression and XEP-0229: Stream
 // Compression with LZW.
-package compress
+package compress // import "mellium.im/xmpp/compress"
 
 import (
 	"context"
