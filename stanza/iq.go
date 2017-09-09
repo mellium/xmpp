@@ -1,15 +1,19 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package stanza
 
 import (
 	"encoding/xml"
 	"errors"
-	"strings"
 
 	"mellium.im/xmpp/jid"
+)
+
+// Errors returned by the stanza package.
+var (
+	ErrEmptyIQType = errors.New("stanza: empty IQ type")
 )
 
 // IQ ("Information Query") is used as a general request response mechanism.
@@ -21,45 +25,38 @@ type IQ struct {
 	To      *jid.JID `xml:"to,attr"`
 	From    *jid.JID `xml:"from,attr"`
 	Lang    string   `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
-	Type    iqType   `xml:"type,attr"`
+	Type    IQType   `xml:"type,attr"`
 }
 
-type iqType int
+// IQType is the type of an IQ stanza.
+// It should normally be one of the constants defined in this package.
+type IQType string
 
 const (
 	// GetIQ is used to query another entity for information.
-	GetIQ iqType = iota
+	GetIQ IQType = "get"
 
 	// SetIQ is used to provide data to another entity, set new values, and
 	// replace existing values.
-	SetIQ
+	SetIQ IQType = "set"
 
 	// ResultIQ is sent in response to a successful get or set IQ.
-	ResultIQ
+	ResultIQ IQType = "result"
 
 	// ErrorIQ is sent to report that an error occurred during the delivery or
 	// processing of a get or set IQ.
-	ErrorIQ
+	ErrorIQ IQType = "error"
 )
 
-func (t iqType) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
-	s := t.String()
-	return xml.Attr{Name: name, Value: strings.ToLower(s[:len(s)-2])}, nil
-}
-
-func (t *iqType) UnmarshalXMLAttr(attr xml.Attr) error {
-	switch attr.Value {
-	case "get":
-		*t = GetIQ
-	case "set":
-		*t = SetIQ
-	case "result":
-		*t = ResultIQ
-	case "error":
-		*t = ErrorIQ
-	default:
-		// TODO: This should be a stanza error with the bad-request condition.
-		return errors.New("bad-request")
+// MarshalXMLAttr satisfies the xml.MarshalerAttr interface for IQType.
+// It returns ErrEmptyIQType when trying to marshal a IQ stanza with an empty
+// type attribute.
+func (t IQType) MarshalXMLAttr(name xml.Name) (attr xml.Attr, err error) {
+	s := string(t)
+	if s == "" {
+		return attr, ErrEmptyIQType
 	}
-	return nil
+	attr.Name = name
+	attr.Value = s
+	return attr, nil
 }

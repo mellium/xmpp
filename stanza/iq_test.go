@@ -1,67 +1,63 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
-package stanza
+package stanza_test
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"testing"
-)
 
-var (
-	_ xml.UnmarshalerAttr = (*iqType)(nil)
-	_ xml.MarshalerAttr   = (*iqType)(nil)
-	_ xml.MarshalerAttr   = GetIQ
-	_ fmt.Stringer        = (*iqType)(nil)
-	_ fmt.Stringer        = GetIQ
+	"mellium.im/xmpp/stanza"
 )
 
 func TestMarshalIQTypeAttr(t *testing.T) {
-	n := xml.Name{Space: "space", Local: "type"}
-	for _, test := range []struct {
-		iqtype iqType
+	for i, tc := range [...]struct {
+		iqtype stanza.IQType
 		value  string
-	}{{GetIQ, "get"}, {SetIQ, "set"}, {ResultIQ, "result"}, {ErrorIQ, "error"}} {
-		attr, err := test.iqtype.MarshalXMLAttr(n)
-		if err != nil {
-			t.Error(err)
-			continue
-		}
-		if attr.Name != n {
-			t.Errorf("Got wrong attribute name for IQ type %s. Got %v, want %v", test.value, attr.Name, n)
-		}
-		if attr.Value != test.value {
-			t.Errorf("Got wrong attribute value for IQ type %s: `%s`", test.value, attr.Value)
-		}
+		err    error
+	}{
+		0: {stanza.IQType(""), "", stanza.ErrEmptyIQType},
+		1: {stanza.GetIQ, "get", nil},
+		2: {stanza.SetIQ, "set", nil},
+		3: {stanza.ResultIQ, "result", nil},
+		4: {stanza.ErrorIQ, "error", nil},
+	} {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			b, err := xml.Marshal(stanza.IQ{Type: tc.iqtype})
+			if err != tc.err {
+				t.Fatalf("Got unexpected error while marshaling IQ: want='%v', got='%v'", tc.err, err)
+			}
+
+			if err == nil && !bytes.Contains(b, []byte(fmt.Sprintf(`type="%s"`, tc.iqtype))) {
+				t.Errorf(`Expected output to contain type="%s", found: %s`, tc.iqtype, b)
+			}
+		})
 	}
 }
 
 func TestUnmarshalIQTypeAttr(t *testing.T) {
-	for _, test := range []struct {
-		attr   xml.Attr
-		iqtype iqType
-		err    bool
+	for i, tc := range [...]struct {
+		iq     string
+		iqtype stanza.IQType
 	}{
-		{xml.Attr{Name: xml.Name{}, Value: "get"}, GetIQ, false},
-		{xml.Attr{Name: xml.Name{Space: "", Local: "type"}, Value: "set"}, SetIQ, false},
-		{xml.Attr{Name: xml.Name{Space: "urn", Local: "loc"}, Value: "result"}, ResultIQ, false},
-		{xml.Attr{Name: xml.Name{}, Value: "error"}, ErrorIQ, false},
-		{xml.Attr{Name: xml.Name{}, Value: "stuff"}, ErrorIQ, true},
+		0: {`<iq/>`, stanza.IQType("")},
+		1: {`<iq type=""/>`, stanza.IQType("")},
+		2: {`<iq type="get"/>`, stanza.GetIQ},
+		3: {`<iq type="error"/>`, stanza.ErrorIQ},
+		4: {`<iq type="result"/>`, stanza.ResultIQ},
+		5: {`<iq type="set"/>`, stanza.SetIQ},
 	} {
-		iqtype := iqType(0)
-		switch err := (&iqtype).UnmarshalXMLAttr(test.attr); {
-		case test.err && err == nil:
-			t.Error("Expected unmarshaling IQ type to error")
-			continue
-		case !test.err && err != nil:
-			t.Error(err)
-			continue
-		case test.err && err != nil:
-			continue
-		case iqtype != test.iqtype:
-			t.Errorf("Expected attr %+v to unmarshal into %s type IQ but got %s", test.attr, test.iqtype, iqtype)
-		}
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			iq := stanza.IQ{}
+			switch err := xml.Unmarshal([]byte(tc.iq), &iq); {
+			case err != nil:
+				t.Errorf("Got unexpected error while unmarshaling IQ: %v", err)
+			case tc.iqtype != iq.Type:
+				t.Errorf("Wrong type when unmarshaling IQ: want=%s, got=%s", tc.iqtype, iq.Type)
+			}
+		})
 	}
 }

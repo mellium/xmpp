@@ -1,6 +1,6 @@
 // Copyright 2017 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package stanza_test
 
@@ -19,9 +19,11 @@ type PingIQ struct {
 	Ping struct{} `xml:"urn:xmpp:ping ping"`
 }
 
-func Example_ping() {
+func Example_pingStruct() {
 	e := xml.NewEncoder(os.Stdout)
-	err := e.Encode(PingIQ{})
+	err := e.Encode(PingIQ{
+		IQ: stanza.IQ{Type: stanza.GetIQ},
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
