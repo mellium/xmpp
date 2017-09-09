@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package stanza
 
@@ -20,42 +20,40 @@ type Presence struct {
 	To      *jid.JID     `xml:"to,attr"`
 	From    *jid.JID     `xml:"from,attr"`
 	Lang    string       `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
-	Type    presenceType `xml:"type,attr,omitempty"`
+	Type    PresenceType `xml:"type,attr,omitempty"`
 }
 
-type presenceType int
+// IQType is the type of a presence stanza.
+// It should normally be one of the constants defined in this package.
+type PresenceType string
 
 const (
-	// NoTypePresence is a special type that indicates that a stanza is a presence
-	// stanza without a defined type (indicating availability on the network).
-	NoTypePresence presenceType = iota
-
 	// ErrorPresence indicates that an error has occurred regarding processing of
 	// a previously sent presence stanza; if the presence stanza is of type
 	// "error", it MUST include an <error/> child element
-	ErrorPresence presenceType = iota
+	ErrorPresence PresenceType = "error"
 
 	// ProbePresence is a request for an entity's current presence. It should
 	// generally only be generated and sent by servers on behalf of a user.
-	ProbePresence
+	ProbePresence PresenceType = "probe"
 
 	// SubscribePresence is sent when the sender wishes to subscribe to the
 	// recipient's presence.
-	SubscribePresence
+	SubscribePresence PresenceType = "subscribe"
 
 	// SubscribedPresence indicates that the sender has allowed the recipient to
 	// receive future presence broadcasts.
-	SubscribedPresence
+	SubscribedPresence PresenceType = "subscribed"
 
 	// UnavailablePresence indicates that the sender is no longer available for
 	// communication.
-	UnavailablePresence
+	UnavailablePresence PresenceType = "unavailable"
 
 	// UnsubscribePresence indicates that the sender is unsubscribing from the
 	// receiver's presence.
-	UnsubscribePresence
+	UnsubscribePresence PresenceType = "unsubscribe"
 
 	// UnsubscribedPresence indicates that the subscription request has been
 	// denied, or a previously granted subscription has been revoked.
-	UnsubscribedPresence
+	UnsubscribedPresence PresenceType = "unsubscribed"
 )
