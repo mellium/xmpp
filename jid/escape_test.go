@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD
+// 2-clause license that can be found in the LICENSE file.
 
 package jid
 
@@ -56,6 +56,22 @@ func TestUnescape(t *testing.T) {
 				t.Errorf("Unexpected error, got=%v, want=%v", err, tc.err)
 			case string(buf[:nDst]) != tc.unescaped:
 				t.Errorf("Unescaped localpart should be `%s` but got: `%s`", tc.unescaped, string(buf[:nDst]))
+			}
+		})
+		t.Run(fmt.Sprintf("String/%d", i), func(t *testing.T) {
+			if tc.err != nil {
+				t.Skip("Skipping test with expected error")
+			}
+			if unescaped := Unescape.String(tc.escaped); unescaped != tc.unescaped {
+				t.Errorf("Unescaped localpart should be `%s` but got: `%s`", tc.unescaped, unescaped)
+			}
+		})
+		t.Run(fmt.Sprintf("Bytes/%d", i), func(t *testing.T) {
+			if tc.err != nil {
+				t.Skip("Skipping test with expected error")
+			}
+			if unescaped := Unescape.Bytes([]byte(tc.escaped)); string(unescaped) != tc.unescaped {
+				t.Errorf("Unescaped localpart should be `%s` but got: `%s`", tc.unescaped, unescaped)
 			}
 		})
 		t.Run(fmt.Sprintf("Span/%d", i), func(t *testing.T) {

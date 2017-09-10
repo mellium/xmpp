@@ -1,8 +1,8 @@
 // Copyright 2015 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
-package jid
+package jid_test
 
 import (
 	"bytes"
@@ -11,90 +11,101 @@ import (
 	"net"
 	"strings"
 	"testing"
+
+	"mellium.im/xmpp/jid"
 )
 
-// Compile time check ot make sure that JID and *JID match several interfaces.
-var _ fmt.Stringer = (*JID)(nil)
-var _ xml.MarshalerAttr = (*JID)(nil)
-var _ xml.UnmarshalerAttr = (*JID)(nil)
-var _ xml.Marshaler = (*JID)(nil)
-var _ xml.Unmarshaler = (*JID)(nil)
-var _ net.Addr = (*JID)(nil)
+// Compile time checks to make sure that JID and *jid.JID match several interfaces.
+var (
+	_ fmt.Stringer        = (*jid.JID)(nil)
+	_ xml.MarshalerAttr   = (*jid.JID)(nil)
+	_ xml.UnmarshalerAttr = (*jid.JID)(nil)
+	_ xml.Marshaler       = (*jid.JID)(nil)
+	_ xml.Unmarshaler     = (*jid.JID)(nil)
+	_ net.Addr            = (*jid.JID)(nil)
+)
 
 func TestValidJIDs(t *testing.T) {
-	for _, jid := range []struct {
+	for i, tc := range [...]struct {
 		jid, lp, dp, rp string
 	}{
-		{"example.net", "", "example.net", ""},
-		{"example.net/rp", "", "example.net", "rp"},
-		{"mercutio@example.net", "mercutio", "example.net", ""},
-		{"mercutio@example.net/rp", "mercutio", "example.net", "rp"},
-		{"mercutio@example.net/rp@rp", "mercutio", "example.net", "rp@rp"},
-		{"mercutio@example.net/rp@rp/rp", "mercutio", "example.net", "rp@rp/rp"},
-		{"mercutio@example.net/@", "mercutio", "example.net", "@"},
-		{"mercutio@example.net//@", "mercutio", "example.net", "/@"},
-		{"mercutio@example.net//@//", "mercutio", "example.net", "/@//"},
-		{"[::1]", "", "[::1]", ""},
+		0: {"example.net", "", "example.net", ""},
+		1: {"example.net/rp", "", "example.net", "rp"},
+		2: {"mercutio@example.net", "mercutio", "example.net", ""},
+		3: {"mercutio@example.net/rp", "mercutio", "example.net", "rp"},
+		4: {"mercutio@example.net/rp@rp", "mercutio", "example.net", "rp@rp"},
+		5: {"mercutio@example.net/rp@rp/rp", "mercutio", "example.net", "rp@rp/rp"},
+		6: {"mercutio@example.net/@", "mercutio", "example.net", "@"},
+		7: {"mercutio@example.net//@", "mercutio", "example.net", "/@"},
+		8: {"mercutio@example.net//@//", "mercutio", "example.net", "/@//"},
+		9: {"[::1]", "", "[::1]", ""},
 	} {
-		j, err := Parse(jid.jid)
-		switch {
-		case err != nil:
-			t.Error(err)
-		case j.Domainpart() != jid.dp:
-			t.Errorf("Got domainpart %s but expected %s", j.Domainpart(), jid.dp)
-		case j.Localpart() != jid.lp:
-			t.Errorf("Got localpart %s but expected %s", j.Localpart(), jid.lp)
-		case j.Resourcepart() != jid.rp:
-			t.Errorf("Got resourcepart %s but expected %s", j.Resourcepart(), jid.rp)
-		}
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			j, err := jid.Parse(tc.jid)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if j.Domainpart() != tc.dp {
+				t.Errorf("Got domainpart %s but expected %s", j.Domainpart(), tc.dp)
+			}
+			if j.Localpart() != tc.lp {
+				t.Errorf("Got localpart %s but expected %s", j.Localpart(), tc.lp)
+			}
+			if j.Resourcepart() != tc.rp {
+				t.Errorf("Got resourcepart %s but expected %s", j.Resourcepart(), tc.rp)
+			}
+		})
 	}
 }
 
 var invalidutf8 = string([]byte{0xff, 0xfe, 0xfd})
 
 func TestInvalidParseJIDs(t *testing.T) {
-
-	for _, jid := range []string{
-		"test@/test",
-		invalidutf8 + "@example.com/rp",
-		invalidutf8 + "/rp",
-		invalidutf8,
-		"example.com/" + invalidutf8,
-		"lp@/rp",
-		`b"d@example.net`,
-		`b&d@example.net`,
-		`b'd@example.net`,
-		`b:d@example.net`,
-		`b<d@example.net`,
-		`b>d@example.net`,
-		`e@example.net/`,
+	for i, tc := range [...]string{
+		0:  "test@/test",
+		1:  invalidutf8 + "@example.com/rp",
+		2:  invalidutf8 + "/rp",
+		3:  invalidutf8,
+		4:  "example.com/" + invalidutf8,
+		5:  "lp@/rp",
+		6:  `b"d@example.net`,
+		7:  `b&d@example.net`,
+		8:  `b'd@example.net`,
+		9:  `b:d@example.net`,
+		10: `b<d@example.net`,
+		11: `b>d@example.net`,
+		12: `e@example.net/`,
 	} {
-		_, err := Parse(jid)
-		if err == nil {
-			t.Errorf("Expected JID %s to fail", jid)
-		}
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			_, err := jid.Parse(tc)
+			if err == nil {
+				t.Errorf("Expected JID %s to fail", tc)
+			}
+		})
 	}
 }
 
 func TestInvalidNewJIDs(t *testing.T) {
-	for _, jid := range []struct {
+	for i, tc := range [...]struct {
 		lp, dp, rp string
 	}{
-		{strings.Repeat("a", 1024), "example.net", ""},
-		{"e", "example.net", strings.Repeat("a", 1024)},
-		{"b/d", "example.net", ""},
-		{"b@d", "example.net", ""},
-		{"e", "[example.net]", ""},
+		0: {strings.Repeat("a", 1024), "example.net", ""},
+		1: {"e", "example.net", strings.Repeat("a", 1024)},
+		2: {"b/d", "example.net", ""},
+		3: {"b@d", "example.net", ""},
+		4: {"e", "[example.net]", ""},
 	} {
-		_, err := New(jid.lp, jid.dp, jid.rp)
-		if err == nil {
-			t.Errorf("Expected composition of JID parts %s to fail", jid)
-		}
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			_, err := jid.New(tc.lp, tc.dp, tc.rp)
+			if err == nil {
+				t.Errorf("Expected composition of JID parts %s to fail", tc)
+			}
+		})
 	}
 }
 
 func TestMarshalAttrEmpty(t *testing.T) {
-	attr, err := ((*JID)(nil)).MarshalXMLAttr(xml.Name{})
+	attr, err := ((*jid.JID)(nil)).MarshalXMLAttr(xml.Name{})
 	switch {
 	case err != nil:
 		t.Logf("Marshaling an empty JID to an attr should not error but got %v\n", err)
@@ -106,63 +117,64 @@ func TestMarshalAttrEmpty(t *testing.T) {
 }
 
 func TestMustParsePanics(t *testing.T) {
-	handleErr := func(shouldPanic bool) {
-		r := recover()
-		switch {
-		case shouldPanic && r == nil:
-			t.Error("Must parse should panic on invalid JID")
-		case !shouldPanic && r != nil:
-			t.Error("Must parse should not panic on valid JID")
-		}
-	}
-	for _, t := range []struct {
+	for i, tc := range [...]struct {
 		jid         string
 		shouldPanic bool
 	}{
-		{"@me", true},
-		{"@`me", true},
-		{"e@example.net", false},
+		0: {"@me", true},
+		1: {"@`me", true},
+		2: {"e@example.net", false},
 	} {
-		func() {
-			defer handleErr(t.shouldPanic)
-			MustParse(t.jid)
-		}()
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			defer func() {
+				r := recover()
+				switch {
+				case tc.shouldPanic && r == nil:
+					t.Error("Must parse should panic on invalid JID")
+				case !tc.shouldPanic && r != nil:
+					t.Error("Must parse should not panic on valid JID")
+				}
+			}()
+			jid.MustParse(tc.jid)
+		})
 	}
 }
 
 func TestEqual(t *testing.T) {
-	m := MustParse("mercutio@example.net/test")
-	for _, test := range []struct {
-		j1, j2 *JID
+	m := jid.MustParse("mercutio@example.net/test")
+	for i, tc := range [...]struct {
+		j1, j2 *jid.JID
 		eq     bool
 	}{
-		{m, MustParse("mercutio@example.net/test"), true},
-		{m.Bare(), MustParse("mercutio@example.net"), true},
-		{m.Domain(), MustParse("example.net"), true},
-		{m, MustParse("mercutio@example.net/nope"), false},
-		{m, MustParse("mercutio@e.com/test"), false},
-		{m, MustParse("m@example.net/test"), false},
-		{(*JID)(nil), (*JID)(nil), true},
-		{m, (*JID)(nil), false},
-		{(*JID)(nil), m, false},
+		0: {m, jid.MustParse("mercutio@example.net/test"), true},
+		1: {m.Bare(), jid.MustParse("mercutio@example.net"), true},
+		2: {m.Domain(), jid.MustParse("example.net"), true},
+		3: {m, jid.MustParse("mercutio@example.net/nope"), false},
+		4: {m, jid.MustParse("mercutio@e.com/test"), false},
+		5: {m, jid.MustParse("m@example.net/test"), false},
+		6: {(*jid.JID)(nil), (*jid.JID)(nil), true},
+		7: {m, (*jid.JID)(nil), false},
+		8: {(*jid.JID)(nil), m, false},
 	} {
-		switch {
-		case test.eq && !test.j1.Equal(test.j2):
-			t.Errorf("JIDs %s and %s should be equal", test.j1, test.j2)
-		case !test.eq && test.j1.Equal(test.j2):
-			t.Errorf("JIDs %s and %s should not be equal", test.j1, test.j2)
-		}
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			switch {
+			case tc.eq && !tc.j1.Equal(tc.j2):
+				t.Errorf("JIDs %s and %s should be equal", tc.j1, tc.j2)
+			case !tc.eq && tc.j1.Equal(tc.j2):
+				t.Errorf("JIDs %s and %s should not be equal", tc.j1, tc.j2)
+			}
+		})
 	}
 }
 
 func TestNetwork(t *testing.T) {
-	if MustParse("test").Network() != "xmpp" {
+	if jid.MustParse("test").Network() != "xmpp" {
 		t.Error("Network should be `xmpp`")
 	}
 }
 
 func TestCopy(t *testing.T) {
-	m := MustParse("mercutio@example.net/test")
+	m := jid.MustParse("mercutio@example.net/test")
 	m2 := m.Copy()
 	switch {
 	case !m.Equal(m2):
@@ -174,7 +186,7 @@ func TestCopy(t *testing.T) {
 
 func TestMarshalXML(t *testing.T) {
 	// Test default marshaling
-	j := MustParse("feste@shakespeare.lit")
+	j := jid.MustParse("feste@shakespeare.lit")
 	b, err := xml.Marshal(j)
 	switch expected := `<JID>feste@shakespeare.lit</JID>`; {
 	case err != nil:
@@ -184,7 +196,7 @@ func TestMarshalXML(t *testing.T) {
 	}
 
 	// Test encoding with a custom element
-	j = MustParse("feste@shakespeare.lit/ilyria")
+	j = jid.MustParse("feste@shakespeare.lit/ilyria")
 	var buf bytes.Buffer
 	start := xml.StartElement{Name: xml.Name{Space: "", Local: "item"}, Attr: []xml.Attr{}}
 	e := xml.NewEncoder(&buf)
@@ -197,7 +209,7 @@ func TestMarshalXML(t *testing.T) {
 	}
 
 	// Test encoding a nil JID
-	j = (*JID)(nil)
+	j = (*jid.JID)(nil)
 	b, err = xml.Marshal(j)
 	switch expected := ``; {
 	case err != nil:
@@ -208,30 +220,30 @@ func TestMarshalXML(t *testing.T) {
 }
 
 func TestUnmarshal(t *testing.T) {
-	for _, test := range []struct {
+	for i, test := range [...]struct {
 		xml string
-		jid *JID
+		jid *jid.JID
 		err bool
 	}{
-		{`<item>feste@shakespeare.lit/ilyria</item>`, MustParse("feste@shakespeare.lit/ilyria"), false},
-		{`<jid>feste@shakespeare.lit</jid>`, MustParse("feste@shakespeare.lit"), false},
-		{`<oops>feste@shakespeare.lit</bad>`, nil, true},
-		{`<item></item>`, nil, true},
+		0: {`<item>feste@shakespeare.lit/ilyria</item>`, jid.MustParse("feste@shakespeare.lit/ilyria"), false},
+		1: {`<jid>feste@shakespeare.lit</jid>`, jid.MustParse("feste@shakespeare.lit"), false},
+		2: {`<oops>feste@shakespeare.lit</bad>`, nil, true},
+		3: {`<item></item>`, nil, true},
 	} {
-		j := &JID{}
-		err := xml.Unmarshal([]byte(test.xml), j)
-		switch {
-		case test.err && err == nil:
-			t.Errorf("Expected unmarshaling `%s` as a JID to return an error", test.xml)
-			continue
-		case !test.err && err != nil:
-			t.Error(err)
-			continue
-		case err != nil:
-			continue
-		case !test.jid.Equal(j):
-			t.Errorf("Expected JID to unmarshal to `%s` but got `%s`", test.jid, j)
-		}
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			j := &jid.JID{}
+			err := xml.Unmarshal([]byte(test.xml), j)
+			switch {
+			case test.err && err == nil:
+				t.Errorf("Expected unmarshaling `%s` as a JID to return an error", test.xml)
+			case !test.err && err != nil:
+				t.Error("Unexpected error:", err)
+			case err != nil:
+				return
+			case !test.jid.Equal(j):
+				t.Errorf("Expected JID to unmarshal to `%s` but got `%s`", test.jid, j)
+			}
+		})
 	}
 }
 
@@ -243,9 +255,9 @@ func TestString(t *testing.T) {
 		3: "example.com/test",
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			j := MustParse(tc)
+			j := jid.MustParse(tc)
 
-			// Check that String() and Parse() are inverse functions
+			// Check that String() and jid.Parse() are inverse operations
 			if js := j.String(); js != tc {
 				t.Errorf("want=%s, got=%s", tc, js)
 			}
@@ -270,7 +282,10 @@ func TestString(t *testing.T) {
 // Malloc tests may be flakey under GCC until it improves its escape analysis.
 
 func TestSplitMallocs(t *testing.T) {
-	if n := testing.AllocsPerRun(1000, func() { SplitString("olivia@example.net/ilyria") }); n > 0 {
+	n := testing.AllocsPerRun(1000, func() {
+		jid.SplitString("olivia@example.net/ilyria")
+	})
+	if n > 0 {
 		t.Errorf("got %f allocs, want 0", n)
 	}
 }
