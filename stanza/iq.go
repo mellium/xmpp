@@ -6,14 +6,8 @@ package stanza
 
 import (
 	"encoding/xml"
-	"errors"
 
 	"mellium.im/xmpp/jid"
-)
-
-// Errors returned by the stanza package.
-var (
-	ErrEmptyIQType = errors.New("stanza: empty IQ type")
 )
 
 // IQ ("Information Query") is used as a general request response mechanism.
@@ -47,16 +41,3 @@ const (
 	// processing of a get or set IQ.
 	ErrorIQ IQType = "error"
 )
-
-// MarshalXMLAttr satisfies the xml.MarshalerAttr interface for IQType.
-// It returns ErrEmptyIQType when trying to marshal a IQ stanza with an empty
-// type attribute.
-func (t IQType) MarshalXMLAttr(name xml.Name) (attr xml.Attr, err error) {
-	s := string(t)
-	if s == "" {
-		return attr, ErrEmptyIQType
-	}
-	attr.Name = name
-	attr.Value = s
-	return attr, nil
-}

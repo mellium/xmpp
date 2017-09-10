@@ -17,18 +17,17 @@ func TestMarshalIQTypeAttr(t *testing.T) {
 	for i, tc := range [...]struct {
 		iqtype stanza.IQType
 		value  string
-		err    error
 	}{
-		0: {stanza.IQType(""), "", stanza.ErrEmptyIQType},
-		1: {stanza.GetIQ, "get", nil},
-		2: {stanza.SetIQ, "set", nil},
-		3: {stanza.ResultIQ, "result", nil},
-		4: {stanza.ErrorIQ, "error", nil},
+		0: {stanza.IQType(""), ""},
+		1: {stanza.GetIQ, "get"},
+		2: {stanza.SetIQ, "set"},
+		3: {stanza.ResultIQ, "result"},
+		4: {stanza.ErrorIQ, "error"},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			b, err := xml.Marshal(stanza.IQ{Type: tc.iqtype})
-			if err != tc.err {
-				t.Fatalf("Got unexpected error while marshaling IQ: want='%v', got='%v'", tc.err, err)
+			if err != nil {
+				t.Fatal("Got unexpected error while marshaling IQ:", err)
 			}
 
 			if err == nil && !bytes.Contains(b, []byte(fmt.Sprintf(`type="%s"`, tc.iqtype))) {
