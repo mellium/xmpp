@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package xmpp
 
@@ -17,7 +17,7 @@ import (
 )
 
 // BindResource is a stream feature that can be used for binding a resource
-// (the name by which a particular client can be addressed) to the stream.
+// (the name by which an individual client can be addressed) to the stream.
 //
 // Resource binding is the final feature negotiated when setting up a new
 // session and is required to allow communiation with other clients and servers
@@ -108,10 +108,7 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 				if server != nil {
 					j, err = server(session.RemoteAddr(), resReq.Bind.Resource)
 				} else {
-					// TODO: Add and use a method to *jid.JID to copy a JID, changing the
-					// resource (and only processing the resource).
-					j = session.RemoteAddr()
-					j, err = jid.New(j.Localpart(), j.Domainpart(), internal.RandomID())
+					j, err = session.RemoteAddr().WithResource(internal.RandomID())
 				}
 				stanzaErr, ok := err.(stanza.Error)
 				if err != nil && !ok {
