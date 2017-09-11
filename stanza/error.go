@@ -309,8 +309,7 @@ func (se Error) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 			return err
 		}
 	}
-	e.EncodeToken(start.End())
-	return nil
+	return e.EncodeToken(start.End())
 }
 
 // UnmarshalXML satisfies the xml.Unmarshaler interface for StanzaError.
@@ -349,6 +348,6 @@ func (se *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	}
 	tag, _, _ := language.NewMatcher(tags).Match(se.Lang)
 	se.Lang = tag
-	se.Text, _ = data[tag]
+	se.Text = data[tag]
 	return nil
 }
