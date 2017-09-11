@@ -55,7 +55,7 @@ func TestUnmarshalPresenceTypeAttr(t *testing.T) {
 			presence := stanza.Presence{}
 			switch err := xml.Unmarshal([]byte(tc.presence), &presence); {
 			case err != nil:
-				t.Errorf("Got unexpected error while unmarshaling Presence:", err)
+				t.Error("Got unexpected error while unmarshaling Presence:", err)
 			case tc.presencetype != presence.Type:
 				t.Errorf("Wrong type when unmarshaling Presence: want=%s, got=%s", tc.presencetype, presence.Type)
 			}
