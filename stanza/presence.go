@@ -23,7 +23,7 @@ type Presence struct {
 	Type    PresenceType `xml:"type,attr,omitempty"`
 }
 
-// IQType is the type of a presence stanza.
+// PresenceType is the type of a presence stanza.
 // It should normally be one of the constants defined in this package.
 type PresenceType string
 
