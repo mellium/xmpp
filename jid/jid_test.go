@@ -184,6 +184,42 @@ func TestCopy(t *testing.T) {
 	}
 }
 
+func TestWithResource(t *testing.T) {
+	for i, tc := range [...]struct {
+		jid string
+		res string
+		err bool
+	}{
+		0: {"mercutio@example.net/test", "new", false},
+		1: {"mercutio@example.net/test", invalidutf8, true},
+	} {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			old := jid.MustParse(tc.jid)
+			new, err := old.WithResource(tc.res)
+			switch {
+			case (err != nil) && !tc.err:
+				t.Fatal("Unexpected error", err)
+			case tc.err:
+				return
+			case old == new:
+				t.Fatal("Expected different pointers for JID copy")
+			}
+			if old.String() != tc.jid {
+				t.Fatalf("WithResource should clone data")
+			}
+			if r := new.Resourcepart(); r != tc.res {
+				t.Errorf("Unexpected resourcepart: want=%s, got=%s", tc.res, r)
+			}
+			if new.Domainpart() != old.Domainpart() {
+				t.Errorf("Unexpected domainpart mutation: want=%s, got=%s", old.Domainpart(), new.Domainpart())
+			}
+			if new.Localpart() != old.Localpart() {
+				t.Errorf("Unexpected localpart mutation: want=%s, got=%s", old.Localpart(), new.Localpart())
+			}
+		})
+	}
+}
+
 func TestMarshalXML(t *testing.T) {
 	// Test default marshaling
 	j := jid.MustParse("feste@shakespeare.lit")

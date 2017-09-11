@@ -121,6 +121,23 @@ func New(localpart, domainpart, resourcepart string) (*JID, error) {
 	}, nil
 }
 
+// WithResource returns a copy of the JID with a new resourcepart.
+// This elides validation of the localpart and domainpart.
+func (j *JID) WithResource(resourcepart string) (*JID, error) {
+	var err error
+	new := j.Bare()
+	data := make([]byte, len(new.data))
+	copy(data, new.data)
+	if resourcepart != "" {
+		if !utf8.ValidString(resourcepart) {
+			return nil, errors.New("JID contains invalid UTF-8")
+		}
+		data, err = precis.OpaqueString.Append(data, []byte(resourcepart))
+		new.data = data
+	}
+	return new, err
+}
+
 // Bare returns a copy of the JID without a resourcepart. This is sometimes
 // called a "bare" JID.
 func (j *JID) Bare() *JID {
