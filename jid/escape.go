@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package jid
 
@@ -168,7 +168,6 @@ func (unescapeMapping) Span(src []byte, atEOF bool) (n int, err error) {
 }
 
 func (t unescapeMapping) Transform(dst, src []byte, atEOF bool) (nDst, nSrc int, err error) {
-	const all = `\20\22\26\27\2f\3a\3c\3e\40\5c`
 	for nSrc < len(src) {
 		idx := bytes.IndexRune(src[nSrc:], '\\')
 
