@@ -29,9 +29,9 @@
   name = "golang.org/x/text"
 
 [[constraint]]
-  branch = "master"
+  version = "0.0"
   name = "mellium.im/sasl"
 
 [[constraint]]
-  branch = "master"
+	version = "0.4"
   name = "mellium.im/xmlstream"
