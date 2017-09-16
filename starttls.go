@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package xmpp
 
@@ -13,6 +13,7 @@ import (
 	"io"
 	"net"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stream"
 )
@@ -46,14 +47,14 @@ func StartTLS(required bool) StreamFeature {
 			}
 			return required, e.EncodeToken(start.End())
 		},
-		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls starttls"`
 				Required struct {
 					XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls required"`
 				}
 			}{}
-			err := d.DecodeElement(&parsed, start)
+			err := xml.NewTokenDecoder(r).DecodeElement(&parsed, start)
 			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == ns.StartTLS, nil, err
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
@@ -64,7 +65,7 @@ func StartTLS(required bool) StreamFeature {
 
 			config := session.Config()
 			state := session.State()
-			d := session.Decoder()
+			d := xml.NewTokenDecoder(session.TokenReader())
 
 			// Fetch or create a TLSConfig to use.
 			var tlsconf *tls.Config

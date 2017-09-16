@@ -129,7 +129,7 @@ func expectNewStream(ctx context.Context, s *Session) error {
 			switch {
 			case tok.Name.Local == "error" && tok.Name.Space == ns.Stream:
 				se := stream.Error{}
-				if err := d.DecodeElement(&se, &tok); err != nil {
+				if err := xml.NewTokenDecoder(d).DecodeElement(&se, &tok); err != nil {
 					return err
 				}
 				return se

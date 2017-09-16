@@ -9,6 +9,7 @@ import (
 	"encoding/xml"
 	"io"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
@@ -71,15 +72,15 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 			err = e.Flush()
 			return req, err
 		},
-		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
 			}{}
-			return true, nil, d.DecodeElement(&parsed, start)
+			return true, nil, xml.NewTokenDecoder(r).DecodeElement(&parsed, start)
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
 			e := session.Encoder()
-			d := session.Decoder()
+			d := xml.NewTokenDecoder(session.TokenReader())
 
 			// Handle the server side of resource binding if we're on the receiving
 			// end of the connection.

@@ -1,6 +1,6 @@
 // Copyright 2017 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package ibr2
 
@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/xml"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/oob"
 )
 
@@ -22,14 +23,14 @@ func OOB(data *oob.Data, f func(*oob.Data) error) Challenge {
 		Send: func(ctx context.Context, e *xml.Encoder) error {
 			return e.Encode(data)
 		},
-		Receive: func(ctx context.Context, server bool, d *xml.Decoder, start *xml.StartElement) error {
+		Receive: func(ctx context.Context, server bool, r xmlstream.TokenReader, start *xml.StartElement) error {
 			// The server does not receive a reply for this mechanism.
 			if server {
 				return nil
 			}
 
 			oob := &oob.Data{}
-			err := d.Decode(oob)
+			err := xml.NewTokenDecoder(r).Decode(oob)
 			if err != nil {
 				return err
 			}

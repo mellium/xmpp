@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 // Package compress implements XEP-0138: Stream Compression and XEP-0229: Stream
 // Compression with LZW.
@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/stream"
 )
@@ -67,12 +68,12 @@ func New(methods ...Method) xmpp.StreamFeature {
 			}
 			return false, e.Flush()
 		},
-		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			listed := struct {
 				XMLName xml.Name `xml:"http://jabber.org/features/compress compression"`
 				Methods []string `xml:"http://jabber.org/features/compress method"`
 			}{}
-			if err := d.DecodeElement(&listed, start); err != nil {
+			if err := xml.NewTokenDecoder(r).DecodeElement(&listed, start); err != nil {
 				return false, nil, err
 			}
 
@@ -87,6 +88,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 		},
 		Negotiate: func(ctx context.Context, session *xmpp.Session, data interface{}) (mask xmpp.SessionState, rw io.ReadWriter, err error) {
 			conn := session.Conn()
+			d := xml.NewTokenDecoder(session.TokenReader())
 
 			// If we're a server.
 			if (session.State() & xmpp.Received) == xmpp.Received {
@@ -94,7 +96,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 					XMLName xml.Name `xml:"http://jabber.org/protocol/compress compress"`
 					Method  string   `xml:"method"`
 				}{}
-				if err = session.Decoder().Decode(&clientSelected); err != nil {
+				if err = d.Decode(&clientSelected); err != nil {
 					return
 				}
 
@@ -146,7 +148,6 @@ func New(methods ...Method) xmpp.StreamFeature {
 				return
 			}
 
-			d := session.Decoder()
 			tok, err := d.Token()
 			if err != nil {
 				return mask, nil, err

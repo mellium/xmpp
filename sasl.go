@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package xmpp
 
@@ -13,6 +13,7 @@ import (
 	"io"
 
 	"mellium.im/sasl"
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/saslerr"
 	"mellium.im/xmpp/stream"
@@ -58,12 +59,12 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 			}
 			return req, e.EncodeToken(start.End())
 		},
-		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl mechanisms"`
 				List    []string `xml:"urn:ietf:params:xml:ns:xmpp-sasl mechanism"`
 			}{}
-			err := d.DecodeElement(&parsed, start)
+			err := xml.NewTokenDecoder(r).DecodeElement(&parsed, start)
 			return true, parsed.List, err
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
@@ -122,7 +123,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 				return mask, nil, err
 			}
 
-			d := session.Decoder()
+			d := xml.NewTokenDecoder(session.TokenReader())
 
 			// If we're already done after the first step, decode the <success/> or
 			// <failure/> before we exit.

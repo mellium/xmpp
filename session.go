@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package xmpp
 
@@ -11,6 +11,7 @@ import (
 	"net"
 	"sync"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
@@ -76,7 +77,7 @@ type Session struct {
 	in struct {
 		sync.Mutex
 		streamInfo
-		d      *xml.Decoder
+		d      xmlstream.TokenReader
 		ctx    context.Context
 		cancel context.CancelFunc
 	}
@@ -139,8 +140,9 @@ func (s *Session) Conn() io.ReadWriter {
 	return s.rw
 }
 
-// Decoder returns the XML decoder that was used to negotiate the latest stream.
-func (s *Session) Decoder() *xml.Decoder {
+// TokenReader returns the XML token reader that was used to negotiate the
+// latest stream.
+func (s *Session) TokenReader() xmlstream.TokenReader {
 	return s.in.d
 }
 
@@ -208,7 +210,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 			return nil
 		default:
 		}
-		tok, err := s.Decoder().Token()
+		tok, err := s.TokenReader().Token()
 		if err != nil {
 			select {
 			case <-s.in.ctx.Done():
@@ -223,7 +225,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 		case xml.StartElement:
 			if t.Name.Local == "error" && t.Name.Space == ns.Stream {
 				e := stream.Error{}
-				err = s.Decoder().DecodeElement(&e, &t)
+				err = xml.NewTokenDecoder(s.TokenReader()).DecodeElement(&e, &t)
 				if err != nil {
 					return err
 				}

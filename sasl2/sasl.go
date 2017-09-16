@@ -1,6 +1,6 @@
 // Copyright 2017 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 // Package sasl2 is an experimental implementation of XEP-0388: Extensible SASL
 // Profile.
@@ -19,6 +19,7 @@ import (
 	"io"
 
 	"mellium.im/sasl"
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/saslerr"
 	"mellium.im/xmpp/stream"
@@ -74,12 +75,12 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 			}
 			return req, e.EncodeToken(start.End())
 		},
-		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName xml.Name `xml:"urn:xmpp:sasl:0 mechanisms"`
 				List    []string `xml:"urn:xmpp:sasl:0 mechanism"`
 			}{}
-			err := d.DecodeElement(&parsed, start)
+			err := xml.NewTokenDecoder(r).DecodeElement(&parsed, start)
 			return true, parsed.List, err
 		},
 		Negotiate: func(ctx context.Context, session *xmpp.Session, data interface{}) (mask xmpp.SessionState, rw io.ReadWriter, err error) {
@@ -142,19 +143,19 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 				return mask, nil, err
 			}
 
-			d := session.Decoder()
+			r := session.TokenReader()
 
 			// If we're already done after the first step, decode the <success/> or
 			// <failure/> before we exit.
 			if !more {
-				tok, err := d.Token()
+				tok, err := r.Token()
 				if err != nil {
 					return mask, nil, err
 				}
 				if t, ok := tok.(xml.StartElement); ok {
 					// TODO: Handle the additional data that could be returned if
 					// success?
-					_, _, err := decodeSASLChallenge(d, t, false)
+					_, _, err := decodeSASLChallenge(r, t, false)
 					if err != nil {
 						return mask, nil, err
 					}
@@ -170,13 +171,13 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 					return mask, nil, ctx.Err()
 				default:
 				}
-				tok, err := d.Token()
+				tok, err := r.Token()
 				if err != nil {
 					return mask, nil, err
 				}
 				var challenge []byte
 				if t, ok := tok.(xml.StartElement); ok {
-					challenge, success, err = decodeSASLChallenge(d, t, true)
+					challenge, success, err = decodeSASLChallenge(r, t, true)
 					if err != nil {
 						return mask, nil, err
 					}
@@ -201,7 +202,8 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 	}
 }
 
-func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement, allowChallenge bool) (challenge []byte, success bool, err error) {
+func decodeSASLChallenge(r xmlstream.TokenReader, start xml.StartElement, allowChallenge bool) (challenge []byte, success bool, err error) {
+	d := xml.NewTokenDecoder(r)
 	switch start.Name {
 	case xml.Name{Space: NS, Local: "challenge"}:
 		if !allowChallenge {

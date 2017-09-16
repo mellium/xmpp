@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package xmpp
 
@@ -9,6 +9,7 @@ import (
 	"encoding/xml"
 	"io"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stream"
 )
@@ -47,7 +48,7 @@ type StreamFeature struct {
 	// Returns whether or not the feature is required, and any data that will be
 	// needed if the feature is selected for negotiation (eg. the list of
 	// mechanisms if the feature was SASL).
-	Parse func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (req bool, data interface{}, err error)
+	Parse func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (req bool, data interface{}, err error)
 
 	// A function that will take over the session temporarily while negotiating
 	// the feature. The "mask" SessionState represents the state bits that should
@@ -83,7 +84,7 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 
 	if !server {
 		// Read a new startstream:features token.
-		t, err = s.Decoder().Token()
+		t, err = s.TokenReader().Token()
 		if err != nil {
 			return done, nil, err
 		}
@@ -115,7 +116,7 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 
 		if server {
 			// Read a new feature to negotiate.
-			t, err = s.Decoder().Token()
+			t, err = s.TokenReader().Token()
 			if err != nil {
 				return done, nil, err
 			}
@@ -289,7 +290,7 @@ parsefeatures:
 				continue parsefeatures
 			}
 			// If the feature is not one we support, skip it.
-			if err := s.in.d.Skip(); err != nil {
+			if err := xmlstream.Skip(s.in.d); err != nil {
 				return nil, err
 			}
 		case xml.EndElement:

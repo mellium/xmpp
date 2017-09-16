@@ -1,6 +1,6 @@
 // Copyright 2017 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 // Package ibr2 implements the Extensible In-Band Registration ProtoXEP.
 //
@@ -15,6 +15,7 @@ import (
 	"errors"
 	"io"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/stream"
 )
@@ -77,12 +78,13 @@ func listFunc(challenges ...Challenge) func(context.Context, *xml.Encoder, xml.S
 	}
 }
 
-func parseFunc(challenges ...Challenge) func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (req bool, supported interface{}, err error) {
-	return func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+func parseFunc(challenges ...Challenge) func(context.Context, xmlstream.TokenReader, *xml.StartElement) (req bool, supported interface{}, err error) {
+	return func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 		// Parse the list of challenge types sent down by the server.
 		parsed := struct {
 			Challenges []string `xml:"urn:xmpp:register:0 challenge"`
 		}{}
+		d := xml.NewTokenDecoder(r)
 		err := d.DecodeElement(&parsed, start)
 		if err != nil {
 			return false, false, err
@@ -105,9 +107,9 @@ func parseFunc(challenges ...Challenge) func(ctx context.Context, d *xml.Decoder
 	}
 }
 
-func decodeClientResp(ctx context.Context, d *xml.Decoder, decode func(ctx context.Context, server bool, d *xml.Decoder, start *xml.StartElement) error) (cancel bool, err error) {
+func decodeClientResp(ctx context.Context, r xmlstream.TokenReader, decode func(ctx context.Context, server bool, r xmlstream.TokenReader, start *xml.StartElement) error) (cancel bool, err error) {
 	var tok xml.Token
-	tok, err = d.Token()
+	tok, err = r.Token()
 	if err != nil {
 		return
 	}
@@ -120,7 +122,7 @@ func decodeClientResp(ctx context.Context, d *xml.Decoder, decode func(ctx conte
 		cancel = true
 		return
 	case start.Name.Local == "response" && start.Name.Space == NS:
-		err = decode(ctx, true, d, &start)
+		err = decode(ctx, true, r, &start)
 		if err != nil {
 			return
 		}
@@ -143,7 +145,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 
 		var tok xml.Token
 		e := session.Encoder()
-		d := session.Decoder()
+		r := session.TokenReader()
 
 		if server {
 			for _, c := range challenges {
@@ -168,7 +170,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 
 				// Decode the clients response
 				var cancel bool
-				cancel, err = decodeClientResp(ctx, d, c.Receive)
+				cancel, err = decodeClientResp(ctx, r, c.Receive)
 				if err != nil || cancel {
 					return
 				}
@@ -177,7 +179,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 		}
 
 		// If we're the client, decode the challenge.
-		tok, err = d.Token()
+		tok, err = r.Token()
 		if err != nil {
 			return
 		}
@@ -208,7 +210,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 				continue
 			}
 
-			err = c.Receive(ctx, false, d, &start)
+			err = c.Receive(ctx, false, r, &start)
 			if err != nil {
 				return
 			}
