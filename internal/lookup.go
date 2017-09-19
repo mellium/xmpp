@@ -63,6 +63,10 @@ var (
 	}
 )
 
+// LookupPort returns the default port for the provided network and service
+// using net.LookupPort.
+// If the provided service is one of xmpp-client, xmpp-server, or xmpp-bosh and
+// it is not found by net.LookupPort, a default value is returned.
 func LookupPort(network, service string) (int, error) {
 	p, err := net.LookupPort(network, service)
 	if err == nil {

@@ -8,6 +8,8 @@ import (
 	"encoding/xml"
 )
 
+// GetAttr returns the value of the first attribute with the provided local name
+// from a list of attributes or an empty string if no such attribute exists.
 func GetAttr(attr []xml.Attr, local string) string {
 	for _, a := range attr {
 		if a.Name.Local == local {
