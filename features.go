@@ -66,7 +66,7 @@ type StreamFeature struct {
 	Negotiate func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error)
 }
 
-func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadWriter, err error) {
+func negotiateFeatures(ctx context.Context, s *Session) (mask SessionState, rw io.ReadWriter, err error) {
 	server := (s.state & Received) == Received
 
 	// If we're the server, write the initial stream features.
@@ -74,7 +74,7 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 	if server {
 		list, err = writeStreamFeatures(ctx, s)
 		if err != nil {
-			return false, nil, err
+			return mask, nil, err
 		}
 	}
 
@@ -86,11 +86,11 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 		// Read a new startstream:features token.
 		t, err = s.TokenReader().Token()
 		if err != nil {
-			return done, nil, err
+			return mask, nil, err
 		}
 		start, ok = t.(xml.StartElement)
 		if !ok {
-			return done, nil, stream.BadFormat
+			return mask, nil, stream.BadFormat
 		}
 
 		// If we're the client read the rest of the stream features list.
@@ -98,15 +98,14 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 
 		switch {
 		case err != nil:
-			return done, nil, err
+			return mask, nil, err
 		case list.total == 0 || len(list.cache) == 0:
 			// If we received an empty list (or one with no supported features), we're
 			// done.
-			return true, nil, nil
+			return Ready, nil, nil
 		}
 	}
 
-	var mask SessionState
 	var sent bool
 
 	// If the list has any optional items that we support, negotiate them first
@@ -118,11 +117,11 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 			// Read a new feature to negotiate.
 			t, err = s.TokenReader().Token()
 			if err != nil {
-				return done, nil, err
+				return mask, nil, err
 			}
 			start, ok = t.(xml.StartElement)
 			if !ok {
-				return done, nil, stream.BadFormat
+				return mask, nil, stream.BadFormat
 			}
 
 			// If the feature was not sent or was already negotiated, error.
@@ -131,7 +130,7 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 			data, sent = list.cache[start.Name.Space]
 			if !sent || negotiated {
 				// TODO: What should we return here?
-				return done, rw, stream.PolicyViolation
+				return mask, rw, stream.PolicyViolation
 			}
 		} else {
 			// If we're the client, iterate through the cached features and select one
@@ -157,7 +156,7 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 
 			// No features that haven't already been negotiated were sent… we're done.
 			if data.feature.Name.Local == "" {
-				return true, nil, nil
+				return Ready, nil, nil
 			}
 		}
 
@@ -174,7 +173,12 @@ func (s *Session) negotiateFeatures(ctx context.Context) (done bool, rw io.ReadW
 		}
 	}
 
-	return !list.req || (s.state&Ready == Ready), rw, err
+	// If the list contains no required features, negotiation is complete.
+	if !list.req {
+		mask |= Ready
+	}
+
+	return mask, rw, err
 }
 
 type sfData struct {

@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package xmpp
 
@@ -20,6 +20,35 @@ import (
 const (
 	xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>`
 )
+
+func negotiator(ctx context.Context, s *Session, doRestart interface{}) (mask SessionState, rw io.ReadWriter, restartNext interface{}, err error) {
+	// Loop for as long as we're not done negotiating features or a stream restart
+	// is still required.
+	if rst, ok := doRestart.(bool); ok && rst {
+		if (s.state & Received) == Received {
+			// If we're the receiving entity wait for a new stream, then send one in
+			// response.
+			if err = expectNewStream(ctx, s); err != nil {
+				return mask, nil, false, err
+			}
+			if err = sendNewStream(s, s.config, internal.RandomID()); err != nil {
+				return mask, nil, false, err
+			}
+		} else {
+			// If we're the initiating entity, send a new stream and then wait for
+			// one in response.
+			if err = sendNewStream(s, s.config, ""); err != nil {
+				return mask, nil, false, err
+			}
+			if err = expectNewStream(ctx, s); err != nil {
+				return mask, nil, false, err
+			}
+		}
+	}
+
+	mask, rw, err = negotiateFeatures(ctx, s)
+	return mask, rw, rw != nil, err
+}
 
 type streamInfo struct {
 	to      *jid.JID
@@ -166,44 +195,4 @@ func expectNewStream(ctx context.Context, s *Session) error {
 			return stream.RestrictedXML
 		}
 	}
-}
-
-func (s *Session) negotiateStreams(ctx context.Context, rw io.ReadWriter) (err error) {
-	// Loop for as long as we're not done negotiating features or a stream restart
-	// is still required.
-	for done := false; !done || rw != nil; {
-		if rw != nil {
-			s.features = make(map[string]interface{})
-			s.negotiated = make(map[string]struct{})
-			s.rw = rw
-			s.in.d = xml.NewDecoder(s.rw)
-			s.out.e = xml.NewEncoder(s.rw)
-			rw = nil
-
-			if (s.state & Received) == Received {
-				// If we're the receiving entity wait for a new stream, then send one in
-				// response.
-				if err = expectNewStream(ctx, s); err != nil {
-					return err
-				}
-				if err = sendNewStream(s, s.config, internal.RandomID()); err != nil {
-					return err
-				}
-			} else {
-				// If we're the initiating entity, send a new stream and then wait for
-				// one in response.
-				if err = sendNewStream(s, s.config, ""); err != nil {
-					return err
-				}
-				if err = expectNewStream(ctx, s); err != nil {
-					return err
-				}
-			}
-		}
-
-		if done, rw, err = s.negotiateFeatures(ctx); err != nil {
-			return err
-		}
-	}
-	return nil
 }

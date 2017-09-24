@@ -88,26 +88,57 @@ type Session struct {
 	}
 }
 
+// NegotiateSession creates an XMPP session from a negotiate function which is
+// called repeatedly until it returns a session state mask that has the Ready
+// bit set. This can be used for creating custom stream initialization logic
+// that does not use XMPP feature negotiation such as the connection mechanism
+// described in XEP-0114: Jabber Component Protocol.
+func NegotiateSession(ctx context.Context, config *Config, rw io.ReadWriter, negotiate func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, cache interface{}, err error)) (*Session, error) {
+	s := &Session{
+		config:     config,
+		rw:         rw,
+		features:   make(map[string]interface{}),
+		negotiated: make(map[string]struct{}),
+	}
+	if conn, ok := rw.(net.Conn); ok {
+		s.conn = conn
+	}
+	s.in.d = xml.NewDecoder(s.rw)
+	s.out.e = xml.NewEncoder(s.rw)
+	s.in.ctx, s.in.cancel = context.WithCancel(context.Background())
+
+	// Call negotiate until the ready bit is set.
+	var data interface{} = true
+	for s.state&Ready == 0 {
+		var mask SessionState
+		var rw io.ReadWriter
+		var err error
+		mask, rw, data, err = negotiate(ctx, s, data)
+		if err != nil {
+			return s, err
+		}
+		if rw != nil {
+			s.features = make(map[string]interface{})
+			s.negotiated = make(map[string]struct{})
+			s.rw = rw
+			s.in.d = xml.NewDecoder(s.rw)
+			s.out.e = xml.NewEncoder(s.rw)
+			if conn, ok := rw.(net.Conn); ok {
+				s.conn = conn
+			}
+		}
+		s.state |= mask
+	}
+
+	return s, nil
+}
+
 // NewSession attempts to use an existing connection (or any io.ReadWriter) to
 // negotiate an XMPP session based on the given config. If the provided context
 // is canceled before stream negotiation is complete an error is returned. After
 // stream negotiation if the context is canceled it has no effect.
 func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session, error) {
-	s := &Session{
-		config: config,
-		rw:     rw,
-	}
-	s.in.ctx, s.in.cancel = context.WithCancel(context.Background())
-
-	if conn, ok := rw.(net.Conn); ok {
-		s.conn = conn
-	}
-
-	err := s.negotiateStreams(ctx, rw)
-	if err != nil {
-		return nil, err
-	}
-	return s, err
+	return NegotiateSession(ctx, config, rw, negotiator)
 }
 
 // Serve decodes incoming XML tokens from the connection and delegates handling
