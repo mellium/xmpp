@@ -46,8 +46,8 @@ func BindCustom(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 type bindIQ struct {
 	stanza.IQ
 
-	Bind bindPayload  `xml:"urn:ietf:params:xml:ns:xmpp-bind bind,omitempty"`
-	Err  stanza.Error `xml:"error,ommitempty"`
+	Bind bindPayload   `xml:"urn:ietf:params:xml:ns:xmpp-bind bind,omitempty"`
+	Err  *stanza.Error `xml:"error,ommitempty"`
 }
 
 type bindPayload struct {
@@ -69,8 +69,7 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 				return req, err
 			}
 
-			err = e.Flush()
-			return req, err
+			return req, e.Flush()
 		},
 		Parse: func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
@@ -127,7 +126,7 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 
 				if ok {
 					// If a stanza error was returned:
-					resp.Err = stanzaErr
+					resp.Err = &stanzaErr
 				} else {
 
 					resp.Bind = bindPayload{JID: j}
