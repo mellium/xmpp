@@ -37,7 +37,7 @@ func NewSession(ctx context.Context, addr *jid.JID, secret []byte, rw io.ReadWri
 // protocol connection on the provided io.ReadWriter.
 //
 // It currently only supports the client side of the component protocol.
-func Negotiator(addr *jid.JID, secret []byte) func(ctx context.Context, session *xmpp.Session, _ interface{}) (mask xmpp.SessionState, _ io.ReadWriter, _ interface{}, err error) {
+func Negotiator(addr *jid.JID, secret []byte) xmpp.Negotiator {
 	return func(ctx context.Context, s *xmpp.Session, _ interface{}) (mask xmpp.SessionState, _ io.ReadWriter, _ interface{}, err error) {
 		d := xml.NewDecoder(s.Conn())
 

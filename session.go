@@ -88,12 +88,30 @@ type Session struct {
 	}
 }
 
-// NegotiateSession creates an XMPP session from a negotiate function which is
-// called repeatedly until it returns a session state mask that has the Ready
-// bit set. This can be used for creating custom stream initialization logic
-// that does not use XMPP feature negotiation such as the connection mechanism
-// described in XEP-0114: Jabber Component Protocol.
-func NegotiateSession(ctx context.Context, config *Config, rw io.ReadWriter, negotiate func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, cache interface{}, err error)) (*Session, error) {
+// Negotiator is a function that can be passed to NegotiateSession to perform
+// custom session negotiation. This can be used for creating custom stream
+// initialization logic that does not use XMPP feature negotiation such as the
+// connection mechanism described in XEP-0114: Jabber Component Protocol.
+// Normally NewSession should be used instead.
+//
+// If a Negotiator is passed into NegotiateSession it will be called repeatedly
+// until a mask is returned with the Ready bit set. Each time Negotiator is
+// called any bits set in the state mask that it returns will be set on the
+// session state and any cache value that is returned will be passed back in
+// during the next iteration. If a new io.ReadWriter is returned, it is set as
+// the session's underlying io.ReadWriter and the internal session state
+// (encoders, decoders, etc.) will be reset.
+type Negotiator func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, cache interface{}, err error)
+
+// NegotiateSession creates an XMPP session using a custom negotiate function.
+// Calling NegotiateSession with a nil Negotiator is the same as calling
+// NewSession and will use the normal XMPP stream negotiation protocol.
+//
+// For more information see the Negotiator type.
+func NegotiateSession(ctx context.Context, config *Config, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
+	if negotiate == nil {
+		negotiate = negotiator
+	}
 	s := &Session{
 		config:     config,
 		rw:         rw,
@@ -138,7 +156,7 @@ func NegotiateSession(ctx context.Context, config *Config, rw io.ReadWriter, neg
 // is canceled before stream negotiation is complete an error is returned. After
 // stream negotiation if the context is canceled it has no effect.
 func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session, error) {
-	return NegotiateSession(ctx, config, rw, negotiator)
+	return NegotiateSession(ctx, config, rw, nil)
 }
 
 // Serve decodes incoming XML tokens from the connection and delegates handling
