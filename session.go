@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
@@ -76,14 +77,14 @@ type Session struct {
 
 	in struct {
 		sync.Mutex
-		streamInfo
+		internal.StreamInfo
 		d      xmlstream.TokenReader
 		ctx    context.Context
 		cancel context.CancelFunc
 	}
 	out struct {
 		sync.Mutex
-		streamInfo
+		internal.StreamInfo
 		e *xml.Encoder
 	}
 }
@@ -310,4 +311,38 @@ func (s *Session) handleInputStream(handler Handler) error {
 			}
 		}
 	}
+}
+
+func negotiator(ctx context.Context, s *Session, doRestart interface{}) (mask SessionState, rw io.ReadWriter, restartNext interface{}, err error) {
+	// Loop for as long as we're not done negotiating features or a stream restart
+	// is still required.
+	if rst, ok := doRestart.(bool); ok && rst {
+		if (s.state & Received) == Received {
+			// If we're the receiving entity wait for a new stream, then send one in
+			// response.
+
+			s.in.StreamInfo, err = internal.ExpectNewStream(ctx, s.in.d, s.State()&Received == Received)
+			if err != nil {
+				return mask, nil, false, err
+			}
+			s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s.config.S2S, s.config.Version, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), internal.RandomID())
+			if err != nil {
+				return mask, nil, false, err
+			}
+		} else {
+			// If we're the initiating entity, send a new stream and then wait for
+			// one in response.
+			s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s.config.S2S, s.config.Version, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), "")
+			if err != nil {
+				return mask, nil, false, err
+			}
+			s.in.StreamInfo, err = internal.ExpectNewStream(ctx, s.in.d, s.State()&Received == Received)
+			if err != nil {
+				return mask, nil, false, err
+			}
+		}
+	}
+
+	mask, rw, err = negotiateFeatures(ctx, s)
+	return mask, rw, rw != nil, err
 }

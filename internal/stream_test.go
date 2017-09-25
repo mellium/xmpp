@@ -1,8 +1,8 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
-package xmpp
+package internal_test
 
 import (
 	"bytes"
@@ -11,11 +11,12 @@ import (
 	"strings"
 	"testing"
 
-	"mellium.im/xmpp/jid"
+	"golang.org/x/text/language"
+
+	"mellium.im/xmpp/internal"
 )
 
 func TestSendNewS2S(t *testing.T) {
-	config := NewClientConfig(jid.MustParse("test@example.net"))
 	for i, tc := range []struct {
 		s2s    bool
 		id     bool
@@ -34,14 +35,13 @@ func TestSendNewS2S(t *testing.T) {
 			if tc.id {
 				ids = "abc"
 			}
-			config.S2S = tc.s2s
-			err := sendNewStream(&Session{rw: &b}, config, ids)
+			_, err := internal.SendNewStream(&b, tc.s2s, internal.Version{1, 0}, language.Und, "example.net", "test@example.net", ids)
 
 			str := b.String()
-			if !strings.HasPrefix(str, xmlHeader) {
+			if !strings.HasPrefix(str, internal.XMLHeader) {
 				t.Errorf("Expected string to start with XML header but got: %s", str)
 			}
-			str = strings.TrimPrefix(str, xmlHeader)
+			str = strings.TrimPrefix(str, internal.XMLHeader)
 
 			switch {
 			case err != tc.err:
@@ -78,14 +78,14 @@ func (nopReader) Read(p []byte) (n int, err error) {
 }
 
 func TestSendNewS2SReturnsWriteErr(t *testing.T) {
-	config := NewClientConfig(jid.MustParse("test@example.net"))
-	if err := sendNewStream(&Session{rw: struct {
+	_, err := internal.SendNewStream(struct {
 		io.Reader
 		io.Writer
 	}{
 		nopReader{},
 		errWriter{},
-	}}, config, "abc"); err != io.ErrUnexpectedEOF {
+	}, true, internal.Version{1, 0}, language.Und, "example.net", "test@example.net", "abc")
+	if err != io.ErrUnexpectedEOF {
 		t.Errorf("Expected errWriterErr (%s) but got `%s`", io.ErrUnexpectedEOF, err)
 	}
 }
