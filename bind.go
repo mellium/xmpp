@@ -21,7 +21,7 @@ import (
 // (the name by which an individual client can be addressed) to the stream.
 //
 // Resource binding is the final feature negotiated when setting up a new
-// session and is required to allow communiation with other clients and servers
+// session and is required to allow communication with other clients and servers
 // in the network. Resource binding is mandatory-to-negotiate.
 //
 // If used on a server connection, BindResource generates and assigns random
