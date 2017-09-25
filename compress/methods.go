@@ -39,6 +39,7 @@ var lzwMethod = Method{
 // methods will be those with names defined in the "Stream Compression Methods
 // Registry" maintained by the XSF Editor:
 // https://xmpp.org/registrar/compress.html
+//
 // Since ZLIB is always supported, a Method is not defined for it.
 type Method struct {
 	Name    string
