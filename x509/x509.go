@@ -25,7 +25,7 @@ var (
 // Certificate represents an X.509 certificate with additional fields for XMPP
 // use.
 type Certificate struct {
-	x509.Certificate
+	*x509.Certificate
 
 	SRVNames      []string
 	XMPPAddresses []string
@@ -37,7 +37,7 @@ type Certificate struct {
 func FromCertificate(crt *x509.Certificate) (*Certificate, error) {
 	srvNames, xmppAddrs, err := parseSANExtensions(crt.Extensions)
 	return &Certificate{
-		Certificate:   *crt,
+		Certificate:   crt,
 		SRVNames:      srvNames,
 		XMPPAddresses: xmppAddrs,
 	}, err
@@ -51,7 +51,7 @@ func ParseCertificate(asn1Data []byte) (*Certificate, error) {
 	}
 	srvNames, xmppAddrs, err := parseSANExtensions(crt.Extensions)
 	return &Certificate{
-		Certificate:   *crt,
+		Certificate:   crt,
 		SRVNames:      srvNames,
 		XMPPAddresses: xmppAddrs,
 	}, err
