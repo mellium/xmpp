@@ -1,4 +1,4 @@
-// Copyright 2016 Sam Whited.
+// Copyright 2017 Sam Whited.
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
@@ -27,21 +27,27 @@ const (
 	NSAccept = `jabber:component:accept`
 )
 
-// NewSession initiates an XMPP session on the given io.ReadWriter using the
-// component protocol.
-func NewSession(ctx context.Context, addr *jid.JID, secret []byte, rw io.ReadWriter) (*xmpp.Session, error) {
-	return xmpp.NegotiateSession(ctx, nil, rw, Negotiator(addr, secret))
+// NewClientSession initiates an XMPP session on the given io.ReadWriter using
+// the component protocol.
+func NewClientSession(ctx context.Context, addr *jid.JID, secret []byte, rw io.ReadWriter) (*xmpp.Session, error) {
+	return xmpp.NegotiateSession(ctx, nil, rw, Negotiator(addr, secret, false))
 }
+
+// AcceptSession accepts an XMPP session on the given io.ReadWriter using the
+// component protocol.
+//func AcceptSession(ctx context.Context, addr *jid.JID, secret []byte, rw io.ReadWriter) (*xmpp.Session, error) {
+//	return xmpp.NegotiateSession(ctx, nil, rw, Negotiator(addr, secret, true))
+//}
 
 // Negotiator returns a new function that can be used to negotiate a component
 // protocol connection on the provided io.ReadWriter.
 //
 // It currently only supports the client side of the component protocol.
-func Negotiator(addr *jid.JID, secret []byte) xmpp.Negotiator {
+func Negotiator(addr *jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 	return func(ctx context.Context, s *xmpp.Session, _ interface{}) (mask xmpp.SessionState, _ io.ReadWriter, _ interface{}, err error) {
 		d := xml.NewDecoder(s.Conn())
 
-		if (s.State() & xmpp.Received) == xmpp.Received {
+		if recv {
 			// If we're the receiving entity wait for a new stream, then send one in
 			// response.
 			panic("component: receiving connections not yet implemented")
