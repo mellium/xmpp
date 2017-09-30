@@ -189,6 +189,10 @@ func (s *Session) Feature(namespace string) (data interface{}, ok bool) {
 }
 
 // Conn returns the Session's backing net.Conn or other io.ReadWriter.
+//
+// This should almost never be read from or written to, but is useful during
+// stream negotiation for wrapping the existing connection in a new layer (eg.
+// compression or TLS).
 func (s *Session) Conn() io.ReadWriter {
 	return s.rw
 }
