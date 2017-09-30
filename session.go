@@ -186,7 +186,10 @@ func (s *Session) Conn() io.ReadWriter {
 	return s.rw
 }
 
-// Token satisfies the xml.TokenReader interface for Session.
+// Token satisfies the xmlstream.TokenReader (or xml.TokenReader in Go 1.10)
+// interface for Session.
+//
+// For more information see mellium.im/xmlstream
 func (s *Session) Token() (xml.Token, error) {
 	return s.in.d.Token()
 }
