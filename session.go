@@ -11,7 +11,6 @@ import (
 	"net"
 	"sync"
 
-	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
@@ -77,7 +76,7 @@ type Session struct {
 	in struct {
 		sync.Mutex
 		internal.StreamInfo
-		d      xmlstream.TokenReader
+		d      xml.TokenReader
 		ctx    context.Context
 		cancel context.CancelFunc
 	}
