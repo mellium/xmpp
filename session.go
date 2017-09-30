@@ -61,6 +61,7 @@ type Session struct {
 	rw   io.ReadWriter
 
 	state SessionState
+	slock sync.RWMutex
 
 	// The actual origin of this conn (we don't want to mutate the config, so if
 	// this origin exists and is different from the one in config, eg. because the
@@ -81,7 +82,6 @@ type Session struct {
 		cancel context.CancelFunc
 	}
 	out struct {
-		sync.Mutex
 		internal.StreamInfo
 		e *xml.Encoder
 	}
@@ -213,8 +213,8 @@ func (s *Session) Config() *Config {
 // Calling Close() multiple times will only result in one closing
 // </stream:stream> being sent.
 func (s *Session) Close() error {
-	s.out.Lock()
-	defer s.out.Unlock()
+	s.slock.Lock()
+	defer s.slock.Unlock()
 	if s.state&OutputStreamClosed == OutputStreamClosed {
 		return nil
 	}
@@ -229,12 +229,16 @@ func (s *Session) Close() error {
 // State returns the current state of the session. For more information, see the
 // SessionState type.
 func (s *Session) State() SessionState {
+	s.slock.RLock()
+	defer s.slock.RUnlock()
 	return s.state
 }
 
 // LocalAddr returns the Origin address for initiated connections, or the
 // Location for received connections.
 func (s *Session) LocalAddr() *jid.JID {
+	s.slock.RLock()
+	defer s.slock.RUnlock()
 	if (s.state & Received) == Received {
 		return s.config.Location
 	}
@@ -247,6 +251,8 @@ func (s *Session) LocalAddr() *jid.JID {
 // RemoteAddr returns the Location address for initiated connections, or the
 // Origin address for received connections.
 func (s *Session) RemoteAddr() *jid.JID {
+	s.slock.RLock()
+	defer s.slock.RUnlock()
 	if (s.state & Received) == Received {
 		return s.config.Origin
 	}
