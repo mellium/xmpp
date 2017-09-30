@@ -209,16 +209,18 @@ func (s *Session) Config() *Config {
 // It does not close the underlying connection.
 // Calling Close() multiple times will only result in one closing
 // </stream:stream> being sent.
-func (s *Session) Close() (err error) {
+func (s *Session) Close() error {
 	s.out.Lock()
 	defer s.out.Unlock()
-	if s.state&OutputStreamClosed != OutputStreamClosed {
-		s.Encoder().EncodeToken(xml.EndElement{
-			Name: xml.Name{Local: "stream:stream"},
-		})
+	if s.state&OutputStreamClosed == OutputStreamClosed {
+		return nil
 	}
 
-	return
+	s.state |= OutputStreamClosed
+	// We wrote the opening stream instead of encoding it, so do the same with the
+	// closing to ensure that the encoder doesn't think the tokens are mismatched.
+	_, err := s.Conn().Write([]byte(`</stream:stream>`))
+	return err
 }
 
 // State returns the current state of the session. For more information, see the
