@@ -12,7 +12,6 @@ import (
 
 	"golang.org/x/text/language"
 
-	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stream"
@@ -105,7 +104,7 @@ func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang language.Ta
 	return streamData, nil
 }
 
-func ExpectNewStream(ctx context.Context, d xmlstream.TokenReader, recv bool) (streamData StreamInfo, err error) {
+func ExpectNewStream(ctx context.Context, d xml.TokenReader, recv bool) (streamData StreamInfo, err error) {
 	var foundHeader bool
 
 	for {
