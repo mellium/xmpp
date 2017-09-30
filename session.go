@@ -190,10 +190,9 @@ func (s *Session) Conn() io.ReadWriter {
 	return s.rw
 }
 
-// TokenReader returns the XML token reader that was used to negotiate the
-// latest stream.
-func (s *Session) TokenReader() xmlstream.TokenReader {
-	return s.in.d
+// Token satisfies the xml.TokenReader interface for Session.
+func (s *Session) Token() (xml.Token, error) {
+	return s.in.d.Token()
 }
 
 // Encoder returns the XML encoder that was used to negotiate the latest stream.
@@ -260,7 +259,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 			return nil
 		default:
 		}
-		tok, err := s.TokenReader().Token()
+		tok, err := s.Token()
 		if err != nil {
 			select {
 			case <-s.in.ctx.Done():
@@ -275,7 +274,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 		case xml.StartElement:
 			if t.Name.Local == "error" && t.Name.Space == ns.Stream {
 				e := stream.Error{}
-				err = xml.NewTokenDecoder(s.TokenReader()).DecodeElement(&e, &t)
+				err = xml.NewTokenDecoder(s).DecodeElement(&e, &t)
 				if err != nil {
 					return err
 				}

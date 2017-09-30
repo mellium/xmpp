@@ -143,19 +143,17 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 				return mask, nil, err
 			}
 
-			r := session.TokenReader()
-
 			// If we're already done after the first step, decode the <success/> or
 			// <failure/> before we exit.
 			if !more {
-				tok, err := r.Token()
+				tok, err := session.Token()
 				if err != nil {
 					return mask, nil, err
 				}
 				if t, ok := tok.(xml.StartElement); ok {
 					// TODO: Handle the additional data that could be returned if
 					// success?
-					_, _, err := decodeSASLChallenge(r, t, false)
+					_, _, err := decodeSASLChallenge(session, t, false)
 					if err != nil {
 						return mask, nil, err
 					}
@@ -171,13 +169,13 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 					return mask, nil, ctx.Err()
 				default:
 				}
-				tok, err := r.Token()
+				tok, err := session.Token()
 				if err != nil {
 					return mask, nil, err
 				}
 				var challenge []byte
 				if t, ok := tok.(xml.StartElement); ok {
-					challenge, success, err = decodeSASLChallenge(r, t, true)
+					challenge, success, err = decodeSASLChallenge(session, t, true)
 					if err != nil {
 						return mask, nil, err
 					}

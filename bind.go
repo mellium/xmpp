@@ -79,7 +79,7 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
 			e := session.Encoder()
-			d := xml.NewTokenDecoder(session.TokenReader())
+			d := xml.NewTokenDecoder(session)
 
 			// Handle the server side of resource binding if we're on the receiving
 			// end of the connection.

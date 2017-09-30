@@ -84,7 +84,7 @@ func negotiateFeatures(ctx context.Context, s *Session) (mask SessionState, rw i
 
 	if !server {
 		// Read a new startstream:features token.
-		t, err = s.TokenReader().Token()
+		t, err = s.Token()
 		if err != nil {
 			return mask, nil, err
 		}
@@ -115,7 +115,7 @@ func negotiateFeatures(ctx context.Context, s *Session) (mask SessionState, rw i
 
 		if server {
 			// Read a new feature to negotiate.
-			t, err = s.TokenReader().Token()
+			t, err = s.Token()
 			if err != nil {
 				return mask, nil, err
 			}

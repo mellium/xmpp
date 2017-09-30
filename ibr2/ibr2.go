@@ -145,7 +145,6 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 
 		var tok xml.Token
 		e := session.Encoder()
-		r := session.TokenReader()
 
 		if server {
 			for _, c := range challenges {
@@ -170,7 +169,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 
 				// Decode the clients response
 				var cancel bool
-				cancel, err = decodeClientResp(ctx, r, c.Receive)
+				cancel, err = decodeClientResp(ctx, session, c.Receive)
 				if err != nil || cancel {
 					return
 				}
@@ -179,7 +178,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 		}
 
 		// If we're the client, decode the challenge.
-		tok, err = r.Token()
+		tok, err = session.Token()
 		if err != nil {
 			return
 		}
@@ -210,7 +209,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 				continue
 			}
 
-			err = c.Receive(ctx, false, r, &start)
+			err = c.Receive(ctx, false, session, &start)
 			if err != nil {
 				return
 			}

@@ -123,7 +123,7 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 				return mask, nil, err
 			}
 
-			d := xml.NewTokenDecoder(session.TokenReader())
+			d := xml.NewTokenDecoder(session)
 
 			// If we're already done after the first step, decode the <success/> or
 			// <failure/> before we exit.

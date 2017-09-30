@@ -65,7 +65,7 @@ func StartTLS(required bool) StreamFeature {
 
 			config := session.Config()
 			state := session.State()
-			d := xml.NewTokenDecoder(session.TokenReader())
+			d := xml.NewTokenDecoder(session)
 
 			// Fetch or create a TLSConfig to use.
 			var tlsconf *tls.Config
