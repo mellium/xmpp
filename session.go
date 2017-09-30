@@ -160,16 +160,24 @@ func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session
 }
 
 // Serve decodes incoming XML tokens from the connection and delegates handling
-// them to the provided handler.
+// them to h.
 // If an error is returned from the handler and it is of type stanza.Error or
-// stream.Error, the error is marshaled and sent over the XML stream. If any
-// other error type is returned, it is marshaled as an undefined-condition
-// StreamError. If a stream error is received while serving it is not passed to
-// the handler. Instead, Serve unmarshals the error, closes the session, and
-// returns it (handlers handle stanza level errors, the session handles stream
-// level errors).
-func (s *Session) Serve(handler Handler) error {
-	return s.handleInputStream(handler)
+// stream.Error, the error is marshaled and sent over the XML stream.
+// If any other error type is returned, it is marshaled as an
+// undefined-condition StreamError.
+// If a stream error is received while serving it is not passed to the handler.
+// Instead, Serve unmarshals the error, closes the session, and returns it (h
+// handles stanza level errors, the session handles stream level errors).
+//
+// If Serve is called concurrently the second invocation blocks until the first
+// returns.
+// If the input stream is closed, Serve returns.
+// Serve does not close the output stream.
+func (s *Session) Serve(h Handler) error {
+	s.in.Lock()
+	defer s.in.Unlock()
+
+	return s.handleInputStream(h)
 }
 
 // Feature checks if a feature with the given namespace was advertised
@@ -250,10 +258,6 @@ func (s *Session) RemoteAddr() *jid.JID {
 }
 
 func (s *Session) handleInputStream(handler Handler) error {
-	s.in.Lock()
-	defer s.in.Unlock()
-	defer s.Close()
-
 	for {
 		select {
 		case <-s.in.ctx.Done():
