@@ -247,10 +247,6 @@ func readStreamFeatures(ctx context.Context, s *Session, start xml.StartElement)
 		return nil, stream.BadNamespacePrefix
 	}
 
-	// Lock the connection features list.
-	s.flock.Lock()
-	defer s.flock.Unlock()
-
 	sf := &streamFeaturesList{
 		cache: make(map[string]sfData),
 	}

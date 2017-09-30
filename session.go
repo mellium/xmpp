@@ -70,7 +70,6 @@ type Session struct {
 
 	// The stream feature namespaces advertised for the current streams.
 	features map[string]interface{}
-	flock    sync.Mutex
 
 	// The negotiated features (by namespace) for the current session.
 	negotiated map[string]struct{}
@@ -177,9 +176,6 @@ func (s *Session) Serve(handler Handler) error {
 // by the server for the current stream. If it was data will be the canonical
 // representation of the feature as returned by the feature's Parse function.
 func (s *Session) Feature(namespace string) (data interface{}, ok bool) {
-	s.flock.Lock()
-	defer s.flock.Unlock()
-
 	// TODO: Make the features struct actually store the parsed representation.
 	data, ok = s.features[namespace]
 	return
