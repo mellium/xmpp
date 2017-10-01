@@ -11,6 +11,7 @@ import (
 	"net"
 	"sync"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
@@ -291,9 +292,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 				}
 				return e
 			}
-			// TODO: Wrap session in a reader that only reads to the end of the
-			// current element?
-			if err = handler.HandleXMPP(s, &t); err != nil {
+			if err = handler.HandleXMPP(xmlstream.Inner(s), &t); err != nil {
 				switch err.(type) {
 				case stanza.Error:
 					err = s.Encoder().Encode(err)
