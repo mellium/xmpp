@@ -1,16 +1,19 @@
-PACKAGES=$$(go list ./... | grep -v '/vendor/')
+PACKAGES=$$(go list ./...)
 
 .PHONEY: test
-test:
+test: vendor
 	go test -cover $(PACKAGES) -race
 
 .PHONEY: bench
-bench:
+bench: vendor
 	go test -bench . -benchmem -run NONE $(PACKAGES)
 
 .PHONEY: vet
 vet:
 	go vet $(PACKAGES)
+
+vendor: Gopkg.toml
+	dep ensure
 
 deps.svg: *.go
 	(   echo "digraph G {"; \

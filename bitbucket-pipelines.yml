@@ -3,17 +3,24 @@ pipelines:
   default:
     - step:
         caches:
-          - gopath
+          - vendor
+          - gosrc
         script:
+          - export PATH="/gosrc/bin:$PATH"
+          - /bin/bash -c '[[ -e /gosrc/bin ]] || git clone --depth=1 https://go.googlesource.com/go /gosrc'
+          - /bin/bash -c '[[ -e /gosrc/bin ]] || pushd /gosrc/src && ./make.bash && popd'
           - mkdir -p "$GOPATH/src/mellium.im/"
           - ln -s "`pwd`" "$GOPATH/src/mellium.im/xmpp"
           - cd "$GOPATH/src/mellium.im/xmpp"
           - go-wrapper download
+          - cp -r /vendor . || true
           - go version
           - go env
           - make vet
           - make test
           - make bench
+          - cp -r $GOPATH/src/mellium.im/xmpp/vendor /vendor
 definitions:
   caches:
-    gopath: mkdir -p "$GOPATH/src/"
+    vendor: /vendor
+    gosrc: /gosrc
