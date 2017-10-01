@@ -14,3 +14,5 @@
 //
 // Be advised: This API is still unstable and is subject to change.
 package xmpp // import "mellium.im/xmpp"
+
+// BUG(ssw): This package only supports Go 1.10.
