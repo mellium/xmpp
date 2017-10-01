@@ -172,11 +172,11 @@ func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session
 // returns.
 // If the input stream is closed, Serve returns.
 // Serve does not close the output stream.
-func (s *Session) Serve(h Handler) error {
+func (s *Session) Serve(f func(Handler) Handler) error {
 	s.in.Lock()
 	defer s.in.Unlock()
 
-	return s.handleInputStream(h)
+	return s.handleInputStream(f(HandlerFunc(defaultHandler)))
 }
 
 // Feature checks if a feature with the given namespace was advertised
@@ -291,6 +291,8 @@ func (s *Session) handleInputStream(handler Handler) error {
 				}
 				return e
 			}
+			// TODO: Wrap session in a reader that only reads to the end of the
+			// current element?
 			if err = handler.HandleXMPP(s, &t); err != nil {
 				switch err.(type) {
 				case stanza.Error:
