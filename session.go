@@ -292,7 +292,8 @@ func (s *Session) handleInputStream(handler Handler) error {
 				}
 				return e
 			}
-			if err = handler.HandleXMPP(xmlstream.Inner(s), &t); err != nil {
+			ir := xmlstream.Inner(s)
+			if err = handler.HandleXMPP(ir, &t); err != nil {
 				switch err.(type) {
 				case stanza.Error:
 					err = s.Encoder().Encode(err)
@@ -300,11 +301,17 @@ func (s *Session) handleInputStream(handler Handler) error {
 						return err
 					}
 				case stream.Error:
+					// TODO: Rework this error handling. The handler should be encoding
+					// stream errors, not the session.
 					return s.Encoder().Encode(err)
 				default:
 					// TODO: Should this error have a payload?
 					return s.Encoder().Encode(stream.UndefinedCondition)
 				}
+			}
+			// Advance the stream to the end of the element.
+			if err = xmlstream.Copy(xmlstream.Discard(), ir); err != nil {
+				return err
 			}
 		case xml.EndElement:
 			if t.Name.Space == ns.Stream && t.Name.Local == "stream" {
