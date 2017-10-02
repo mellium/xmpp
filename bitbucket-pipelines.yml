@@ -8,7 +8,9 @@ pipelines:
         script:
           - export PATH="/gosrc/bin:$PATH"
           - /bin/bash -c '[[ -e /gosrc/bin ]] || git clone --depth=1 https://go.googlesource.com/go /gosrc'
-          - /bin/bash -c '[[ -e /gosrc/bin ]] || pushd /gosrc/src && ./make.bash && popd'
+          - /bin/bash -c '[[ -e /gosrc/bin ]] || pushd /gosrc/src'
+          - /bin/bash -c '[[ -e /gosrc/bin ]] || ./make.bash'
+          - /bin/bash -c '[[ -e /gosrc/bin ]] || popd'
           - mkdir -p "$GOPATH/src/mellium.im/"
           - ln -s "`pwd`" "$GOPATH/src/mellium.im/xmpp"
           - cd "$GOPATH/src/mellium.im/xmpp"
