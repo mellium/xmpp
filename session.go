@@ -104,13 +104,12 @@ type Session struct {
 type Negotiator func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, cache interface{}, err error)
 
 // NegotiateSession creates an XMPP session using a custom negotiate function.
-// Calling NegotiateSession with a nil Negotiator is the same as calling
-// NewSession and will use the normal XMPP stream negotiation protocol.
+// Calling NegotiateSession with a nil Negotiator panics.
 //
 // For more information see the Negotiator type.
 func NegotiateSession(ctx context.Context, config *Config, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
 	if negotiate == nil {
-		negotiate = negotiator
+		panic("xmpp: attempted to negotiate session with nil negotiator")
 	}
 	s := &Session{
 		config:     config,
@@ -156,7 +155,7 @@ func NegotiateSession(ctx context.Context, config *Config, rw io.ReadWriter, neg
 // is canceled before stream negotiation is complete an error is returned. After
 // stream negotiation if the context is canceled it has no effect.
 func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session, error) {
-	return NegotiateSession(ctx, config, rw, nil)
+	return NegotiateSession(ctx, config, rw, negotiator)
 }
 
 // Serve decodes incoming XML tokens from the connection and delegates handling
