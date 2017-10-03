@@ -30,9 +30,6 @@ type Config struct {
 	// TLS config for STARTTLS.
 	TLSConfig *tls.Config
 
-	// XMPP protocol version
-	Version internal.Version
-
 	// The authorization identity, and password to authenticate with.
 	// Identity is used when a user wants to act on behalf of another user. For
 	// instance, an admin might want to log in as another user to help them
@@ -54,7 +51,6 @@ func NewServerConfig(location, origin *jid.JID) (c *Config) {
 	c = &Config{
 		Location: location,
 		Origin:   origin,
-		Version:  internal.DefaultVersion,
 	}
 	return c
 }
