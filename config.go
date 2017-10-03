@@ -27,9 +27,6 @@ type Config struct {
 	// The default language for any streams constructed using this config.
 	Lang language.Tag
 
-	// True if this is a server-to-server session.
-	S2S bool
-
 	// TLS config for STARTTLS.
 	TLSConfig *tls.Config
 
@@ -48,7 +45,6 @@ type Config struct {
 // sane defaults.
 func NewClientConfig(origin *jid.JID) (c *Config) {
 	c = NewServerConfig(origin.Domain(), origin)
-	c.S2S = false
 	return c
 }
 
@@ -58,7 +54,6 @@ func NewServerConfig(location, origin *jid.JID) (c *Config) {
 	c = &Config{
 		Location: location,
 		Origin:   origin,
-		S2S:      true,
 		Version:  internal.DefaultVersion,
 	}
 	return c

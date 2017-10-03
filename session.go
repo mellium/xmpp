@@ -150,12 +150,22 @@ func NegotiateSession(ctx context.Context, config *Config, rw io.ReadWriter, neg
 	return s, nil
 }
 
-// NewSession attempts to use an existing connection (or any io.ReadWriter) to
-// negotiate an XMPP session based on the given config. If the provided context
-// is canceled before stream negotiation is complete an error is returned. After
-// stream negotiation if the context is canceled it has no effect.
-func NewSession(ctx context.Context, config *Config, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return NegotiateSession(ctx, config, rw, negotiator(features))
+// NewClientSession attempts to use an existing connection (or any
+// io.ReadWriter) to negotiate an XMPP client-to-server session.
+// If the provided context is canceled before stream negotiation is complete an
+// error is returned.
+// After stream negotiation if the context is canceled it has no effect.
+func NewClientSession(ctx context.Context, config *Config, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return NegotiateSession(ctx, config, rw, negotiator(false, features))
+}
+
+// NewServerSession attempts to use an existing connection (or any
+// io.ReadWriter) to negotiate an XMPP server-to-server session.
+// If the provided context is canceled before stream negotiation is complete an
+// error is returned.
+// After stream negotiation if the context is canceled it has no effect.
+func NewServerSession(ctx context.Context, config *Config, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return NegotiateSession(ctx, config, rw, negotiator(true, features))
 }
 
 // Serve decodes incoming XML tokens from the connection and delegates handling
@@ -346,7 +356,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 	}
 }
 
-func negotiator(features []StreamFeature) Negotiator {
+func negotiator(s2s bool, features []StreamFeature) Negotiator {
 	return func(ctx context.Context, s *Session, doRestart interface{}) (mask SessionState, rw io.ReadWriter, restartNext interface{}, err error) {
 		// Loop for as long as we're not done negotiating features or a stream restart
 		// is still required.
@@ -359,14 +369,14 @@ func negotiator(features []StreamFeature) Negotiator {
 				if err != nil {
 					return mask, nil, false, err
 				}
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s.config.S2S, s.config.Version, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), internal.RandomID())
+				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, s.config.Version, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), internal.RandomID())
 				if err != nil {
 					return mask, nil, false, err
 				}
 			} else {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s.config.S2S, s.config.Version, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), "")
+				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, s.config.Version, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), "")
 				if err != nil {
 					return mask, nil, false, err
 				}
