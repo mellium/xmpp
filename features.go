@@ -66,13 +66,13 @@ type StreamFeature struct {
 	Negotiate func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error)
 }
 
-func negotiateFeatures(ctx context.Context, s *Session) (mask SessionState, rw io.ReadWriter, err error) {
+func negotiateFeatures(ctx context.Context, s *Session, features []StreamFeature) (mask SessionState, rw io.ReadWriter, err error) {
 	server := (s.state & Received) == Received
 
 	// If we're the server, write the initial stream features.
 	var list *streamFeaturesList
 	if server {
-		list, err = writeStreamFeatures(ctx, s)
+		list, err = writeStreamFeatures(ctx, s, features)
 		if err != nil {
 			return mask, nil, err
 		}
@@ -94,7 +94,7 @@ func negotiateFeatures(ctx context.Context, s *Session) (mask SessionState, rw i
 		}
 
 		// If we're the client read the rest of the stream features list.
-		list, err = readStreamFeatures(ctx, s, start)
+		list, err = readStreamFeatures(ctx, s, start, features)
 
 		switch {
 		case err != nil:
@@ -195,7 +195,16 @@ type streamFeaturesList struct {
 	cache map[string]sfData
 }
 
-func writeStreamFeatures(ctx context.Context, s *Session) (list *streamFeaturesList, err error) {
+func getFeature(name xml.Name, features []StreamFeature) (feature StreamFeature, ok bool) {
+	for _, f := range features {
+		if feature.Name == name {
+			return f, true
+		}
+	}
+	return feature, false
+}
+
+func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeature) (list *streamFeaturesList, err error) {
 	start := xml.StartElement{Name: xml.Name{Space: "", Local: "stream:features"}}
 	if err = s.EncodeToken(start); err != nil {
 		return
@@ -206,7 +215,7 @@ func writeStreamFeatures(ctx context.Context, s *Session) (list *streamFeaturesL
 		cache: make(map[string]sfData),
 	}
 
-	for _, feature := range s.config.Features {
+	for _, feature := range features {
 		// Check if all the necessary bits are set and none of the prohibited bits
 		// are set.
 		if (s.state&feature.Necessary) == feature.Necessary && (s.state&feature.Prohibited) == 0 {
@@ -237,7 +246,7 @@ func writeStreamFeatures(ctx context.Context, s *Session) (list *streamFeaturesL
 	return
 }
 
-func readStreamFeatures(ctx context.Context, s *Session, start xml.StartElement) (*streamFeaturesList, error) {
+func readStreamFeatures(ctx context.Context, s *Session, start xml.StartElement, features []StreamFeature) (*streamFeaturesList, error) {
 	switch {
 	case start.Name.Local != "features":
 		return nil, stream.InvalidXML
@@ -265,7 +274,7 @@ parsefeatures:
 			// support it.
 			s.features[tok.Name.Space] = nil
 
-			if feature, ok := s.config.Features[tok.Name]; ok && (s.state&feature.Necessary) == feature.Necessary && (s.state&feature.Prohibited) == 0 {
+			if feature, ok := getFeature(tok.Name, features); ok && (s.state&feature.Necessary) == feature.Necessary && (s.state&feature.Prohibited) == 0 {
 				req, data, err := feature.Parse(ctx, s.in.d, &tok)
 				if err != nil {
 					return nil, err
