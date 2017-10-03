@@ -18,10 +18,10 @@ type Challenge struct {
 	Type string
 
 	// Send is used by the server to send the challenge to the client.
-	Send func(ctx context.Context, e *xml.Encoder) error
+	Send func(context.Context, xmlstream.TokenWriter) error
 
 	// Respond is used by the client to send a response or reply to the challenge.
-	Respond func(context.Context, *xml.Encoder) error
+	Respond func(context.Context, xmlstream.TokenWriter) error
 
 	// Receive is used by the client to receive and decode the server's challenge
 	// and by the server to receive and decode the clients response.

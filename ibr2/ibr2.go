@@ -144,25 +144,24 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 		}
 
 		var tok xml.Token
-		e := session.Encoder()
 
 		if server {
 			for _, c := range challenges {
 				// Send the challenge.
 				start := challengeStart(c.Type)
-				err = e.EncodeToken(start)
+				err = session.EncodeToken(start)
 				if err != nil {
 					return
 				}
-				err = c.Send(ctx, e)
+				err = c.Send(ctx, session)
 				if err != nil {
 					return
 				}
-				err = e.EncodeToken(start.End())
+				err = session.EncodeToken(start.End())
 				if err != nil {
 					return
 				}
-				err = e.Flush()
+				err = session.Flush()
 				if err != nil {
 					return
 				}
@@ -217,16 +216,16 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 			respStart := xml.StartElement{
 				Name: xml.Name{Local: "response"},
 			}
-			if err = e.EncodeToken(respStart); err != nil {
+			if err = session.EncodeToken(respStart); err != nil {
 				return
 			}
 			if c.Respond != nil {
-				err = c.Respond(ctx, e)
+				err = c.Respond(ctx, session)
 				if err != nil {
 					return
 				}
 			}
-			if err = e.EncodeToken(respStart.End()); err != nil {
+			if err = session.EncodeToken(respStart.End()); err != nil {
 				return
 			}
 

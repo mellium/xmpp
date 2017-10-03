@@ -203,11 +203,6 @@ func (s *Session) Token() (xml.Token, error) {
 	return s.in.d.Token()
 }
 
-// Encoder returns the XML encoder that was used to negotiate the latest stream.
-func (s *Session) Encoder() *xml.Encoder {
-	return s.out.e
-}
-
 // EncodeToken satisfies the xmlstream.TokenWriter interface.
 func (s *Session) EncodeToken(t xml.Token) error {
 	return s.out.e.EncodeToken(t)

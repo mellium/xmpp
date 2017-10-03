@@ -196,10 +196,8 @@ type streamFeaturesList struct {
 }
 
 func writeStreamFeatures(ctx context.Context, s *Session) (list *streamFeaturesList, err error) {
-	e := s.Encoder()
-
 	start := xml.StartElement{Name: xml.Name{Space: "", Local: "stream:features"}}
-	if err = e.EncodeToken(start); err != nil {
+	if err = s.EncodeToken(start); err != nil {
 		return
 	}
 
@@ -230,10 +228,10 @@ func writeStreamFeatures(ctx context.Context, s *Session) (list *streamFeaturesL
 			list.total++
 		}
 	}
-	if err = e.EncodeToken(start.End()); err != nil {
+	if err = s.EncodeToken(start.End()); err != nil {
 		return
 	}
-	if err = e.Flush(); err != nil {
+	if err = s.Flush(); err != nil {
 		return
 	}
 	return

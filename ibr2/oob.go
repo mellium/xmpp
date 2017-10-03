@@ -20,8 +20,11 @@ import (
 func OOB(data *oob.Data, f func(*oob.Data) error) Challenge {
 	return Challenge{
 		Type: oob.NS,
-		Send: func(ctx context.Context, e *xml.Encoder) error {
-			return e.Encode(data)
+		Send: func(ctx context.Context, w xmlstream.TokenWriter) (err error) {
+			if err = writeDataTo(w, data); err != nil {
+				return err
+			}
+			return w.Flush()
 		},
 		Receive: func(ctx context.Context, server bool, r xmlstream.TokenReader, start *xml.StartElement) error {
 			// The server does not receive a reply for this mechanism.
@@ -38,4 +41,45 @@ func OOB(data *oob.Data, f func(*oob.Data) error) Challenge {
 			return f(oob)
 		},
 	}
+}
+
+var (
+	xStartToken = xml.StartElement{
+		Name: xml.Name{Space: oob.NS, Local: "x"},
+	}
+	urlStartToken = xml.StartElement{
+		Name: xml.Name{Local: "url"},
+	}
+	descStartToken = xml.StartElement{
+		Name: xml.Name{Local: "desc"},
+	}
+)
+
+// TODO: move this to the mellium.im/xmpp/oob package as a method on Data?
+// Also, possibly add a matching interface in mellium.im/xmlstream.
+
+// writeDataTo encodes d to w.
+func writeDataTo(w xmlstream.TokenWriter, d *oob.Data) (err error) {
+	if err = w.EncodeToken(xStartToken); err != nil {
+		return err
+	}
+	if err = w.EncodeToken(urlStartToken); err != nil {
+		return err
+	}
+	if err = w.EncodeToken(xml.CharData(d.URL)); err != nil {
+		return err
+	}
+	if err = w.EncodeToken(urlStartToken.End()); err != nil {
+		return err
+	}
+	if err = w.EncodeToken(descStartToken); err != nil {
+		return err
+	}
+	if err = w.EncodeToken(xml.CharData(d.Desc)); err != nil {
+		return err
+	}
+	if err = w.EncodeToken(descStartToken.End()); err != nil {
+		return err
+	}
+	return w.EncodeToken(xStartToken.End())
 }

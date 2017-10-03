@@ -78,7 +78,6 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 			return true, nil, xml.NewTokenDecoder(r).DecodeElement(&parsed, start)
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
-			e := session.Encoder()
 			d := xml.NewTokenDecoder(session)
 
 			// Handle the server side of resource binding if we're on the receiving
@@ -132,12 +131,12 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 					resp.Bind = bindPayload{JID: j}
 				}
 
-				return mask, nil, e.Encode(resp)
+				return mask, nil, session.encode(resp)
 			}
 
 			// Client encodes an IQ requesting resource binding.
 			reqID := internal.RandomID()
-			err = e.Encode(bindIQ{
+			err = session.encode(bindIQ{
 				IQ: stanza.IQ{
 					ID:   reqID,
 					Type: stanza.SetIQ,
