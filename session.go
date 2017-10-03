@@ -208,6 +208,20 @@ func (s *Session) Encoder() *xml.Encoder {
 	return s.out.e
 }
 
+// EncodeToken satisfies the xmlstream.TokenWriter interface.
+func (s *Session) EncodeToken(t xml.Token) error {
+	return s.out.e.EncodeToken(t)
+}
+
+// Flush satisfies the xmlstream.TokenWriter interface.
+func (s *Session) Flush() error {
+	return s.out.e.Flush()
+}
+
+func (s *Session) encode(v interface{}) error {
+	return s.out.e.Encode(v)
+}
+
 // Config returns the connections config.
 func (s *Session) Config() *Config {
 	return s.config
@@ -279,7 +293,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 			default:
 				// TODO: We need a way to figure out if this was an XML error or an
 				// error with the underlying connection.
-				return s.Encoder().Encode(stream.BadFormat)
+				return s.encode(stream.BadFormat)
 			}
 		}
 		switch t := tok.(type) {
@@ -293,20 +307,27 @@ func (s *Session) handleInputStream(handler Handler) error {
 				return e
 			}
 			ir := xmlstream.Inner(s)
-			if err = handler.HandleXMPP(ir, &t); err != nil {
+			err = handler.HandleXMPP(struct {
+				xmlstream.TokenReader
+				xmlstream.TokenWriter
+			}{
+				TokenReader: ir,
+				TokenWriter: s,
+			}, &t)
+			if err != nil {
 				switch err.(type) {
 				case stanza.Error:
-					err = s.Encoder().Encode(err)
+					err = s.encode(err)
 					if err != nil {
 						return err
 					}
 				case stream.Error:
 					// TODO: Rework this error handling. The handler should be encoding
 					// stream errors, not the session.
-					return s.Encoder().Encode(err)
+					return s.encode(err)
 				default:
 					// TODO: Should this error have a payload?
-					return s.Encoder().Encode(stream.UndefinedCondition)
+					return s.encode(stream.UndefinedCondition)
 				}
 			}
 			// Advance the stream to the end of the element.
@@ -325,7 +346,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 			default:
 				// TODO: We need a way to figure out if this was an XML error or an
 				// error with the underlying connection.
-				return s.Encoder().Encode(stream.BadFormat)
+				return s.encode(stream.BadFormat)
 			}
 		}
 	}
