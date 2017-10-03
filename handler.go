@@ -23,7 +23,3 @@ type HandlerFunc func(t xml.TokenReader, start *xml.StartElement) error
 func (f HandlerFunc) HandleXMPP(t xml.TokenReader, start *xml.StartElement) error {
 	return f(t, start)
 }
-
-func defaultHandler(t xml.TokenReader, start *xml.StartElement) error {
-	panic("xmpp: default handler not yet implemented")
-}

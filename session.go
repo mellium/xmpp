@@ -173,11 +173,11 @@ func NewSession(ctx context.Context, config *Config, rw io.ReadWriter) (*Session
 // returns.
 // If the input stream is closed, Serve returns.
 // Serve does not close the output stream.
-func (s *Session) Serve(f func(Handler) Handler) error {
+func (s *Session) Serve(h Handler) error {
 	s.in.Lock()
 	defer s.in.Unlock()
 
-	return s.handleInputStream(f(HandlerFunc(defaultHandler)))
+	return s.handleInputStream(h)
 }
 
 // Feature checks if a feature with the given namespace was advertised
