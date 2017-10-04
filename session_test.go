@@ -24,7 +24,6 @@ func errNegotiator(ctx context.Context, session *xmpp.Session, data interface{})
 }
 
 type negotiateTestCase struct {
-	config     *xmpp.Config
 	negotiator xmpp.Negotiator
 	err        error
 	panics     bool
@@ -57,7 +56,7 @@ func TestNegotiator(t *testing.T) {
 				Reader: rand.New(rand.NewSource(99)),
 				Writer: ioutil.Discard,
 			}
-			_, err := xmpp.NegotiateSession(context.Background(), tc.config, nil, nil, rw, tc.negotiator)
+			_, err := xmpp.NegotiateSession(context.Background(), nil, nil, rw, tc.negotiator)
 			if err != tc.err {
 				t.Errorf("Unexpected error: want=%v, got=%v", tc.err, err)
 			}

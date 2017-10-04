@@ -53,8 +53,6 @@ const (
 // A Session represents an XMPP session comprising an input and an output XML
 // stream.
 type Session struct {
-	config *Config
-
 	conn *Conn
 
 	state SessionState
@@ -101,12 +99,11 @@ type Negotiator func(ctx context.Context, session *Session, data interface{}) (m
 // Calling NegotiateSession with a nil Negotiator panics.
 //
 // For more information see the Negotiator type.
-func NegotiateSession(ctx context.Context, config *Config, location, origin *jid.JID, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
+func NegotiateSession(ctx context.Context, location, origin *jid.JID, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
 	if negotiate == nil {
 		panic("xmpp: attempted to negotiate session with nil negotiator")
 	}
 	s := &Session{
-		config:     config,
 		conn:       newConn(rw),
 		origin:     origin,
 		location:   location,
@@ -145,8 +142,8 @@ func NegotiateSession(ctx context.Context, config *Config, location, origin *jid
 // If the provided context is canceled before stream negotiation is complete an
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
-func NewClientSession(ctx context.Context, origin *jid.JID, config *Config, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return NegotiateSession(ctx, config, origin.Domain(), origin, rw, negotiator(false, features))
+func NewClientSession(ctx context.Context, origin *jid.JID, lang string, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return NegotiateSession(ctx, origin.Domain(), origin, rw, negotiator(false, lang, features))
 }
 
 // NewServerSession attempts to use an existing connection (or any
@@ -154,8 +151,8 @@ func NewClientSession(ctx context.Context, origin *jid.JID, config *Config, rw i
 // If the provided context is canceled before stream negotiation is complete an
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
-func NewServerSession(ctx context.Context, location, origin *jid.JID, config *Config, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return NegotiateSession(ctx, config, location, origin, rw, negotiator(true, features))
+func NewServerSession(ctx context.Context, location, origin *jid.JID, lang string, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return NegotiateSession(ctx, location, origin, rw, negotiator(true, lang, features))
 }
 
 // Serve decodes incoming XML tokens from the connection and delegates handling
@@ -214,11 +211,6 @@ func (s *Session) Flush() error {
 
 func (s *Session) encode(v interface{}) error {
 	return s.out.e.Encode(v)
-}
-
-// Config returns the connections config.
-func (s *Session) Config() *Config {
-	return s.config
 }
 
 // Close ends the output stream (by sending a closing </stream:stream> token).
@@ -346,7 +338,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 	}
 }
 
-func negotiator(s2s bool, features []StreamFeature) Negotiator {
+func negotiator(s2s bool, lang string, features []StreamFeature) Negotiator {
 	return func(ctx context.Context, s *Session, doRestart interface{}) (mask SessionState, rw io.ReadWriter, restartNext interface{}, err error) {
 		// Loop for as long as we're not done negotiating features or a stream restart
 		// is still required.
@@ -359,14 +351,14 @@ func negotiator(s2s bool, features []StreamFeature) Negotiator {
 				if err != nil {
 					return mask, nil, false, err
 				}
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, s.config.Lang, s.location.String(), s.origin.String(), internal.RandomID())
+				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, lang, s.location.String(), s.origin.String(), internal.RandomID())
 				if err != nil {
 					return mask, nil, false, err
 				}
 			} else {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, s.config.Lang, s.location.String(), s.origin.String(), "")
+				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, lang, s.location.String(), s.origin.String(), "")
 				if err != nil {
 					return mask, nil, false, err
 				}

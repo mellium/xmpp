@@ -10,8 +10,6 @@ import (
 	"fmt"
 	"io"
 
-	"golang.org/x/text/language"
-
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stream"
@@ -27,7 +25,7 @@ type StreamInfo struct {
 	id      string
 	version Version
 	xmlns   string
-	lang    language.Tag
+	lang    string
 }
 
 // This MUST only return stream errors.
@@ -60,7 +58,7 @@ func streamFromStartElement(s xml.StartElement) (StreamInfo, error) {
 				return streamData, stream.InvalidNamespace
 			}
 		case xml.Name{Space: "xml", Local: "lang"}:
-			streamData.lang = language.Make(attr.Value)
+			streamData.lang = attr.Value
 		}
 	}
 	return streamData, nil
@@ -72,7 +70,7 @@ func streamFromStartElement(s xml.StartElement) (StreamInfo, error) {
 // because we can guarantee well-formedness of the XML with a print in this case
 // and printing is much faster than encoding. Afterwards, clear the
 // StreamRestartRequired bit and set the output stream information.
-func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang language.Tag, location, origin, id string) (StreamInfo, error) {
+func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang string, location, origin, id string) (StreamInfo, error) {
 	streamData := StreamInfo{}
 	switch s2s {
 	case true:
@@ -89,12 +87,22 @@ func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang language.Ta
 	}
 
 	_, err := fmt.Fprintf(rw,
-		XMLHeader+`<stream:stream%sto='%s' from='%s' version='%s' xml:lang='%s' xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
+		XMLHeader+`<stream:stream%sto='%s' from='%s' version='%s' xml:lang='`,
 		id,
 		location,
 		origin,
 		version,
-		lang,
+	)
+	if err != nil {
+		return streamData, err
+	}
+
+	err = xml.EscapeText(rw, []byte(lang))
+	if err != nil {
+		return streamData, err
+	}
+
+	_, err = fmt.Fprintf(rw, `' xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
 		streamData.xmlns,
 	)
 	if err != nil {
