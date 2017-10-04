@@ -22,7 +22,7 @@ import (
 // through the list process token for token.
 func TestStartTLSList(t *testing.T) {
 	for _, req := range []bool{true, false} {
-		stls := StartTLS(req)
+		stls := StartTLS(req, nil)
 		var b bytes.Buffer
 		e := xml.NewEncoder(&b)
 		start := xml.StartElement{Name: xml.Name{Space: ns.StartTLS, Local: "starttls"}}
@@ -81,7 +81,7 @@ func TestStartTLSList(t *testing.T) {
 }
 
 func TestStartTLSParse(t *testing.T) {
-	stls := StartTLS(true)
+	stls := StartTLS(true, nil)
 	for _, test := range []struct {
 		msg string
 		req bool
@@ -147,7 +147,7 @@ func (dummyConn) SetWriteDeadline(t time.Time) error {
 // We can't create a tls.Client or tls.Server for a generic ReadWriter, so
 // ensure that we fail (with a specific error) if this is the case.
 func TestNegotiationFailsForNonNetSession(t *testing.T) {
-	stls := StartTLS(true)
+	stls := StartTLS(true, nil)
 	var b bytes.Buffer
 	_, _, err := stls.Negotiate(context.Background(), &Session{rw: nopRWC{&b, &b}}, nil)
 	if err != ErrTLSUpgradeFailed {
@@ -156,9 +156,9 @@ func TestNegotiationFailsForNonNetSession(t *testing.T) {
 }
 
 func TestNegotiateServer(t *testing.T) {
-	stls := StartTLS(true)
+	stls := StartTLS(true, &tls.Config{})
 	var b bytes.Buffer
-	c := &Session{state: Received, conn: dummyConn{nopRWC{&b, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
+	c := &Session{state: Received, conn: dummyConn{nopRWC{&b, &b}}}
 	c.rw = c.conn
 	_, rw, err := stls.Negotiate(context.Background(), c, nil)
 	switch {
@@ -194,10 +194,10 @@ func TestNegotiateClient(t *testing.T) {
 		{[]string{`<notproceedorfailure xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`}, true, false, 0},
 		{[]string{`chardata not start element`}, true, false, 0},
 	} {
-		stls := StartTLS(true)
+		stls := StartTLS(true, &tls.Config{})
 		r := strings.NewReader(strings.Join(test.responses, "\n"))
 		var b bytes.Buffer
-		c := &Session{conn: dummyConn{nopRWC{r, &b}}, config: &Config{TLSConfig: &tls.Config{}}}
+		c := &Session{conn: dummyConn{nopRWC{r, &b}}}
 		c.rw = c.conn
 		c.in.d = xml.NewDecoder(c.rw)
 		mask, rw, err := stls.Negotiate(context.Background(), c, nil)

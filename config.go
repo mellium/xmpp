@@ -5,8 +5,6 @@
 package xmpp
 
 import (
-	"crypto/tls"
-
 	"golang.org/x/text/language"
 	"mellium.im/xmpp/jid"
 )
@@ -25,9 +23,6 @@ type Config struct {
 
 	// The default language for any streams constructed using this config.
 	Lang language.Tag
-
-	// TLS config for STARTTLS.
-	TLSConfig *tls.Config
 
 	// The authorization identity, and password to authenticate with.
 	// Identity is used when a user wants to act on behalf of another user. For

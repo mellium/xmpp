@@ -28,7 +28,7 @@ var (
 // StartTLS returns a new stream feature that can be used for negotiating TLS.
 // For StartTLS to work, the underlying connection must support TLS (it must
 // implement net.Conn).
-func StartTLS(required bool) StreamFeature {
+func StartTLS(required bool, cfg *tls.Config) StreamFeature {
 	return StreamFeature{
 		Name:       xml.Name{Local: "starttls", Space: ns.StartTLS},
 		Prohibited: Secure,
@@ -63,23 +63,19 @@ func StartTLS(required bool) StreamFeature {
 				return mask, nil, ErrTLSUpgradeFailed
 			}
 
-			config := session.Config()
 			state := session.State()
 			d := xml.NewTokenDecoder(session)
 
-			// Fetch or create a TLSConfig to use.
-			var tlsconf *tls.Config
-			if config.TLSConfig == nil {
-				tlsconf = &tls.Config{
+			// If no TLSConfig was specified, use a default config.
+			if cfg == nil {
+				cfg = &tls.Config{
 					ServerName: session.LocalAddr().Domain().String(),
 				}
-			} else {
-				tlsconf = config.TLSConfig
 			}
 
 			if (state & Received) == Received {
 				fmt.Fprint(conn, `<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
-				rw = tls.Server(conn, tlsconf)
+				rw = tls.Server(conn, cfg)
 			} else {
 				// Select starttls for negotiation.
 				fmt.Fprint(conn, `<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
@@ -99,7 +95,7 @@ func StartTLS(required bool) StreamFeature {
 						if err = d.Skip(); err != nil {
 							return mask, nil, stream.InvalidXML
 						}
-						rw = tls.Client(conn, tlsconf)
+						rw = tls.Client(conn, cfg)
 					case tok.Name.Local == "failure":
 						// Skip the </failure> token.
 						if err = d.Skip(); err != nil {
