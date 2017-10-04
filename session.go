@@ -369,14 +369,14 @@ func negotiator(s2s bool, features []StreamFeature) Negotiator {
 				if err != nil {
 					return mask, nil, false, err
 				}
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, s.config.Version, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), internal.RandomID())
+				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), internal.RandomID())
 				if err != nil {
 					return mask, nil, false, err
 				}
 			} else {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, s.config.Version, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), "")
+				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), "")
 				if err != nil {
 					return mask, nil, false, err
 				}

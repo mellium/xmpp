@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 
 	"golang.org/x/text/language"
-	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/jid"
 )
 
