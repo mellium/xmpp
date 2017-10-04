@@ -30,7 +30,8 @@ const (
 // NewClientSession initiates an XMPP session on the given io.ReadWriter using
 // the component protocol.
 func NewClientSession(ctx context.Context, addr *jid.JID, secret []byte, rw io.ReadWriter) (*xmpp.Session, error) {
-	return xmpp.NegotiateSession(ctx, nil, rw, Negotiator(addr, secret, false))
+	addr = addr.Domain()
+	return xmpp.NegotiateSession(ctx, nil, addr, addr, rw, Negotiator(addr, secret, false))
 }
 
 // AcceptSession accepts an XMPP session on the given io.ReadWriter using the

@@ -60,10 +60,8 @@ type Session struct {
 	state SessionState
 	slock sync.RWMutex
 
-	// The actual origin of this conn (we don't want to mutate the config, so if
-	// this origin exists and is different from the one in config, eg. because the
-	// server did not assign us the resourcepart we requested, this is canonical).
-	origin *jid.JID
+	origin   *jid.JID
+	location *jid.JID
 
 	// The stream feature namespaces advertised for the current streams.
 	features map[string]interface{}
@@ -88,7 +86,7 @@ type Session struct {
 // custom session negotiation. This can be used for creating custom stream
 // initialization logic that does not use XMPP feature negotiation such as the
 // connection mechanism described in XEP-0114: Jabber Component Protocol.
-// Normally NewSession should be used instead.
+// Normally NewClientSession or NewServerSession should be used instead.
 //
 // If a Negotiator is passed into NegotiateSession it will be called repeatedly
 // until a mask is returned with the Ready bit set. Each time Negotiator is
@@ -103,13 +101,15 @@ type Negotiator func(ctx context.Context, session *Session, data interface{}) (m
 // Calling NegotiateSession with a nil Negotiator panics.
 //
 // For more information see the Negotiator type.
-func NegotiateSession(ctx context.Context, config *Config, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
+func NegotiateSession(ctx context.Context, config *Config, location, origin *jid.JID, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
 	if negotiate == nil {
 		panic("xmpp: attempted to negotiate session with nil negotiator")
 	}
 	s := &Session{
 		config:     config,
 		conn:       newConn(rw),
+		origin:     origin,
+		location:   location,
 		features:   make(map[string]interface{}),
 		negotiated: make(map[string]struct{}),
 	}
@@ -145,8 +145,8 @@ func NegotiateSession(ctx context.Context, config *Config, rw io.ReadWriter, neg
 // If the provided context is canceled before stream negotiation is complete an
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
-func NewClientSession(ctx context.Context, config *Config, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return NegotiateSession(ctx, config, rw, negotiator(false, features))
+func NewClientSession(ctx context.Context, origin *jid.JID, config *Config, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return NegotiateSession(ctx, config, origin.Domain(), origin, rw, negotiator(false, features))
 }
 
 // NewServerSession attempts to use an existing connection (or any
@@ -154,8 +154,8 @@ func NewClientSession(ctx context.Context, config *Config, rw io.ReadWriter, fea
 // If the provided context is canceled before stream negotiation is complete an
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
-func NewServerSession(ctx context.Context, config *Config, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return NegotiateSession(ctx, config, rw, negotiator(true, features))
+func NewServerSession(ctx context.Context, location, origin *jid.JID, config *Config, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return NegotiateSession(ctx, config, location, origin, rw, negotiator(true, features))
 }
 
 // Serve decodes incoming XML tokens from the connection and delegates handling
@@ -253,12 +253,12 @@ func (s *Session) LocalAddr() *jid.JID {
 	s.slock.RLock()
 	defer s.slock.RUnlock()
 	if (s.state & Received) == Received {
-		return s.config.Location
+		return s.location
 	}
 	if s.origin != nil {
 		return s.origin
 	}
-	return s.config.Origin
+	return s.origin
 }
 
 // RemoteAddr returns the Location address for initiated connections, or the
@@ -267,9 +267,9 @@ func (s *Session) RemoteAddr() *jid.JID {
 	s.slock.RLock()
 	defer s.slock.RUnlock()
 	if (s.state & Received) == Received {
-		return s.config.Origin
+		return s.origin
 	}
-	return s.config.Location
+	return s.location
 }
 
 func (s *Session) handleInputStream(handler Handler) error {
@@ -359,14 +359,14 @@ func negotiator(s2s bool, features []StreamFeature) Negotiator {
 				if err != nil {
 					return mask, nil, false, err
 				}
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), internal.RandomID())
+				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, s.config.Lang, s.location.String(), s.origin.String(), internal.RandomID())
 				if err != nil {
 					return mask, nil, false, err
 				}
 			} else {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, s.config.Lang, s.config.Location.String(), s.config.Origin.String(), "")
+				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, s.config.Lang, s.location.String(), s.origin.String(), "")
 				if err != nil {
 					return mask, nil, false, err
 				}

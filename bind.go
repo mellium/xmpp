@@ -142,7 +142,7 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 					Type: stanza.SetIQ,
 				},
 				Bind: bindPayload{
-					Resource: session.Config().Origin.Resourcepart(),
+					Resource: session.origin.Resourcepart(),
 				},
 			})
 			if err != nil {

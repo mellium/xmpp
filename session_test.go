@@ -35,7 +35,7 @@ var negotiateTests = [...]negotiateTestCase{
 	1: {negotiator: errNegotiator, err: errTestNegotiate},
 }
 
-func TestNilNegotiatorPanics(t *testing.T) {
+func TestNegotiator(t *testing.T) {
 	for i, tc := range negotiateTests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			defer func() {
@@ -57,7 +57,7 @@ func TestNilNegotiatorPanics(t *testing.T) {
 				Reader: rand.New(rand.NewSource(99)),
 				Writer: ioutil.Discard,
 			}
-			_, err := xmpp.NegotiateSession(context.Background(), tc.config, rw, tc.negotiator)
+			_, err := xmpp.NegotiateSession(context.Background(), tc.config, nil, nil, rw, tc.negotiator)
 			if err != tc.err {
 				t.Errorf("Unexpected error: want=%v, got=%v", tc.err, err)
 			}

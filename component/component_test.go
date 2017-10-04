@@ -34,51 +34,51 @@ type componentClientTest struct {
 
 var componentClientTests = [...]componentClientTest{
 	0: {
-		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='test@example.net'>`,
+		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net'>`,
 		err:    some{}, // missing ID attr
 	},
 	1: {
-		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='test@example.net' id='1234'>`,
+		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net' id='1234'>`,
 		err:    &xml.SyntaxError{Line: 1, Msg: "unexpected EOF"},
 	},
 	2: {
-		server: xml.Header + `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='test@example.net' id='1234'><handshake></handshake>`,
-		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='test@example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
+		server: xml.Header + `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net' id='1234'><handshake></handshake>`,
+		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
 		err:    some{}, // don't allow whitespace
 	},
 	3: {
-		server: header + header + `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='test@example.net' id='1234'><handshake></handshake>`,
-		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='test@example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
+		server: header + header + `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net' id='1234'><handshake></handshake>`,
+		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
 		err:    some{}, // allow only a single XML header
 	},
 	4: {
-		server: `<stream xmlns='jabber:component:accept' from='test@example.net' id='1234'><handshake></handshake>`,
-		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='test@example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
+		server: `<stream xmlns='jabber:component:accept' from='example.net' id='1234'><handshake></handshake>`,
+		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
 		err:    some{}, // must start with stream:stream
 	},
 	5: {
-		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='test@example.net' id='1234'>test`,
-		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='test@example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
+		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net' id='1234'>test`,
+		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
 		err:    some{}, // expect ack or error
 	},
 	6: {
-		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='test@example.net' id='1234'><error></error>`,
-		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='test@example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
+		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net' id='1234'><error></error>`,
+		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
 		err:    stream.NotAuthorized, // expect not authorized if error reported
 	},
 	7: {
-		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='test@example.net' id='1234'><wrong/>`,
-		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='test@example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
+		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net' id='1234'><wrong/>`,
+		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
 		err:    some{}, // expect ack or error
 	},
 	8: {
-		server: header + `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='test@example.net' id='1234'><handshake></handshake>`,
-		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='test@example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
+		server: header + `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net' id='1234'><handshake></handshake>`,
+		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
 		err:    nil,
 	},
 	9: {
-		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='test@example.net' id='1234'><handshake></handshake>`,
-		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='test@example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
+		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net' id='1234'><handshake></handshake>`,
+		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
 		err:    nil,
 	},
 }
