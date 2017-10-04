@@ -39,7 +39,12 @@ const (
 // It panics if no mechanisms are specified.
 // The order in which mechanisms are specified will be the preferred order, so
 // stronger mechanisms should be listed first.
-func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
+//
+// Identity is used when a user wants to act on behalf of another user.
+// For instance, an admin might want to log in as another user to help them
+// troubleshoot an issue.
+// Normally it is left blank and the localpart of the Origin JID is used.
+func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 	if len(mechanisms) == 0 {
 		panic("sasl2: Must specify at least 1 mechanism")
 	}
@@ -108,10 +113,9 @@ func SASL(mechanisms ...sasl.Mechanism) xmpp.StreamFeature {
 			// Create a new SASL client and give it access to credentials, other
 			// mechanisms advertised by the server, and the TLS session state if
 			// possible (for SCRAM-PLUS mechanisms).
-			c := session.Config()
 			opts := []sasl.Option{
-				sasl.Authz(c.Identity),
-				sasl.Credentials(session.LocalAddr().Localpart(), c.Password),
+				sasl.Authz(identity),
+				sasl.Credentials(session.LocalAddr().Localpart(), password),
 				sasl.RemoteMechanisms(data.([]string)...),
 			}
 			if connState, ok := conn.ConnectionState(); ok {

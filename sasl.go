@@ -21,10 +21,16 @@ import (
 // BUG(ssw): SASL feature does not have security layer byte precision.
 
 // SASL returns a stream feature for performing authentication using the Simple
-// Authentication and Security Layer (SASL) as defined in RFC 4422. It panics if
-// no mechanisms are specified. The order in which mechanisms are specified will
-// be the preferred order, so stronger mechanisms should be listed first.
-func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
+// Authentication and Security Layer (SASL) as defined in RFC 4422.
+// It panics if no mechanisms are specified.
+// The order in which mechanisms are specified will be the preferred order, so
+// stronger mechanisms should be listed first.
+//
+// Identity is used when a user wants to act on behalf of another user.
+// For instance, an admin might want to log in as another user to help them
+// troubleshoot an issue.
+// Normally it is left blank and the localpart of the Origin JID is used.
+func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature {
 	if len(mechanisms) == 0 {
 		panic("xmpp: Must specify at least 1 SASL mechanism")
 	}
@@ -89,10 +95,9 @@ func SASL(mechanisms ...sasl.Mechanism) StreamFeature {
 				return mask, nil, errors.New(`No matching SASL mechanisms found`)
 			}
 
-			c := session.Config()
 			opts := []sasl.Option{
-				sasl.Authz(c.Identity),
-				sasl.Credentials(session.LocalAddr().Localpart(), c.Password),
+				sasl.Authz(identity),
+				sasl.Credentials(session.LocalAddr().Localpart(), password),
 				sasl.RemoteMechanisms(data.([]string)...),
 			}
 			if connState, ok := conn.ConnectionState(); ok {

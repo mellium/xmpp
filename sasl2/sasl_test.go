@@ -20,14 +20,14 @@ func TestSASLPanicsNoMechanisms(t *testing.T) {
 			t.Error("Expected call to SASL() with no mechanisms to panic")
 		}
 	}()
-	_ = SASL()
+	_ = SASL("", "")
 }
 
 func TestSASLList(t *testing.T) {
 	b := &bytes.Buffer{}
 	e := xml.NewEncoder(b)
 	start := xml.StartElement{Name: xml.Name{Space: NS, Local: "mechanisms"}}
-	s := SASL(sasl.Plain, sasl.ScramSha256)
+	s := SASL("", "", sasl.Plain, sasl.ScramSha256)
 	req, err := s.List(context.Background(), e, start)
 	switch {
 	case err != nil:
@@ -97,7 +97,7 @@ var saslParseTests = []struct {
 }
 
 func TestSASLParse(t *testing.T) {
-	s := SASL(sasl.Plain)
+	s := SASL("", "", sasl.Plain)
 	for _, test := range saslParseTests {
 		r := strings.NewReader(test.xml)
 		d := xml.NewDecoder(r)
