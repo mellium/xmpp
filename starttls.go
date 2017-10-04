@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
@@ -58,11 +57,7 @@ func StartTLS(required bool, cfg *tls.Config) StreamFeature {
 			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == ns.StartTLS, nil, err
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
-			conn, ok := session.Conn().(net.Conn)
-			if !ok || conn == nil {
-				return mask, nil, ErrTLSUpgradeFailed
-			}
-
+			conn := session.Conn()
 			state := session.State()
 			d := xml.NewTokenDecoder(session)
 

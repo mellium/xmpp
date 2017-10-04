@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/xml"
 	"io"
-	"net"
 	"sync"
 
 	"mellium.im/xmlstream"
@@ -56,10 +55,7 @@ const (
 type Session struct {
 	config *Config
 
-	// If the initial ReadWriter is a conn, save a reference to that as well so
-	// that we can use it directly without type casting constantly.
-	conn net.Conn
-	rw   io.ReadWriter
+	conn *Conn
 
 	state SessionState
 	slock sync.RWMutex
@@ -113,15 +109,12 @@ func NegotiateSession(ctx context.Context, config *Config, rw io.ReadWriter, neg
 	}
 	s := &Session{
 		config:     config,
-		rw:         rw,
+		conn:       newConn(rw),
 		features:   make(map[string]interface{}),
 		negotiated: make(map[string]struct{}),
 	}
-	if conn, ok := rw.(net.Conn); ok {
-		s.conn = conn
-	}
-	s.in.d = xml.NewDecoder(s.rw)
-	s.out.e = xml.NewEncoder(s.rw)
+	s.in.d = xml.NewDecoder(s.conn)
+	s.out.e = xml.NewEncoder(s.conn)
 	s.in.ctx, s.in.cancel = context.WithCancel(context.Background())
 
 	// Call negotiate until the ready bit is set.
@@ -137,12 +130,9 @@ func NegotiateSession(ctx context.Context, config *Config, rw io.ReadWriter, neg
 		if rw != nil {
 			s.features = make(map[string]interface{})
 			s.negotiated = make(map[string]struct{})
-			s.rw = rw
-			s.in.d = xml.NewDecoder(s.rw)
-			s.out.e = xml.NewEncoder(s.rw)
-			if conn, ok := rw.(net.Conn); ok {
-				s.conn = conn
-			}
+			s.conn = newConn(rw)
+			s.in.d = xml.NewDecoder(s.conn)
+			s.out.e = xml.NewEncoder(s.conn)
 		}
 		s.state |= mask
 	}
@@ -198,13 +188,13 @@ func (s *Session) Feature(namespace string) (data interface{}, ok bool) {
 	return
 }
 
-// Conn returns the Session's backing net.Conn or other io.ReadWriter.
+// Conn returns the Session's backing connection.
 //
 // This should almost never be read from or written to, but is useful during
 // stream negotiation for wrapping the existing connection in a new layer (eg.
 // compression or TLS).
-func (s *Session) Conn() io.ReadWriter {
-	return s.rw
+func (s *Session) Conn() *Conn {
+	return s.conn
 }
 
 // Token satisfies the xml.TokenReader interface for Session.

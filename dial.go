@@ -6,6 +6,8 @@ package xmpp
 
 import (
 	"context"
+	"crypto/tls"
+	"io"
 	"net"
 	"strconv"
 	"time"
@@ -14,8 +16,87 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
+// newConn wraps an io.ReadWriter in a Conn.
+func newConn(rw io.ReadWriter) *Conn {
+	nc := &Conn{}
+
+	switch typrw := rw.(type) {
+	case *Conn:
+		return typrw
+	case *tls.Conn:
+		nc.tlsConn = typrw
+		nc.c = typrw
+	case net.Conn:
+		nc.c = typrw
+	}
+	nc.rw = rw
+
+	return nc
+}
+
 // Conn is a net.Conn created for the purpose of establishing an XMPP session.
-type Conn net.Conn
+type Conn struct {
+	tlsConn *tls.Conn
+	c       net.Conn
+	rw      io.ReadWriter
+}
+
+// ConnectionState returns basic TLS details about the connection if TLS has
+// been negotiated. If TLS has not been negotiated, ok is false.
+func (c *Conn) ConnectionState() (connState tls.ConnectionState, ok bool) {
+	if c.tlsConn != nil {
+		return c.tlsConn.ConnectionState(), true
+	}
+	return connState, false
+}
+
+// Close closes the connection.
+func (c *Conn) Close() error {
+	return c.c.Close()
+}
+
+// LocalAddr returns the local network address.
+func (c *Conn) LocalAddr() net.Addr {
+	return c.c.LocalAddr()
+}
+
+// Read can be made to time out and return a net.Error with Timeout() == true
+// after a fixed time limit; see SetDeadline and SetReadDeadline.
+func (c *Conn) Read(b []byte) (n int, err error) {
+	return c.rw.Read(b)
+}
+
+// RemoteAddr returns the remote network address.
+func (c *Conn) RemoteAddr() net.Addr {
+	return c.c.RemoteAddr()
+}
+
+// SetDeadline sets the read and write deadlines associated with the connection.
+// A zero value for t means Read and Write will not time out.
+// After a Write has timed out, the TLS state is corrupt and all future writes
+// will return the same error.
+func (c *Conn) SetDeadline(t time.Time) error {
+	return c.c.SetDeadline(t)
+}
+
+// SetReadDeadline sets the read deadline on the underlying connection.
+// A zero value for t means Read will not time out.
+func (c *Conn) SetReadDeadline(t time.Time) error {
+	return c.c.SetReadDeadline(t)
+}
+
+// SetWriteDeadline sets the write deadline on the underlying connection.
+// A zero value for t means Write will not time out.
+// After a Write has timed out, the TLS state is corrupt and all future writes
+// will return the same error.
+func (c *Conn) SetWriteDeadline(t time.Time) error {
+	return c.c.SetWriteDeadline(t)
+}
+
+// Write writes data to the connection.
+func (c *Conn) Write(b []byte) (int, error) {
+	return c.rw.Write(b)
+}
 
 // DialClient discovers and connects to the address on the named network with a
 // client-to-server (c2s) connection.
@@ -31,7 +112,7 @@ type Conn net.Conn
 // Network may be any of the network types supported by net.Dial, but you almost
 // certainly want to use one of the tcp connection types ("tcp", "tcp4", or
 // "tcp6").
-func DialClient(ctx context.Context, network string, addr *jid.JID) (Conn, error) {
+func DialClient(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
 	var d Dialer
 	return d.Dial(ctx, network, addr)
 }
@@ -40,7 +121,7 @@ func DialClient(ctx context.Context, network string, addr *jid.JID) (Conn, error
 // server-to-server connection (s2s).
 //
 // For more info see the DialClient function.
-func DialServer(ctx context.Context, network string, addr *jid.JID) (Conn, error) {
+func DialServer(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
 	d := Dialer{
 		S2S: true,
 	}
@@ -67,20 +148,26 @@ type Dialer struct {
 // Dial discovers and connects to the address on the named network.
 //
 // For a description of the arguments see the DialClient function.
-func (d *Dialer) Dial(ctx context.Context, network string, addr *jid.JID) (Conn, error) {
+func (d *Dialer) Dial(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
 	return d.dial(ctx, network, addr)
 }
 
-func (d *Dialer) dial(ctx context.Context, network string, addr *jid.JID) (Conn, error) {
+func (d *Dialer) dial(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
 	if d.NoLookup {
 		p, err := internal.LookupPort(network, connType(d.S2S))
 		if err != nil {
 			return nil, err
 		}
-		return d.Dialer.DialContext(ctx, network, net.JoinHostPort(
+		c, err := d.Dialer.DialContext(ctx, network, net.JoinHostPort(
 			addr.Domainpart(),
 			strconv.FormatUint(uint64(p), 10),
 		))
+		if err != nil {
+			return nil, err
+		}
+		return &Conn{
+			c: c,
+		}, nil
 	}
 
 	addrs, err := internal.LookupService(connType(d.S2S), network, addr)
@@ -101,7 +188,9 @@ func (d *Dialer) dial(ctx context.Context, network string, addr *jid.JID) (Conn,
 			continue
 		}
 
-		return conn, nil
+		return &Conn{
+			c: conn,
+		}, nil
 	}
 	return nil, err
 }

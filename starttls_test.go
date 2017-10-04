@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 package xmpp
 
@@ -10,10 +10,8 @@ import (
 	"crypto/tls"
 	"encoding/xml"
 	"io"
-	"net"
 	"strings"
 	"testing"
-	"time"
 
 	"mellium.im/xmpp/internal/ns"
 )
@@ -118,48 +116,10 @@ func (nopRWC) Close() error {
 	return nil
 }
 
-var _ net.Conn = dummyConn{}
-
-type dummyConn struct {
-	io.ReadWriteCloser
-}
-
-func (dummyConn) LocalAddr() net.Addr {
-	return nil
-}
-
-func (dummyConn) RemoteAddr() net.Addr {
-	return nil
-}
-
-func (dummyConn) SetDeadline(t time.Time) error {
-	return nil
-}
-
-func (dummyConn) SetReadDeadline(t time.Time) error {
-	return nil
-}
-
-func (dummyConn) SetWriteDeadline(t time.Time) error {
-	return nil
-}
-
-// We can't create a tls.Client or tls.Server for a generic ReadWriter, so
-// ensure that we fail (with a specific error) if this is the case.
-func TestNegotiationFailsForNonNetSession(t *testing.T) {
-	stls := StartTLS(true, nil)
-	var b bytes.Buffer
-	_, _, err := stls.Negotiate(context.Background(), &Session{rw: nopRWC{&b, &b}}, nil)
-	if err != ErrTLSUpgradeFailed {
-		t.Errorf("Expected error `%v` but got `%v`", ErrTLSUpgradeFailed, err)
-	}
-}
-
 func TestNegotiateServer(t *testing.T) {
 	stls := StartTLS(true, &tls.Config{})
 	var b bytes.Buffer
-	c := &Session{state: Received, conn: dummyConn{nopRWC{&b, &b}}}
-	c.rw = c.conn
+	c := &Session{state: Received, conn: newConn(nopRWC{&b, &b})}
 	_, rw, err := stls.Negotiate(context.Background(), c, nil)
 	switch {
 	case err != nil:
@@ -197,9 +157,8 @@ func TestNegotiateClient(t *testing.T) {
 		stls := StartTLS(true, &tls.Config{})
 		r := strings.NewReader(strings.Join(test.responses, "\n"))
 		var b bytes.Buffer
-		c := &Session{conn: dummyConn{nopRWC{r, &b}}}
-		c.rw = c.conn
-		c.in.d = xml.NewDecoder(c.rw)
+		c := &Session{conn: newConn(nopRWC{r, &b})}
+		c.in.d = xml.NewDecoder(c.conn)
 		mask, rw, err := stls.Negotiate(context.Background(), c, nil)
 		switch {
 		case test.err && err == nil:
