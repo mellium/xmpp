@@ -12,20 +12,25 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
-// PingIQ represents a ping or ping response from XEP-0199: XMPP Ping.
+// PingIQ represents a ping from XEP-0199: XMPP Ping.
 type PingIQ struct {
 	stanza.IQ
 
 	Ping struct{} `xml:"urn:xmpp:ping ping"`
 }
 
-func Example_pingStruct() {
+func Example_struct() {
 	e := xml.NewEncoder(os.Stdout)
+	e.Indent("", "\t")
+
 	err := e.Encode(PingIQ{
 		IQ: stanza.IQ{Type: stanza.GetIQ},
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Output: <iq id="" type="get"><ping xmlns="urn:xmpp:ping"></ping></iq>
+	// Output:
+	// <iq id="" type="get">
+	//	<ping xmlns="urn:xmpp:ping"></ping>
+	// </iq>
 }
