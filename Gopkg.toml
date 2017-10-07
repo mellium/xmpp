@@ -33,5 +33,5 @@
   name = "mellium.im/sasl"
 
 [[constraint]]
-	version = "0.8"
+	version = "0.9"
   name = "mellium.im/xmlstream"

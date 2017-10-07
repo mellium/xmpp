@@ -317,7 +317,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 				}
 			}
 			// Advance the stream to the end of the element.
-			if err = xmlstream.Copy(xmlstream.Discard(), ir); err != nil {
+			if _, err = xmlstream.Copy(xmlstream.Discard(), ir); err != nil {
 				return err
 			}
 		case xml.EndElement:

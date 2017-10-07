@@ -59,7 +59,7 @@ func TestIQ(t *testing.T) {
 			b := new(bytes.Buffer)
 			e := xml.NewEncoder(b)
 			iq := stanza.WrapIQ(jid.MustParse(tc.to), tc.typ, tc.payload)
-			if err := xmlstream.Copy(e, iq); err != tc.err {
+			if _, err := xmlstream.Copy(e, iq); err != tc.err {
 				t.Errorf("Unexpected error: want=`%v', got=`%v'", tc.err, err)
 			}
 
@@ -106,7 +106,7 @@ func TestMessage(t *testing.T) {
 			b := new(bytes.Buffer)
 			e := xml.NewEncoder(b)
 			message := stanza.WrapMessage(jid.MustParse(tc.to), tc.typ, tc.payload)
-			if err := xmlstream.Copy(e, message); err != tc.err {
+			if _, err := xmlstream.Copy(e, message); err != tc.err {
 				t.Errorf("Unexpected error: want=`%v', got=`%v'", tc.err, err)
 			}
 
@@ -153,7 +153,7 @@ func TestPresence(t *testing.T) {
 			b := new(bytes.Buffer)
 			e := xml.NewEncoder(b)
 			presence := stanza.WrapPresence(jid.MustParse(tc.to), tc.typ, tc.payload)
-			if err := xmlstream.Copy(e, presence); err != tc.err {
+			if _, err := xmlstream.Copy(e, presence); err != tc.err {
 				t.Errorf("Unexpected error: want=`%v', got=`%v'", tc.err, err)
 			}
 

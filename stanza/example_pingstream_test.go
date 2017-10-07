@@ -6,7 +6,6 @@ package stanza_test
 
 import (
 	"encoding/xml"
-	"io"
 	"log"
 	"os"
 
@@ -18,19 +17,8 @@ import (
 // WrapPingIQ returns an xmlstream.TokenReader that outputs a new IQ stanza with
 // a ping payload.
 func WrapPingIQ(to *jid.JID) xmlstream.TokenReader {
-	state := 0
-	start := xml.StartElement{Name: xml.Name{Local: "ping", Space: `urn:xmpp:ping`}}
-	return stanza.WrapIQ(to, stanza.GetIQ, xmlstream.ReaderFunc(func() (xml.Token, error) {
-		switch state {
-		case 0:
-			state++
-			return start, nil
-		case 1:
-			state++
-			return start.End(), io.EOF
-		}
-		return nil, io.EOF
-	}))
+	start := xml.StartElement{Name: xml.Name{Local: "ping", Space: "urn:xmpp:ping"}}
+	return stanza.WrapIQ(to, stanza.GetIQ, xmlstream.Wrap(nil, start))
 }
 
 func Example_stream() {
@@ -39,7 +27,7 @@ func Example_stream() {
 	e.Indent("", "\t")
 
 	ping := WrapPingIQ(j)
-	if err := xmlstream.Copy(e, ping); err != nil {
+	if _, err := xmlstream.Copy(e, ping); err != nil {
 		log.Fatal(err)
 	}
 	// Output:
