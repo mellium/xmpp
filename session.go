@@ -183,6 +183,80 @@ func (s *Session) Serve(h Handler) error {
 	return s.handleInputStream(h)
 }
 
+func (s *Session) handleInputStream(handler Handler) error {
+	for {
+		select {
+		case <-s.in.ctx.Done():
+			return nil
+		default:
+		}
+		tok, err := s.Token()
+		if err != nil {
+			select {
+			case <-s.in.ctx.Done():
+				return nil
+			default:
+				// TODO: We need a way to figure out if this was an XML error or an
+				// error with the underlying connection.
+				return s.encode(stream.BadFormat)
+			}
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			if t.Name.Local == "error" && t.Name.Space == ns.Stream {
+				e := stream.Error{}
+				err = xml.NewTokenDecoder(s).DecodeElement(&e, &t)
+				if err != nil {
+					return err
+				}
+				return e
+			}
+			ir := xmlstream.Inner(s)
+			err = handler.HandleXMPP(struct {
+				xmlstream.TokenReader
+				xmlstream.TokenWriter
+			}{
+				TokenReader: ir,
+				TokenWriter: s,
+			}, &t)
+			if err != nil {
+				switch err.(type) {
+				case stanza.Error:
+					err = s.encode(err)
+					if err != nil {
+						return err
+					}
+				case stream.Error:
+					// TODO: Rework this error handling. The handler should be encoding
+					// stream errors, not the session.
+					return s.encode(err)
+				default:
+					// TODO: Should this error have a payload?
+					return s.encode(stream.UndefinedCondition)
+				}
+			}
+			// Advance the stream to the end of the element.
+			if _, err = xmlstream.Copy(xmlstream.Discard(), ir); err != nil {
+				return err
+			}
+		case xml.EndElement:
+			if t.Name.Space == ns.Stream && t.Name.Local == "stream" {
+				s.state |= InputStreamClosed
+				return nil
+			}
+		default:
+			select {
+			case <-s.in.ctx.Done():
+				return nil
+			default:
+				// TODO: We need a way to figure out if this was an XML error or an
+				// error with the underlying connection.
+				return s.encode(stream.BadFormat)
+			}
+		}
+	}
+}
+
 // Feature checks if a feature with the given namespace was advertised
 // by the server for the current stream. If it was data will be the canonical
 // representation of the feature as returned by the feature's Parse function.
@@ -287,80 +361,6 @@ func (s *Session) RemoteAddr() *jid.JID {
 		return s.origin
 	}
 	return s.location
-}
-
-func (s *Session) handleInputStream(handler Handler) error {
-	for {
-		select {
-		case <-s.in.ctx.Done():
-			return nil
-		default:
-		}
-		tok, err := s.Token()
-		if err != nil {
-			select {
-			case <-s.in.ctx.Done():
-				return nil
-			default:
-				// TODO: We need a way to figure out if this was an XML error or an
-				// error with the underlying connection.
-				return s.encode(stream.BadFormat)
-			}
-		}
-		switch t := tok.(type) {
-		case xml.StartElement:
-			if t.Name.Local == "error" && t.Name.Space == ns.Stream {
-				e := stream.Error{}
-				err = xml.NewTokenDecoder(s).DecodeElement(&e, &t)
-				if err != nil {
-					return err
-				}
-				return e
-			}
-			ir := xmlstream.Inner(s)
-			err = handler.HandleXMPP(struct {
-				xmlstream.TokenReader
-				xmlstream.TokenWriter
-			}{
-				TokenReader: ir,
-				TokenWriter: s,
-			}, &t)
-			if err != nil {
-				switch err.(type) {
-				case stanza.Error:
-					err = s.encode(err)
-					if err != nil {
-						return err
-					}
-				case stream.Error:
-					// TODO: Rework this error handling. The handler should be encoding
-					// stream errors, not the session.
-					return s.encode(err)
-				default:
-					// TODO: Should this error have a payload?
-					return s.encode(stream.UndefinedCondition)
-				}
-			}
-			// Advance the stream to the end of the element.
-			if _, err = xmlstream.Copy(xmlstream.Discard(), ir); err != nil {
-				return err
-			}
-		case xml.EndElement:
-			if t.Name.Space == ns.Stream && t.Name.Local == "stream" {
-				s.state |= InputStreamClosed
-				return nil
-			}
-		default:
-			select {
-			case <-s.in.ctx.Done():
-				return nil
-			default:
-				// TODO: We need a way to figure out if this was an XML error or an
-				// error with the underlying connection.
-				return s.encode(stream.BadFormat)
-			}
-		}
-	}
 }
 
 func negotiator(s2s bool, lang string, features []StreamFeature) Negotiator {
