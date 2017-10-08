@@ -7,6 +7,7 @@ package xmpp
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"io"
 	"sync"
 
@@ -16,6 +17,12 @@ import (
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
+)
+
+// Errors returned by the XMPP package.
+var (
+	ErrInputStreamClosed  = errors.New("xmpp: attempted to read token from closed stream")
+	ErrOutputStreamClosed = errors.New("xmpp: attempted to write token to closed stream")
 )
 
 // SessionState is a bitmask that represents the current state of an XMPP
@@ -196,16 +203,34 @@ func (s *Session) Conn() *Conn {
 
 // Token satisfies the xml.TokenReader interface for Session.
 func (s *Session) Token() (xml.Token, error) {
+	s.slock.RLock()
+	defer s.slock.RUnlock()
+
+	if s.state&InputStreamClosed == InputStreamClosed {
+		return nil, ErrInputStreamClosed
+	}
 	return s.in.d.Token()
 }
 
 // EncodeToken satisfies the xmlstream.TokenWriter interface.
 func (s *Session) EncodeToken(t xml.Token) error {
+	s.slock.RLock()
+	defer s.slock.RUnlock()
+
+	if s.state&OutputStreamClosed == OutputStreamClosed {
+		return ErrOutputStreamClosed
+	}
 	return s.out.e.EncodeToken(t)
 }
 
 // Flush satisfies the xmlstream.TokenWriter interface.
 func (s *Session) Flush() error {
+	s.slock.RLock()
+	defer s.slock.RUnlock()
+
+	if s.state&OutputStreamClosed == OutputStreamClosed {
+		return ErrOutputStreamClosed
+	}
 	return s.out.e.Flush()
 }
 

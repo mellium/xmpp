@@ -5,16 +5,62 @@
 package xmpp_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"strconv"
 	"testing"
 
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/internal/xmpptest"
 )
+
+func TestClosedInputStream(t *testing.T) {
+	for i := 0; i <= math.MaxUint8; i++ {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			mask := xmpp.SessionState(i)
+			buf := new(bytes.Buffer)
+			s := xmpptest.NewSession(mask, buf)
+
+			_, err := s.Token()
+			switch {
+			case mask&xmpp.InputStreamClosed == xmpp.InputStreamClosed && err != xmpp.ErrInputStreamClosed:
+				t.Errorf("Unexpected error: want=`%v', got=`%v'", xmpp.ErrInputStreamClosed, err)
+			case mask&xmpp.InputStreamClosed == 0 && err != io.EOF:
+				t.Errorf("Unexpected error: `%v'", err)
+			}
+		})
+	}
+}
+
+func TestClosedOutputStream(t *testing.T) {
+	for i := 0; i <= math.MaxUint8; i++ {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			mask := xmpp.SessionState(i)
+			buf := new(bytes.Buffer)
+			s := xmpptest.NewSession(mask, buf)
+
+			switch err := s.EncodeToken(xml.CharData("chartoken")); {
+			case mask&xmpp.OutputStreamClosed == xmpp.OutputStreamClosed && err != xmpp.ErrOutputStreamClosed:
+				t.Errorf("Unexpected error: want=`%v', got=`%v'", xmpp.ErrOutputStreamClosed, err)
+			case mask&xmpp.OutputStreamClosed == 0 && err != nil:
+				t.Errorf("Unexpected error: `%v'", err)
+			}
+			switch err := s.Flush(); {
+			case mask&xmpp.OutputStreamClosed == xmpp.OutputStreamClosed && err != xmpp.ErrOutputStreamClosed:
+				t.Errorf("Unexpected error: want=`%v', got=`%v'", xmpp.ErrOutputStreamClosed, err)
+			case mask&xmpp.OutputStreamClosed == 0 && err != nil:
+				t.Errorf("Unexpected error: `%v'", err)
+			}
+		})
+	}
+}
 
 var errTestNegotiate = errors.New("a test error")
 
