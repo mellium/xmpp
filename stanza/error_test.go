@@ -10,12 +10,15 @@ import (
 	"testing"
 
 	"golang.org/x/text/language"
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/jid"
 )
 
 var (
-	_ error = (*Error)(nil)
-	_ error = Error{}
+	_ error               = (*Error)(nil)
+	_ error               = Error{}
+	_ xmlstream.Marshaler = (*Error)(nil)
+	_ xmlstream.Marshaler = Error{}
 )
 
 func TestErrorReturnsCondition(t *testing.T) {

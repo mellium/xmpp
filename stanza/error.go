@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 
 	"golang.org/x/text/language"
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 )
@@ -264,9 +265,9 @@ func (se Error) Error() string {
 	return string(se.Condition)
 }
 
-// MarshalXML satisfies the xml.Marshaler interface for Error.
-func (se Error) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
-	start = xml.StartElement{
+// WriteXML is like MarshalXML except it writes tokens to w.
+func (se Error) WriteXML(w xmlstream.TokenWriter, _ xml.StartElement) (err error) {
+	start := xml.StartElement{
 		Name: xml.Name{Space: ``, Local: "error"},
 		Attr: []xml.Attr{},
 	}
@@ -277,16 +278,16 @@ func (se Error) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 		a, _ := se.By.MarshalXMLAttr(xml.Name{Space: "", Local: "by"})
 		start.Attr = append(start.Attr, a)
 	}
-	if err = e.EncodeToken(start); err != nil {
+	if err = w.EncodeToken(start); err != nil {
 		return err
 	}
 	condition := xml.StartElement{
 		Name: xml.Name{Space: ns.Stanza, Local: string(se.Condition)},
 	}
-	if err = e.EncodeToken(condition); err != nil {
+	if err = w.EncodeToken(condition); err != nil {
 		return err
 	}
-	if err = e.EncodeToken(condition.End()); err != nil {
+	if err = w.EncodeToken(condition.End()); err != nil {
 		return err
 	}
 	if se.Text != "" {
@@ -299,17 +300,22 @@ func (se Error) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 				},
 			},
 		}
-		if err = e.EncodeToken(text); err != nil {
+		if err = w.EncodeToken(text); err != nil {
 			return err
 		}
-		if err = e.EncodeToken(xml.CharData(se.Text)); err != nil {
+		if err = w.EncodeToken(xml.CharData(se.Text)); err != nil {
 			return err
 		}
-		if err = e.EncodeToken(text.End()); err != nil {
+		if err = w.EncodeToken(text.End()); err != nil {
 			return err
 		}
 	}
-	return e.EncodeToken(start.End())
+	return w.EncodeToken(start.End())
+}
+
+// MarshalXML satisfies the xml.Marshaler interface for Error.
+func (se Error) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return se.WriteXML(e, start)
 }
 
 // UnmarshalXML satisfies the xml.Unmarshaler interface for StanzaError.
