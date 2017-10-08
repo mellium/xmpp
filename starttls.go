@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 
@@ -18,11 +17,6 @@ import (
 )
 
 // BUG(ssw): STARTTLS feature does not have security layer byte precision.
-
-// Errors used by STARTTLS.
-var (
-	ErrTLSUpgradeFailed = errors.New("The underlying connection cannot be upgraded to TLS")
-)
 
 // StartTLS returns a new stream feature that can be used for negotiating TLS.
 // For StartTLS to work, the underlying connection must support TLS (it must
