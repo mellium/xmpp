@@ -27,14 +27,14 @@ var marshalSeeOtherHostTests = [...]struct {
 	err    bool
 }{
 	// see-other-host errors should wrap IPv6 addresses in brackets.
-	0: {&net.IPAddr{IP: net.ParseIP("::1")}, `<stream:error><see-other-host xmlns="urn:ietf:params:xml:ns:xmpp-streams">[::1]</see-other-host></stream:error>`, false},
-	1: {&net.IPAddr{IP: net.ParseIP("127.0.0.1")}, `<stream:error><see-other-host xmlns="urn:ietf:params:xml:ns:xmpp-streams">127.0.0.1</see-other-host></stream:error>`, false},
+	0: {&net.IPAddr{IP: net.ParseIP("::1")}, `<error xmlns="http://etherx.jabber.org/streams"><see-other-host xmlns="urn:ietf:params:xml:ns:xmpp-streams">[::1]</see-other-host></error>`, false},
+	1: {&net.IPAddr{IP: net.ParseIP("127.0.0.1")}, `<error xmlns="http://etherx.jabber.org/streams"><see-other-host xmlns="urn:ietf:params:xml:ns:xmpp-streams">127.0.0.1</see-other-host></error>`, false},
 }
 
 func TestMarshalSeeOtherHost(t *testing.T) {
 	for i, test := range marshalSeeOtherHostTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			soh := stream.SeeOtherHostError(test.ipaddr)
+			soh := stream.SeeOtherHostError(test.ipaddr, nil)
 			xb, err := xml.Marshal(soh)
 			switch xbs := string(xb); {
 			case test.err && err == nil:

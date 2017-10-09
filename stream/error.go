@@ -10,7 +10,11 @@ package stream // import "mellium.im/xmpp/stream"
 
 import (
 	"encoding/xml"
+	"io"
 	"net"
+
+	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal/ns"
 )
 
 // A list of stream errors defined in RFC 6120 §4.9.3
@@ -149,7 +153,7 @@ var (
 // SeeOtherHostError returns a new see-other-host error with the given network
 // address as the host. If the address appears to be a raw IPv6 address (eg.
 // "::1"), the error wraps it in brackets ("[::1]").
-func SeeOtherHostError(addr net.Addr) Error {
+func SeeOtherHostError(addr net.Addr, payload xmlstream.TokenReader) Error {
 	var cdata string
 
 	// If the address looks like an IPv6 literal, wrap it in []
@@ -159,14 +163,28 @@ func SeeOtherHostError(addr net.Addr) Error {
 		cdata = addr.String()
 	}
 
-	return Error{"see-other-host", []byte(cdata)}
+	if payload != nil {
+		payload = xmlstream.MultiReader(
+			xmlstream.ReaderFunc(func() (xml.Token, error) {
+				return xml.CharData(cdata), io.EOF
+			}),
+			payload,
+		)
+	} else {
+		payload = xmlstream.ReaderFunc(func() (xml.Token, error) {
+			return xml.CharData(cdata), io.EOF
+		})
+	}
+
+	return Error{Err: "see-other-host", innerXML: payload}
 }
 
 // A Error represents an unrecoverable stream-level error that may include
 // character data or arbitrary inner XML.
 type Error struct {
-	Err      string
-	InnerXML []byte
+	Err string
+
+	innerXML xmlstream.TokenReader `xml:"-"`
 }
 
 // Error satisfies the builtin error interface and returns the name of the
@@ -196,31 +214,40 @@ func (s *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		return err
 	}
 	s.Err = se.Err.XMLName.Local
-	s.InnerXML = se.Err.InnerXML
+	// TODO: s.InnerXML = se.Err.InnerXML
 	return nil
 }
 
 // MarshalXML satisfies the xml package's Marshaler interface and allows
 // StreamError's to be correctly marshaled back into XML.
-func (s Error) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	return e.EncodeElement(
-		struct {
-			Err struct {
-				XMLName  xml.Name
-				InnerXML []byte `xml:",innerxml"`
-			}
-		}{
-			struct {
-				XMLName  xml.Name
-				InnerXML []byte `xml:",innerxml"`
-			}{
-				XMLName:  xml.Name{Space: "urn:ietf:params:xml:ns:xmpp-streams", Local: s.Err},
-				InnerXML: s.InnerXML,
-			},
-		},
+func (s Error) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
+	return s.WriteXML(e, xml.StartElement{})
+}
+
+// WriteXML satisfies the xmlstream.Marshaler interface.
+// It is like MarshalXML except it writes tokens to w.
+func (s Error) WriteXML(w xmlstream.TokenWriter, _ xml.StartElement) error {
+	_, err := xmlstream.Copy(w, s.TokenReader(nil))
+	if err != nil {
+		return err
+	}
+	return w.Flush()
+}
+
+// TokenReader returns a new xmlstream.TokenReader that returns an encoding of
+// the error.
+func (s Error) TokenReader(payload xmlstream.TokenReader) xmlstream.TokenReader {
+	inner := xmlstream.Wrap(s.innerXML, xml.StartElement{Name: xml.Name{Local: s.Err, Space: ns.Streams}})
+	if payload != nil {
+		inner = xmlstream.MultiReader(
+			inner,
+			payload,
+		)
+	}
+	return xmlstream.Wrap(
+		inner,
 		xml.StartElement{
-			Name: xml.Name{Space: "", Local: "stream:error"},
-			Attr: []xml.Attr{},
+			Name: xml.Name{Local: "error", Space: ns.Stream},
 		},
 	)
 }

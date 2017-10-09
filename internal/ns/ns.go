@@ -15,6 +15,7 @@ const (
 	Stanza   = "urn:ietf:params:xml:ns:xmpp-stanzas"
 	StartTLS = "urn:ietf:params:xml:ns:xmpp-tls"
 	Stream   = "http://etherx.jabber.org/streams"
+	Streams  = "urn:ietf:params:xml:ns:xmpp-streams"
 	WS       = "urn:ietf:params:xml:ns:xmpp-framing"
 	XML      = "http://www.w3.org/XML/1998/namespace"
 )
