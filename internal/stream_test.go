@@ -33,7 +33,7 @@ func TestSendNewS2S(t *testing.T) {
 			if tc.id {
 				ids = "abc"
 			}
-			_, err := internal.SendNewStream(&b, tc.s2s, internal.Version{1, 0}, "und", "example.net", "test@example.net", ids)
+			_, err := internal.SendNewStream(&b, tc.s2s, internal.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
 
 			str := b.String()
 			if !strings.HasPrefix(str, internal.XMLHeader) {
@@ -82,7 +82,7 @@ func TestSendNewS2SReturnsWriteErr(t *testing.T) {
 	}{
 		nopReader{},
 		errWriter{},
-	}, true, internal.Version{1, 0}, "und", "example.net", "test@example.net", "abc")
+	}, true, internal.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", "abc")
 	if err != io.ErrUnexpectedEOF {
 		t.Errorf("Expected errWriterErr (%s) but got `%s`", io.ErrUnexpectedEOF, err)
 	}
