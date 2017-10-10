@@ -19,7 +19,7 @@ func Example() {
 	e := xml.NewEncoder(os.Stdout)
 	e.Indent("", "\t")
 
-	ping := ping.PingIQ(j)
+	ping := ping.IQ(j)
 	if _, err := xmlstream.Copy(e, ping); err != nil {
 		log.Fatal(err)
 	}
