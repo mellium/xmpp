@@ -184,7 +184,7 @@ func SeeOtherHostError(addr net.Addr, payload xmlstream.TokenReader) Error {
 type Error struct {
 	Err string
 
-	innerXML xmlstream.TokenReader `xml:"-"`
+	innerXML xmlstream.TokenReader
 }
 
 // Error satisfies the builtin error interface and returns the name of the
