@@ -16,9 +16,12 @@ import (
 )
 
 const (
+	// XMLHeader is an XML header like the one in encoding/xml but without a
+	// newline at the end.
 	XMLHeader = `<?xml version="1.0" encoding="UTF-8"?>`
 )
 
+// StreamInfo contains metadata extracted from a stream start token.
 type StreamInfo struct {
 	to      *jid.JID
 	from    *jid.JID
@@ -64,12 +67,12 @@ func streamFromStartElement(s xml.StartElement) (StreamInfo, error) {
 	return streamData, nil
 }
 
-// Sends a new XML header followed by a stream start element on the given
-// io.Writer. We don't use an xml.Encoder both because Go's standard library xml
-// package really doesn't like the namespaced stream:stream attribute and
-// because we can guarantee well-formedness of the XML with a print in this case
-// and printing is much faster than encoding. Afterwards, clear the
-// StreamRestartRequired bit and set the output stream information.
+// SendNewStream sends a new XML header followed by a stream start element on
+// the given io.Writer. We don't use an xml.Encoder both because Go's standard
+// library xml package really doesn't like the namespaced stream:stream
+// attribute and because we can guarantee well-formedness of the XML with a
+// print in this case and printing is much faster than encoding. Afterwards,
+// clear the StreamRestartRequired bit and set the output stream information.
 func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang string, location, origin, id string) (StreamInfo, error) {
 	streamData := StreamInfo{}
 	switch s2s {
@@ -112,6 +115,10 @@ func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang string, loc
 	return streamData, nil
 }
 
+// ExpectNewStream reads a token from d and expects that it will be a new stream
+// start token. If not, an error is returned. It then handles feature
+// negotiation for the new stream.
+// If an XML header is discovered instead, it is skipped.
 func ExpectNewStream(ctx context.Context, d xml.TokenReader, recv bool) (streamData StreamInfo, err error) {
 	var foundHeader bool
 
