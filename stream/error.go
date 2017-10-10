@@ -237,7 +237,7 @@ func (s Error) WriteXML(w xmlstream.TokenWriter, _ xml.StartElement) error {
 // TokenReader returns a new xmlstream.TokenReader that returns an encoding of
 // the error.
 func (s Error) TokenReader(payload xmlstream.TokenReader) xmlstream.TokenReader {
-	inner := xmlstream.Wrap(s.innerXML, xml.StartElement{Name: xml.Name{Local: s.Err, Space: ns.Streams}})
+	inner := xmlstream.Wrap(s.innerXML, xml.StartElement{Name: xml.Name{Local: s.Err, Space: ns.XMPPStream}})
 	if payload != nil {
 		inner = xmlstream.MultiReader(
 			inner,
