@@ -197,7 +197,7 @@ type streamFeaturesList struct {
 
 func getFeature(name xml.Name, features []StreamFeature) (feature StreamFeature, ok bool) {
 	for _, f := range features {
-		if feature.Name == name {
+		if f.Name == name {
 			return f, true
 		}
 	}
@@ -275,7 +275,8 @@ parsefeatures:
 			// support it.
 			s.features[tok.Name.Space] = nil
 
-			if feature, ok := getFeature(tok.Name, features); ok && (s.state&feature.Necessary) == feature.Necessary && (s.state&feature.Prohibited) == 0 {
+			feature, ok := getFeature(tok.Name, features)
+			if ok && (s.state&feature.Necessary) == feature.Necessary && (s.state&feature.Prohibited) == 0 {
 				req, data, err := feature.Parse(ctx, s.in.d, &tok)
 				if err != nil {
 					return nil, err
