@@ -247,6 +247,7 @@ func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeatu
 }
 
 func readStreamFeatures(ctx context.Context, s *Session, start xml.StartElement, features []StreamFeature) (*streamFeaturesList, error) {
+	// TODO: Check if this is a stream error (if so, unmarshal and return).
 	switch {
 	case start.Name.Local != "features":
 		return nil, stream.InvalidXML
