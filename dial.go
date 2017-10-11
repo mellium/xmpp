@@ -16,9 +16,16 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
+// Conn is a net.Conn created for the purpose of establishing an XMPP session.
+type Conn struct {
+	tlsConn *tls.Conn
+	c       net.Conn
+	rw      io.ReadWriter
+}
+
 // newConn wraps an io.ReadWriter in a Conn.
 func newConn(rw io.ReadWriter) *Conn {
-	nc := &Conn{}
+	nc := &Conn{rw: rw}
 
 	switch typrw := rw.(type) {
 	case *Conn:
@@ -29,16 +36,8 @@ func newConn(rw io.ReadWriter) *Conn {
 	case net.Conn:
 		nc.c = typrw
 	}
-	nc.rw = rw
 
 	return nc
-}
-
-// Conn is a net.Conn created for the purpose of establishing an XMPP session.
-type Conn struct {
-	tlsConn *tls.Conn
-	c       net.Conn
-	rw      io.ReadWriter
 }
 
 // ConnectionState returns basic TLS details about the connection if TLS has
@@ -165,9 +164,7 @@ func (d *Dialer) dial(ctx context.Context, network string, addr *jid.JID) (*Conn
 		if err != nil {
 			return nil, err
 		}
-		return &Conn{
-			c: c,
-		}, nil
+		return newConn(c), nil
 	}
 
 	addrs, err := internal.LookupService(connType(d.S2S), network, addr)
@@ -188,9 +185,7 @@ func (d *Dialer) dial(ctx context.Context, network string, addr *jid.JID) (*Conn
 			continue
 		}
 
-		return &Conn{
-			c: conn,
-		}, nil
+		return newConn(conn), nil
 	}
 	return nil, err
 }
