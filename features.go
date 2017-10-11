@@ -7,6 +7,7 @@ package xmpp
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"io"
 
 	"mellium.im/xmlstream"
@@ -99,10 +100,16 @@ func negotiateFeatures(ctx context.Context, s *Session, features []StreamFeature
 		switch {
 		case err != nil:
 			return mask, nil, err
-		case list.total == 0 || len(list.cache) == 0:
+		case list.total == 0:
 			// If we received an empty list (or one with no supported features), we're
 			// done.
 			return Ready, nil, nil
+		case len(list.cache) == 0:
+			// If we received a list with features we support but where none of them
+			// could be negotiated (eg. they were advertised in the wrong order), this
+			// is an error:
+			// TODO: This error isn't very good.
+			return mask, nil, errors.New("xmpp: features advertised out of order")
 		}
 	}
 
@@ -276,7 +283,8 @@ parsefeatures:
 			s.features[tok.Name.Space] = nil
 
 			feature, ok := getFeature(tok.Name, features)
-			if ok && (s.state&feature.Necessary) == feature.Necessary && (s.state&feature.Prohibited) == 0 {
+
+			if ok && s.state&feature.Necessary == feature.Necessary && s.state&feature.Prohibited == 0 {
 				req, data, err := feature.Parse(ctx, s.in.d, &tok)
 				if err != nil {
 					return nil, err
