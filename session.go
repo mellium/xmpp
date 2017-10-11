@@ -15,7 +15,6 @@ import (
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
-	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
 )
 
@@ -183,78 +182,106 @@ func (s *Session) Serve(h Handler) error {
 	return s.handleInputStream(h)
 }
 
-func (s *Session) handleInputStream(handler Handler) error {
+// sendError transmits an error on the session. If the error is not a standard
+// stream error an UndefinedCondition stream error is sent.
+// If an error is returned (the original error or a different one), it has not
+// been handled fully and must be handled by the caller.
+func (s *Session) sendError(err error) (e error) {
+	switch typErr := err.(type) {
+	case stream.Error:
+		if e = typErr.WriteXML(s, xml.StartElement{}); e != nil {
+			return e
+		}
+		if e = s.Close(); e != nil {
+			return e
+		}
+		return err
+	}
+	// TODO: What should we do here? RFC 6120 §4.9.3.21. undefined-condition
+	// says:
+	//
+	//     The error condition is not one of those defined by the other
+	//     conditions in this list; this error condition SHOULD NOT be used
+	//     except in conjunction with an application-specific condition.
+	if e = stream.UndefinedCondition.WriteXML(s, xml.StartElement{}); e != nil {
+		return e
+	}
+	return err
+}
+
+func (s *Session) handleInputStream(handler Handler) (err error) {
+	defer func() {
+		e := s.Close()
+		if err == nil {
+			err = e
+		}
+	}()
+
+	discard := xmlstream.Discard()
+
 	for {
 		select {
 		case <-s.in.ctx.Done():
-			return nil
+			return s.in.ctx.Err()
 		default:
 		}
 		tok, err := s.Token()
+		// TODO: If this is a network issue we should return it, if not we should
+		// handle it.
 		if err != nil {
-			select {
-			case <-s.in.ctx.Done():
-				return nil
-			default:
-				// TODO: We need a way to figure out if this was an XML error or an
-				// error with the underlying connection.
-				return s.encode(stream.BadFormat)
-			}
+			return s.sendError(err)
 		}
+
+		var start xml.StartElement
 		switch t := tok.(type) {
 		case xml.StartElement:
-			if t.Name.Local == "error" && t.Name.Space == ns.Stream {
-				e := stream.Error{}
-				err = xml.NewTokenDecoder(s).DecodeElement(&e, &t)
-				if err != nil {
-					return err
-				}
-				return e
-			}
-			ir := xmlstream.Inner(s)
-			err = handler.HandleXMPP(struct {
-				xmlstream.TokenReader
-				xmlstream.TokenWriter
-			}{
-				TokenReader: ir,
-				TokenWriter: s,
-			}, &t)
-			if err != nil {
-				switch err.(type) {
-				case stanza.Error:
-					err = s.encode(err)
-					if err != nil {
-						return err
-					}
-				case stream.Error:
-					// TODO: Rework this error handling. The handler should be encoding
-					// stream errors, not the session.
-					return s.encode(err)
-				default:
-					// TODO: Should this error have a payload?
-					return s.encode(stream.UndefinedCondition)
-				}
-			}
-			// Advance the stream to the end of the element.
-			if _, err = xmlstream.Copy(xmlstream.Discard(), ir); err != nil {
-				return err
-			}
+			start = t
 		case xml.EndElement:
 			if t.Name.Space == ns.Stream && t.Name.Local == "stream" {
-				s.state |= InputStreamClosed
 				return nil
 			}
+			// If this is a stream level end element but not </stream:stream>,
+			// something is really weird…
+			return s.sendError(stream.BadFormat)
 		default:
-			select {
-			case <-s.in.ctx.Done():
+			// If this isn't a start element, the stream is in a bad state.
+			return s.sendError(stream.BadFormat)
+		}
+
+		rw := struct {
+			xmlstream.TokenReader
+			xmlstream.TokenWriter
+		}{
+			TokenReader: xmlstream.Inner(s),
+			TokenWriter: s,
+		}
+
+		// Handle stream errors and unknown stream namespaced tokens first, before
+		// delegating to the normal handler.
+		if start.Name.Space == ns.Stream {
+			switch start.Name.Local {
+			case "error":
+				// TODO: Unmarshal the error and return it.
 				return nil
 			default:
-				// TODO: We need a way to figure out if this was an XML error or an
-				// error with the underlying connection.
-				return s.encode(stream.BadFormat)
+				return s.sendError(stream.UnsupportedStanzaType)
 			}
 		}
+
+		if err = handler.HandleXMPP(rw, &start); err != nil {
+			return s.sendError(err)
+		}
+		// Advance to the end of the current element before attempting to read the
+		// next.
+		//
+		// TODO: Error handling should be the same here as it would be for the rest
+		// of this loop.
+		_, err = xmlstream.Copy(discard, rw)
+		if err != nil {
+			return s.sendError(err)
+		}
 	}
+	return nil
 }
 
 // Feature checks if a feature with the given namespace was advertised
@@ -263,7 +290,7 @@ func (s *Session) handleInputStream(handler Handler) error {
 func (s *Session) Feature(namespace string) (data interface{}, ok bool) {
 	// TODO: Make the features struct actually store the parsed representation.
 	data, ok = s.features[namespace]
-	return
+	return data, ok
 }
 
 // Conn returns the Session's backing connection.
