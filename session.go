@@ -281,7 +281,6 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 			return s.sendError(err)
 		}
 	}
-	return nil
 }
 
 // Feature checks if a feature with the given namespace was advertised
