@@ -21,3 +21,6 @@ deps.svg: *.go
 		$$(go list -f '{{join .Deps " "}}' .) .; \
 	echo "}"; \
 	) | dot -Tsvg -o $@
+
+.PHONEY: ci
+ci: vet test

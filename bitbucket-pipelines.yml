@@ -16,9 +16,7 @@ pipelines:
           - cp -r /vendor . || true
           - go version
           - go env
-          - make vet
-          - make test
-          - make bench
+          - make ci
           - cp -r $GOPATH/src/mellium.im/xmpp/vendor /vendor
 definitions:
   caches:
