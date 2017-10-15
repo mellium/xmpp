@@ -189,7 +189,7 @@ func (s *Session) Serve(h Handler) error {
 func (s *Session) sendError(err error) (e error) {
 	switch typErr := err.(type) {
 	case stream.Error:
-		if e = typErr.WriteXML(s, xml.StartElement{}); e != nil {
+		if _, e = typErr.WriteXML(s); e != nil {
 			return e
 		}
 		if e = s.Close(); e != nil {
@@ -203,7 +203,7 @@ func (s *Session) sendError(err error) (e error) {
 	//     The error condition is not one of those defined by the other
 	//     conditions in this list; this error condition SHOULD NOT be used
 	//     except in conjunction with an application-specific condition.
-	if e = stream.UndefinedCondition.WriteXML(s, xml.StartElement{}); e != nil {
+	if _, e = stream.UndefinedCondition.WriteXML(s); e != nil {
 		return e
 	}
 	return err

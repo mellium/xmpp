@@ -221,17 +221,18 @@ func (s *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 // MarshalXML satisfies the xml package's Marshaler interface and allows
 // StreamError's to be correctly marshaled back into XML.
 func (s Error) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
-	return s.WriteXML(e, xml.StartElement{})
+	_, err := s.WriteXML(e)
+	return err
 }
 
-// WriteXML satisfies the xmlstream.Marshaler interface.
+// WriteXML satisfies the xmlstream.WriterTo interface.
 // It is like MarshalXML except it writes tokens to w.
-func (s Error) WriteXML(w xmlstream.TokenWriter, _ xml.StartElement) error {
-	_, err := xmlstream.Copy(w, s.TokenReader(nil))
+func (s Error) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
+	n, err = xmlstream.Copy(w, s.TokenReader(nil))
 	if err != nil {
-		return err
+		return n, err
 	}
-	return w.Flush()
+	return n, w.Flush()
 }
 
 // TokenReader returns a new xmlstream.TokenReader that returns an encoding of
