@@ -15,10 +15,12 @@ import (
 )
 
 var (
-	_ error              = (*Error)(nil)
-	_ error              = Error{}
-	_ xmlstream.WriterTo = (*Error)(nil)
-	_ xmlstream.WriterTo = Error{}
+	_ error               = (*Error)(nil)
+	_ error               = Error{}
+	_ xmlstream.WriterTo  = (*Error)(nil)
+	_ xmlstream.WriterTo  = Error{}
+	_ xmlstream.Marshaler = (*Error)(nil)
+	_ xmlstream.Marshaler = Error{}
 )
 
 func TestErrorReturnsCondition(t *testing.T) {

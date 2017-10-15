@@ -6,6 +6,7 @@ package stanza
 
 import (
 	"encoding/xml"
+	"io"
 
 	"golang.org/x/text/language"
 	"mellium.im/xmlstream"
@@ -265,9 +266,8 @@ func (se Error) Error() string {
 	return string(se.Condition)
 }
 
-// WriteXML satisfies the xmlstream.WriterTo interface.
-// It is like MarshalXML except it writes tokens to w.
-func (se Error) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
+// TokenReader satisfies the xmlstream.Marshaler interface for Error.
+func (se Error) TokenReader() xmlstream.TokenReader {
 	start := xml.StartElement{
 		Name: xml.Name{Space: ``, Local: "error"},
 		Attr: []xml.Attr{},
@@ -279,50 +279,45 @@ func (se Error) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
 		a, _ := se.By.MarshalXMLAttr(xml.Name{Space: "", Local: "by"})
 		start.Attr = append(start.Attr, a)
 	}
-	if err = w.EncodeToken(start); err != nil {
-		return n, err
-	}
-	n++
-	condition := xml.StartElement{
-		Name: xml.Name{Space: ns.Stanza, Local: string(se.Condition)},
-	}
-	if err = w.EncodeToken(condition); err != nil {
-		return n, err
-	}
-	n++
-	if err = w.EncodeToken(condition.End()); err != nil {
-		return n, err
-	}
-	n++
+
+	var text xmlstream.TokenReader = xmlstream.ReaderFunc(func() (xml.Token, error) {
+		return nil, io.EOF
+	})
 	if se.Text != "" {
-		text := xml.StartElement{
-			Name: xml.Name{Space: ns.Stanza, Local: "text"},
-			Attr: []xml.Attr{
-				{
-					Name:  xml.Name{Space: ns.XML, Local: "lang"},
-					Value: se.Lang.String(),
+		text = xmlstream.Wrap(
+			xmlstream.ReaderFunc(func() (xml.Token, error) {
+				return xml.CharData(se.Text), io.EOF
+			}),
+			xml.StartElement{
+				Name: xml.Name{Space: ns.Stanza, Local: "text"},
+				Attr: []xml.Attr{
+					{
+						Name:  xml.Name{Space: ns.XML, Local: "lang"},
+						Value: se.Lang.String(),
+					},
 				},
 			},
-		}
-		if err = w.EncodeToken(text); err != nil {
-			return n, err
-		}
-		n++
-		if err = w.EncodeToken(xml.CharData(se.Text)); err != nil {
-			return n, err
-		}
-		n++
-		if err = w.EncodeToken(text.End()); err != nil {
-			return n, err
-		}
-		n++
+		)
 	}
-	err = w.EncodeToken(start.End())
-	if err != nil {
-		return n, err
-	}
-	n++
-	return n, err
+
+	return xmlstream.Wrap(
+		xmlstream.MultiReader(
+			xmlstream.Wrap(
+				nil,
+				xml.StartElement{
+					Name: xml.Name{Space: ns.Stanza, Local: string(se.Condition)},
+				},
+			),
+			text,
+		),
+		start,
+	)
+}
+
+// WriteXML satisfies the xmlstream.WriterTo interface.
+// It is like MarshalXML except it writes tokens to w.
+func (se Error) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
+	return xmlstream.Copy(w, se.TokenReader())
 }
 
 // MarshalXML satisfies the xml.Marshaler interface for Error.
