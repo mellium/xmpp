@@ -68,7 +68,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 			}
 			return false, e.Flush()
 		},
-		Parse: func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			listed := struct {
 				XMLName xml.Name `xml:"http://jabber.org/features/compress compression"`
 				Methods []string `xml:"http://jabber.org/features/compress method"`

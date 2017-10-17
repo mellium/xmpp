@@ -26,7 +26,7 @@ func OOB(data *oob.Data, f func(*oob.Data) error) Challenge {
 			}
 			return w.Flush()
 		},
-		Receive: func(ctx context.Context, server bool, r xmlstream.TokenReader, start *xml.StartElement) error {
+		Receive: func(ctx context.Context, server bool, r xml.TokenReader, start *xml.StartElement) error {
 			// The server does not receive a reply for this mechanism.
 			if server {
 				return nil

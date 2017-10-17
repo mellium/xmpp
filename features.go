@@ -49,7 +49,7 @@ type StreamFeature struct {
 	// Returns whether or not the feature is required, and any data that will be
 	// needed if the feature is selected for negotiation (eg. the list of
 	// mechanisms if the feature was SASL).
-	Parse func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (req bool, data interface{}, err error)
+	Parse func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (req bool, data interface{}, err error)
 
 	// A function that will take over the session temporarily while negotiating
 	// the feature. The "mask" SessionState represents the state bits that should

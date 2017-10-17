@@ -1,6 +1,6 @@
 // Copyright 2015 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 // Package stream contains XMPP stream errors as defined by RFC 6120 §4.9.
 //
@@ -153,7 +153,7 @@ var (
 // SeeOtherHostError returns a new see-other-host error with the given network
 // address as the host. If the address appears to be a raw IPv6 address (eg.
 // "::1"), the error wraps it in brackets ("[::1]").
-func SeeOtherHostError(addr net.Addr, payload xmlstream.TokenReader) Error {
+func SeeOtherHostError(addr net.Addr, payload xml.TokenReader) Error {
 	var cdata string
 
 	// If the address looks like an IPv6 literal, wrap it in []
@@ -184,7 +184,7 @@ func SeeOtherHostError(addr net.Addr, payload xmlstream.TokenReader) Error {
 type Error struct {
 	Err string
 
-	innerXML xmlstream.TokenReader
+	innerXML xml.TokenReader
 }
 
 // Error satisfies the builtin error interface and returns the name of the
@@ -235,9 +235,9 @@ func (s Error) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
 	return n, w.Flush()
 }
 
-// TokenReader returns a new xmlstream.TokenReader that returns an encoding of
+// TokenReader returns a new xml.TokenReader that returns an encoding of
 // the error.
-func (s Error) TokenReader(payload xmlstream.TokenReader) xmlstream.TokenReader {
+func (s Error) TokenReader(payload xml.TokenReader) xml.TokenReader {
 	inner := xmlstream.Wrap(s.innerXML, xml.StartElement{Name: xml.Name{Local: s.Err, Space: ns.XMPPStream}})
 	if payload != nil {
 		inner = xmlstream.MultiReader(

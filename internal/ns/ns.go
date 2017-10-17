@@ -1,6 +1,6 @@
 // Copyright 2016 Sam Whited.
-// Use of this source code is governed by the BSD 2-clause license that can be
-// found in the LICENSE file.
+// Use of this source code is governed by the BSD 2-clause
+// license that can be found in the LICENSE file.
 
 // Package ns provides namespace constants that are used by the xmpp package and
 // other internal packages.

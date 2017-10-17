@@ -25,5 +25,5 @@ type Challenge struct {
 
 	// Receive is used by the client to receive and decode the server's challenge
 	// and by the server to receive and decode the clients response.
-	Receive func(ctx context.Context, server bool, r xmlstream.TokenReader, start *xml.StartElement) error
+	Receive func(ctx context.Context, server bool, r xml.TokenReader, start *xml.StartElement) error
 }

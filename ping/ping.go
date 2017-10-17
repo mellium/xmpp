@@ -16,9 +16,9 @@ import (
 // NS is the XML namespace used by XMPP pings. It is provided as a convenience.
 const NS = `urn:xmpp:ping`
 
-// IQ returns an xmlstream.TokenReader that outputs a new IQ stanza with a ping
+// IQ returns an xml.TokenReader that outputs a new IQ stanza with a ping
 // payload.
-func IQ(to *jid.JID) xmlstream.TokenReader {
+func IQ(to *jid.JID) xml.TokenReader {
 	start := xml.StartElement{Name: xml.Name{Local: "ping", Space: NS}}
 	return stanza.WrapIQ(to, stanza.GetIQ, xmlstream.Wrap(nil, start))
 }

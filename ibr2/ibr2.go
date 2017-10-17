@@ -78,8 +78,8 @@ func listFunc(challenges ...Challenge) func(context.Context, xmlstream.TokenWrit
 	}
 }
 
-func parseFunc(challenges ...Challenge) func(context.Context, xmlstream.TokenReader, *xml.StartElement) (req bool, supported interface{}, err error) {
-	return func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
+func parseFunc(challenges ...Challenge) func(context.Context, xml.TokenReader, *xml.StartElement) (req bool, supported interface{}, err error) {
+	return func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 		// Parse the list of challenge types sent down by the server.
 		parsed := struct {
 			Challenges []string `xml:"urn:xmpp:register:0 challenge"`
@@ -107,7 +107,7 @@ func parseFunc(challenges ...Challenge) func(context.Context, xmlstream.TokenRea
 	}
 }
 
-func decodeClientResp(ctx context.Context, r xmlstream.TokenReader, decode func(ctx context.Context, server bool, r xmlstream.TokenReader, start *xml.StartElement) error) (cancel bool, err error) {
+func decodeClientResp(ctx context.Context, r xml.TokenReader, decode func(ctx context.Context, server bool, r xml.TokenReader, start *xml.StartElement) error) (cancel bool, err error) {
 	var tok xml.Token
 	tok, err = r.Token()
 	if err != nil {

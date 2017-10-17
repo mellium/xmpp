@@ -249,7 +249,7 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 		}
 
 		rw := struct {
-			xmlstream.TokenReader
+			xml.TokenReader
 			xmlstream.TokenWriter
 		}{
 			TokenReader: xmlstream.Inner(s),

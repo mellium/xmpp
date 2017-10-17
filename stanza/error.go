@@ -267,7 +267,7 @@ func (se Error) Error() string {
 }
 
 // TokenReader satisfies the xmlstream.Marshaler interface for Error.
-func (se Error) TokenReader() xmlstream.TokenReader {
+func (se Error) TokenReader() xml.TokenReader {
 	start := xml.StartElement{
 		Name: xml.Name{Space: ``, Local: "error"},
 		Attr: []xml.Attr{},
@@ -280,7 +280,7 @@ func (se Error) TokenReader() xmlstream.TokenReader {
 		start.Attr = append(start.Attr, a)
 	}
 
-	var text xmlstream.TokenReader = xmlstream.ReaderFunc(func() (xml.Token, error) {
+	var text xml.TokenReader = xmlstream.ReaderFunc(func() (xml.Token, error) {
 		return nil, io.EOF
 	})
 	if se.Text != "" {

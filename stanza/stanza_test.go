@@ -35,7 +35,7 @@ var start = xml.StartElement{
 type iqTest struct {
 	to      string
 	typ     stanza.IQType
-	payload xmlstream.TokenReader
+	payload xml.TokenReader
 	out     string
 	err     error
 }
@@ -82,7 +82,7 @@ func TestIQ(t *testing.T) {
 type messageTest struct {
 	to      string
 	typ     stanza.MessageType
-	payload xmlstream.TokenReader
+	payload xml.TokenReader
 	out     string
 	err     error
 }
@@ -129,7 +129,7 @@ func TestMessage(t *testing.T) {
 type presenceTest struct {
 	to      string
 	typ     stanza.PresenceType
-	payload xmlstream.TokenReader
+	payload xml.TokenReader
 	out     string
 	err     error
 }

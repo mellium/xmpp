@@ -40,7 +40,7 @@ func StartTLS(required bool, cfg *tls.Config) StreamFeature {
 			}
 			return required, e.EncodeToken(start.End())
 		},
-		Parse: func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls starttls"`
 				Required struct {

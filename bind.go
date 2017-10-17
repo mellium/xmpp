@@ -50,7 +50,7 @@ type bindIQ struct {
 	Err  *stanza.Error `xml:"error,ommitempty"`
 }
 
-func (biq *bindIQ) TokenReader() xmlstream.TokenReader {
+func (biq *bindIQ) TokenReader() xml.TokenReader {
 	if biq.Err != nil {
 		return stanza.WrapIQ(biq.IQ.To, biq.IQ.Type, biq.Err.TokenReader())
 	}
@@ -67,7 +67,7 @@ type bindPayload struct {
 	JID      *jid.JID `xml:"jid,omitempty"`
 }
 
-func (bp bindPayload) TokenReader() xmlstream.TokenReader {
+func (bp bindPayload) TokenReader() xml.TokenReader {
 	if bp.JID != nil {
 		return xmlstream.Wrap(
 			xmlstream.ReaderFunc(func() (xml.Token, error) {
@@ -101,7 +101,7 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 
 			return req, e.Flush()
 		},
-		Parse: func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-bind bind"`
 			}{}

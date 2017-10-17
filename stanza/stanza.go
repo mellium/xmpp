@@ -14,7 +14,7 @@ import (
 // WrapIQ wraps a payload in an IQ stanza.
 // The resulting IQ does not contain an id or from attribute and is thus not
 // valid without further processing.
-func WrapIQ(to *jid.JID, typ IQType, payload xmlstream.TokenReader) xmlstream.TokenReader {
+func WrapIQ(to *jid.JID, typ IQType, payload xml.TokenReader) xml.TokenReader {
 	return xmlstream.Wrap(payload, xml.StartElement{
 		Name: xml.Name{Local: "iq"},
 		Attr: []xml.Attr{
@@ -25,7 +25,7 @@ func WrapIQ(to *jid.JID, typ IQType, payload xmlstream.TokenReader) xmlstream.To
 }
 
 // WrapMessage wraps a payload in a message stanza.
-func WrapMessage(to *jid.JID, typ MessageType, payload xmlstream.TokenReader) xmlstream.TokenReader {
+func WrapMessage(to *jid.JID, typ MessageType, payload xml.TokenReader) xml.TokenReader {
 	return xmlstream.Wrap(payload, xml.StartElement{
 		Name: xml.Name{Local: "message"},
 		Attr: []xml.Attr{
@@ -36,7 +36,7 @@ func WrapMessage(to *jid.JID, typ MessageType, payload xmlstream.TokenReader) xm
 }
 
 // WrapPresence wraps a payload in a presence stanza.
-func WrapPresence(to *jid.JID, typ PresenceType, payload xmlstream.TokenReader) xmlstream.TokenReader {
+func WrapPresence(to *jid.JID, typ PresenceType, payload xml.TokenReader) xml.TokenReader {
 	return xmlstream.Wrap(payload, xml.StartElement{
 		Name: xml.Name{Local: "presence"},
 		Attr: []xml.Attr{

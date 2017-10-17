@@ -79,7 +79,7 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 			}
 			return req, e.EncodeToken(start.End())
 		},
-		Parse: func(ctx context.Context, r xmlstream.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName xml.Name `xml:"urn:xmpp:sasl:0 mechanisms"`
 				List    []string `xml:"urn:xmpp:sasl:0 mechanism"`
@@ -203,7 +203,7 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 	}
 }
 
-func decodeSASLChallenge(r xmlstream.TokenReader, start xml.StartElement, allowChallenge bool) (challenge []byte, success bool, err error) {
+func decodeSASLChallenge(r xml.TokenReader, start xml.StartElement, allowChallenge bool) (challenge []byte, success bool, err error) {
 	d := xml.NewTokenDecoder(r)
 	switch start.Name {
 	case xml.Name{Space: NS, Local: "challenge"}:
