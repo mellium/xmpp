@@ -334,10 +334,6 @@ func (s *Session) Flush() error {
 	return s.out.e.Flush()
 }
 
-func (s *Session) encode(v interface{}) error {
-	return s.out.e.Encode(v)
-}
-
 // Close ends the output stream (by sending a closing </stream:stream> token).
 // It does not close the underlying connection.
 // Calling Close() multiple times will only result in one closing

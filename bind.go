@@ -50,9 +50,39 @@ type bindIQ struct {
 	Err  *stanza.Error `xml:"error,ommitempty"`
 }
 
+func (biq *bindIQ) TokenReader() xmlstream.TokenReader {
+	if biq.Err != nil {
+		return stanza.WrapIQ(biq.IQ.To, biq.IQ.Type, biq.Err.TokenReader())
+	}
+
+	return stanza.WrapIQ(biq.IQ.To, biq.IQ.Type, biq.Bind.TokenReader())
+}
+
+func (biq *bindIQ) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
+	return xmlstream.Copy(w, biq.TokenReader())
+}
+
 type bindPayload struct {
 	Resource string   `xml:"resource,omitempty"`
 	JID      *jid.JID `xml:"jid,omitempty"`
+}
+
+func (bp bindPayload) TokenReader() xmlstream.TokenReader {
+	if bp.JID != nil {
+		return xmlstream.Wrap(
+			xmlstream.ReaderFunc(func() (xml.Token, error) {
+				return xml.CharData(bp.JID.String()), io.EOF
+			}),
+			xml.StartElement{Name: xml.Name{Local: "jid"}},
+		)
+	}
+
+	return xmlstream.Wrap(
+		xmlstream.ReaderFunc(func() (xml.Token, error) {
+			return xml.CharData(bp.Resource), io.EOF
+		}),
+		xml.StartElement{Name: xml.Name{Local: "resource"}},
+	)
 }
 
 func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
@@ -131,12 +161,13 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 					resp.Bind = bindPayload{JID: j}
 				}
 
-				return mask, nil, session.encode(resp)
+				_, err = resp.WriteXML(session)
+				return mask, nil, err
 			}
 
 			// Client encodes an IQ requesting resource binding.
 			reqID := internal.RandomID()
-			err = session.encode(bindIQ{
+			req := &bindIQ{
 				IQ: stanza.IQ{
 					ID:   reqID,
 					Type: stanza.SetIQ,
@@ -144,7 +175,8 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 				Bind: bindPayload{
 					Resource: session.origin.Resourcepart(),
 				},
-			})
+			}
+			_, err = req.WriteXML(session)
 			if err != nil {
 				return mask, nil, err
 			}
