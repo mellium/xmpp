@@ -7,8 +7,20 @@ package stanza
 import (
 	"encoding/xml"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/jid"
 )
+
+// WrapPresence wraps a payload in a presence stanza.
+func WrapPresence(to *jid.JID, typ PresenceType, payload xml.TokenReader) xml.TokenReader {
+	return xmlstream.Wrap(payload, xml.StartElement{
+		Name: xml.Name{Local: "presence"},
+		Attr: []xml.Attr{
+			{Name: xml.Name{Local: "to"}, Value: to.String()},
+			{Name: xml.Name{Local: "type"}, Value: string(typ)},
+		},
+	})
+}
 
 // Presence is an XMPP stanza that is used as an indication that an entity is
 // available for communication. It is used to set a status message, broadcast

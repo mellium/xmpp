@@ -7,8 +7,20 @@ package stanza
 import (
 	"encoding/xml"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/jid"
 )
+
+// WrapMessage wraps a payload in a message stanza.
+func WrapMessage(to *jid.JID, typ MessageType, payload xml.TokenReader) xml.TokenReader {
+	return xmlstream.Wrap(payload, xml.StartElement{
+		Name: xml.Name{Local: "message"},
+		Attr: []xml.Attr{
+			{Name: xml.Name{Local: "to"}, Value: to.String()},
+			{Name: xml.Name{Local: "type"}, Value: string(typ)},
+		},
+	})
+}
 
 // Message is an XMPP stanza that contains a payload for direct one-to-one
 // communication with another network entity. It is often used for sending chat
