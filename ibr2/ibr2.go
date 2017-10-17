@@ -44,8 +44,8 @@ func challengeStart(typ string) xml.StartElement {
 	}
 }
 
-func listFunc(challenges ...Challenge) func(context.Context, *xml.Encoder, xml.StartElement) (bool, error) {
-	return func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+func listFunc(challenges ...Challenge) func(context.Context, xmlstream.TokenWriter, xml.StartElement) (bool, error) {
+	return func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error) {
 		if err = e.EncodeToken(start); err != nil {
 			return
 		}

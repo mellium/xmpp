@@ -42,7 +42,7 @@ type StreamFeature struct {
 	// used as the outermost tag in the stream (but also may be ignored). List
 	// implementations that call e.EncodeToken directly need to call e.Flush when
 	// finished to ensure that the XML is written to the underlying writer.
-	List func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error)
+	List func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error)
 
 	// Used to parse the feature that begins with the given xml start element
 	// (which should have a Name that matches this stream feature's Name).

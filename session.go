@@ -82,7 +82,7 @@ type Session struct {
 	}
 	out struct {
 		internal.StreamInfo
-		e *xml.Encoder
+		e xmlstream.TokenWriter
 	}
 }
 

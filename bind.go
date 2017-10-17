@@ -90,7 +90,7 @@ func bind(server func(*jid.JID, string) (*jid.JID, error)) StreamFeature {
 		Name:       xml.Name{Space: ns.Bind, Local: "bind"},
 		Necessary:  Authn,
 		Prohibited: Ready,
-		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+		List: func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error) {
 			req = true
 			if err = e.EncodeToken(start); err != nil {
 				return req, err

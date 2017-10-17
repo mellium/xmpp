@@ -53,7 +53,7 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 		Name:       xml.Name{Space: NS, Local: "mechanisms"},
 		Necessary:  xmpp.Secure,
 		Prohibited: xmpp.Authn,
-		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+		List: func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error) {
 			req = true
 			if err = e.EncodeToken(start); err != nil {
 				return

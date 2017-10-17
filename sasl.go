@@ -38,7 +38,7 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 		Name:       xml.Name{Space: ns.SASL, Local: "mechanisms"},
 		Necessary:  Secure,
 		Prohibited: Authn,
-		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+		List: func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error) {
 			req = true
 			if err = e.EncodeToken(start); err != nil {
 				return

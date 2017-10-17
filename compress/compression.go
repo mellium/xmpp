@@ -38,7 +38,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 	return xmpp.StreamFeature{
 		Name:      xml.Name{Local: "compression", Space: NSFeatures},
 		Necessary: xmpp.Secure | xmpp.Authn,
-		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+		List: func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error) {
 			if err = e.EncodeToken(start); err != nil {
 				return
 			}

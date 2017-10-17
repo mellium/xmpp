@@ -25,7 +25,7 @@ func StartTLS(required bool, cfg *tls.Config) StreamFeature {
 	return StreamFeature{
 		Name:       xml.Name{Local: "starttls", Space: ns.StartTLS},
 		Prohibited: Secure,
-		List: func(ctx context.Context, e *xml.Encoder, start xml.StartElement) (req bool, err error) {
+		List: func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error) {
 			if err = e.EncodeToken(start); err != nil {
 				return required, err
 			}
