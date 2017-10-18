@@ -58,7 +58,7 @@ func TestIQ(t *testing.T) {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			b := new(bytes.Buffer)
 			e := xml.NewEncoder(b)
-			iq := stanza.WrapIQ(jid.MustParse(tc.to), tc.typ, tc.payload)
+			iq := stanza.WrapIQ(&stanza.IQ{To: jid.MustParse(tc.to), Type: tc.typ}, tc.payload)
 			if _, err := xmlstream.Copy(e, iq); err != tc.err {
 				t.Errorf("Unexpected error: want=`%v', got=`%v'", tc.err, err)
 			}

@@ -24,7 +24,7 @@ func Example() {
 		log.Fatal(err)
 	}
 	// Output:
-	// <iq to="feste@example.net/siJo4eeT" type="get">
+	// <iq type="get" to="feste@example.net/siJo4eeT">
 	//	<ping xmlns="urn:xmpp:ping"></ping>
 	// </iq>
 }

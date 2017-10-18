@@ -18,7 +18,7 @@ import (
 // a ping payload.
 func WrapPingIQ(to *jid.JID) xml.TokenReader {
 	start := xml.StartElement{Name: xml.Name{Local: "ping", Space: "urn:xmpp:ping"}}
-	return stanza.WrapIQ(to, stanza.GetIQ, xmlstream.Wrap(nil, start))
+	return stanza.WrapIQ(&stanza.IQ{To: to, Type: stanza.GetIQ}, xmlstream.Wrap(nil, start))
 }
 
 func Example_stream() {
@@ -31,7 +31,7 @@ func Example_stream() {
 		log.Fatal(err)
 	}
 	// Output:
-	// <iq to="feste@example.net/siJo4eeT" type="get">
+	// <iq type="get" to="feste@example.net/siJo4eeT">
 	//	<ping xmlns="urn:xmpp:ping"></ping>
 	// </iq>
 }
