@@ -18,7 +18,6 @@ import (
 func WrapIQ(iq *IQ, payload xml.TokenReader) xml.TokenReader {
 	attr := []xml.Attr{
 		{Name: xml.Name{Local: "type"}, Value: string(iq.Type)},
-		{Name: xml.Name{Local: "id"}, Value: iq.ID},
 	}
 	if iq.To != nil {
 		attr = append(attr, xml.Attr{Name: xml.Name{Local: "to"}, Value: iq.To.String()})
@@ -28,6 +27,9 @@ func WrapIQ(iq *IQ, payload xml.TokenReader) xml.TokenReader {
 	}
 	if iq.Lang != "" {
 		attr = append(attr, xml.Attr{Name: xml.Name{Local: "lang", Space: ns.XML}, Value: iq.Lang})
+	}
+	if iq.ID != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: iq.ID})
 	}
 
 	return xmlstream.Wrap(payload, xml.StartElement{
