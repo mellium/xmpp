@@ -140,7 +140,46 @@ func NegotiateSession(ctx context.Context, location, origin *jid.JID, rw io.Read
 		s.state |= mask
 	}
 
+	s.out.e = stanzaAddID(s.out.e)
+
 	return s, nil
+}
+
+type wrapWriter struct {
+	encode func(t xml.Token) error
+	flush  func() error
+}
+
+func (w wrapWriter) EncodeToken(t xml.Token) error { return w.encode(t) }
+func (w wrapWriter) Flush() error                  { return w.flush() }
+
+func stanzaAddID(w xmlstream.TokenWriter) xmlstream.TokenWriter {
+	depth := 0
+	return wrapWriter{
+		encode: func(t xml.Token) error {
+		tokswitch:
+			switch tok := t.(type) {
+			case xml.StartElement:
+				depth++
+				if depth == 1 && tok.Name.Local == "iq" {
+					for _, attr := range tok.Attr {
+						if attr.Name.Local == "id" {
+							break tokswitch
+						}
+					}
+					tok.Attr = append(tok.Attr, xml.Attr{
+						Name:  xml.Name{Local: "id"},
+						Value: internal.RandomID(),
+					})
+					t = tok
+				}
+			case xml.EndElement:
+				depth--
+			}
+			return w.EncodeToken(t)
+		},
+		flush: w.Flush,
+	}
 }
 
 // NewClientSession attempts to use an existing connection (or any
