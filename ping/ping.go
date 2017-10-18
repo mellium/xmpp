@@ -20,5 +20,8 @@ const NS = `urn:xmpp:ping`
 // payload.
 func IQ(to *jid.JID) xml.TokenReader {
 	start := xml.StartElement{Name: xml.Name{Local: "ping", Space: NS}}
-	return stanza.WrapIQ(to, stanza.GetIQ, xmlstream.Wrap(nil, start))
+	return stanza.WrapIQ(&stanza.IQ{
+		To:   to,
+		Type: stanza.GetIQ,
+	}, xmlstream.Wrap(nil, start))
 }

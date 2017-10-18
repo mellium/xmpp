@@ -52,12 +52,12 @@ type bindIQ struct {
 
 func (biq *bindIQ) TokenReader() xml.TokenReader {
 	if biq.Err != nil {
-		return stanza.WrapIQ(biq.IQ.To, biq.IQ.Type, xmlstream.Wrap(biq.Err.TokenReader(),
+		return stanza.WrapIQ(&biq.IQ, xmlstream.Wrap(biq.Err.TokenReader(),
 			xml.StartElement{Name: xml.Name{Local: "bind", Space: ns.Bind}},
 		))
 	}
 
-	return stanza.WrapIQ(biq.IQ.To, biq.IQ.Type, xmlstream.Wrap(biq.Bind.TokenReader(),
+	return stanza.WrapIQ(&biq.IQ, xmlstream.Wrap(biq.Bind.TokenReader(),
 		xml.StartElement{Name: xml.Name{Local: "bind", Space: ns.Bind}},
 	))
 }

@@ -8,16 +8,26 @@ import (
 	"encoding/xml"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 )
 
 // WrapIQ wraps a payload in an IQ stanza.
-// The resulting IQ does not contain an id or from attribute and is thus not
-// valid without further processing.
-func WrapIQ(to *jid.JID, typ IQType, payload xml.TokenReader) xml.TokenReader {
-	attr := []xml.Attr{{Name: xml.Name{Local: "type"}, Value: string(typ)}}
-	if to != nil {
-		attr = append(attr, xml.Attr{Name: xml.Name{Local: "to"}, Value: to.String()})
+// The resulting IQ may not contain an id or from attribute and is thus may not
+// be valid without further processing.
+func WrapIQ(iq *IQ, payload xml.TokenReader) xml.TokenReader {
+	attr := []xml.Attr{
+		{Name: xml.Name{Local: "type"}, Value: string(iq.Type)},
+		{Name: xml.Name{Local: "id"}, Value: iq.ID},
+	}
+	if iq.To != nil {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "to"}, Value: iq.To.String()})
+	}
+	if iq.From != nil {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "from"}, Value: iq.From.String()})
+	}
+	if iq.Lang != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "lang", Space: ns.XML}, Value: iq.Lang})
 	}
 
 	return xmlstream.Wrap(payload, xml.StartElement{
