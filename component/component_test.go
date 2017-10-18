@@ -12,6 +12,7 @@ import (
 	"io"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 
 	"mellium.im/xmpp/component"
@@ -90,6 +91,7 @@ func TestComponent(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
+			var outLock sync.Mutex
 			out := new(bytes.Buffer)
 
 			cpr, spw := io.Pipe()
@@ -107,7 +109,10 @@ func TestComponent(t *testing.T) {
 				io.Copy(spw, strings.NewReader(tc.server))
 				spw.Close()
 			}()
+
+			outLock.Lock()
 			go func() {
+				defer outLock.Unlock()
 				io.Copy(out, spr)
 			}()
 
@@ -115,11 +120,12 @@ func TestComponent(t *testing.T) {
 			if _, ok := tc.err.(some); (ok && err == nil) || (!ok && !reflect.DeepEqual(err, tc.err)) {
 				t.Fatalf("Unexpected error, got='%v' want='%v'", err, tc.err)
 			}
-			spw.Close()
+			cpw.Close()
 			if err != nil {
 				return
 			}
 
+			outLock.Lock()
 			if o := out.String(); o[:len(tc.client)] != tc.client {
 				t.Errorf("Unexpected output:\nGot:\n`%s`\nWant:\n`%s`\n", o, tc.client)
 			}
