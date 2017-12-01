@@ -41,17 +41,17 @@ func Example() {
 	strs := []string{
 		"Beautiful",
 		"Catchup",
+		"Dandelion",
 		"Fuego Borrego",
 		"Green Giant",
+		"Mailman",
 		"Papa Shrimp",
 		"Pockets",
 		"Spoon Foot",
 		"Sunshine",
 		"Thespian",
 		"Twinkle Toes",
-		"Mailman",
 		"Zodiac",
-		"Dandelion",
 	}
 
 	img := image.NewRGBA(image.Rect(0, 0, 300, 216))
