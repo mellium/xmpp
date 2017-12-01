@@ -19,16 +19,19 @@ import (
 	colorgen "mellium.im/xmpp/color"
 )
 
+const (
+	lum    = 128
+	cvd    = colorgen.None
+	factor = 0.4
+	inv    = 1 - factor
+)
+
 // mix a foreground color with a background color ignoring the alpha channel.
 func mix(fg color.Color, bg color.Color) color.Color {
-	const (
-		factor = 0.4
-		inv    = 1 - factor
-		maxu16 = 1<<16 - 1
-	)
 	rb, gb, bb, _ := bg.RGBA()
 	rf, gf, bf, _ := fg.RGBA()
 
+	const maxu16 = 1<<16 - 1
 	return color.RGBA{
 		R: uint8(factor*float32(maxu16-rb) + inv*float32(rf)),
 		G: uint8(factor*float32(maxu16-gb) + inv*float32(gf)),
@@ -68,7 +71,7 @@ func Example() {
 			d := &font.Drawer{
 				Dst: img,
 				Src: image.NewUniform(mix(
-					colorgen.String(s, 128, colorgen.None),
+					colorgen.String(s, lum, cvd),
 					bg,
 				)),
 				Face: inconsolata.Regular8x16,
@@ -78,6 +81,7 @@ func Example() {
 				},
 			}
 
+			// draw.Draw(img, bounds, &image.Uniform{bg}, image.ZP, draw.Src)
 			d.DrawString(s)
 		}
 	}
@@ -90,4 +94,7 @@ func Example() {
 	if err := png.Encode(f, img); err != nil {
 		panic(err)
 	}
+
+	os.Stdout.Write([]byte("Run"))
+	// Output: Run
 }

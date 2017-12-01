@@ -13,7 +13,7 @@ import (
 	"math"
 )
 
-// The size of the hash output.
+// Size is the length of the hash output.
 const Size = 2
 
 // A list of color vision deficiencies.
@@ -74,7 +74,6 @@ func Sum(data []byte, cvd uint8) [Size]byte {
 }
 
 // Bytes converts a byte slice to a color.YCbCr.
-// The recommended luma value is 255 (Y'=0.5, Y=0.732).
 //
 // For more information see Sum.
 func Bytes(b []byte, luma uint8, cvd uint8) color.YCbCr {
@@ -87,7 +86,6 @@ func Bytes(b []byte, luma uint8, cvd uint8) color.YCbCr {
 }
 
 // String converts a string to a color.YCbCr.
-// The recommended luma value is 255 (Y'=0.5, Y=0.732).
 //
 // For more information see Sum.
 func String(s string, luma uint8, cvd uint8) color.YCbCr {
