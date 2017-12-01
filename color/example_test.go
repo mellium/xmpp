@@ -12,7 +12,6 @@ import (
 	"os"
 
 	"golang.org/x/image/font"
-	_ "golang.org/x/image/font/basicfont"
 	"golang.org/x/image/font/inconsolata"
 	"golang.org/x/image/math/fixed"
 
