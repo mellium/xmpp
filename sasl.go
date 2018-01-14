@@ -96,12 +96,13 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 			}
 
 			opts := []sasl.Option{
-				sasl.Authz(identity),
-				sasl.Credentials(session.LocalAddr().Localpart(), password),
+				sasl.Credentials(func() ([]byte, []byte, []byte) {
+					return []byte(session.LocalAddr().Localpart()), []byte(password), []byte(identity)
+				}),
 				sasl.RemoteMechanisms(data.([]string)...),
 			}
 			if connState, ok := conn.ConnectionState(); ok {
-				opts = append(opts, sasl.ConnState(connState))
+				opts = append(opts, sasl.TLSState(connState))
 			}
 			client := sasl.NewClient(selected, opts...)
 

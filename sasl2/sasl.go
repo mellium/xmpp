@@ -114,12 +114,13 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 			// mechanisms advertised by the server, and the TLS session state if
 			// possible (for SCRAM-PLUS mechanisms).
 			opts := []sasl.Option{
-				sasl.Authz(identity),
-				sasl.Credentials(session.LocalAddr().Localpart(), password),
+				sasl.Credentials(func() ([]byte, []byte, []byte) {
+					return []byte(session.LocalAddr().Localpart()), []byte(password), []byte(identity)
+				}),
 				sasl.RemoteMechanisms(data.([]string)...),
 			}
 			if connState, ok := conn.ConnectionState(); ok {
-				opts = append(opts, sasl.ConnState(connState))
+				opts = append(opts, sasl.TLSState(connState))
 			}
 			client := sasl.NewClient(selected, opts...)
 
