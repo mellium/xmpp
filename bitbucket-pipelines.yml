@@ -9,11 +9,11 @@ pipelines:
           - export PATH="/gosrc/bin:$PATH"
           - /bin/bash -c '[[ -e /gosrc/bin ]] || git clone --depth=1 https://go.googlesource.com/go /gosrc'
           - /bin/bash -c '[[ -e /gosrc/bin ]] || (cd /gosrc/src && ./make.bash)'
+          - go get -u github.com/golang/dep/cmd/dep
           - mkdir -p "$GOPATH/src/mellium.im/"
           - ln -s "`pwd`" "$GOPATH/src/mellium.im/xmpp"
           - cd "$GOPATH/src/mellium.im/xmpp"
-          - go-wrapper download
-          - cp -r /vendor . || true
+          - dep ensure
           - go version
           - go env
           - make ci
