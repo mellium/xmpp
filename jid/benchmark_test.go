@@ -50,6 +50,14 @@ func BenchmarkNewDomain(b *testing.B) {
 	}
 }
 
+func BenchmarkWithResource(b *testing.B) {
+	j := MustParse("example.com/res")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		j.WithResource("res")
+	}
+}
+
 func BenchmarkCopy(b *testing.B) {
 	j := &JID{4, 11, []byte("userexample.comresource")}
 	for i := 0; i < b.N; i++ {
