@@ -126,7 +126,7 @@ func New(localpart, domainpart, resourcepart string) (*JID, error) {
 func (j *JID) WithResource(resourcepart string) (*JID, error) {
 	var err error
 	new := j.Bare()
-	data := make([]byte, len(new.data))
+	data := make([]byte, len(new.data), len(new.data)+len(resourcepart))
 	copy(data, new.data)
 	if resourcepart != "" {
 		if !utf8.ValidString(resourcepart) {

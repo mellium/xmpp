@@ -208,13 +208,13 @@ func TestWithResource(t *testing.T) {
 				t.Fatalf("WithResource should clone data")
 			}
 			if r := new.Resourcepart(); r != tc.res {
-				t.Errorf("Unexpected resourcepart: want=%s, got=%s", tc.res, r)
+				t.Errorf("Unexpected resourcepart: want=`%s', got=`%s'", tc.res, r)
 			}
 			if new.Domainpart() != old.Domainpart() {
-				t.Errorf("Unexpected domainpart mutation: want=%s, got=%s", old.Domainpart(), new.Domainpart())
+				t.Errorf("Unexpected domainpart mutation: want=`%s', got=`%s'", old.Domainpart(), new.Domainpart())
 			}
 			if new.Localpart() != old.Localpart() {
-				t.Errorf("Unexpected localpart mutation: want=%s, got=%s", old.Localpart(), new.Localpart())
+				t.Errorf("Unexpected localpart mutation: want=`%s', got=`%s'", old.Localpart(), new.Localpart())
 			}
 		})
 	}
