@@ -4,3 +4,5 @@
 *.out
 vendor/
 Gopkg.lock
+new.txt
+old.txt
