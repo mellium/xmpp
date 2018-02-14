@@ -25,7 +25,8 @@ const (
 	inv    = 1 - factor
 )
 
-// mix a foreground color with a background color ignoring the alpha channel.
+// naively mix a foreground color with a background color ignoring the alpha
+// channel.
 func mix(fg color.Color, bg color.Color) color.Color {
 	rb, gb, bb, _ := bg.RGBA()
 	rf, gf, bf, _ := fg.RGBA()
@@ -75,8 +76,8 @@ func Example() {
 				)),
 				Face: inconsolata.Regular8x16,
 				Dot: fixed.Point26_6{
-					fixed.Int26_6((12 + bounds.Min.X) * 64),
-					fixed.Int26_6(16 * (y + 1) * 64),
+					X: fixed.Int26_6((12 + bounds.Min.X) * 64),
+					Y: fixed.Int26_6(16 * (y + 1) * 64),
 				},
 			}
 
