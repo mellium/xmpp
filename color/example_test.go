@@ -81,7 +81,6 @@ func Example() {
 				},
 			}
 
-			// draw.Draw(img, bounds, &image.Uniform{bg}, image.ZP, draw.Src)
 			d.DrawString(s)
 		}
 	}
@@ -94,7 +93,4 @@ func Example() {
 	if err := png.Encode(f, img); err != nil {
 		panic(err)
 	}
-
-	os.Stdout.Write([]byte("Run"))
-	// Output: Run
 }
