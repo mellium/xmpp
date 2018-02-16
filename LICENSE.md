@@ -1,6 +1,6 @@
 ## The BSD 2-Clause License
 
-Copyright © 2014 Sam Whited
+Copyright © 2014 The Mellium Contributors.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
