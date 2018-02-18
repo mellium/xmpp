@@ -2,6 +2,7 @@
 *.svg
 *.xml
 *.out
+*.test
 vendor/
 Gopkg.lock
 new.txt
