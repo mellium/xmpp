@@ -154,13 +154,10 @@ var (
 // address as the host. If the address appears to be a raw IPv6 address (eg.
 // "::1"), the error wraps it in brackets ("[::1]").
 func SeeOtherHostError(addr net.Addr, payload xml.TokenReader) Error {
-	var cdata string
-
 	// If the address looks like an IPv6 literal, wrap it in []
-	if ip := net.ParseIP(addr.String()); ip != nil && ip.To4() == nil && ip.To16() != nil {
-		cdata = "[" + addr.String() + "]"
-	} else {
-		cdata = addr.String()
+	cdata := addr.String()
+	if ip := net.ParseIP(cdata); ip != nil && ip.To4() == nil && ip.To16() != nil {
+		cdata = "[" + cdata + "]"
 	}
 
 	if payload != nil {
