@@ -3,6 +3,9 @@
 // license that can be found in the LICENSE file.
 
 // Package mux implements an XMPP multiplexer.
+//
+// Be advised: This package is experimental and likely to change or be removed
+// entirely.
 package mux
 
 import (
