@@ -4,6 +4,8 @@ pipelines:
     - step:
         caches:
           - vendor
+          - bin
+          - bench
         script:
           - export PATH="/gosrc/bin:$PATH"
           - mkdir -p "$GOPATH/bin"
