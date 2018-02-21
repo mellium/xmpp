@@ -6,7 +6,12 @@ pipelines:
           - vendor
         script:
           - export PATH="/gosrc/bin:$PATH"
-          - go get -u github.com/golang/dep/cmd/dep
+          - mkdir -p "$GOPATH/bin"
+          - cp /gobin "$GOPATH/bin" || true
+          - '[[ -e "$GOPATH/bin/dep" ]] || go get -u github.com/golang/dep/cmd/dep'
+          - '[[ -e "$GOPATH/bin/benchcmp" ]] || go get -u golang.org/x/tools/cmd/benchcmp'
+          - mkdir -p "/bench"
+          - mv /bench/new.txt /bench/old.txt || true
           - mkdir -p "$GOPATH/src/mellium.im/"
           - ln -s "`pwd`" "$GOPATH/src/mellium.im/xmpp"
           - cd "$GOPATH/src/mellium.im/xmpp"
@@ -16,8 +21,13 @@ pipelines:
           - go env
           - go vet ./...
           - go test -race ./...
-          - go test -cover -bench . -benchmem ./...
-          - cp -r $GOPATH/src/mellium.im/xmpp/vendor /vendor
+          - go test -cover ./...
+          - go test -run=NONE -bench . -benchmem ./... | tee /bench/new.txt
+          - '[[ -e /bench/old.txt ]] && benchcmp /bench/old.txt /bench/new.txt'
+          - cp -r "$GOPATH/src/mellium.im/xmpp/vendor" /vendor || true
+          - cp -r "$GOPATH/bin" /gobin || true
 definitions:
   caches:
     vendor: /vendor
+    bin: /gobin
+    bench: /bench
