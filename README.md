@@ -3,6 +3,8 @@
 [![GoDoc](https://godoc.org/mellium.im/xmpp?status.svg)](https://godoc.org/mellium.im/xmpp)
 [![License](https://img.shields.io/badge/license-FreeBSD-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
+[![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/purple_img.png)](https://www.buymeacoffee.com/samwhited)
+
 An XMPP library in Go.
 
 To use it in your project, import it (or one of its subproject's) like so:
