@@ -12,6 +12,9 @@ import (
 
 // Transformer implements the transform.Transformer and
 // transform.SpanningTransformer interfaces.
+//
+// For more information see golang.org/x/text/transform or the predefined Escape
+// and Unescape transformers.
 type Transformer struct {
 	t transform.SpanningTransformer
 }
