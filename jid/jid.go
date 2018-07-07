@@ -296,6 +296,10 @@ func (j *JID) UnmarshalXMLAttr(attr xml.Attr) error {
 // string representation of a JID. The parts are not guaranteed to be valid, and
 // each part must be 1023 bytes or less.
 func SplitString(s string) (localpart, domainpart, resourcepart string, err error) {
+	return splitString(s, true)
+}
+
+func splitString(s string, safe bool) (localpart, domainpart, resourcepart string, err error) {
 
 	// RFC 7622 §3.1.  Fundamentals:
 	//
@@ -318,7 +322,7 @@ func SplitString(s string) (localpart, domainpart, resourcepart string, err erro
 		resourcepart = ""
 	} else {
 		// If the resource part exists, make sure it isn't empty.
-		if sep == len(s)-1 {
+		if safe && sep == len(s)-1 {
 			err = errors.New("The resourcepart must be larger than 0 bytes")
 			return
 		}
@@ -331,12 +335,12 @@ func SplitString(s string) (localpart, domainpart, resourcepart string, err erro
 
 	sep = strings.Index(s, "@")
 
-	switch sep {
-	case -1:
+	switch {
+	case sep == -1:
 		// There is no @ sign, and therefore no localpart.
 		localpart = ""
 		domainpart = s
-	case 0:
+	case safe && sep == 0:
 		// The JID starts with an @ sign (invalid empty localpart)
 		err = errors.New("The localpart must be larger than 0 bytes")
 		return
@@ -380,6 +384,9 @@ func commonChecks(localpart []byte, domainpart string, resourcepart []byte) erro
 	// RFC 7622 §3.3.1 provides a small table of characters which are still not
 	// allowed in localpart's even though the IdentifierClass base class and the
 	// UsernameCaseMapped profile don't forbid them; disallow them here.
+	// We can't add them to the profiles disallowed characters because they get
+	// checked before the profile is applied (so some characters may still be
+	// normalized to characters in this set).
 	if bytes.ContainsAny(localpart, `"&'/:<>@`) {
 		return errors.New("Localpart contains forbidden characters")
 	}

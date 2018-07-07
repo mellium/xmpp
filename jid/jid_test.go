@@ -60,22 +60,25 @@ func TestValidJIDs(t *testing.T) {
 
 var invalidutf8 = string([]byte{0xff, 0xfe, 0xfd})
 
+var invalidJIDs = [...]string{
+	0:  "test@/test",
+	1:  invalidutf8 + "@example.com/rp",
+	2:  invalidutf8 + "/rp",
+	3:  invalidutf8,
+	4:  "example.com/" + invalidutf8,
+	5:  "lp@/rp",
+	6:  `b"d@example.net`,
+	7:  `b&d@example.net`,
+	8:  `b'd@example.net`,
+	9:  `b:d@example.net`,
+	10: `b<d@example.net`,
+	11: `b>d@example.net`,
+	12: `e@example.net/`,
+	13: `@example.net/`,
+}
+
 func TestInvalidParseJIDs(t *testing.T) {
-	for i, tc := range [...]string{
-		0:  "test@/test",
-		1:  invalidutf8 + "@example.com/rp",
-		2:  invalidutf8 + "/rp",
-		3:  invalidutf8,
-		4:  "example.com/" + invalidutf8,
-		5:  "lp@/rp",
-		6:  `b"d@example.net`,
-		7:  `b&d@example.net`,
-		8:  `b'd@example.net`,
-		9:  `b:d@example.net`,
-		10: `b<d@example.net`,
-		11: `b>d@example.net`,
-		12: `e@example.net/`,
-	} {
+	for i, tc := range invalidJIDs {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			_, err := jid.Parse(tc)
 			if err == nil {
@@ -85,16 +88,18 @@ func TestInvalidParseJIDs(t *testing.T) {
 	}
 }
 
+var invalidParts = [...]struct {
+	lp, dp, rp string
+}{
+	0: {strings.Repeat("a", 1024), "example.net", ""},
+	1: {"e", "example.net", strings.Repeat("a", 1024)},
+	2: {"b/d", "example.net", ""},
+	3: {"b@d", "example.net", ""},
+	4: {"e", "[example.net]", ""},
+}
+
 func TestInvalidNewJIDs(t *testing.T) {
-	for i, tc := range [...]struct {
-		lp, dp, rp string
-	}{
-		0: {strings.Repeat("a", 1024), "example.net", ""},
-		1: {"e", "example.net", strings.Repeat("a", 1024)},
-		2: {"b/d", "example.net", ""},
-		3: {"b@d", "example.net", ""},
-		4: {"e", "[example.net]", ""},
-	} {
+	for i, tc := range invalidParts {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			_, err := jid.New(tc.lp, tc.dp, tc.rp)
 			if err == nil {
@@ -323,5 +328,17 @@ func TestSplitMallocs(t *testing.T) {
 	})
 	if n > 0 {
 		t.Errorf("got %f allocs, want 0", n)
+	}
+}
+
+func TestParseMallocs(t *testing.T) {
+	n := testing.AllocsPerRun(1000, func() {
+		_, err := jid.Parse("olivia@example.net/ilyria")
+		if err != nil {
+			panic(err)
+		}
+	})
+	if n != 4 {
+		t.Errorf("got %f allocs, want 4", n)
 	}
 }

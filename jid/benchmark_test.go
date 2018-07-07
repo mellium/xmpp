@@ -32,6 +32,24 @@ func BenchmarkParseStringIPv6(b *testing.B) {
 	}
 }
 
+func BenchmarkParseUnsafeString(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ParseUnsafe("user@example.com/resource")
+	}
+}
+
+func BenchmarkParseUnsafeStringIPv4(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ParseUnsafe("user@127.0.0.1/resource")
+	}
+}
+
+func BenchmarkParseUnsafeStringIPv6(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ParseUnsafe("user@[::1]/resource")
+	}
+}
+
 func BenchmarkNewFull(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		New("user", "example.com", "resource")
