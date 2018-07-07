@@ -17,12 +17,12 @@ import (
 
 // Compile time checks to make sure that JID and *jid.JID match several interfaces.
 var (
-	_ fmt.Stringer        = (*jid.JID)(nil)
-	_ xml.MarshalerAttr   = (*jid.JID)(nil)
+	_ fmt.Stringer        = jid.JID{}
+	_ xml.MarshalerAttr   = jid.JID{}
 	_ xml.UnmarshalerAttr = (*jid.JID)(nil)
-	_ xml.Marshaler       = (*jid.JID)(nil)
+	_ xml.Marshaler       = jid.JID{}
 	_ xml.Unmarshaler     = (*jid.JID)(nil)
-	_ net.Addr            = (*jid.JID)(nil)
+	_ net.Addr            = jid.JID{}
 )
 
 func TestValidJIDs(t *testing.T) {
@@ -110,7 +110,7 @@ func TestInvalidNewJIDs(t *testing.T) {
 }
 
 func TestMarshalAttrEmpty(t *testing.T) {
-	attr, err := ((*jid.JID)(nil)).MarshalXMLAttr(xml.Name{})
+	attr, err := (&jid.JID{}).MarshalXMLAttr(xml.Name{})
 	switch {
 	case err != nil:
 		t.Logf("Marshaling an empty JID to an attr should not error but got %v\n", err)
@@ -148,7 +148,7 @@ func TestMustParsePanics(t *testing.T) {
 func TestEqual(t *testing.T) {
 	m := jid.MustParse("mercutio@example.net/test")
 	for i, tc := range [...]struct {
-		j1, j2 *jid.JID
+		j1, j2 jid.JID
 		eq     bool
 	}{
 		0: {m, jid.MustParse("mercutio@example.net/test"), true},
@@ -157,9 +157,6 @@ func TestEqual(t *testing.T) {
 		3: {m, jid.MustParse("mercutio@example.net/nope"), false},
 		4: {m, jid.MustParse("mercutio@e.com/test"), false},
 		5: {m, jid.MustParse("m@example.net/test"), false},
-		6: {(*jid.JID)(nil), (*jid.JID)(nil), true},
-		7: {m, (*jid.JID)(nil), false},
-		8: {(*jid.JID)(nil), m, false},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			switch {
@@ -181,11 +178,8 @@ func TestNetwork(t *testing.T) {
 func TestCopy(t *testing.T) {
 	m := jid.MustParse("mercutio@example.net/test")
 	m2 := m.Copy()
-	switch {
-	case !m.Equal(m2):
+	if !m.Equal(m2) {
 		t.Error("Copying a JID should still result in equal JIDs")
-	case m == m2:
-		t.Error("Copying a JID should result in a different JID pointer")
 	}
 }
 
@@ -206,8 +200,6 @@ func TestWithResource(t *testing.T) {
 				t.Fatal("Unexpected error", err)
 			case tc.err:
 				return
-			case old == new:
-				t.Fatal("Expected different pointers for JID copy")
 			}
 			if old.String() != tc.jid {
 				t.Fatalf("WithResource should clone data")
@@ -248,32 +240,22 @@ func TestMarshalXML(t *testing.T) {
 	case buf.String() != expected:
 		t.Errorf("Error encoding JID, expected `%s` but got `%s`", expected, buf.String())
 	}
-
-	// Test encoding a nil JID
-	j = (*jid.JID)(nil)
-	b, err = xml.Marshal(j)
-	switch expected := ``; {
-	case err != nil:
-		t.Error(err)
-	case string(b) != expected:
-		t.Errorf("Error marshaling JID, expected `%s` but got `%s`", expected, string(b))
-	}
 }
 
 func TestUnmarshal(t *testing.T) {
 	for i, test := range [...]struct {
 		xml string
-		jid *jid.JID
+		jid jid.JID
 		err bool
 	}{
 		0: {`<item>feste@shakespeare.lit/ilyria</item>`, jid.MustParse("feste@shakespeare.lit/ilyria"), false},
 		1: {`<jid>feste@shakespeare.lit</jid>`, jid.MustParse("feste@shakespeare.lit"), false},
-		2: {`<oops>feste@shakespeare.lit</bad>`, nil, true},
-		3: {`<item></item>`, nil, true},
+		2: {`<oops>feste@shakespeare.lit</bad>`, jid.JID{}, true},
+		3: {`<item></item>`, jid.JID{}, true},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			j := &jid.JID{}
-			err := xml.Unmarshal([]byte(test.xml), j)
+			j := jid.JID{}
+			err := xml.Unmarshal([]byte(test.xml), &j)
 			switch {
 			case test.err && err == nil:
 				t.Errorf("Expected unmarshaling `%s` as a JID to return an error", test.xml)
@@ -338,7 +320,17 @@ func TestParseMallocs(t *testing.T) {
 			panic(err)
 		}
 	})
-	if n != 4 {
-		t.Errorf("got %f allocs, want 4", n)
+	if n != 3 {
+		t.Errorf("got %f allocs, want 3", n)
+	}
+}
+
+func TestBareMallocs(t *testing.T) {
+	j := jid.MustParse("user@example.com/resource")
+	n := testing.AllocsPerRun(1000, func() {
+		_ = j.Bare()
+	})
+	if n != 0 {
+		t.Errorf("got %f allocs, want 0", n)
 	}
 }

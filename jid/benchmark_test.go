@@ -16,55 +16,55 @@ func BenchmarkSplit(b *testing.B) {
 
 func BenchmarkParseString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		Parse("user@example.com/resource")
+		_, _ = Parse("user@example.com/resource")
 	}
 }
 
 func BenchmarkParseStringIPv4(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		Parse("user@127.0.0.1/resource")
+		_, _ = Parse("user@127.0.0.1/resource")
 	}
 }
 
 func BenchmarkParseStringIPv6(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		Parse("user@[::1]/resource")
+		_, _ = Parse("user@[::1]/resource")
 	}
 }
 
 func BenchmarkParseUnsafeString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ParseUnsafe("user@example.com/resource")
+		_, _ = ParseUnsafe("user@example.com/resource")
 	}
 }
 
 func BenchmarkParseUnsafeStringIPv4(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ParseUnsafe("user@127.0.0.1/resource")
+		_, _ = ParseUnsafe("user@127.0.0.1/resource")
 	}
 }
 
 func BenchmarkParseUnsafeStringIPv6(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ParseUnsafe("user@[::1]/resource")
+		_, _ = ParseUnsafe("user@[::1]/resource")
 	}
 }
 
 func BenchmarkNewFull(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		New("user", "example.com", "resource")
+		_, _ = New("user", "example.com", "resource")
 	}
 }
 
 func BenchmarkNewBare(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		New("user", "example.com", "")
+		_, _ = New("user", "example.com", "")
 	}
 }
 
 func BenchmarkNewDomain(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		New("", "example.com", "")
+		_, _ = New("", "example.com", "")
 	}
 }
 
@@ -72,26 +72,26 @@ func BenchmarkWithResource(b *testing.B) {
 	j := MustParse("example.com/res")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		j.WithResource("res")
+		_, _ = j.WithResource("res")
 	}
 }
 
 func BenchmarkCopy(b *testing.B) {
-	j := &JID{4, 11, []byte("userexample.comresource")}
+	j := JID{4, 11, []byte("userexample.comresource")}
 	for i := 0; i < b.N; i++ {
-		j.Copy()
+		_ = j.Copy()
 	}
 }
 
 func BenchmarkBare(b *testing.B) {
-	j := &JID{4, 11, []byte("userexample.comresource")}
+	j := JID{4, 11, []byte("userexample.comresource")}
 	for i := 0; i < b.N; i++ {
-		j.Bare()
+		_ = j.Bare()
 	}
 }
 
 func BenchmarkString(b *testing.B) {
-	j := &JID{4, 11, []byte("userexample.comresource")}
+	j := JID{4, 11, []byte("userexample.comresource")}
 	for i := 0; i < b.N; i++ {
 		_ = j.String()
 	}

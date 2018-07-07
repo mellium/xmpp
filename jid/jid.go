@@ -28,17 +28,17 @@ type JID struct {
 }
 
 // Parse constructs a new JID from the given string representation.
-func Parse(s string) (*JID, error) {
+func Parse(s string) (JID, error) {
 	localpart, domainpart, resourcepart, err := SplitString(s)
 	if err != nil {
-		return nil, err
+		return JID{}, err
 	}
 	return New(localpart, domainpart, resourcepart)
 }
 
 // MustParse is like Parse but panics if the JID cannot be parsed.
 // It simplifies safe initialization of JIDs from known-good constant strings.
-func MustParse(s string) *JID {
+func MustParse(s string) JID {
 	j, err := Parse(s)
 	if err != nil {
 		if strconv.CanBackquote(s) {
@@ -53,12 +53,12 @@ func MustParse(s string) *JID {
 
 // New constructs a new JID from the given localpart, domainpart, and
 // resourcepart.
-func New(localpart, domainpart, resourcepart string) (*JID, error) {
+func New(localpart, domainpart, resourcepart string) (JID, error) {
 	// Ensure that parts are valid UTF-8 (and short circuit the rest of the
 	// process if they're not). We'll check the domainpart after performing
 	// the IDNA ToUnicode operation.
 	if !utf8.ValidString(localpart) || !utf8.ValidString(resourcepart) {
-		return nil, errors.New("JID contains invalid UTF-8")
+		return JID{}, errors.New("JID contains invalid UTF-8")
 	}
 
 	// RFC 7622 §3.2.1.  Preparation
@@ -73,11 +73,11 @@ func New(localpart, domainpart, resourcepart string) (*JID, error) {
 	var err error
 	domainpart, err = idna.ToUnicode(domainpart)
 	if err != nil {
-		return nil, err
+		return JID{}, err
 	}
 
 	if !utf8.ValidString(domainpart) {
-		return nil, errors.New("Domainpart contains invalid UTF-8")
+		return JID{}, errors.New("Domainpart contains invalid UTF-8")
 	}
 
 	// RFC 7622 §3.2.2.  Enforcement
@@ -96,7 +96,7 @@ func New(localpart, domainpart, resourcepart string) (*JID, error) {
 	if localpart != "" {
 		data, err = precis.UsernameCaseMapped.Append(data, []byte(localpart))
 		if err != nil {
-			return nil, err
+			return JID{}, err
 		}
 		lenlocal = len(data)
 	}
@@ -106,15 +106,15 @@ func New(localpart, domainpart, resourcepart string) (*JID, error) {
 	if resourcepart != "" {
 		data, err = precis.OpaqueString.Append(data, []byte(resourcepart))
 		if err != nil {
-			return nil, err
+			return JID{}, err
 		}
 	}
 
 	if err := commonChecks(data[:lenlocal], domainpart, data[lenlocal+len(domainpart):]); err != nil {
-		return nil, err
+		return JID{}, err
 	}
 
-	return &JID{
+	return JID{
 		locallen:  lenlocal,
 		domainlen: len(domainpart),
 		data:      data,
@@ -123,14 +123,14 @@ func New(localpart, domainpart, resourcepart string) (*JID, error) {
 
 // WithResource returns a copy of the JID with a new resourcepart.
 // This elides validation of the localpart and domainpart.
-func (j *JID) WithResource(resourcepart string) (*JID, error) {
+func (j JID) WithResource(resourcepart string) (JID, error) {
 	var err error
 	new := j.Bare()
 	data := make([]byte, len(new.data), len(new.data)+len(resourcepart))
 	copy(data, new.data)
 	if resourcepart != "" {
 		if !utf8.ValidString(resourcepart) {
-			return nil, errors.New("JID contains invalid UTF-8")
+			return JID{}, errors.New("JID contains invalid UTF-8")
 		}
 		data, err = precis.OpaqueString.Append(data, []byte(resourcepart))
 		new.data = data
@@ -140,8 +140,8 @@ func (j *JID) WithResource(resourcepart string) (*JID, error) {
 
 // Bare returns a copy of the JID without a resourcepart. This is sometimes
 // called a "bare" JID.
-func (j *JID) Bare() *JID {
-	return &JID{
+func (j JID) Bare() JID {
+	return JID{
 		locallen:  j.locallen,
 		domainlen: j.domainlen,
 		data:      j.data[:j.domainlen+j.locallen],
@@ -149,63 +149,42 @@ func (j *JID) Bare() *JID {
 }
 
 // Domain returns a copy of the JID without a resourcepart or localpart.
-func (j *JID) Domain() *JID {
-	if j == nil {
-		return j
-	}
-
-	return &JID{
+func (j JID) Domain() JID {
+	return JID{
 		domainlen: j.domainlen,
 		data:      j.data[j.locallen : j.domainlen+j.locallen],
 	}
 }
 
 // Localpart gets the localpart of a JID (eg "username").
-func (j *JID) Localpart() string {
-	if j == nil {
-		return ""
-	}
+func (j JID) Localpart() string {
 	return string(j.data[:j.locallen])
 }
 
 // Domainpart gets the domainpart of a JID (eg. "example.net").
-func (j *JID) Domainpart() string {
+func (j JID) Domainpart() string {
 	return string(j.data[j.locallen : j.locallen+j.domainlen])
 }
 
 // Resourcepart gets the resourcepart of a JID.
-func (j *JID) Resourcepart() string {
-	if j == nil {
-		return ""
-	}
+func (j JID) Resourcepart() string {
 	return string(j.data[j.locallen+j.domainlen:])
 }
 
 // Copy makes a copy of the given JID. j.Equal(j.Copy()) will always return
 // true.
-func (j *JID) Copy() *JID {
-	if j == nil {
-		return j
-	}
-
-	return &JID{
-		locallen:  j.locallen,
-		domainlen: j.domainlen,
-		data:      j.data,
-	}
+func (j JID) Copy() JID {
+	return j
 }
 
 // Network satisfies the net.Addr interface by returning the name of the network
 // ("xmpp").
-func (*JID) Network() string {
+func (JID) Network() string {
 	return "xmpp"
 }
 
 // String converts an JID to its string representation.
-func (j *JID) String() string {
-	if j == nil {
-		return ""
-	}
+func (j JID) String() string {
 	s := string(j.data[j.locallen : j.locallen+j.domainlen])
 	var addsep int
 	if j.locallen > 0 {
@@ -219,10 +198,7 @@ func (j *JID) String() string {
 }
 
 // Equal performs an octet-for-octet comparison with the given JID.
-func (j *JID) Equal(j2 *JID) bool {
-	if j == nil || j2 == nil {
-		return j == j2
-	}
+func (j JID) Equal(j2 JID) bool {
 	if len(j.data) != len(j2.data) {
 		return false
 	}
@@ -236,7 +212,7 @@ func (j *JID) Equal(j2 *JID) bool {
 
 // MarshalXML satisfies the xml.Marshaler interface and marshals the JID as
 // XML chardata.
-func (j *JID) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
+func (j JID) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 	if err = e.EncodeToken(start); err != nil {
 		return
 	}
@@ -272,10 +248,7 @@ func (j *JID) UnmarshalXML(d *xml.Decoder, start xml.StartElement) (err error) {
 
 // MarshalXMLAttr satisfies the xml.MarshalerAttr interface and marshals the JID
 // as an XML attribute.
-func (j *JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
-	if j == nil {
-		return xml.Attr{}, nil
-	}
+func (j JID) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	return xml.Attr{Name: name, Value: j.String()}, nil
 }
 
