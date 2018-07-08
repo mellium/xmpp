@@ -68,6 +68,7 @@ func (d digest) Sum(b []byte) []byte {
 func Sum(data []byte, cvd uint8) [Size]byte {
 	b := make([]byte, 0, Size)
 	h := Hash(cvd)
+	/* #nosec */
 	h.Write(data)
 	b = h.Sum(b)
 	return [Size]byte{b[0], b[1]}

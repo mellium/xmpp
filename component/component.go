@@ -104,7 +104,9 @@ func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 
 		// hash.Write never returns an error per the documentation.
 		h := sha1.New()
+		/* #nosec */
 		_, _ = h.Write([]byte(id))
+		/* #nosec */
 		_, _ = h.Write(secret)
 
 		_, err = fmt.Fprintf(s.Conn(), `<handshake>%x</handshake>`, h.Sum(nil))

@@ -50,7 +50,10 @@ func streamFromStartElement(s xml.StartElement) (StreamInfo, error) {
 		case xml.Name{Space: "", Local: "id"}:
 			streamData.id = attr.Value
 		case xml.Name{Space: "", Local: "version"}:
-			(&streamData.version).UnmarshalXMLAttr(attr)
+			err := (&streamData.version).UnmarshalXMLAttr(attr)
+			if err != nil {
+				return streamData, stream.BadFormat
+			}
 		case xml.Name{Space: "", Local: "xmlns"}:
 			if attr.Value != "jabber:client" && attr.Value != "jabber:server" {
 				return streamData, stream.InvalidNamespace

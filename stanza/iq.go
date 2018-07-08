@@ -20,12 +20,12 @@ func WrapIQ(iq *IQ, payload xml.TokenReader) xml.TokenReader {
 		{Name: xml.Name{Local: "type"}, Value: string(iq.Type)},
 	}
 
-	to, _ := iq.To.MarshalXMLAttr(xml.Name{Space: "", Local: "to"})
-	if to.Value != "" {
+	to, err := iq.To.MarshalXMLAttr(xml.Name{Space: "", Local: "to"})
+	if err == nil && to.Value != "" {
 		attr = append(attr, to)
 	}
-	from, _ := iq.From.MarshalXMLAttr(xml.Name{Space: "", Local: "from"})
-	if from.Value != "" {
+	from, err := iq.From.MarshalXMLAttr(xml.Name{Space: "", Local: "from"})
+	if err == nil && from.Value != "" {
 		attr = append(attr, from)
 	}
 

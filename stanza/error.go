@@ -275,8 +275,8 @@ func (se Error) TokenReader() xml.TokenReader {
 	if string(se.Type) != "" {
 		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(se.Type)})
 	}
-	a, _ := se.By.MarshalXMLAttr(xml.Name{Space: "", Local: "by"})
-	if a.Value != "" {
+	a, err := se.By.MarshalXMLAttr(xml.Name{Space: "", Local: "by"})
+	if err == nil && a.Value != "" {
 		start.Attr = append(start.Attr, a)
 	}
 

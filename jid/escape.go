@@ -34,12 +34,14 @@ func (t Transformer) Span(src []byte, atEOF bool) (n int, err error) {
 
 // Bytes returns a new byte slice with the result of applying t to b.
 func (t Transformer) Bytes(b []byte) []byte {
+	/* #nosec */
 	b, _, _ = transform.Bytes(t, b)
 	return b
 }
 
 // String returns a string with the result of applying t to s.
 func (t Transformer) String(s string) string {
+	/* #nosec */
 	s, _, _ = transform.String(t, s)
 	return s
 }
