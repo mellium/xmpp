@@ -29,14 +29,14 @@ const (
 
 // NewClientSession initiates an XMPP session on the given io.ReadWriter using
 // the component protocol.
-func NewClientSession(ctx context.Context, addr *jid.JID, secret []byte, rw io.ReadWriter) (*xmpp.Session, error) {
+func NewClientSession(ctx context.Context, addr jid.JID, secret []byte, rw io.ReadWriter) (*xmpp.Session, error) {
 	addr = addr.Domain()
 	return xmpp.NegotiateSession(ctx, addr, addr, rw, Negotiator(addr, secret, false))
 }
 
 // AcceptSession accepts an XMPP session on the given io.ReadWriter using the
 // component protocol.
-//func AcceptSession(ctx context.Context, addr *jid.JID, secret []byte, rw io.ReadWriter) (*xmpp.Session, error) {
+//func AcceptSession(ctx context.Context, addr jid.JID, secret []byte, rw io.ReadWriter) (*xmpp.Session, error) {
 //	return xmpp.NegotiateSession(ctx, nil, rw, Negotiator(addr, secret, true))
 //}
 
@@ -44,7 +44,7 @@ func NewClientSession(ctx context.Context, addr *jid.JID, secret []byte, rw io.R
 // protocol connection on the provided io.ReadWriter.
 //
 // It currently only supports the client side of the component protocol.
-func Negotiator(addr *jid.JID, secret []byte, recv bool) xmpp.Negotiator {
+func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 	return func(ctx context.Context, s *xmpp.Session, _ interface{}) (mask xmpp.SessionState, _ io.ReadWriter, _ interface{}, err error) {
 		d := xml.NewDecoder(s.Conn())
 

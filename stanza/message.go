@@ -12,7 +12,7 @@ import (
 )
 
 // WrapMessage wraps a payload in a message stanza.
-func WrapMessage(to *jid.JID, typ MessageType, payload xml.TokenReader) xml.TokenReader {
+func WrapMessage(to jid.JID, typ MessageType, payload xml.TokenReader) xml.TokenReader {
 	return xmlstream.Wrap(payload, xml.StartElement{
 		Name: xml.Name{Local: "message"},
 		Attr: []xml.Attr{
@@ -29,8 +29,8 @@ func WrapMessage(to *jid.JID, typ MessageType, payload xml.TokenReader) xml.Toke
 type Message struct {
 	XMLName xml.Name    `xml:"message"`
 	ID      string      `xml:"id,attr"`
-	To      *jid.JID    `xml:"to,attr"`
-	From    *jid.JID    `xml:"from,attr"`
+	To      jid.JID     `xml:"to,attr"`
+	From    jid.JID     `xml:"from,attr"`
 	Lang    string      `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 	Type    MessageType `xml:"type,attr,omitempty"`
 }

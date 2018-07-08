@@ -19,12 +19,16 @@ func WrapIQ(iq *IQ, payload xml.TokenReader) xml.TokenReader {
 	attr := []xml.Attr{
 		{Name: xml.Name{Local: "type"}, Value: string(iq.Type)},
 	}
-	if iq.To != nil {
-		attr = append(attr, xml.Attr{Name: xml.Name{Local: "to"}, Value: iq.To.String()})
+
+	to, _ := iq.To.MarshalXMLAttr(xml.Name{Space: "", Local: "to"})
+	if to.Value != "" {
+		attr = append(attr, to)
 	}
-	if iq.From != nil {
-		attr = append(attr, xml.Attr{Name: xml.Name{Local: "from"}, Value: iq.From.String()})
+	from, _ := iq.From.MarshalXMLAttr(xml.Name{Space: "", Local: "from"})
+	if from.Value != "" {
+		attr = append(attr, from)
 	}
+
 	if iq.Lang != "" {
 		attr = append(attr, xml.Attr{Name: xml.Name{Local: "lang", Space: ns.XML}, Value: iq.Lang})
 	}
@@ -44,8 +48,8 @@ func WrapIQ(iq *IQ, payload xml.TokenReader) xml.TokenReader {
 type IQ struct {
 	XMLName xml.Name `xml:"iq"`
 	ID      string   `xml:"id,attr"`
-	To      *jid.JID `xml:"to,attr,omitempty"`
-	From    *jid.JID `xml:"from,attr,omitempty"`
+	To      jid.JID  `xml:"to,attr,omitempty"`
+	From    jid.JID  `xml:"from,attr,omitempty"`
 	Lang    string   `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 	Type    IQType   `xml:"type,attr"`
 }

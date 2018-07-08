@@ -18,7 +18,7 @@ const NS = `urn:xmpp:ping`
 
 // IQ returns an xml.TokenReader that outputs a new IQ stanza with a ping
 // payload.
-func IQ(to *jid.JID) xml.TokenReader {
+func IQ(to jid.JID) xml.TokenReader {
 	start := xml.StartElement{Name: xml.Name{Local: "ping", Space: NS}}
 	return stanza.WrapIQ(&stanza.IQ{
 		To:   to,

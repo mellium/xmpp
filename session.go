@@ -64,8 +64,8 @@ type Session struct {
 	state SessionState
 	slock sync.RWMutex
 
-	origin   *jid.JID
-	location *jid.JID
+	origin   jid.JID
+	location jid.JID
 
 	// The stream feature namespaces advertised for the current streams.
 	features map[string]interface{}
@@ -105,7 +105,7 @@ type Negotiator func(ctx context.Context, session *Session, data interface{}) (m
 // Calling NegotiateSession with a nil Negotiator panics.
 //
 // For more information see the Negotiator type.
-func NegotiateSession(ctx context.Context, location, origin *jid.JID, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
+func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
 	if negotiate == nil {
 		panic("xmpp: attempted to negotiate session with nil negotiator")
 	}
@@ -187,7 +187,7 @@ func stanzaAddID(w xmlstream.TokenWriter) xmlstream.TokenWriter {
 // If the provided context is canceled before stream negotiation is complete an
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
-func NewClientSession(ctx context.Context, origin *jid.JID, lang string, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+func NewClientSession(ctx context.Context, origin jid.JID, lang string, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
 	return NegotiateSession(ctx, origin.Domain(), origin, rw, negotiator(false, lang, features))
 }
 
@@ -196,7 +196,7 @@ func NewClientSession(ctx context.Context, origin *jid.JID, lang string, rw io.R
 // If the provided context is canceled before stream negotiation is complete an
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
-func NewServerSession(ctx context.Context, location, origin *jid.JID, lang string, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+func NewServerSession(ctx context.Context, location, origin jid.JID, lang string, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
 	return NegotiateSession(ctx, location, origin, rw, negotiator(true, lang, features))
 }
 
@@ -401,21 +401,18 @@ func (s *Session) State() SessionState {
 
 // LocalAddr returns the Origin address for initiated connections, or the
 // Location for received connections.
-func (s *Session) LocalAddr() *jid.JID {
+func (s *Session) LocalAddr() jid.JID {
 	s.slock.RLock()
 	defer s.slock.RUnlock()
 	if (s.state & Received) == Received {
 		return s.location
-	}
-	if s.origin != nil {
-		return s.origin
 	}
 	return s.origin
 }
 
 // RemoteAddr returns the Location address for initiated connections, or the
 // Origin address for received connections.
-func (s *Session) RemoteAddr() *jid.JID {
+func (s *Session) RemoteAddr() jid.JID {
 	s.slock.RLock()
 	defer s.slock.RUnlock()
 	if (s.state & Received) == Received {

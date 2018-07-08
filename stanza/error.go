@@ -250,7 +250,7 @@ const (
 // unmarshalable as XML.
 type Error struct {
 	XMLName   xml.Name
-	By        *jid.JID
+	By        jid.JID
 	Type      ErrorType
 	Condition Condition
 	Lang      language.Tag
@@ -275,8 +275,8 @@ func (se Error) TokenReader() xml.TokenReader {
 	if string(se.Type) != "" {
 		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(se.Type)})
 	}
-	if se.By != nil {
-		a, _ := se.By.MarshalXMLAttr(xml.Name{Space: "", Local: "by"})
+	a, _ := se.By.MarshalXMLAttr(xml.Name{Space: "", Local: "by"})
+	if a.Value != "" {
 		start.Attr = append(start.Attr, a)
 	}
 
@@ -333,7 +333,7 @@ func (se *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			XMLName xml.Name
 		} `xml:",any"`
 		Type ErrorType `xml:"type,attr"`
-		By   *jid.JID  `xml:"by,attr"`
+		By   jid.JID   `xml:"by,attr"`
 		Text []struct {
 			Lang string `xml:"http://www.w3.org/XML/1998/namespace lang,attr"`
 			Data string `xml:",chardata"`

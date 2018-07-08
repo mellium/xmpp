@@ -7,6 +7,7 @@ package stanza
 import (
 	"encoding/xml"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"golang.org/x/text/language"
@@ -90,7 +91,7 @@ func TestUnmarshalStanzaError(t *testing.T) {
 		9: {`<error type="auth"><remote-server-timeout xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></remote-server-timeout><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="en">test</text><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="es">Spanish</text></error>`,
 			language.LatinAmericanSpanish, Error{Type: Auth, Condition: RemoteServerTimeout, Text: "Spanish", Lang: language.Spanish}, false},
 		10: {`<error by=""><remote-server-not-found xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></remote-server-not-found></error>`,
-			language.Und, Error{By: &jid.JID{}, Condition: RemoteServerNotFound}, false},
+			language.Und, Error{By: jid.JID{}, Condition: RemoteServerNotFound}, false},
 		11: {`<error><other xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></other></error>`,
 			language.Und, Error{Condition: Condition("other")}, false},
 		12: {`<error><recipient-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></recipient-unavailable><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="ac-u">test</text></error>`,
@@ -100,8 +101,8 @@ func TestUnmarshalStanzaError(t *testing.T) {
 			se2 := Error{Lang: data.lang}
 			err := xml.Unmarshal([]byte(data.xml), &se2)
 			j1, j2 := data.se.By, se2.By
-			data.se.By = nil
-			se2.By = nil
+			data.se.By = jid.JID{}
+			se2.By = jid.JID{}
 			switch {
 			case data.err && err == nil:
 				t.Errorf("Expected an error when unmarshaling stanza error `%s`", data.xml)
@@ -115,7 +116,7 @@ func TestUnmarshalStanzaError(t *testing.T) {
 				// This case is included in the next one, but I wanted it to print
 				// something nicer for languages…
 				t.Errorf("Expected unmarshaled stanza error to have lang `%s` but got `%s`.", data.se.Lang, se2.Lang)
-			case data.se != se2:
+			case !reflect.DeepEqual(data.se, se2):
 				t.Errorf("Expected unmarshaled stanza error:\n`%#v`\nbut got:\n`%#v`", data.se, se2)
 			}
 		})

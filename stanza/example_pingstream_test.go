@@ -16,7 +16,7 @@ import (
 
 // WrapPingIQ returns an xml.TokenReader that outputs a new IQ stanza with
 // a ping payload.
-func WrapPingIQ(to *jid.JID) xml.TokenReader {
+func WrapPingIQ(to jid.JID) xml.TokenReader {
 	start := xml.StartElement{Name: xml.Name{Local: "ping", Space: "urn:xmpp:ping"}}
 	return stanza.WrapIQ(&stanza.IQ{To: to, Type: stanza.GetIQ}, xmlstream.Wrap(nil, start))
 }

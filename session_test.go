@@ -19,6 +19,7 @@ import (
 
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/xmpptest"
+	"mellium.im/xmpp/jid"
 )
 
 func TestClosedInputStream(t *testing.T) {
@@ -102,7 +103,7 @@ func TestNegotiator(t *testing.T) {
 				Reader: rand.New(rand.NewSource(99)),
 				Writer: ioutil.Discard,
 			}
-			_, err := xmpp.NegotiateSession(context.Background(), nil, nil, rw, tc.negotiator)
+			_, err := xmpp.NegotiateSession(context.Background(), jid.JID{}, jid.JID{}, rw, tc.negotiator)
 			if err != tc.err {
 				t.Errorf("Unexpected error: want=%v, got=%v", tc.err, err)
 			}

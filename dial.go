@@ -111,7 +111,7 @@ func (c *Conn) Write(b []byte) (int, error) {
 // Network may be any of the network types supported by net.Dial, but you almost
 // certainly want to use one of the tcp connection types ("tcp", "tcp4", or
 // "tcp6").
-func DialClient(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
+func DialClient(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
 	var d Dialer
 	return d.Dial(ctx, network, addr)
 }
@@ -120,7 +120,7 @@ func DialClient(ctx context.Context, network string, addr *jid.JID) (*Conn, erro
 // server-to-server connection (s2s).
 //
 // For more info see the DialClient function.
-func DialServer(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
+func DialServer(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
 	d := Dialer{
 		S2S: true,
 	}
@@ -147,11 +147,11 @@ type Dialer struct {
 // Dial discovers and connects to the address on the named network.
 //
 // For a description of the arguments see the DialClient function.
-func (d *Dialer) Dial(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
+func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
 	return d.dial(ctx, network, addr)
 }
 
-func (d *Dialer) dial(ctx context.Context, network string, addr *jid.JID) (*Conn, error) {
+func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
 	if d.NoLookup {
 		p, err := internal.LookupPort(network, connType(d.S2S))
 		if err != nil {

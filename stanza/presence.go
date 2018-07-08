@@ -12,7 +12,7 @@ import (
 )
 
 // WrapPresence wraps a payload in a presence stanza.
-func WrapPresence(to *jid.JID, typ PresenceType, payload xml.TokenReader) xml.TokenReader {
+func WrapPresence(to jid.JID, typ PresenceType, payload xml.TokenReader) xml.TokenReader {
 	return xmlstream.Wrap(payload, xml.StartElement{
 		Name: xml.Name{Local: "presence"},
 		Attr: []xml.Attr{
@@ -29,8 +29,8 @@ func WrapPresence(to *jid.JID, typ PresenceType, payload xml.TokenReader) xml.To
 type Presence struct {
 	XMLName xml.Name     `xml:"presence"`
 	ID      string       `xml:"id,attr"`
-	To      *jid.JID     `xml:"to,attr"`
-	From    *jid.JID     `xml:"from,attr"`
+	To      jid.JID      `xml:"to,attr"`
+	From    jid.JID      `xml:"from,attr"`
 	Lang    string       `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 	Type    PresenceType `xml:"type,attr,omitempty"`
 }
