@@ -12,13 +12,17 @@ import (
 )
 
 // WrapPresence wraps a payload in a presence stanza.
-func WrapPresence(to jid.JID, typ PresenceType, payload xml.TokenReader) xml.TokenReader {
+func WrapPresence(to *jid.JID, typ PresenceType, payload xml.TokenReader) xml.TokenReader {
+	attrs := make([]xml.Attr, 0, 2)
+	if to != nil {
+		attrs = append(attrs, xml.Attr{Name: xml.Name{Local: "to"}, Value: to.String()})
+	}
+	if typ != AvailablePresence {
+		attrs = append(attrs, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(typ)})
+	}
 	return xmlstream.Wrap(payload, xml.StartElement{
 		Name: xml.Name{Local: "presence"},
-		Attr: []xml.Attr{
-			{Name: xml.Name{Local: "to"}, Value: to.String()},
-			{Name: xml.Name{Local: "type"}, Value: string(typ)},
-		},
+		Attr: attrs,
 	})
 }
 
