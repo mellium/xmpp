@@ -44,6 +44,10 @@ type Presence struct {
 type PresenceType string
 
 const (
+	// AvailablePresence is a special case that signals that the entity is
+	// available for communication.
+	AvailablePresence PresenceType = ""
+
 	// ErrorPresence indicates that an error has occurred regarding processing of
 	// a previously sent presence stanza; if the presence stanza is of type
 	// "error", it MUST include an <error/> child element

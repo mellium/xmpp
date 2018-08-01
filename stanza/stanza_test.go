@@ -152,7 +152,8 @@ func TestPresence(t *testing.T) {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			b := new(bytes.Buffer)
 			e := xml.NewEncoder(b)
-			presence := stanza.WrapPresence(jid.MustParse(tc.to), tc.typ, tc.payload)
+			j := jid.MustParse(tc.to)
+			presence := stanza.WrapPresence(&j, tc.typ, tc.payload)
 			if _, err := xmlstream.Copy(e, presence); err != tc.err {
 				t.Errorf("Unexpected error: want=`%v', got=`%v'", tc.err, err)
 			}
@@ -162,9 +163,15 @@ func TestPresence(t *testing.T) {
 			if !strings.Contains(o, jidattr) {
 				t.Errorf("Expected output to have attr `%s',\ngot=`%s'", jidattr, o)
 			}
-			typeattr := fmt.Sprintf(`type="%s"`, string(tc.typ))
-			if !strings.Contains(o, typeattr) {
-				t.Errorf("Expected output to have attr `%s',\ngot=`%s'", typeattr, o)
+			if tc.typ == stanza.AvailablePresence {
+				if strings.Contains(o, "type=") {
+					t.Errorf("Expected empty type attr got=`%s'", o)
+				}
+			} else {
+				typeattr := fmt.Sprintf(`type="%s"`, string(tc.typ))
+				if !strings.Contains(o, typeattr) {
+					t.Errorf("Expected output to have attr `%s',\ngot=`%s'", typeattr, o)
+				}
 			}
 			if !strings.Contains(o, tc.out) {
 				t.Errorf("Expected output to contain payload `%s',\ngot=`%s'", tc.out, o)

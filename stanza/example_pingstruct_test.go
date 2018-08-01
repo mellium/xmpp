@@ -30,7 +30,7 @@ func Example_struct() {
 		log.Fatal(err)
 	}
 	// Output:
-	// <iq id="" type="get">
+	// <iq id="" to="" from="" type="get">
 	//	<ping xmlns="urn:xmpp:ping"></ping>
 	// </iq>
 }
