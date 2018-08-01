@@ -100,17 +100,7 @@ func (c *Conn) Write(b []byte) (int, error) {
 // DialClient discovers and connects to the address on the named network with a
 // client-to-server (c2s) connection.
 //
-// If the context expires before the connection is complete, an error is
-// returned. Once successfully connected, any expiration of the context will not
-// affect the connection.
-//
-// addr is a JID with a domainpart of the server we wish to connect too.
-// DialClient will attempt to look up SRV records for the given JIDs domainpart
-// or connect to the domainpart directly.
-//
-// Network may be any of the network types supported by net.Dial, but you almost
-// certainly want to use one of the tcp connection types ("tcp", "tcp4", or
-// "tcp6").
+// For more information see the Dialer type.
 func DialClient(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
 	var d Dialer
 	return d.Dial(ctx, network, addr)
@@ -119,7 +109,7 @@ func DialClient(ctx context.Context, network string, addr jid.JID) (*Conn, error
 // DialServer discovers and connects to the address on the named network with a
 // server-to-server connection (s2s).
 //
-// For more info see the DialClient function.
+// For more info see the Dialer type.
 func DialServer(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
 	d := Dialer{
 		S2S: true,
@@ -128,10 +118,24 @@ func DialServer(ctx context.Context, network string, addr jid.JID) (*Conn, error
 }
 
 // A Dialer contains options for connecting to an XMPP address.
+// After a connection is established the Dial method does not attempt to create
+// an XMPP session on the connection.
 //
 // The zero value for each field is equivalent to dialing without that option.
-// Dialing with the zero value of Dialer is therefore equivalent to just calling
-// the DialClient function.
+// Dialing with the zero value of Dialer is equivalent to calling the DialClient
+// function.
+//
+// If the context expires before the connection is complete, an error is
+// returned. Once successfully connected, any expiration of the context will not
+// affect the connection.
+//
+// addr is a JID with a domainpart of the server we wish to connect too.
+// DialClient will attempt to look up SRV records for the given JIDs domainpart
+// or connect to the domainpart directly if no such SRV records exist.
+//
+// Network may be any of the network types supported by net.Dial, but you almost
+// certainly want to use one of the tcp connection types ("tcp", "tcp4", or
+// "tcp6").
 type Dialer struct {
 	net.Dialer
 
@@ -146,7 +150,7 @@ type Dialer struct {
 
 // Dial discovers and connects to the address on the named network.
 //
-// For a description of the arguments see the DialClient function.
+// For more information see the Dialer type.
 func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
 	return d.dial(ctx, network, addr)
 }
