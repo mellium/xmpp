@@ -182,6 +182,32 @@ func stanzaAddID(w xmlstream.TokenWriter) xmlstream.TokenWriter {
 	}
 }
 
+// DialClientSession uses a default dialer to create a TCP connection and
+// attempts to negotiate an XMPP session over it.
+//
+// If the provided context is canceled after stream negotiation is complete it
+// has no effect on the session.
+func DialClientSession(ctx context.Context, origin jid.JID, lang string, features ...StreamFeature) (*Session, error) {
+	conn, err := DialClient(ctx, "tcp", origin)
+	if err != nil {
+		return nil, err
+	}
+	return NegotiateSession(ctx, origin.Domain(), origin, conn, negotiator(false, lang, features))
+}
+
+// DialServerSession uses a default dialer to create a TCP connection and
+// attempts to negotiate an XMPP session over it.
+//
+// If the provided context is canceled after stream negotiation is complete it
+// has no effect on the session.
+func DialServerSession(ctx context.Context, location, origin jid.JID, lang string, features ...StreamFeature) (*Session, error) {
+	conn, err := DialServer(ctx, "tcp", location)
+	if err != nil {
+		return nil, err
+	}
+	return NegotiateSession(ctx, location, origin, conn, negotiator(true, lang, features))
+}
+
 // NewClientSession attempts to use an existing connection (or any
 // io.ReadWriter) to negotiate an XMPP client-to-server session.
 // If the provided context is canceled before stream negotiation is complete an
