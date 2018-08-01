@@ -89,10 +89,17 @@ func LookupPort(network, service string) (int, error) {
 // "xmpp-server".
 func LookupService(service, network string, addr net.Addr) (addrs []*net.SRV, err error) {
 	switch j := addr.(type) {
+	case nil:
+		return nil, nil
 	case *jid.JID:
+		addr = j.Domain()
+	case jid.JID:
 		addr = j.Domain()
 	}
 	_, addrs, err = net.LookupSRV(service, "tcp", addr.String())
+	if dnsErr, ok := err.(*net.DNSError); (ok && dnsErr.Err != "no such host") || (!ok && err != nil) {
+		return addrs, err
+	}
 
 	// RFC 6230 §3.2.1
 	//    3.  If a response is received, it will contain one or more
@@ -103,14 +110,19 @@ func LookupService(service, network string, addr net.Addr) (addrs []*net.SRV, er
 	//        SRV processing at this point because according to [DNS-SRV] such
 	//        a Target "means that the service is decidedly not available at
 	//        this domain".)
-	if err == nil && len(addrs) == 1 && addrs[0].Target == "." {
+	if len(addrs) == 1 && addrs[0].Target == "." {
+		return nil, err
+	}
+
+	// If there were any other SRV records, return them.
+	if len(addrs) > 0 {
 		return addrs, err
 	}
 
-	// Use domain and default port.
+	// If there are no SRV records, use domain and default port.
 	p, err := LookupPort(network, service)
 	if err != nil {
-		return nil, err
+		return addrs, err
 	}
 	addrs = []*net.SRV{{
 		Target: addr.String(),
