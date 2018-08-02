@@ -1,9 +1,8 @@
 FROM golang:1.11beta2
 
-RUN mkdir -p /xmpp
-COPY * /xmpp/
-
 CMD [ \
+  "cd /tmp/cirrus-ci-build", \
+  "ls", \
   "go version", \
   "go env", \
   "go vet ./...", \
