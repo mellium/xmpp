@@ -1,12 +1,9 @@
 FROM golang:1.11beta2
 
-CMD [ \
-  "cd /tmp/cirrus-ci-build", \
-  "ls", \
-  "go version", \
-  "go env", \
-  "go vet ./...", \
-  "go test -race ./...", \
-  "go test -cover ./...", \
-  "go test -run=NONE -bench . -benchmem ./...", \
-]
+WORKDIR /tmp/cirrus-ci-build
+RUN ls
+RUN go version && go env
+RUN go vet ./...
+RUN go test -race ./...
+RUN go test -cover ./...
+RUN go test -run=NONE -bench . -benchmem ./...
