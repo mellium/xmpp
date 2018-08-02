@@ -3,7 +3,6 @@ pipelines:
   default:
     - step:
         caches:
-          - vendor
           - bin
           - bench
         script:
