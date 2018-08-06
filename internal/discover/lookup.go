@@ -2,7 +2,8 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-package internal
+// Package discover is used to look up information about XMPP-based services.
+package discover
 
 import (
 	"context"

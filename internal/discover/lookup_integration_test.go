@@ -4,14 +4,14 @@
 
 //+build integration
 
-package internal_test
+package discover_test
 
 import (
 	"net"
 	"strconv"
 	"testing"
 
-	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/internal/discover"
 	"mellium.im/xmpp/jid"
 )
 
@@ -75,7 +75,7 @@ var lookupTests = [...]struct {
 func TestLookupService(t *testing.T) {
 	for i, tc := range lookupTests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			addrs, err := internal.LookupService(tc.service, "tcp", tc.addr)
+			addrs, err := discover.LookupService(tc.service, "tcp", tc.addr)
 			switch dnsErr := err.(type) {
 			case nil:
 				if err != tc.err {
