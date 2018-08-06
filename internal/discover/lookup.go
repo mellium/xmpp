@@ -70,15 +70,15 @@ var (
 // using net.LookupPort.
 // If the provided service is one of xmpp-client, xmpp-server, or xmpp-bosh and
 // it is not found by net.LookupPort, a default value is returned.
-func LookupPort(network, service string) (int, error) {
+func LookupPort(network, service string) (uint16, error) {
 	p, err := net.LookupPort(network, service)
 	if err == nil {
-		return p, err
+		return uint16(p), err
 	}
 	switch service {
-	case "xmpp-client":
+	case "xmpp-client", "xmpps-client":
 		return 5222, nil
-	case "xmpp-server":
+	case "xmpp-server", "xmpps-server":
 		return 5269, nil
 	case "xmpp-bosh":
 		return 5280, nil
@@ -114,24 +114,10 @@ func LookupService(ctx context.Context, resolver *net.Resolver, service, network
 	//        a Target "means that the service is decidedly not available at
 	//        this domain".)
 	if len(addrs) == 1 && addrs[0].Target == "." {
-		return nil, err
+		return nil, ErrNoServiceAtAddress
 	}
 
-	// If there were any other SRV records, return them.
-	if len(addrs) > 0 {
-		return addrs, err
-	}
-
-	// If there are no SRV records, use domain and default port.
-	p, err := LookupPort(network, service)
-	if err != nil {
-		return addrs, err
-	}
-	addrs = []*net.SRV{{
-		Target: addr.String(),
-		Port:   uint16(p),
-	}}
-	return addrs, nil
+	return addrs, err
 }
 
 // LookupWebsocket discovers websocket endpoints that are valid for the given
