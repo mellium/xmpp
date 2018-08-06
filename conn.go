@@ -16,12 +16,19 @@ type Conn struct {
 	tlsConn *tls.Conn
 	c       net.Conn
 	rw      io.ReadWriter
-	close   func() error
+	closer  func() error
 }
 
 // newConn wraps an io.ReadWriter in a Conn.
+// If rw is already a net.Conn or io.Closer the methods are proxied
+// appropriately. If rw is a *tls.Conn then ConnectionState returns the
+// appropriate value.
+// If rw is already a *Conn, it is returned immediately.
 func newConn(rw io.ReadWriter) *Conn {
 	nc := &Conn{rw: rw}
+	if closer, ok := rw.(io.Closer); ok {
+		nc.closer = closer.Close
+	}
 
 	switch typrw := rw.(type) {
 	case *Conn:
@@ -47,7 +54,10 @@ func (c *Conn) ConnectionState() (connState tls.ConnectionState, ok bool) {
 
 // Close closes the connection.
 func (c *Conn) Close() error {
-	return c.c.Close()
+	if c.closer == nil {
+		return nil
+	}
+	return c.closer()
 }
 
 // LocalAddr returns the local network address.
