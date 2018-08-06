@@ -88,7 +88,7 @@ func LookupPort(network, service string) (int, error) {
 // returns addresses from SRV records or the default domain (as a fake SRV
 // record) if no real records exist. Service should be one of "xmpp-client" or
 // "xmpp-server".
-func LookupService(service, network string, addr net.Addr) (addrs []*net.SRV, err error) {
+func LookupService(ctx context.Context, resolver *net.Resolver, service, network string, addr net.Addr) (addrs []*net.SRV, err error) {
 	switch j := addr.(type) {
 	case nil:
 		return nil, nil
@@ -97,7 +97,7 @@ func LookupService(service, network string, addr net.Addr) (addrs []*net.SRV, er
 	case jid.JID:
 		addr = j.Domain()
 	}
-	_, addrs, err = net.LookupSRV(service, "tcp", addr.String())
+	_, addrs, err = resolver.LookupSRV(ctx, service, "tcp", addr.String())
 	if dnsErr, ok := err.(*net.DNSError); (ok && dnsErr.Err != "no such host") || (!ok && err != nil) {
 		return addrs, err
 	}
@@ -135,15 +135,15 @@ func LookupService(service, network string, addr net.Addr) (addrs []*net.SRV, er
 // LookupWebsocket discovers websocket endpoints that are valid for the given
 // address using DNS TXT records and Web Host Metadata as described in XEP-0156.
 // If client is nil, only DNS is queried.
-func LookupWebsocket(ctx context.Context, client *http.Client, addr *jid.JID) (urls []string, err error) {
-	return lookupEndpoint(ctx, client, addr, "ws")
+func LookupWebsocket(ctx context.Context, resolver *net.Resolver, client *http.Client, addr *jid.JID) (urls []string, err error) {
+	return lookupEndpoint(ctx, resolver, client, addr, "ws")
 }
 
 // LookupBOSH discovers BOSH endpoints that are valid for the given address
 // using DNS TXT records and Web Host Metadata as described in XEP-0156. If
 // client is nil, only DNS is queried.
-func LookupBOSH(ctx context.Context, client *http.Client, addr *jid.JID) (urls []string, err error) {
-	return lookupEndpoint(ctx, client, addr, "bosh")
+func LookupBOSH(ctx context.Context, resolver *net.Resolver, client *http.Client, addr *jid.JID) (urls []string, err error) {
+	return lookupEndpoint(ctx, resolver, client, addr, "bosh")
 }
 
 func validateSessionTypeOrPanic(conntype string) {
@@ -152,7 +152,7 @@ func validateSessionTypeOrPanic(conntype string) {
 	}
 }
 
-func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, conntype string) (urls []string, err error) {
+func lookupEndpoint(ctx context.Context, resolver *net.Resolver, client *http.Client, addr *jid.JID, conntype string) (urls []string, err error) {
 	validateSessionTypeOrPanic(conntype)
 
 	var (
@@ -173,7 +173,7 @@ func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, con
 			}
 			wg.Done()
 		}()
-		urls, err = lookupDNS(ctx, name, conntype)
+		urls, err = lookupDNS(ctx, resolver, name, conntype)
 	}()
 	if client != nil {
 		wg.Add(1)
@@ -203,17 +203,10 @@ func lookupEndpoint(ctx context.Context, client *http.Client, addr *jid.JID, con
 	return urls, err
 }
 
-// TODO(ssw): Rely on the OS DNS cache, or cache lookups ourselves?
-
-func lookupDNS(ctx context.Context, name, conntype string) (urls []string, err error) {
+func lookupDNS(ctx context.Context, resolver *net.Resolver, name, conntype string) (urls []string, err error) {
 	validateSessionTypeOrPanic(conntype)
-	select {
-	case <-ctx.Done():
-		return urls, ctx.Err()
-	default:
-	}
 
-	txts, err := net.LookupTXT(name)
+	txts, err := resolver.LookupTXT(ctx, name)
 	if err != nil {
 		return urls, err
 	}
@@ -244,11 +237,6 @@ func lookupDNS(ctx context.Context, name, conntype string) (urls []string, err e
 
 func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype string) (urls []string, err error) {
 	validateSessionTypeOrPanic(conntype)
-	select {
-	case <-ctx.Done():
-		return urls, ctx.Err()
-	default:
-	}
 
 	url, err := url.Parse(name)
 	if err != nil {

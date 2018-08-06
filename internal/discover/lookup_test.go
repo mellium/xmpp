@@ -43,7 +43,7 @@ func TestLookupEndpointPanicsOnInvalidType(t *testing.T) {
 			t.Error("lookupEndpoint should panic if an invalid conntype is specified.")
 		}
 	}()
-	lookupEndpoint(context.Background(), nil, nil, "wssorbashorsomething")
+	lookupEndpoint(context.Background(), nil, nil, nil, "wssorbashorsomething")
 }
 
 // If an invalid connection type is looked up, we should panic.
@@ -53,7 +53,7 @@ func TestLookupDNSPanicsOnInvalidType(t *testing.T) {
 			t.Error("lookupDNS should panic if an invalid conntype is specified.")
 		}
 	}()
-	lookupDNS(context.Background(), "name", "wssorbashorsomething")
+	lookupDNS(context.Background(), nil, "name", "wssorbashorsomething")
 }
 
 // If an invalid connection type is looked up, we should panic.
@@ -71,8 +71,8 @@ func TestLookupMethodsDoNotRunIfContextIsDone(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	if _, err := lookupDNS(ctx, "name", "ws"); err != context.Canceled {
-		t.Error("lookupDNS should not run if the context is canceled.")
+	if _, err := lookupDNS(ctx, nil, "name", "ws"); err == nil {
+		t.Errorf("lookupDNS should not run if the context is canceled, got: %q.", err)
 	}
 	if _, err := lookupHostMeta(ctx, nil, "name", "ws"); err != context.Canceled {
 		t.Error("lookupHostMeta should not run if the context is canceled.")

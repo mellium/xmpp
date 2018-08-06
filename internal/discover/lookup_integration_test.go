@@ -7,6 +7,7 @@
 package discover_test
 
 import (
+	"context"
 	"net"
 	"strconv"
 	"testing"
@@ -18,10 +19,11 @@ import (
 var testConvJID = jid.MustParse("sam@conversations.im")
 
 var lookupTests = [...]struct {
-	service string
-	addr    net.Addr
-	addrs   []*net.SRV
-	err     error
+	resolver *net.Resolver
+	service  string
+	addr     net.Addr
+	addrs    []*net.SRV
+	err      error
 }{
 	0: {},
 	1: {
@@ -75,7 +77,7 @@ var lookupTests = [...]struct {
 func TestLookupService(t *testing.T) {
 	for i, tc := range lookupTests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			addrs, err := discover.LookupService(tc.service, "tcp", tc.addr)
+			addrs, err := discover.LookupService(context.Background(), tc.resolver, tc.service, "tcp", tc.addr)
 			switch dnsErr := err.(type) {
 			case nil:
 				if err != tc.err {
