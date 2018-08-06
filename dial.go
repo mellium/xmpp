@@ -139,12 +139,15 @@ func DialServer(ctx context.Context, network string, addr jid.JID) (*Conn, error
 type Dialer struct {
 	net.Dialer
 
+	// Resolver allows you to change options related to resolving DNS.
+	Resolver *net.Resolver
+
 	// NoLookup stops the dialer from looking up SRV or TXT records for the given
 	// domain. It also prevents fetching of the host metadata file.
 	// Instead, it will try to connect to the domain directly.
 	NoLookup bool
 
-	// Attempt to dial a server-to-server connection.
+	// S2S causes the server to attempt to dial a server-to-server connection.
 	S2S bool
 }
 
@@ -171,7 +174,7 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (*Conn,
 		return newConn(c), nil
 	}
 
-	addrs, err := discover.LookupService(connType(d.S2S), network, addr)
+	addrs, err := discover.LookupService(ctx, d.Resolver, connType(d.S2S), network, addr)
 	if err != nil {
 		return nil, err
 	}
