@@ -57,12 +57,11 @@ type Dialer struct {
 	S2S bool
 
 	// Disable TLS entirely (eg. when using StartTLS on a server that does not
-	// support direct TLS).
+	// support implicit TLS).
 	NoTLS bool
 
-	// Attempt to create a TLS connection by first looking up SRV records as
-	// specified in XEP-0368: SRV records for XMPP over TLS, and then attempting
-	// to use the domains A or AAAA record.
+	// Attempt to create a TLS connection by first looking up SRV records (unless
+	// NoLookup is set) and then attempting to use the domains A or AAAA record.
 	// The nil value is interpreted as a tls.Config with the expected host set to
 	// that of the connection addresses domain part.
 	TLSConfig *tls.Config
@@ -86,56 +85,81 @@ func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (*Conn,
 }
 
 func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
-	if d.NoLookup {
-		p, err := discover.LookupPort(network, connType(d.S2S))
-		if err != nil {
-			return nil, err
-		}
-		var c net.Conn
-		domain := addr.Domainpart()
-		if d.NoTLS {
-			c, err = d.Dialer.DialContext(ctx, network, net.JoinHostPort(
-				domain,
-				strconv.FormatUint(uint64(p), 10),
-			))
-		} else {
-			if d.TLSConfig == nil {
-				c, err = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
-					domain,
-					strconv.FormatUint(uint64(p), 10),
-				), &tls.Config{ServerName: domain})
-			} else {
-				c, err = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
-					domain,
-					strconv.FormatUint(uint64(p), 10),
-				), d.TLSConfig)
-			}
-		}
-		if err != nil {
-			return nil, err
-		}
-		return newConn(c), nil
-	}
+	domain := addr.Domainpart()
+	service := connType(!d.NoTLS, d.S2S)
+	var addrs []*net.SRV
+	var err error
 
-	addrs, err := discover.LookupService(ctx, d.Resolver, connType(d.S2S), network, addr)
-	if err != nil {
-		return nil, err
+	// If we're not looking up SRV records, make up some fake ones.
+	if d.NoLookup {
+		p, err := discover.LookupPort(network, service)
+		if err != nil {
+			return nil, err
+		}
+		addrs = append(addrs, &net.SRV{
+			Target:   domain,
+			Port:     p,
+			Priority: 1,
+			Weight:   1,
+		})
+	} else {
+		addrs, err = discover.LookupService(ctx, d.Resolver, service, network, addr)
+		if err != nil && err != discover.ErrNoServiceAtAddress {
+			return nil, err
+		}
+
+		// If we're using TLS also try connecting on the plain records.
+		if !d.NoTLS {
+			aa, err := discover.LookupService(ctx, d.Resolver, connType(d.NoTLS, d.S2S), network, addr)
+			if err != nil && err != discover.ErrNoServiceAtAddress {
+				return nil, err
+			}
+			addrs = append(addrs, aa...)
+		}
+
+		// If there aren't any records, try connecting on the main domain.
+		if len(addrs) == 0 {
+			// If there are no SRV records, use domain and default port.
+			p, err := discover.LookupPort(network, service)
+			if err != nil {
+				return nil, err
+			}
+			addrs = []*net.SRV{{
+				Target: addr.String(),
+				Port:   uint16(p),
+			}}
+		}
 	}
 
 	// Try dialing all of the SRV records we know about, breaking as soon as the
 	// connection is established.
 	for _, addr := range addrs {
-		conn, e := d.Dialer.DialContext(
-			ctx, network, net.JoinHostPort(
-				addr.Target, strconv.FormatUint(uint64(addr.Port), 10),
-			),
-		)
+		var c net.Conn
+		var e error
+		if d.NoTLS {
+			c, e = d.Dialer.DialContext(ctx, network, net.JoinHostPort(
+				addr.Target,
+				strconv.FormatUint(uint64(addr.Port), 10),
+			))
+		} else {
+			if d.TLSConfig == nil {
+				c, e = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
+					addr.Target,
+					strconv.FormatUint(uint64(addr.Port), 10),
+				), &tls.Config{ServerName: domain})
+			} else {
+				c, e = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
+					addr.Target,
+					strconv.FormatUint(uint64(addr.Port), 10),
+				), d.TLSConfig)
+			}
+		}
 		if e != nil {
 			err = e
 			continue
 		}
 
-		return newConn(conn), nil
+		return newConn(c), nil
 	}
 	return nil, err
 }
@@ -170,9 +194,14 @@ func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Tim
 	return minNonzeroTime(earliest, d.Deadline)
 }
 
-func connType(s2s bool) string {
-	if s2s {
+func connType(useTLS, s2s bool) string {
+	switch {
+	case useTLS && s2s:
+		return "xmpps-server"
+	case !useTLS && s2s:
 		return "xmpp-server"
+	case useTLS && !s2s:
+		return "xmpps-client"
 	}
 	return "xmpp-client"
 }

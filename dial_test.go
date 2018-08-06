@@ -5,6 +5,7 @@
 package xmpp
 
 import (
+	"strconv"
 	"testing"
 
 	"mellium.im/xmpp/jid"
@@ -19,16 +20,24 @@ func TestDialClientPanicsIfNilContext(t *testing.T) {
 	DialClient(nil, "tcp", jid.MustParse("feste@shakespeare.lit"))
 }
 
-// The default value of config.conntype should return "xmpp-client"
-func TestDefaultConnType(t *testing.T) {
-	if ct := connType(false); ct != "xmpp-client" {
-		t.Errorf("Wrong default value for conntype; expected xmpp-client but got %s", ct)
-	}
+var connTypeTests = [...]struct {
+	useTLS bool
+	s2s    bool
+	svc    string
+}{
+	0: {useTLS: true, s2s: true, svc: "xmpps-server"},
+	1: {useTLS: true, s2s: false, svc: "xmpps-client"},
+	2: {useTLS: false, s2s: true, svc: "xmpp-server"},
+	3: {useTLS: false, s2s: false, svc: "xmpp-client"},
 }
 
-// If S2S is true, config.conntype should return "xmpp-server"
-func TestS2SConnType(t *testing.T) {
-	if ct := connType(true); ct != "xmpp-server" {
-		t.Errorf("Wrong s2s value for conntype; expected xmpp-server but got %s", ct)
+func TestConnType(t *testing.T) {
+	for i, tc := range connTypeTests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			svc := connType(tc.useTLS, tc.s2s)
+			if svc != tc.svc {
+				t.Errorf("Wrong conntype value: want=%q, got=%q", tc.svc, svc)
+			}
+		})
 	}
 }
