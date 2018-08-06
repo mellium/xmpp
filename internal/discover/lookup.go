@@ -21,11 +21,13 @@ import (
 )
 
 const (
-	wsPrefix    = "_xmpp-client-websocket="
-	boshPrefix  = "_xmpp-client-xbosh="
-	wsRel       = "urn:xmpp:alt-connections:websocket"
-	boshRel     = "urn:xmpp:alt-connections:xbosh"
-	hostMetaXML = "/.well-known/host-meta"
+	wsPrefix     = "_xmpp-client-websocket="
+	boshPrefix   = "_xmpp-client-xbosh="
+	wsRel        = "urn:xmpp:alt-connections:websocket"
+	boshRel      = "urn:xmpp:alt-connections:xbosh"
+	hostMetaXML  = "/.well-known/host-meta"
+	wsConnType   = "ws"
+	boshConnType = "bosh"
 )
 
 // XRD represents an Extensible Resource Descriptor document of the form:
@@ -136,24 +138,20 @@ func LookupService(ctx context.Context, resolver *net.Resolver, service, network
 // address using DNS TXT records and Web Host Metadata as described in XEP-0156.
 // If client is nil, only DNS is queried.
 func LookupWebsocket(ctx context.Context, resolver *net.Resolver, client *http.Client, addr *jid.JID) (urls []string, err error) {
-	return lookupEndpoint(ctx, resolver, client, addr, "ws")
+	return lookupEndpoint(ctx, resolver, client, addr, wsConnType)
 }
 
 // LookupBOSH discovers BOSH endpoints that are valid for the given address
 // using DNS TXT records and Web Host Metadata as described in XEP-0156. If
 // client is nil, only DNS is queried.
 func LookupBOSH(ctx context.Context, resolver *net.Resolver, client *http.Client, addr *jid.JID) (urls []string, err error) {
-	return lookupEndpoint(ctx, resolver, client, addr, "bosh")
-}
-
-func validateSessionTypeOrPanic(conntype string) {
-	if conntype != "ws" && conntype != "bosh" {
-		panic("xmpp.lookupEndpoint: Invalid conntype specified")
-	}
+	return lookupEndpoint(ctx, resolver, client, addr, boshConnType)
 }
 
 func lookupEndpoint(ctx context.Context, resolver *net.Resolver, client *http.Client, addr *jid.JID, conntype string) (urls []string, err error) {
-	validateSessionTypeOrPanic(conntype)
+	if conntype != wsConnType && conntype != boshConnType {
+		panic("xmpp.lookupEndpoint: Invalid conntype specified")
+	}
 
 	var (
 		u  []string
@@ -204,7 +202,9 @@ func lookupEndpoint(ctx context.Context, resolver *net.Resolver, client *http.Cl
 }
 
 func lookupDNS(ctx context.Context, resolver *net.Resolver, name, conntype string) (urls []string, err error) {
-	validateSessionTypeOrPanic(conntype)
+	if conntype != wsConnType && conntype != boshConnType {
+		panic("xmpp.lookupEndpoint: Invalid conntype specified")
+	}
 
 	txts, err := resolver.LookupTXT(ctx, name)
 	if err != nil {
@@ -219,11 +219,11 @@ func lookupDNS(ctx context.Context, resolver *net.Resolver, name, conntype strin
 		default:
 		}
 		switch conntype {
-		case "ws":
+		case wsConnType:
 			if s = strings.TrimPrefix(txt, wsPrefix); s != txt {
 				urls = append(urls, s)
 			}
-		case "bosh":
+		case boshConnType:
 			if s = strings.TrimPrefix(txt, boshPrefix); s != txt {
 				urls = append(urls, s)
 			}
@@ -236,7 +236,9 @@ func lookupDNS(ctx context.Context, resolver *net.Resolver, name, conntype strin
 // TODO(ssw): Memoize the following functions?
 
 func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype string) (urls []string, err error) {
-	validateSessionTypeOrPanic(conntype)
+	if conntype != wsConnType && conntype != boshConnType {
+		panic("xmpp.lookupEndpoint: Invalid conntype specified")
+	}
 
 	url, err := url.Parse(name)
 	if err != nil {
@@ -251,11 +253,11 @@ func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype str
 
 	for _, link := range xrd.Links {
 		switch conntype {
-		case "ws":
+		case wsConnType:
 			if link.Rel == wsRel {
 				urls = append(urls, link.Href)
 			}
-		case "bosh":
+		case boshConnType:
 			if link.Rel == boshRel {
 				urls = append(urls, link.Href)
 			}
