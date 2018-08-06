@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/internal/discover"
 	"mellium.im/xmpp/jid"
 )
 
@@ -157,7 +157,7 @@ func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (*Conn,
 
 func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
 	if d.NoLookup {
-		p, err := internal.LookupPort(network, connType(d.S2S))
+		p, err := discover.LookupPort(network, connType(d.S2S))
 		if err != nil {
 			return nil, err
 		}
@@ -171,7 +171,7 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (*Conn,
 		return newConn(c), nil
 	}
 
-	addrs, err := internal.LookupService(connType(d.S2S), network, addr)
+	addrs, err := discover.LookupService(connType(d.S2S), network, addr)
 	if err != nil {
 		return nil, err
 	}
