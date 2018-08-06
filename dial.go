@@ -6,6 +6,7 @@ package xmpp
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"strconv"
 	"time"
@@ -41,18 +42,6 @@ func DialServer(ctx context.Context, network string, addr jid.JID) (*Conn, error
 // The zero value for each field is equivalent to dialing without that option.
 // Dialing with the zero value of Dialer is equivalent to calling the DialClient
 // function.
-//
-// If the context expires before the connection is complete, an error is
-// returned. Once successfully connected, any expiration of the context will not
-// affect the connection.
-//
-// addr is a JID with a domainpart of the server we wish to connect too.
-// DialClient will attempt to look up SRV records for the given JIDs domainpart
-// or connect to the domainpart directly if no such SRV records exist.
-//
-// Network may be any of the network types supported by net.Dial, but you almost
-// certainly want to use one of the tcp connection types ("tcp", "tcp4", or
-// "tcp6").
 type Dialer struct {
 	net.Dialer
 
@@ -66,9 +55,30 @@ type Dialer struct {
 
 	// S2S causes the server to attempt to dial a server-to-server connection.
 	S2S bool
+
+	// Disable TLS entirely (eg. when using StartTLS on a server that does not
+	// support direct TLS).
+	NoTLS bool
+
+	// Attempt to create a TLS connection by first looking up SRV records as
+	// specified in XEP-0368: SRV records for XMPP over TLS, and then attempting
+	// to use the domains A or AAAA record.
+	// The nil value is interpreted as a tls.Config with the expected host set to
+	// that of the connection addresses domain part.
+	TLSConfig *tls.Config
 }
 
 // Dial discovers and connects to the address on the named network.
+// It will attempt to look up SRV records for the given JIDs domainpart or
+// connect to the domainpart directly if no such SRV records exist.
+//
+// If the context expires before the connection is complete, an error is
+// returned. Once successfully connected, any expiration of the context will not
+// affect the connection.
+//
+// Network may be any of the network types supported by net.Dial, but you most
+// likely want to use one of the tcp connection types ("tcp", "tcp4", or
+// "tcp6").
 //
 // For more information see the Dialer type.
 func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
@@ -81,10 +91,26 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (*Conn,
 		if err != nil {
 			return nil, err
 		}
-		c, err := d.Dialer.DialContext(ctx, network, net.JoinHostPort(
-			addr.Domainpart(),
-			strconv.FormatUint(uint64(p), 10),
-		))
+		var c net.Conn
+		domain := addr.Domainpart()
+		if d.NoTLS {
+			c, err = d.Dialer.DialContext(ctx, network, net.JoinHostPort(
+				domain,
+				strconv.FormatUint(uint64(p), 10),
+			))
+		} else {
+			if d.TLSConfig == nil {
+				c, err = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
+					domain,
+					strconv.FormatUint(uint64(p), 10),
+				), &tls.Config{ServerName: domain})
+			} else {
+				c, err = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
+					domain,
+					strconv.FormatUint(uint64(p), 10),
+				), d.TLSConfig)
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
