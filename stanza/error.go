@@ -8,7 +8,6 @@ import (
 	"encoding/xml"
 	"io"
 
-	"golang.org/x/text/language"
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
@@ -253,16 +252,11 @@ type Error struct {
 	By        jid.JID
 	Type      ErrorType
 	Condition Condition
-	Lang      language.Tag
-	Text      string
+	Text      map[string]string
 }
 
-// Error satisfies the error interface and returns the text if set, or the
-// condition otherwise.
+// Error satisfies the error interface by returning the condition.
 func (se Error) Error() string {
-	if se.Text != "" {
-		return se.Text
-	}
 	return string(se.Condition)
 }
 
@@ -283,19 +277,25 @@ func (se Error) TokenReader() xml.TokenReader {
 	var text xml.TokenReader = xmlstream.ReaderFunc(func() (xml.Token, error) {
 		return nil, io.EOF
 	})
-	if se.Text != "" {
+	for lang, data := range se.Text {
+		if data == "" {
+			continue
+		}
+		var attrs []xml.Attr
+		// xml:lang attribute is optional, don't include it if it's empty.
+		if lang != "" {
+			attrs = []xml.Attr{{
+				Name:  xml.Name{Space: ns.XML, Local: "lang"},
+				Value: lang,
+			}}
+		}
 		text = xmlstream.Wrap(
 			xmlstream.ReaderFunc(func() (xml.Token, error) {
-				return xml.CharData(se.Text), io.EOF
+				return xml.CharData(data), io.EOF
 			}),
 			xml.StartElement{
 				Name: xml.Name{Space: ns.Stanza, Local: "text"},
-				Attr: []xml.Attr{
-					{
-						Name:  xml.Name{Space: ns.XML, Local: "lang"},
-						Value: se.Lang.String(),
-					},
-				},
+				Attr: attrs,
 			},
 		)
 	}
@@ -348,20 +348,14 @@ func (se *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		se.Condition = Condition(decoded.Condition.XMLName.Local)
 	}
 
-	// TODO: Dedup this (and probably a lot of other stuff) with the saslerr
-	// logic.
-	tags := make([]language.Tag, 0, len(decoded.Text))
-	data := make(map[language.Tag]string)
 	for _, text := range decoded.Text {
-		tag, err := language.Parse(text.Lang)
-		if err != nil {
+		if text.Data == "" {
 			continue
 		}
-		tags = append(tags, tag)
-		data[tag] = text.Data
+		if se.Text == nil {
+			se.Text = make(map[string]string)
+		}
+		se.Text[text.Lang] = text.Data
 	}
-	tag, _, _ := language.NewMatcher(tags).Match(se.Lang)
-	se.Lang = tag
-	se.Text = data[tag]
 	return nil
 }
