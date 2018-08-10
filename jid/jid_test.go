@@ -183,6 +183,41 @@ func TestCopy(t *testing.T) {
 	}
 }
 
+func TestWithLocal(t *testing.T) {
+	for i, tc := range [...]struct {
+		jid   string
+		local string
+		err   bool
+	}{
+		0: {"mercutio@example.net/test", "new", false},
+		1: {"mercutio@example.net/test", invalidutf8, true},
+		2: {"example.net", "new", false},
+	} {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			old := jid.MustParse(tc.jid)
+			new, err := old.WithLocal(tc.local)
+			switch {
+			case (err != nil) && !tc.err:
+				t.Fatal("Unexpected error", err)
+			case tc.err:
+				return
+			}
+			if old.String() != tc.jid {
+				t.Fatalf("WithLocal should clone data")
+			}
+			if r := new.Localpart(); r != tc.local {
+				t.Errorf("Unexpected localpart: want=`%s', got=`%s'", tc.local, r)
+			}
+			if new.Domainpart() != old.Domainpart() {
+				t.Errorf("Unexpected domainpart mutation: want=`%s', got=`%s'", old.Domainpart(), new.Domainpart())
+			}
+			if new.Resourcepart() != old.Resourcepart() {
+				t.Errorf("Unexpected resourcepart mutation: want=`%s', got=`%s'", old.Resourcepart(), new.Resourcepart())
+			}
+		})
+	}
+}
+
 func TestWithResource(t *testing.T) {
 	for i, tc := range [...]struct {
 		jid string
@@ -191,6 +226,7 @@ func TestWithResource(t *testing.T) {
 	}{
 		0: {"mercutio@example.net/test", "new", false},
 		1: {"mercutio@example.net/test", invalidutf8, true},
+		2: {"mercutio@example.net", "new", false},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			old := jid.MustParse(tc.jid)

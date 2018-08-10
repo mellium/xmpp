@@ -121,6 +121,29 @@ func New(localpart, domainpart, resourcepart string) (JID, error) {
 	}, nil
 }
 
+// WithLocal returns a copy of the JID with a new localpart.
+// This elides validation of the domainpart and resourcepart.
+func (j JID) WithLocal(localpart string) (JID, error) {
+	var err error
+	data := make([]byte, 0, len(localpart)+len(j.data[j.locallen:]))
+	if localpart != "" {
+		if !utf8.ValidString(localpart) {
+			return JID{}, errors.New("JID contains invalid UTF-8")
+		}
+		data, err = precis.UsernameCaseMapped.Append(data, []byte(localpart))
+		if err != nil {
+			return JID{}, err
+		}
+	}
+	ll := len(data)
+	data = append(data, j.data[j.locallen:]...)
+	return JID{
+		locallen:  ll,
+		domainlen: j.domainlen,
+		data:      data,
+	}, nil
+}
+
 // WithResource returns a copy of the JID with a new resourcepart.
 // This elides validation of the localpart and domainpart.
 func (j JID) WithResource(resourcepart string) (JID, error) {
