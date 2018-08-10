@@ -247,6 +247,12 @@ const (
 
 // Error is an implementation of error intended to be marshalable and
 // unmarshalable as XML.
+//
+// Text is a map of language tags to human readable representations of the error
+// in a given language.
+// Normally there will just be one with an empty language (eg. "": "Some
+// error").
+// The keys are not validated to make sure they comply with BCP 47.
 type Error struct {
 	XMLName   xml.Name
 	By        jid.JID
