@@ -133,24 +133,22 @@ func (j JID) WithLocal(localpart string) (JID, error) {
 	data := make([]byte, 0, len(localpart)+len(j.data[j.locallen:]))
 	if localpart != "" {
 		if !utf8.ValidString(localpart) {
-			return JID{}, errInvalidUTF8
+			return j, errInvalidUTF8
 		}
 		data, err = precis.UsernameCaseMapped.Append(data, []byte(localpart))
 		if err != nil {
-			return JID{}, err
+			return j, err
 		}
 	}
 	ll := len(data)
 	data = append(data, j.data[j.locallen:]...)
 	if err != nil {
-		return JID{}, err
+		return j, err
 	}
 
-	return JID{
-		locallen:  ll,
-		domainlen: j.domainlen,
-		data:      data,
-	}, localChecks(data[:ll])
+	j.locallen = ll
+	j.data = data
+	return j, localChecks(data[:ll])
 }
 
 // WithDomain returns a copy of the JID with a new domainpart.
@@ -158,14 +156,14 @@ func (j JID) WithLocal(localpart string) (JID, error) {
 func (j JID) WithDomain(domainpart string) (JID, error) {
 	err := domainChecks(domainpart)
 	if err != nil {
-		return JID{}, err
+		return j, err
 	}
 	domainpart, err = idna.ToUnicode(domainpart)
 	if err != nil {
-		return JID{}, err
+		return j, err
 	}
 	if !utf8.ValidString(domainpart) {
-		return JID{}, errInvalidUTF8
+		return j, errInvalidUTF8
 	}
 
 	dl := len(domainpart)
@@ -173,12 +171,10 @@ func (j JID) WithDomain(domainpart string) (JID, error) {
 	data = append(data, j.data[:j.locallen]...)
 	data = append(data, domainpart...)
 	data = append(data, j.data[j.locallen+j.domainlen:]...)
-	err = domainChecks(domainpart)
-	return JID{
-		locallen:  j.locallen,
-		domainlen: dl,
-		data:      data,
-	}, err
+
+	j.domainlen = dl
+	j.data = data
+	return j, domainChecks(domainpart)
 }
 
 // WithResource returns a copy of the JID with a new resourcepart.
