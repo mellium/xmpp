@@ -63,7 +63,7 @@ func New(localpart, domainpart, resourcepart string) (JID, error) {
 	// process if they're not). We'll check the domainpart after performing
 	// the IDNA ToUnicode operation.
 	if !utf8.ValidString(localpart) || !utf8.ValidString(resourcepart) {
-		return JID{}, errors.New("JID contains invalid UTF-8")
+		return JID{}, errInvalidUTF8
 	}
 
 	// RFC 7622 §3.2.1.  Preparation
@@ -82,7 +82,7 @@ func New(localpart, domainpart, resourcepart string) (JID, error) {
 	}
 
 	if !utf8.ValidString(domainpart) {
-		return JID{}, errors.New("Domainpart contains invalid UTF-8")
+		return JID{}, errInvalidUTF8
 	}
 
 	// RFC 7622 §3.2.2.  Enforcement
@@ -133,7 +133,7 @@ func (j JID) WithLocal(localpart string) (JID, error) {
 	data := make([]byte, 0, len(localpart)+len(j.data[j.locallen:]))
 	if localpart != "" {
 		if !utf8.ValidString(localpart) {
-			return JID{}, errors.New("JID contains invalid UTF-8")
+			return JID{}, errInvalidUTF8
 		}
 		data, err = precis.UsernameCaseMapped.Append(data, []byte(localpart))
 		if err != nil {
@@ -186,7 +186,7 @@ func (j JID) WithResource(resourcepart string) (JID, error) {
 	copy(data, new.data)
 	if resourcepart != "" {
 		if !utf8.ValidString(resourcepart) {
-			return JID{}, errors.New("JID contains invalid UTF-8")
+			return JID{}, errInvalidUTF8
 		}
 		data, err = precis.OpaqueString.Append(data, []byte(resourcepart))
 		new.data = data
