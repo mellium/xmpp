@@ -142,11 +142,15 @@ func (j JID) WithLocal(localpart string) (JID, error) {
 	}
 	ll := len(data)
 	data = append(data, j.data[j.locallen:]...)
+	if err != nil {
+		return JID{}, err
+	}
+
 	return JID{
 		locallen:  ll,
 		domainlen: j.domainlen,
 		data:      data,
-	}, nil
+	}, localChecks(data[:ll])
 }
 
 // WithDomain returns a copy of the JID with a new domainpart.
@@ -189,9 +193,12 @@ func (j JID) WithResource(resourcepart string) (JID, error) {
 			return JID{}, errInvalidUTF8
 		}
 		data, err = precis.OpaqueString.Append(data, []byte(resourcepart))
+		if err != nil {
+			return JID{}, err
+		}
 		new.data = data
 	}
-	return new, err
+	return new, resourceChecks(data[j.locallen+j.domainlen:])
 }
 
 // Bare returns a copy of the JID without a resourcepart. This is sometimes
@@ -405,8 +412,21 @@ func checkIP6String(domainpart string) error {
 }
 
 func commonChecks(localpart []byte, domainpart string, resourcepart []byte) error {
-	l := len(localpart)
-	if l > 1023 {
+	err := localChecks(localpart)
+	if err != nil {
+		return err
+	}
+
+	err = resourceChecks(resourcepart)
+	if err != nil {
+		return err
+	}
+
+	return domainChecks(domainpart)
+}
+
+func localChecks(localpart []byte) error {
+	if len(localpart) > 1023 {
 		return errors.New("The localpart must be smaller than 1024 bytes")
 	}
 
@@ -420,20 +440,13 @@ func commonChecks(localpart []byte, domainpart string, resourcepart []byte) erro
 		return errors.New("Localpart contains forbidden characters")
 	}
 
-	l = len(resourcepart)
-	if l > 1023 {
+	return nil
+}
+
+func resourceChecks(resourcepart []byte) error {
+	if len(resourcepart) > 1023 {
 		return errors.New("The resourcepart must be smaller than 1024 bytes")
 	}
-
-	l = len(domainpart)
-	if l < 1 || l > 1023 {
-		return errors.New("The domainpart must be between 1 and 1023 bytes")
-	}
-
-	if err := checkIP6String(domainpart); err != nil {
-		return err
-	}
-
 	return nil
 }
 

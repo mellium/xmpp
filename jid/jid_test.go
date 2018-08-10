@@ -192,14 +192,15 @@ func TestWithLocal(t *testing.T) {
 		0: {"mercutio@example.net/test", "new", false},
 		1: {"mercutio@example.net/test", invalidutf8, true},
 		2: {"example.net", "new", false},
+		3: {"example.net", strings.Repeat("a", 1024), true},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			old := jid.MustParse(tc.jid)
 			new, err := old.WithLocal(tc.local)
-			switch {
-			case (err != nil) && !tc.err:
+			if (err != nil) != tc.err {
 				t.Fatal("Unexpected error", err)
-			case tc.err:
+			}
+			if tc.err {
 				return
 			}
 			if old.String() != tc.jid {
@@ -268,10 +269,10 @@ func TestWithResource(t *testing.T) {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			old := jid.MustParse(tc.jid)
 			new, err := old.WithResource(tc.res)
-			switch {
-			case (err != nil) && !tc.err:
+			if (err != nil) != tc.err {
 				t.Fatal("Unexpected error", err)
-			case tc.err:
+			}
+			if tc.err {
 				return
 			}
 			if old.String() != tc.jid {
