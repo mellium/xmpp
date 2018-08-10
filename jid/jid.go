@@ -17,6 +17,11 @@ import (
 	"golang.org/x/text/secure/precis"
 )
 
+var (
+	errInvalidDomainLen = errors.New("The domainpart must be between 1 and 1023 bytes")
+	errInvalidUTF8      = errors.New("JID contains invalid UTF-8")
+)
+
 // JID represents an XMPP address (Jabber ID) comprising a localpart,
 // domainpart, and resourcepart. All parts of a JID are guaranteed to be valid
 // UTF-8 and will be represented in their canonical form which gives comparison
@@ -142,6 +147,34 @@ func (j JID) WithLocal(localpart string) (JID, error) {
 		domainlen: j.domainlen,
 		data:      data,
 	}, nil
+}
+
+// WithDomain returns a copy of the JID with a new domainpart.
+// This elides validation of the localpart and resourcepart.
+func (j JID) WithDomain(domainpart string) (JID, error) {
+	err := domainChecks(domainpart)
+	if err != nil {
+		return JID{}, err
+	}
+	domainpart, err = idna.ToUnicode(domainpart)
+	if err != nil {
+		return JID{}, err
+	}
+	if !utf8.ValidString(domainpart) {
+		return JID{}, errInvalidUTF8
+	}
+
+	dl := len(domainpart)
+	data := make([]byte, 0, len(j.data)-j.domainlen+dl)
+	data = append(data, j.data[:j.locallen]...)
+	data = append(data, domainpart...)
+	data = append(data, j.data[j.locallen+j.domainlen:]...)
+	err = domainChecks(domainpart)
+	return JID{
+		locallen:  j.locallen,
+		domainlen: dl,
+		data:      data,
+	}, err
 }
 
 // WithResource returns a copy of the JID with a new resourcepart.
@@ -402,4 +435,12 @@ func commonChecks(localpart []byte, domainpart string, resourcepart []byte) erro
 	}
 
 	return nil
+}
+
+func domainChecks(domainpart string) error {
+	if l := len(domainpart); l < 1 || l > 1023 {
+		return errInvalidDomainLen
+	}
+
+	return checkIP6String(domainpart)
 }

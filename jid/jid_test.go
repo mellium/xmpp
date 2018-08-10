@@ -218,6 +218,43 @@ func TestWithLocal(t *testing.T) {
 	}
 }
 
+func TestWithDomain(t *testing.T) {
+	for i, tc := range [...]struct {
+		jid    string
+		domain string
+		err    bool
+	}{
+		0: {"mercutio@example.net/test", "example.org", false},
+		1: {"mercutio@example.net/test", invalidutf8, true},
+		2: {"example.net", "example.org", false},
+		3: {"example.net", "", true},
+		4: {"example.net", strings.Repeat("a", 1024), true},
+	} {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			old := jid.MustParse(tc.jid)
+			new, err := old.WithDomain(tc.domain)
+			if (err != nil) != tc.err {
+				t.Fatal("Unexpected error", err)
+			}
+			if tc.err {
+				return
+			}
+			if old.String() != tc.jid {
+				t.Fatalf("WithDomain should clone data")
+			}
+			if r := new.Domainpart(); r != tc.domain {
+				t.Errorf("Unexpected domainpart: want=`%s', got=`%s'", tc.domain, r)
+			}
+			if new.Localpart() != old.Localpart() {
+				t.Errorf("Unexpected localpart mutation: want=`%s', got=`%s'", old.Localpart(), new.Localpart())
+			}
+			if new.Resourcepart() != old.Resourcepart() {
+				t.Errorf("Unexpected resourcepart mutation: want=`%s', got=`%s'", old.Resourcepart(), new.Resourcepart())
+			}
+		})
+	}
+}
+
 func TestWithResource(t *testing.T) {
 	for i, tc := range [...]struct {
 		jid string

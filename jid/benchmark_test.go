@@ -76,6 +76,14 @@ func BenchmarkWithLocal(b *testing.B) {
 	}
 }
 
+func BenchmarkWithDomain(b *testing.B) {
+	j := MustParse("local@example.com")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = j.WithDomain("example.org")
+	}
+}
+
 func BenchmarkWithResource(b *testing.B) {
 	j := MustParse("example.com/res")
 	b.ResetTimer()
