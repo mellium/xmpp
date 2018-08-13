@@ -9,8 +9,7 @@
 // for establishing an XMPP session, feature negotiation (including an API for
 // defining your own stream features), and low-level connection and stream
 // manipulation.
-// The jid package provides an implementation of the XMPP address format defined
-// in RFC 7622.
+// The jid package provides an implementation of the XMPP address format.
 //
 // Be advised: This API is still unstable and is subject to change.
 package xmpp // import "mellium.im/xmpp"
