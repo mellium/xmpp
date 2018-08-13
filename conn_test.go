@@ -37,7 +37,7 @@ func TestConn(t *testing.T) {
 			conn := newConn(tc.rw)
 
 			_, isTLSConn := tc.rw.(*tls.Conn)
-			if _, ok := conn.ConnectionState(); ok != isTLSConn {
+			if ok := conn.Secure(); ok != isTLSConn {
 				t.Errorf("TLS conn not wrapped properly: want=%t, got=%t", isTLSConn, ok)
 			}
 

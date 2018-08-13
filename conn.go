@@ -44,12 +44,22 @@ func newConn(rw io.ReadWriter) *Conn {
 }
 
 // ConnectionState returns basic TLS details about the connection if TLS has
-// been negotiated. If TLS has not been negotiated, ok is false.
-func (c *Conn) ConnectionState() (connState tls.ConnectionState, ok bool) {
-	if c.tlsConn != nil {
-		return c.tlsConn.ConnectionState(), true
+// been negotiated.
+// If TLS has not been negotiated it returns a zero value tls.ConnectionState.
+//
+// To check if TLS has been negotiated, see the Secure method.
+func (c *Conn) ConnectionState() tls.ConnectionState {
+	if c.tlsConn == nil {
+		return tls.ConnectionState{}
 	}
-	return connState, false
+	return c.tlsConn.ConnectionState()
+}
+
+// Secure returns whether the Conn is backed by an underlying tls.Conn.
+// If Secure returns true, ConnectionState will proxy to the underlying tls.Conn
+// instead of returning an empty connectiono state.
+func (c *Conn) Secure() bool {
+	return c.tlsConn != nil
 }
 
 // Close closes the connection.

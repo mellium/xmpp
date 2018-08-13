@@ -123,7 +123,7 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	// If rw was already a *tls.Conn or some other Conn that is secure, go ahead
 	// and mark the connection as secure so that we don't try to negotiate
 	// StartTLS.
-	if _, ok := s.conn.ConnectionState(); ok {
+	if s.conn.Secure() {
 		s.state |= Secure
 	}
 
