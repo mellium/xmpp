@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package xmpp provides functionality from the Extensible Messaging and
-// Presence Protocol, formerly known as "Jabber".
+// Presence Protocol, sometimes known as "Jabber".
 //
 // It is subdivided into several packages; this package provides functionality
 // for establishing an XMPP session, feature negotiation (including an API for
@@ -14,5 +14,3 @@
 //
 // Be advised: This API is still unstable and is subject to change.
 package xmpp // import "mellium.im/xmpp"
-
-// BUG(ssw): This package only supports Go 1.10.
