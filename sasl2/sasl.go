@@ -119,8 +119,8 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 				}),
 				sasl.RemoteMechanisms(data.([]string)...),
 			}
-			if connState, ok := conn.ConnectionState(); ok {
-				opts = append(opts, sasl.TLSState(connState))
+			if conn.Secure() {
+				opts = append(opts, sasl.TLSState(conn.ConnectionState()))
 			}
 			client := sasl.NewClient(selected, opts...)
 
