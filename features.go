@@ -15,6 +15,10 @@ import (
 	"mellium.im/xmpp/stream"
 )
 
+const (
+	featuresLocal = "features"
+)
+
 // A StreamFeature represents a feature that may be selected during stream
 // negotiation, eg. STARTTLS, compression, and SASL authentication are all
 // stream features.
@@ -258,7 +262,7 @@ func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeatu
 func readStreamFeatures(ctx context.Context, s *Session, start xml.StartElement, features []StreamFeature) (*streamFeaturesList, error) {
 	// TODO: Check if this is a stream error (if so, unmarshal and return).
 	switch {
-	case start.Name.Local != "features":
+	case start.Name.Local != featuresLocal:
 		return nil, stream.InvalidXML
 	case start.Name.Space != ns.Stream:
 		return nil, stream.BadNamespacePrefix
@@ -313,7 +317,7 @@ parsefeatures:
 				return nil, err
 			}
 		case xml.EndElement:
-			if tok.Name.Local == "features" && tok.Name.Space == ns.Stream {
+			if tok.Name.Local == featuresLocal && tok.Name.Space == ns.Stream {
 				// We've reached the end of the features list!
 				return sf, nil
 			}
