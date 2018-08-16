@@ -17,8 +17,10 @@ import (
 
 // A StreamFeature represents a feature that may be selected during stream
 // negotiation, eg. STARTTLS, compression, and SASL authentication are all
-// stream features. Features should be stateless as they may be reused between
-// connection attempts.
+// stream features.
+// Features should be stateless as they may be reused between
+// connection attempts, however, a method for passing state between features
+// exists on the Parse and Negotiate functions.
 type StreamFeature struct {
 	// The XML name of the feature in the <stream:feature/> list. If a start
 	// element with this name is seen while the connection is reading the features
@@ -48,7 +50,7 @@ type StreamFeature struct {
 	// (which should have a Name that matches this stream feature's Name).
 	// Returns whether or not the feature is required, and any data that will be
 	// needed if the feature is selected for negotiation (eg. the list of
-	// mechanisms if the feature was SASL).
+	// mechanisms if the feature was SASL authentication).
 	Parse func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (req bool, data interface{}, err error)
 
 	// A function that will take over the session temporarily while negotiating
@@ -84,7 +86,7 @@ func negotiateFeatures(ctx context.Context, s *Session, features []StreamFeature
 	var ok bool
 
 	if !server {
-		// Read a new startstream:features token.
+		// Read a new start stream:features token.
 		t, err = s.Token()
 		if err != nil {
 			return mask, nil, err

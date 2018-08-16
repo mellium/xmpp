@@ -19,8 +19,6 @@ import (
 // BUG(ssw): STARTTLS feature does not have security layer byte precision.
 
 // StartTLS returns a new stream feature that can be used for negotiating TLS.
-// For StartTLS to work, the underlying connection must support TLS (it must
-// implement net.Conn).
 func StartTLS(required bool, cfg *tls.Config) StreamFeature {
 	return StreamFeature{
 		Name:       xml.Name{Local: "starttls", Space: ns.StartTLS},
