@@ -26,7 +26,7 @@ const (
 func Example_echobot() {
 	j := jid.MustParse(login)
 	s, err := xmpp.DialClientSession(
-		context.TODO(), j, "en",
+		context.TODO(), j,
 		xmpp.BindResource(),
 		xmpp.StartTLS(true, &tls.Config{
 			ServerName: j.Domain().String(),

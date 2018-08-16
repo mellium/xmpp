@@ -22,7 +22,7 @@
 //
 //
 //     session, err := xmpp.DialClientSession(
-//         context.TODO(), addr, "en",
+//         context.TODO(), addr,
 //         xmpp.BindResource(),
 //         xmpp.StartTLS(true, nil),
 //         xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
@@ -37,7 +37,7 @@
 //     conn, err := xmpp.DialClient(context.TODO(), "tcp", addr)
 //     …
 //     session, err := xmpp.NewClientSession(
-//         context.TODO(), addr, "en", conn,
+//         context.TODO(), addr, conn,
 //         xmpp.BindResource(),
 //         xmpp.StartTLS(true, nil),
 //         xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
@@ -47,11 +47,14 @@
 // If complete control over the session establishment process is needed the
 // NegotiateSession function can be used to support custom session negotiation
 // protocols or to customize options around the default negotiator by using the
-// NewClientNegotiator and NewServerNegotiator functions.
+// NewNegotiator function.
 //
 //     session, err := xmpp.NegotiateSession(
 //         context.TODO(), addr.Domain(), addr, conn,
-//         component.Negotiator(addr, secret, false),
+//         xmpp.NewNegotiator(xmpp.StreamConfig{
+//             Lang: "en",
+//             …
+//         }),
 //     )
 //
 // The default Negotiator and related functions use a list of StreamFeature's to

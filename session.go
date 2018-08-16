@@ -194,12 +194,12 @@ func stanzaAddID(w xmlstream.TokenWriter) xmlstream.TokenWriter {
 //
 // If the provided context is canceled after stream negotiation is complete it
 // has no effect on the session.
-func DialClientSession(ctx context.Context, origin jid.JID, lang string, features ...StreamFeature) (*Session, error) {
+func DialClientSession(ctx context.Context, origin jid.JID, features ...StreamFeature) (*Session, error) {
 	conn, err := DialClient(ctx, "tcp", origin)
 	if err != nil {
 		return nil, err
 	}
-	return NegotiateSession(ctx, origin.Domain(), origin, conn, NewNegotiator(StreamConfig{Lang: lang, Features: features}))
+	return NegotiateSession(ctx, origin.Domain(), origin, conn, NewNegotiator(StreamConfig{Features: features}))
 }
 
 // DialServerSession uses a default dialer to create a TCP connection and
@@ -207,12 +207,12 @@ func DialClientSession(ctx context.Context, origin jid.JID, lang string, feature
 //
 // If the provided context is canceled after stream negotiation is complete it
 // has no effect on the session.
-func DialServerSession(ctx context.Context, location, origin jid.JID, lang string, features ...StreamFeature) (*Session, error) {
+func DialServerSession(ctx context.Context, location, origin jid.JID, features ...StreamFeature) (*Session, error) {
 	conn, err := DialServer(ctx, "tcp", location)
 	if err != nil {
 		return nil, err
 	}
-	return NegotiateSession(ctx, location, origin, conn, NewNegotiator(StreamConfig{Lang: lang, S2S: true, Features: features}))
+	return NegotiateSession(ctx, location, origin, conn, NewNegotiator(StreamConfig{S2S: true, Features: features}))
 }
 
 // NewClientSession attempts to use an existing connection (or any
@@ -220,8 +220,8 @@ func DialServerSession(ctx context.Context, location, origin jid.JID, lang strin
 // If the provided context is canceled before stream negotiation is complete an
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
-func NewClientSession(ctx context.Context, origin jid.JID, lang string, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return NegotiateSession(ctx, origin.Domain(), origin, rw, NewNegotiator(StreamConfig{Lang: lang, Features: features}))
+func NewClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return NegotiateSession(ctx, origin.Domain(), origin, rw, NewNegotiator(StreamConfig{Features: features}))
 }
 
 // NewServerSession attempts to use an existing connection (or any
@@ -229,8 +229,8 @@ func NewClientSession(ctx context.Context, origin jid.JID, lang string, rw io.Re
 // If the provided context is canceled before stream negotiation is complete an
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
-func NewServerSession(ctx context.Context, location, origin jid.JID, lang string, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return NegotiateSession(ctx, location, origin, rw, NewNegotiator(StreamConfig{Lang: lang, S2S: true, Features: features}))
+func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return NegotiateSession(ctx, location, origin, rw, NewNegotiator(StreamConfig{S2S: true, Features: features}))
 }
 
 // Serve decodes incoming XML tokens from the connection and delegates handling
