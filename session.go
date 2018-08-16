@@ -199,7 +199,7 @@ func DialClientSession(ctx context.Context, origin jid.JID, lang string, feature
 	if err != nil {
 		return nil, err
 	}
-	return NegotiateSession(ctx, origin.Domain(), origin, conn, negotiator(false, lang, features))
+	return NegotiateSession(ctx, origin.Domain(), origin, conn, NewNegotiator(StreamConfig{Lang: lang, Features: features}))
 }
 
 // DialServerSession uses a default dialer to create a TCP connection and
@@ -212,7 +212,7 @@ func DialServerSession(ctx context.Context, location, origin jid.JID, lang strin
 	if err != nil {
 		return nil, err
 	}
-	return NegotiateSession(ctx, location, origin, conn, negotiator(true, lang, features))
+	return NegotiateSession(ctx, location, origin, conn, NewNegotiator(StreamConfig{Lang: lang, S2S: true, Features: features}))
 }
 
 // NewClientSession attempts to use an existing connection (or any
@@ -221,7 +221,7 @@ func DialServerSession(ctx context.Context, location, origin jid.JID, lang strin
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
 func NewClientSession(ctx context.Context, origin jid.JID, lang string, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return NegotiateSession(ctx, origin.Domain(), origin, rw, negotiator(false, lang, features))
+	return NegotiateSession(ctx, origin.Domain(), origin, rw, NewNegotiator(StreamConfig{Lang: lang, Features: features}))
 }
 
 // NewServerSession attempts to use an existing connection (or any
@@ -230,7 +230,7 @@ func NewClientSession(ctx context.Context, origin jid.JID, lang string, rw io.Re
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
 func NewServerSession(ctx context.Context, location, origin jid.JID, lang string, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return NegotiateSession(ctx, location, origin, rw, negotiator(true, lang, features))
+	return NegotiateSession(ctx, location, origin, rw, NewNegotiator(StreamConfig{Lang: lang, S2S: true, Features: features}))
 }
 
 // Serve decodes incoming XML tokens from the connection and delegates handling
@@ -452,6 +452,24 @@ func (s *Session) RemoteAddr() jid.JID {
 		return s.origin
 	}
 	return s.location
+}
+
+// StreamConfig contains options for configuring the default Negotiator.
+type StreamConfig struct {
+	// The native language of the stream.
+	Lang string
+
+	// S2S causes the server to attempt to dial a server-to-server connection.
+	S2S bool
+
+	// A list of stream features to attempt to negotiate.
+	Features []StreamFeature
+}
+
+// NewNegotiator creates a Negotiator that uses a collection of
+// StreamFeatures to negotiate an XMPP server-to-server session.
+func NewNegotiator(cfg StreamConfig) Negotiator {
+	return negotiator(cfg.S2S, cfg.Lang, cfg.Features)
 }
 
 func negotiator(s2s bool, lang string, features []StreamFeature) Negotiator {
