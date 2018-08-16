@@ -469,10 +469,10 @@ type StreamConfig struct {
 // NewNegotiator creates a Negotiator that uses a collection of
 // StreamFeatures to negotiate an XMPP server-to-server session.
 func NewNegotiator(cfg StreamConfig) Negotiator {
-	return negotiator(cfg.S2S, cfg.Lang, cfg.Features)
+	return negotiator(cfg)
 }
 
-func negotiator(s2s bool, lang string, features []StreamFeature) Negotiator {
+func negotiator(cfg StreamConfig) Negotiator {
 	return func(ctx context.Context, s *Session, doRestart interface{}) (mask SessionState, rw io.ReadWriter, restartNext interface{}, err error) {
 		// Loop for as long as we're not done negotiating features or a stream restart
 		// is still required.
@@ -485,14 +485,14 @@ func negotiator(s2s bool, lang string, features []StreamFeature) Negotiator {
 				if err != nil {
 					return mask, nil, false, err
 				}
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, lang, s.location.String(), s.origin.String(), internal.RandomID())
+				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), cfg.S2S, internal.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), internal.RandomID())
 				if err != nil {
 					return mask, nil, false, err
 				}
 			} else {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), s2s, internal.DefaultVersion, lang, s.location.String(), s.origin.String(), "")
+				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), cfg.S2S, internal.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
 				if err != nil {
 					return mask, nil, false, err
 				}
@@ -503,7 +503,7 @@ func negotiator(s2s bool, lang string, features []StreamFeature) Negotiator {
 			}
 		}
 
-		mask, rw, err = negotiateFeatures(ctx, s, features)
+		mask, rw, err = negotiateFeatures(ctx, s, cfg.Features)
 		return mask, rw, rw != nil, err
 	}
 }
