@@ -14,7 +14,7 @@ import (
 	"mellium.im/xmpp/ping"
 )
 
-func Example() {
+func ExampleIQ() {
 	j := jid.MustParse("feste@example.net/siJo4eeT")
 	e := xml.NewEncoder(os.Stdout)
 	e.Indent("", "\t")

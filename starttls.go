@@ -19,6 +19,8 @@ import (
 // BUG(ssw): STARTTLS feature does not have security layer byte precision.
 
 // StartTLS returns a new stream feature that can be used for negotiating TLS.
+// If cfg is nil, a default configuration is used that uses the domainpart of
+// the sessions local address as the ServerName.
 func StartTLS(required bool, cfg *tls.Config) StreamFeature {
 	return StreamFeature{
 		Name:       xml.Name{Local: "starttls", Space: ns.StartTLS},

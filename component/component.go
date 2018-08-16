@@ -41,9 +41,11 @@ func NewClientSession(ctx context.Context, addr jid.JID, secret []byte, rw io.Re
 //}
 
 // Negotiator returns a new function that can be used to negotiate a component
-// protocol connection on the provided io.ReadWriter.
+// protocol connection when passed to xmpp.NegotiateSession.
 //
 // It currently only supports the client side of the component protocol.
+// If recv is true (indicating that we are receiving a connection on the server
+// side) the returned xmpp.Negotiator will panic.
 func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 	return func(ctx context.Context, s *xmpp.Session, _ interface{}) (mask xmpp.SessionState, _ io.ReadWriter, _ interface{}, err error) {
 		d := xml.NewDecoder(s.Conn())
