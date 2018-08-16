@@ -459,7 +459,7 @@ type StreamConfig struct {
 	// The native language of the stream.
 	Lang string
 
-	// S2S causes the server to attempt to dial a server-to-server connection.
+	// S2S causes the negotiator to negotiate a server-to-server (s2s) connection.
 	S2S bool
 
 	// A list of stream features to attempt to negotiate.
