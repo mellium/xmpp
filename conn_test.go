@@ -12,14 +12,14 @@ import (
 	"testing"
 )
 
-var closeErr = errors.New("test close error")
+var errClose = errors.New("test close error")
 
 type errCloser struct {
 	io.ReadWriter
 }
 
 func (errCloser) Close() error {
-	return closeErr
+	return errClose
 }
 
 var connTestCases = [...]struct {
@@ -28,7 +28,7 @@ var connTestCases = [...]struct {
 }{
 	0: {rw: struct{ io.ReadWriter }{}},
 	1: {rw: &tls.Conn{}},
-	2: {rw: errCloser{}, err: closeErr},
+	2: {rw: errCloser{}, err: errClose},
 }
 
 func TestConn(t *testing.T) {
