@@ -5,6 +5,7 @@
 package internal
 
 import (
+	"bufio"
 	"context"
 	"encoding/xml"
 	"fmt"
@@ -92,8 +93,9 @@ func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang string, loc
 		id = ` id='` + id + `' `
 	}
 
-	_, err := fmt.Fprintf(rw,
-		XMLHeader+`<stream:stream%sto='%s' from='%s' version='%s' xml:lang='`,
+	b := bufio.NewWriter(rw)
+	_, err := fmt.Fprintf(b,
+		XMLHeader+`<stream:stream%sto='%s' from='%s' version='%s' `,
 		id,
 		location,
 		origin,
@@ -103,19 +105,29 @@ func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang string, loc
 		return streamData, err
 	}
 
-	err = xml.EscapeText(rw, []byte(lang))
-	if err != nil {
-		return streamData, err
+	if len(lang) > 0 {
+		_, err = b.Write([]byte("xml:lang='"))
+		if err != nil {
+			return streamData, err
+		}
+		err = xml.EscapeText(b, []byte(lang))
+		if err != nil {
+			return streamData, err
+		}
+		_, err = b.Write([]byte("' "))
+		if err != nil {
+			return streamData, err
+		}
 	}
 
-	_, err = fmt.Fprintf(rw, `' xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
+	_, err = fmt.Fprintf(b, `xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
 		streamData.xmlns,
 	)
 	if err != nil {
 		return streamData, err
 	}
 
-	return streamData, nil
+	return streamData, b.Flush()
 }
 
 // ExpectNewStream reads a token from d and expects that it will be a new stream
