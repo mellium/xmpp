@@ -158,7 +158,9 @@ func negotiator(cfg StreamConfig) Negotiator {
 			}
 		}
 
-		mask, rw, err = negotiateFeatures(ctx, s, cfg.Features)
+		// TODO: Check if the first token is a stream error (if so, unmarshal and
+		// return, otherwise pass the token into negotiateFeatures).
+		mask, rw, err = negotiateFeatures(ctx, s, data == nil, cfg.Features)
 		nState.doRestart = rw != nil
 		return mask, rw, nState, err
 	}

@@ -73,7 +73,17 @@ type StreamFeature struct {
 	Negotiate func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error)
 }
 
-func negotiateFeatures(ctx context.Context, s *Session, features []StreamFeature) (mask SessionState, rw io.ReadWriter, err error) {
+func containsStartTLS(features []StreamFeature) (startTLS StreamFeature, ok bool) {
+	for _, feature := range features {
+		if feature.Name.Space == ns.StartTLS {
+			startTLS, ok = feature, true
+			break
+		}
+	}
+	return startTLS, ok
+}
+
+func negotiateFeatures(ctx context.Context, s *Session, first bool, features []StreamFeature) (mask SessionState, rw io.ReadWriter, err error) {
 	server := (s.state & Received) == Received
 
 	// If we're the server, write the initial stream features.
@@ -89,6 +99,7 @@ func negotiateFeatures(ctx context.Context, s *Session, features []StreamFeature
 	var start xml.StartElement
 	var ok bool
 
+	var startTLS StreamFeature
 	if !server {
 		// Read a new start stream:features token.
 		t, err = s.Token()
@@ -102,10 +113,19 @@ func negotiateFeatures(ctx context.Context, s *Session, features []StreamFeature
 
 		// If we're the client read the rest of the stream features list.
 		list, err = readStreamFeatures(ctx, s, start, features)
-
-		switch {
-		case err != nil:
+		if err != nil {
 			return mask, nil, err
+		}
+
+		var hasStartTLS bool
+		startTLS, hasStartTLS = containsStartTLS(features)
+		_, advertisedStartTLS := list.cache[ns.StartTLS]
+		switch {
+		case first && !advertisedStartTLS && s.State()&Secure != Secure && hasStartTLS:
+			// If this is the first features list and StartTLS isn't advertised (but
+			// is in the features list to be negotiated) and we're not already on a
+			// secure connection, try it anyways to prevent downgrade attacks per RFC
+			// 7590.
 		case list.total == 0:
 			// If we received an empty list (or one with no supported features), we're
 			// done.
@@ -146,24 +166,33 @@ func negotiateFeatures(ctx context.Context, s *Session, features []StreamFeature
 				return mask, rw, stream.PolicyViolation
 			}
 		} else {
-			// If we're the client, iterate through the cached features and select one
-			// to negotiate.
-			for _, v := range list.cache {
-				if _, ok := s.negotiated[v.feature.Name.Space]; ok {
-					// If this feature has already been negotiated, skip it.
-					continue
+			// If we need to try and negotiate StartTLS even though it wasn't
+			// advertised, select it.
+			if startTLS.Name.Space == ns.StartTLS {
+				data = sfData{
+					req:     true,
+					feature: startTLS,
 				}
+			} else {
+				// If we're the client, iterate through the cached features and select one
+				// to negotiate.
+				for _, v := range list.cache {
+					if _, ok := s.negotiated[v.feature.Name.Space]; ok {
+						// If this feature has already been negotiated, skip it.
+						continue
+					}
 
-				// If the feature is optional, select it.
-				if !v.req {
-					data = v
-					break
-				}
+					// If the feature is optional, select it.
+					if !v.req {
+						data = v
+						break
+					}
 
-				// If the feature is required, tentatively select it (but finish looking
-				// for optional features).
-				if v.req {
-					data = v
+					// If the feature is required, tentatively select it (but finish looking
+					// for optional features).
+					if v.req {
+						data = v
+					}
 				}
 			}
 
@@ -260,7 +289,6 @@ func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeatu
 }
 
 func readStreamFeatures(ctx context.Context, s *Session, start xml.StartElement, features []StreamFeature) (*streamFeaturesList, error) {
-	// TODO: Check if this is a stream error (if so, unmarshal and return).
 	switch {
 	case start.Name.Local != featuresLocal:
 		return nil, stream.InvalidXML

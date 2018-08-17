@@ -62,6 +62,15 @@ func TestClosedOutputStream(t *testing.T) {
 	}
 }
 
+func TestNilNegotiatorPanics(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected panic, did not get one")
+		}
+	}()
+	xmpp.NegotiateSession(context.Background(), jid.JID{}, jid.JID{}, nil, nil)
+}
+
 var errTestNegotiate = errors.New("a test error")
 
 func errNegotiator(ctx context.Context, session *xmpp.Session, data interface{}) (mask xmpp.SessionState, rw io.ReadWriter, cache interface{}, err error) {
@@ -73,28 +82,32 @@ type negotiateTestCase struct {
 	negotiator xmpp.Negotiator
 	in         string
 	out        string
+	location   jid.JID
+	origin     jid.JID
 	err        error
-	panics     bool
 }
 
 var negotiateTests = [...]negotiateTestCase{
-	0: {panics: true},
-	1: {negotiator: errNegotiator, err: errTestNegotiate},
+	0: {negotiator: errNegotiator, err: errTestNegotiate},
+	1: {
+		negotiator: xmpp.NewNegotiator(xmpp.StreamConfig{
+			Features: []xmpp.StreamFeature{xmpp.StartTLS(true, nil)},
+		}),
+		in:  `<stream:stream id='316732270768047465' version='1.0' xml:lang='en' xmlns:stream='http://etherx.jabber.org/streams' xmlns='jabber:client'><stream:features><other/></stream:features>`,
+		out: `<?xml version="1.0" encoding="UTF-8"?><stream:stream to='' from='' version='1.0' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'><starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`,
+		err: errors.New("XML syntax error on line 1: unexpected EOF"),
+	},
+	2: {
+		negotiator: xmpp.NewNegotiator(xmpp.StreamConfig{}),
+		in:         `<stream:stream id='316732270768047465' version='1.0' xml:lang='en' xmlns:stream='http://etherx.jabber.org/streams' xmlns='jabber:client'><stream:features><other/></stream:features>`,
+		out:        `<?xml version="1.0" encoding="UTF-8"?><stream:stream to='' from='' version='1.0' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'>`,
+		err:        errors.New("xmpp: features advertised out of order"),
+	},
 }
 
 func TestNegotiator(t *testing.T) {
 	for i, tc := range negotiateTests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			defer func() {
-				r := recover()
-				switch {
-				case tc.panics && r == nil:
-					t.Error("Expected nil negotiator to cause a panic")
-				case !tc.panics && r != nil:
-					t.Errorf("Unexpected panic: %v", r)
-				}
-			}()
-
 			buf := &bytes.Buffer{}
 			rw := struct {
 				io.Reader
@@ -103,12 +116,12 @@ func TestNegotiator(t *testing.T) {
 				Reader: strings.NewReader(tc.in),
 				Writer: buf,
 			}
-			_, err := xmpp.NegotiateSession(context.Background(), jid.JID{}, jid.JID{}, rw, tc.negotiator)
-			if err != tc.err {
+			_, err := xmpp.NegotiateSession(context.Background(), tc.location, tc.origin, rw, tc.negotiator)
+			if ((err == nil || tc.err == nil) && (err != nil || tc.err != nil)) || err.Error() != tc.err.Error() {
 				t.Errorf("Unexpected error: want=%q, got=%q", tc.err, err)
 			}
 			if out := buf.String(); out != tc.out {
-				t.Errorf("Unexpected output: want=%q, got=%q", tc.out, out)
+				t.Errorf("Unexpected output:\nwant=%q,\n got=%q", tc.out, out)
 			}
 		})
 	}
