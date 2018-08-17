@@ -10,6 +10,7 @@ package component // import "mellium.im/xmpp/component"
 
 import (
 	"context"
+	/* #nosec */
 	"crypto/sha1"
 	"encoding/xml"
 	"errors"
@@ -104,10 +105,14 @@ func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 			return mask, nil, nil, errors.New("Expected server stream to contain stream ID")
 		}
 
-		// hash.Write never returns an error per the documentation.
+		/* #nosec */
 		h := sha1.New()
+
+		// hash.Write never returns an error per the documentation.
 		/* #nosec */
 		_, _ = h.Write([]byte(id))
+
+		// hash.Write never returns an error per the documentation.
 		/* #nosec */
 		_, _ = h.Write(secret)
 

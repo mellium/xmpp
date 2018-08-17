@@ -6,6 +6,7 @@
 package color
 
 import (
+	/* #nosec */
 	"crypto/sha1"
 	"encoding/binary"
 	"hash"
@@ -27,6 +28,7 @@ const (
 // For more information see Sum.
 func Hash(cvd uint8) hash.Hash {
 	return digest{
+		/* #nosec */
 		Hash: sha1.New(),
 		cvd:  cvd,
 	}
