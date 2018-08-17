@@ -139,8 +139,12 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 			return s, err
 		}
 		if rw != nil {
-			s.features = make(map[string]interface{})
-			s.negotiated = make(map[string]struct{})
+			for k := range s.features {
+				delete(s.features, k)
+			}
+			for k := range s.negotiated {
+				delete(s.negotiated, k)
+			}
 			s.conn = newConn(rw, s.conn)
 			s.in.d = xml.NewDecoder(s.conn)
 			s.out.e = xml.NewEncoder(s.conn)
