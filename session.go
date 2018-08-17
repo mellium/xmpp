@@ -129,7 +129,7 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	}
 
 	// Call negotiate until the ready bit is set.
-	var data interface{} = true
+	var data interface{}
 	for s.state&Ready == 0 {
 		var mask SessionState
 		var rw io.ReadWriter
