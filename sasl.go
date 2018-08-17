@@ -6,6 +6,7 @@ package xmpp
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -77,7 +78,7 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 				panic("SASL server not yet implemented")
 			}
 
-			conn := session.Conn()
+			c := session.Conn()
 
 			var selected sasl.Mechanism
 			// Select a mechanism, preferring the client order.
@@ -101,8 +102,9 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 				}),
 				sasl.RemoteMechanisms(data.([]string)...),
 			}
-			if conn.Secure() {
-				opts = append(opts, sasl.TLSState(conn.ConnectionState()))
+
+			if tlsConn, ok := c.(*tls.Conn); ok {
+				opts = append(opts, sasl.TLSState(tlsConn.ConnectionState()))
 			}
 			client := sasl.NewClient(selected, opts...)
 
@@ -121,7 +123,7 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 			}
 
 			// Send <auth/> and the initial payload to start SASL auth.
-			if _, err = fmt.Fprintf(conn,
+			if _, err = fmt.Fprintf(c,
 				`<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='%s'>%s</auth>`,
 				selected.Name, resp,
 			); err != nil {
@@ -177,12 +179,12 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 					break
 				}
 				// TODO: What happens if there's more and success (broken server)?
-				if _, err = fmt.Fprintf(conn,
+				if _, err = fmt.Fprintf(c,
 					`<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>%s</response>`, resp); err != nil {
 					return mask, nil, err
 				}
 			}
-			return Authn, conn, nil
+			return Authn, c, nil
 		},
 	}
 }

@@ -5,84 +5,54 @@
 package xmpp
 
 import (
-	"crypto/tls"
 	"io"
 	"net"
 	"time"
 )
 
-// Conn is a net.Conn created for the purpose of establishing an XMPP session.
-type Conn struct {
-	tlsConn *tls.Conn
-	c       net.Conn
-	rw      io.ReadWriter
-	closer  func() error
+// conn is a net.Conn created for the purpose of establishing an XMPP session.
+type conn struct {
+	c  net.Conn
+	rw io.ReadWriter
 }
 
 // newConn wraps an io.ReadWriter in a Conn.
-// If rw is already a net.Conn or io.Closer the methods are proxied
-// appropriately. If rw is a *tls.Conn then ConnectionState returns the
-// appropriate value.
-// If rw is already a *Conn, it is returned immediately.
-func newConn(rw io.ReadWriter) *Conn {
-	nc := &Conn{rw: rw}
-	if closer, ok := rw.(io.Closer); ok {
-		nc.closer = closer.Close
+// If rw is already a net.Conn, it is returned without modification.
+// If rw is not a conn but prev is, the various Conn methods that are not part
+// of io.ReadWriter proxy through to prev.
+func newConn(rw io.ReadWriter, prev net.Conn) net.Conn {
+	if c, ok := rw.(net.Conn); ok {
+		return c
 	}
 
-	switch typrw := rw.(type) {
-	case *Conn:
-		return typrw
-	case *tls.Conn:
-		nc.tlsConn = typrw
-		nc.c = typrw
-	case net.Conn:
-		nc.c = typrw
-	}
-
+	nc := &conn{rw: rw, c: prev}
 	return nc
 }
 
-// ConnectionState returns basic TLS details about the connection if TLS has
-// been negotiated.
-// If TLS has not been negotiated it returns a zero value tls.ConnectionState.
-//
-// To check if TLS has been negotiated, see the Secure method.
-func (c *Conn) ConnectionState() tls.ConnectionState {
-	if c.tlsConn == nil {
-		return tls.ConnectionState{}
-	}
-	return c.tlsConn.ConnectionState()
-}
-
-// Secure returns whether the Conn is backed by an underlying tls.Conn.
-// If Secure returns true, ConnectionState will proxy to the underlying tls.Conn
-// instead of returning an empty connectiono state.
-func (c *Conn) Secure() bool {
-	return c.tlsConn != nil
-}
-
 // Close closes the connection.
-func (c *Conn) Close() error {
-	if c.closer == nil {
-		return nil
+func (c *conn) Close() error {
+	if c.c != nil {
+		return c.c.Close()
 	}
-	return c.closer()
+	if closer, ok := c.rw.(io.Closer); ok {
+		return closer.Close()
+	}
+	return nil
 }
 
 // LocalAddr returns the local network address.
-func (c *Conn) LocalAddr() net.Addr {
+func (c *conn) LocalAddr() net.Addr {
 	return c.c.LocalAddr()
 }
 
 // Read can be made to time out and return a net.Error with Timeout() == true
 // after a fixed time limit; see SetDeadline and SetReadDeadline.
-func (c *Conn) Read(b []byte) (n int, err error) {
+func (c *conn) Read(b []byte) (n int, err error) {
 	return c.rw.Read(b)
 }
 
 // RemoteAddr returns the remote network address.
-func (c *Conn) RemoteAddr() net.Addr {
+func (c *conn) RemoteAddr() net.Addr {
 	return c.c.RemoteAddr()
 }
 
@@ -90,13 +60,13 @@ func (c *Conn) RemoteAddr() net.Addr {
 // A zero value for t means Read and Write will not time out.
 // After a Write has timed out, the TLS state is corrupt and all future writes
 // will return the same error.
-func (c *Conn) SetDeadline(t time.Time) error {
+func (c *conn) SetDeadline(t time.Time) error {
 	return c.c.SetDeadline(t)
 }
 
 // SetReadDeadline sets the read deadline on the underlying connection.
 // A zero value for t means Read will not time out.
-func (c *Conn) SetReadDeadline(t time.Time) error {
+func (c *conn) SetReadDeadline(t time.Time) error {
 	return c.c.SetReadDeadline(t)
 }
 
@@ -104,11 +74,11 @@ func (c *Conn) SetReadDeadline(t time.Time) error {
 // A zero value for t means Write will not time out.
 // After a Write has timed out, the TLS state is corrupt and all future writes
 // will return the same error.
-func (c *Conn) SetWriteDeadline(t time.Time) error {
+func (c *conn) SetWriteDeadline(t time.Time) error {
 	return c.c.SetWriteDeadline(t)
 }
 
 // Write writes data to the connection.
-func (c *Conn) Write(b []byte) (int, error) {
+func (c *conn) Write(b []byte) (int, error) {
 	return c.rw.Write(b)
 }

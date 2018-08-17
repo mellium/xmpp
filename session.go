@@ -6,9 +6,11 @@ package xmpp
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/xml"
 	"errors"
 	"io"
+	"net"
 	"sync"
 
 	"mellium.im/xmlstream"
@@ -59,7 +61,7 @@ const (
 // A Session represents an XMPP session comprising an input and an output XML
 // stream.
 type Session struct {
-	conn *Conn
+	conn net.Conn
 
 	state SessionState
 	slock sync.RWMutex
@@ -110,7 +112,7 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 		panic("xmpp: attempted to negotiate session with nil negotiator")
 	}
 	s := &Session{
-		conn:       newConn(rw),
+		conn:       newConn(rw, nil),
 		origin:     origin,
 		location:   location,
 		features:   make(map[string]interface{}),
@@ -123,7 +125,7 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	// If rw was already a *tls.Conn or some other Conn that is secure, go ahead
 	// and mark the connection as secure so that we don't try to negotiate
 	// StartTLS.
-	if s.conn.Secure() {
+	if _, ok := s.conn.(*tls.Conn); ok {
 		s.state |= Secure
 	}
 
@@ -140,7 +142,7 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 		if rw != nil {
 			s.features = make(map[string]interface{})
 			s.negotiated = make(map[string]struct{})
-			s.conn = newConn(rw)
+			s.conn = newConn(rw, s.conn)
 			s.in.d = xml.NewDecoder(s.conn)
 			s.out.e = xml.NewEncoder(s.conn)
 		}
@@ -369,7 +371,7 @@ func (s *Session) Feature(namespace string) (data interface{}, ok bool) {
 // This should almost never be read from or written to, but is useful during
 // stream negotiation for wrapping the existing connection in a new layer (eg.
 // compression or TLS).
-func (s *Session) Conn() *Conn {
+func (s *Session) Conn() net.Conn {
 	return s.conn
 }
 

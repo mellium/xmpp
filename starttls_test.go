@@ -128,7 +128,7 @@ func (nopRWC) Close() error {
 func TestNegotiateServer(t *testing.T) {
 	stls := StartTLS(true, &tls.Config{})
 	var b bytes.Buffer
-	c := &Session{state: Received, conn: newConn(nopRWC{&b, &b})}
+	c := &Session{state: Received, conn: newConn(nopRWC{&b, &b}, nil)}
 	_, rw, err := stls.Negotiate(context.Background(), c, nil)
 	switch {
 	case err != nil:
@@ -167,7 +167,7 @@ func TestNegotiateClient(t *testing.T) {
 			stls := StartTLS(true, &tls.Config{})
 			r := strings.NewReader(strings.Join(test.responses, "\n"))
 			var b bytes.Buffer
-			c := &Session{conn: newConn(nopRWC{r, &b})}
+			c := &Session{conn: newConn(nopRWC{r, &b}, nil)}
 			c.in.d = xml.NewDecoder(c.conn)
 			mask, rw, err := stls.Negotiate(context.Background(), c, nil)
 			switch {

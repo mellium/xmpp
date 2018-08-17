@@ -19,7 +19,7 @@ import (
 // client-to-server (c2s) connection.
 //
 // For more information see the Dialer type.
-func DialClient(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
+func DialClient(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
 	var d Dialer
 	return d.Dial(ctx, network, addr)
 }
@@ -28,7 +28,7 @@ func DialClient(ctx context.Context, network string, addr jid.JID) (*Conn, error
 // server-to-server connection (s2s).
 //
 // For more info see the Dialer type.
-func DialServer(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
+func DialServer(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
 	d := Dialer{
 		S2S: true,
 	}
@@ -80,11 +80,11 @@ type Dialer struct {
 // "tcp6").
 //
 // For more information see the Dialer type.
-func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
+func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
 	return d.dial(ctx, network, addr)
 }
 
-func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (*Conn, error) {
+func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
 	domain := addr.Domainpart()
 	service := connType(!d.NoTLS, d.S2S)
 	var addrs []*net.SRV
@@ -159,7 +159,7 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (*Conn,
 			continue
 		}
 
-		return newConn(c), nil
+		return c, nil
 	}
 	return nil, err
 }
