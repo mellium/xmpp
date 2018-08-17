@@ -122,9 +122,8 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	s.out.e = xml.NewEncoder(s.conn)
 	s.in.ctx, s.in.cancel = context.WithCancel(context.Background())
 
-	// If rw was already a *tls.Conn or some other Conn that is secure, go ahead
-	// and mark the connection as secure so that we don't try to negotiate
-	// StartTLS.
+	// If rw was already a *tls.Conn, go ahead and mark the connection as secure
+	// so that we don't try to negotiate StartTLS.
 	if _, ok := s.conn.(*tls.Conn); ok {
 		s.state |= Secure
 	}
