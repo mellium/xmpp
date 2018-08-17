@@ -11,10 +11,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
-	"math/rand"
 	"strconv"
+	"strings"
 	"testing"
 
 	"mellium.im/xmpp"
@@ -72,6 +71,8 @@ func errNegotiator(ctx context.Context, session *xmpp.Session, data interface{})
 
 type negotiateTestCase struct {
 	negotiator xmpp.Negotiator
+	in         string
+	out        string
 	err        error
 	panics     bool
 }
@@ -94,18 +95,20 @@ func TestNegotiator(t *testing.T) {
 				}
 			}()
 
-			// TODO: This is just some junk for now. Fix it up when you add more tests
-			// that actually need it.
+			buf := &bytes.Buffer{}
 			rw := struct {
 				io.Reader
 				io.Writer
 			}{
-				Reader: rand.New(rand.NewSource(99)),
-				Writer: ioutil.Discard,
+				Reader: strings.NewReader(tc.in),
+				Writer: buf,
 			}
 			_, err := xmpp.NegotiateSession(context.Background(), jid.JID{}, jid.JID{}, rw, tc.negotiator)
 			if err != tc.err {
-				t.Errorf("Unexpected error: want=%v, got=%v", tc.err, err)
+				t.Errorf("Unexpected error: want=%q, got=%q", tc.err, err)
+			}
+			if out := buf.String(); out != tc.out {
+				t.Errorf("Unexpected output: want=%q, got=%q", tc.out, out)
 			}
 		})
 	}
