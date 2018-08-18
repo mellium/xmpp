@@ -84,8 +84,11 @@ type StreamConfig struct {
 	TeeIn, TeeOut io.Writer
 }
 
-// NewNegotiator creates a Negotiator that uses a collection of
-// StreamFeatures to negotiate an XMPP server-to-server session.
+// NewNegotiator creates a Negotiator that uses a collection of StreamFeatures
+// to negotiate an XMPP client-to-server (c2s) or server-to-server (s2s)
+// session.
+// If StartTLS is one of the supported stream features, the Negotiator attempts
+// to negotiate it whether the server advertises support or not.
 func NewNegotiator(cfg StreamConfig) Negotiator {
 	return negotiator(cfg)
 }
