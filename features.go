@@ -100,6 +100,7 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 	var ok bool
 
 	var startTLS StreamFeature
+	var doStartTLS bool
 	if !server {
 		// Read a new start stream:features token.
 		t, err = s.Token()
@@ -117,15 +118,18 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 			return mask, nil, err
 		}
 
-		var hasStartTLS bool
-		startTLS, hasStartTLS = containsStartTLS(features)
+		startTLS, doStartTLS = containsStartTLS(features)
 		_, advertisedStartTLS := list.cache[ns.StartTLS]
+		// If this is the first features list and StartTLS isn't advertised (but
+		// is in the features list to be negotiated) and we're not already on a
+		// secure connection, try it anyways to prevent downgrade attacks per RFC
+		// 7590.
+		doStartTLS = first && !advertisedStartTLS && s.State()&Secure != Secure && doStartTLS
+
 		switch {
-		case first && !advertisedStartTLS && s.State()&Secure != Secure && hasStartTLS:
-			// If this is the first features list and StartTLS isn't advertised (but
-			// is in the features list to be negotiated) and we're not already on a
-			// secure connection, try it anyways to prevent downgrade attacks per RFC
-			// 7590.
+		case doStartTLS:
+			// Skip length checks if we need to negotiate StartTLS for downgrade
+			// attack prevention.
 		case list.total == 0:
 			// If we received an empty list (or one with no supported features), we're
 			// done.
@@ -168,7 +172,7 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 		} else {
 			// If we need to try and negotiate StartTLS even though it wasn't
 			// advertised, select it.
-			if startTLS.Name.Space == ns.StartTLS {
+			if doStartTLS && startTLS.Name.Space == ns.StartTLS {
 				data = sfData{
 					req:     true,
 					feature: startTLS,
