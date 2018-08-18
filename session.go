@@ -440,8 +440,6 @@ func (s *Session) State() SessionState {
 // LocalAddr returns the Origin address for initiated connections, or the
 // Location for received connections.
 func (s *Session) LocalAddr() jid.JID {
-	s.slock.RLock()
-	defer s.slock.RUnlock()
 	if (s.state & Received) == Received {
 		return s.location
 	}
@@ -451,8 +449,6 @@ func (s *Session) LocalAddr() jid.JID {
 // RemoteAddr returns the Location address for initiated connections, or the
 // Origin address for received connections.
 func (s *Session) RemoteAddr() jid.JID {
-	s.slock.RLock()
-	defer s.slock.RUnlock()
 	if (s.state & Received) == Received {
 		return s.origin
 	}
