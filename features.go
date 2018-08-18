@@ -103,7 +103,7 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 	var doStartTLS bool
 	if !server {
 		// Read a new start stream:features token.
-		t, err = s.Token()
+		t, err = s.in.d.Token()
 		if err != nil {
 			return mask, nil, err
 		}
@@ -152,7 +152,7 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 
 		if server {
 			// Read a new feature to negotiate.
-			t, err = s.Token()
+			t, err = s.in.d.Token()
 			if err != nil {
 				return mask, nil, err
 			}
@@ -252,7 +252,7 @@ func getFeature(name xml.Name, features []StreamFeature) (feature StreamFeature,
 
 func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeature) (list *streamFeaturesList, err error) {
 	start := xml.StartElement{Name: xml.Name{Space: "", Local: "stream:features"}}
-	if err = s.EncodeToken(start); err != nil {
+	if err = s.out.e.EncodeToken(start); err != nil {
 		return
 	}
 
@@ -283,7 +283,7 @@ func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeatu
 			list.total++
 		}
 	}
-	if err = s.EncodeToken(start.End()); err != nil {
+	if err = s.out.e.EncodeToken(start.End()); err != nil {
 		return
 	}
 	if err = s.Flush(); err != nil {

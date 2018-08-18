@@ -135,6 +135,12 @@ func decodeClientResp(ctx context.Context, r xml.TokenReader, decode func(ctx co
 func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session, interface{}) (xmpp.SessionState, io.ReadWriter, error) {
 	return func(ctx context.Context, session *xmpp.Session, supported interface{}) (mask xmpp.SessionState, rw io.ReadWriter, err error) {
 		server := (session.State() & xmpp.Received) == xmpp.Received
+		wc := session.TokenWriter()
+		/* #nosec */
+		defer wc.Close()
+		rc := session.TokenReader()
+		/* #nosec */
+		defer rc.Close()
 
 		if !server && !supported.(bool) {
 			// We don't support some of the challenge types advertised by the server.
@@ -149,15 +155,15 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 			for _, c := range challenges {
 				// Send the challenge.
 				start := challengeStart(c.Type)
-				err = session.EncodeToken(start)
+				err = wc.EncodeToken(start)
 				if err != nil {
 					return
 				}
-				err = c.Send(ctx, session)
+				err = c.Send(ctx, wc)
 				if err != nil {
 					return
 				}
-				err = session.EncodeToken(start.End())
+				err = wc.EncodeToken(start.End())
 				if err != nil {
 					return
 				}
@@ -168,7 +174,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 
 				// Decode the clients response
 				var cancel bool
-				cancel, err = decodeClientResp(ctx, session, c.Receive)
+				cancel, err = decodeClientResp(ctx, rc, c.Receive)
 				if err != nil || cancel {
 					return
 				}
@@ -177,7 +183,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 		}
 
 		// If we're the client, decode the challenge.
-		tok, err = session.Token()
+		tok, err = rc.Token()
 		if err != nil {
 			return
 		}
@@ -208,7 +214,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 				continue
 			}
 
-			err = c.Receive(ctx, false, session, &start)
+			err = c.Receive(ctx, false, rc, &start)
 			if err != nil {
 				return
 			}
@@ -216,16 +222,16 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 			respStart := xml.StartElement{
 				Name: xml.Name{Local: "response"},
 			}
-			if err = session.EncodeToken(respStart); err != nil {
+			if err = wc.EncodeToken(respStart); err != nil {
 				return
 			}
 			if c.Respond != nil {
-				err = c.Respond(ctx, session)
+				err = c.Respond(ctx, wc)
 				if err != nil {
 					return
 				}
 			}
-			if err = session.EncodeToken(respStart.End()); err != nil {
+			if err = wc.EncodeToken(respStart.End()); err != nil {
 				return
 			}
 
