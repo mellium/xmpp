@@ -420,11 +420,9 @@ func (s *Session) RemoteAddr() jid.JID {
 // If the input stream is not closed by the deadline, the input stream is marked
 // as closed and any blocking calls to Serve will return an error.
 func (s *Session) SetCloseDeadline(t time.Time) error {
-	// The parent has a cancel function, so we don't save this one. Calling the
-	// parents will free up resources for the entire chain without having to make
-	// sure we synchronize checking the context in serve and swapping to the new
-	// one being set here.
-	s.in.ctx, _ = context.WithDeadline(s.in.ctx, t)
+	oldCancel := s.in.cancel
+	s.in.ctx, s.in.cancel = context.WithDeadline(context.Background(), t)
+	oldCancel()
 	return s.Conn().SetReadDeadline(t)
 }
 
