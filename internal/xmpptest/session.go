@@ -13,6 +13,15 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
+// NopNegotiator marks the state as ready (by returning state|xmpp.Ready) and
+// does not actually transmit any data over the wire or perform any other
+// session negotiation.
+func NopNegotiator(state xmpp.SessionState) xmpp.Negotiator {
+	return func(_ context.Context, _ *xmpp.Session, _ interface{}) (xmpp.SessionState, io.ReadWriter, interface{}, error) {
+		return state | xmpp.Ready, nil, nil, nil
+	}
+}
+
 // NewSession returns a new XMPP session with the state bits set to
 // state|xmpp.Ready.
 //
@@ -24,9 +33,7 @@ func NewSession(state xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
 
 	s, err := xmpp.NegotiateSession(
 		context.Background(), location, origin, rw,
-		func(_ context.Context, _ *xmpp.Session, _ interface{}) (xmpp.SessionState, io.ReadWriter, interface{}, error) {
-			return state | xmpp.Ready, nil, nil, nil
-		},
+		NopNegotiator(state),
 	)
 	if err != nil {
 		panic(err)
