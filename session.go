@@ -156,43 +156,6 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	return s, nil
 }
 
-type wrapWriter struct {
-	encode func(t xml.Token) error
-	flush  func() error
-}
-
-func (w wrapWriter) EncodeToken(t xml.Token) error { return w.encode(t) }
-func (w wrapWriter) Flush() error                  { return w.flush() }
-
-func stanzaAddID(w xmlstream.TokenWriter) xmlstream.TokenWriter {
-	depth := 0
-	return wrapWriter{
-		encode: func(t xml.Token) error {
-		tokswitch:
-			switch tok := t.(type) {
-			case xml.StartElement:
-				depth++
-				if depth == 1 && tok.Name.Local == "iq" {
-					for _, attr := range tok.Attr {
-						if attr.Name.Local == "id" {
-							break tokswitch
-						}
-					}
-					tok.Attr = append(tok.Attr, xml.Attr{
-						Name:  xml.Name{Local: "id"},
-						Value: internal.RandomID(),
-					})
-					t = tok
-				}
-			case xml.EndElement:
-				depth--
-			}
-			return w.EncodeToken(t)
-		},
-		flush: w.Flush,
-	}
-}
-
 // DialClientSession uses a default dialer to create a TCP connection and
 // attempts to negotiate an XMPP session over it.
 //
@@ -299,8 +262,6 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 		default:
 		}
 		tok, err := s.Token()
-		// TODO: If this is a network issue we should return it, if not we should
-		// handle it.
 		if err != nil {
 			return s.sendError(err)
 		}
@@ -449,4 +410,41 @@ func (s *Session) RemoteAddr() jid.JID {
 		return s.origin
 	}
 	return s.location
+}
+
+type wrapWriter struct {
+	encode func(t xml.Token) error
+	flush  func() error
+}
+
+func (w wrapWriter) EncodeToken(t xml.Token) error { return w.encode(t) }
+func (w wrapWriter) Flush() error                  { return w.flush() }
+
+func stanzaAddID(w xmlstream.TokenWriter) xmlstream.TokenWriter {
+	depth := 0
+	return wrapWriter{
+		encode: func(t xml.Token) error {
+		tokswitch:
+			switch tok := t.(type) {
+			case xml.StartElement:
+				depth++
+				if depth == 1 && tok.Name.Local == "iq" {
+					for _, attr := range tok.Attr {
+						if attr.Name.Local == "id" {
+							break tokswitch
+						}
+					}
+					tok.Attr = append(tok.Attr, xml.Attr{
+						Name:  xml.Name{Local: "id"},
+						Value: internal.RandomID(),
+					})
+					t = tok
+				}
+			case xml.EndElement:
+				depth--
+			}
+			return w.EncodeToken(t)
+		},
+		flush: w.Flush,
+	}
 }
