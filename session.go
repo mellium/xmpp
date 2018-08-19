@@ -434,6 +434,7 @@ func (s *Session) RemoteAddr() jid.JID {
 // other side.
 // If the input stream is not closed by the deadline, the input stream is marked
 // as closed and any blocking calls to Serve will return an error.
+// This is normally called just before a call to Close.
 func (s *Session) SetCloseDeadline(t time.Time) error {
 	oldCancel := s.in.cancel
 	s.in.ctx, s.in.cancel = context.WithDeadline(context.Background(), t)
