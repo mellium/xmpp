@@ -77,9 +77,6 @@ func New(methods ...Method) xmpp.StreamFeature {
 				return false, nil, err
 			}
 
-			// TODO: Is this actually an error, or is this a bad implementation that
-			//       we can ignore? If someone strips all security mechanisms do we
-			//       care that we'll effectively negotiate "none" compression?
 			if len(listed.Methods) == 0 {
 				return false, nil, errNoMethods
 			}
