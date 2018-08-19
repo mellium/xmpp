@@ -76,7 +76,6 @@ type Session struct {
 	negotiated map[string]struct{}
 
 	in struct {
-		sync.Mutex
 		internal.StreamInfo
 		d      xml.TokenReader
 		ctx    context.Context
@@ -253,9 +252,6 @@ func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 // If the input stream is closed, Serve returns.
 // Serve does not close the output stream.
 func (s *Session) Serve(h Handler) error {
-	s.in.Lock()
-	defer s.in.Unlock()
-
 	return s.handleInputStream(h)
 }
 
