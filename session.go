@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal"
@@ -210,10 +211,11 @@ func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 // Instead, Serve unmarshals the error, closes the session, and returns it (h
 // handles stanza level errors, the session handles stream level errors).
 //
-// If Serve is called concurrently the second invocation blocks until the first
-// returns.
-// If the input stream is closed, Serve returns.
-// Serve does not close the output stream.
+// If the input stream is closed by the remote entity, Serve returns with a nil
+// error without closing the output stream.
+// If the user closes the output stream by calling Close, Serve continues until
+// the input stream is closed by the remote entity as above, or the deadline set
+// by SetCloseDeadline is reached in which case a timeout error is returned.
 func (s *Session) Serve(h Handler) error {
 	return s.handleInputStream(h)
 }
@@ -247,6 +249,7 @@ func (s *Session) sendError(err error) (e error) {
 
 func (s *Session) handleInputStream(handler Handler) (err error) {
 	defer func() {
+		s.closeInputStream()
 		e := s.Close()
 		if err == nil {
 			err = e
@@ -410,6 +413,28 @@ func (s *Session) RemoteAddr() jid.JID {
 		return s.origin
 	}
 	return s.location
+}
+
+// SetCloseDeadline sets a deadline for the input stream to be closed by the
+// other side.
+// If the input stream is not closed by the deadline, the input stream is marked
+// as closed and any blocking calls to Serve will return an error.
+func (s *Session) SetCloseDeadline(t time.Time) error {
+	// The parent has a cancel function, so we don't save this one. Calling the
+	// parents will free up resources for the entire chain without having to make
+	// sure we synchronize checking the context in serve and swapping to the new
+	// one being set here.
+	s.in.ctx, _ = context.WithDeadline(s.in.ctx, t)
+	return s.Conn().SetReadDeadline(t)
+}
+
+// closeInputStream immediately marks the input stream as closed and cancels any
+// deadlines associated with it.
+func (s *Session) closeInputStream() {
+	s.slock.Lock()
+	s.state |= InputStreamClosed
+	s.slock.Unlock()
+	s.in.cancel()
 }
 
 type wrapWriter struct {
