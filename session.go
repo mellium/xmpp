@@ -247,7 +247,17 @@ func (s *Session) sendError(err error) (e error) {
 	return err
 }
 
+type nopHandler struct{}
+
+func (nopHandler) HandleXMPP(_ xmlstream.TokenReadWriter, _ *xml.StartElement) error {
+	return nil
+}
+
 func (s *Session) handleInputStream(handler Handler) (err error) {
+	if handler == nil {
+		handler = nopHandler{}
+	}
+
 	defer func() {
 		s.closeInputStream()
 		e := s.Close()
