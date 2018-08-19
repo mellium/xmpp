@@ -266,6 +266,11 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 		}
 		tok, err := s.Token()
 		if err != nil {
+			// If this was a read timeout, don't try to send it. Just try to read
+			// again and see if the context has timed out.
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				continue
+			}
 			return s.sendError(err)
 		}
 
