@@ -105,34 +105,33 @@ type Session struct {
 type Negotiator func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, cache interface{}, err error)
 
 type stateCheckReader struct {
-	xml.TokenReader
 	s *Session
 }
 
-func (r stateCheckReader) Token() (xml.Token, error) {
+func (r stateCheckReader) Read(p []byte) (int, error) {
 	r.s.slock.RLock()
 	defer r.s.slock.RUnlock()
 
 	if r.s.state&InputStreamClosed == InputStreamClosed {
-		return nil, ErrInputStreamClosed
+		return 0, ErrInputStreamClosed
 	}
 
-	return r.TokenReader.Token()
+	return r.s.conn.Read(p)
 }
 
 type stateCheckWriter struct {
-	xmlstream.TokenWriter
 	s *Session
 }
 
-func (w stateCheckWriter) EncodeToken(t xml.Token) error {
+func (w stateCheckWriter) Write(p []byte) (int, error) {
 	w.s.slock.RLock()
 	defer w.s.slock.RUnlock()
+
 	if w.s.state&OutputStreamClosed == OutputStreamClosed {
-		return ErrOutputStreamClosed
+		return 0, ErrOutputStreamClosed
 	}
 
-	return w.TokenWriter.EncodeToken(t)
+	return w.s.conn.Write(p)
 }
 
 // NegotiateSession creates an XMPP session using a custom negotiate function.
@@ -150,8 +149,8 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 		features:   make(map[string]interface{}),
 		negotiated: make(map[string]struct{}),
 	}
-	s.in.d = stateCheckReader{TokenReader: xml.NewDecoder(s.conn), s: s}
-	s.out.e = stateCheckWriter{TokenWriter: xml.NewEncoder(s.conn), s: s}
+	s.in.d = xml.NewDecoder(stateCheckReader{s: s})
+	s.out.e = xml.NewEncoder(stateCheckWriter{s: s})
 	s.in.ctx, s.in.cancel = context.WithCancel(context.Background())
 
 	// If rw was already a *tls.Conn, go ahead and mark the connection as secure
@@ -178,8 +177,8 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 				delete(s.negotiated, k)
 			}
 			s.conn = newConn(rw, s.conn)
-			s.in.d = stateCheckReader{TokenReader: xml.NewDecoder(s.conn), s: s}
-			s.out.e = stateCheckWriter{TokenWriter: xml.NewEncoder(s.conn), s: s}
+			s.in.d = xml.NewDecoder(stateCheckReader{s: s})
+			s.out.e = xml.NewEncoder(stateCheckWriter{s: s})
 		}
 		s.state |= mask
 	}

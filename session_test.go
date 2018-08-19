@@ -48,15 +48,12 @@ func TestClosedOutputStream(t *testing.T) {
 			s := xmpptest.NewSession(mask, buf)
 			wc := s.TokenWriter()
 
-			switch err := wc.EncodeToken(xml.CharData("chartoken")); {
-			case mask&xmpp.OutputStreamClosed == xmpp.OutputStreamClosed && err != xmpp.ErrOutputStreamClosed:
-				t.Errorf("Unexpected error: want=`%v', got=`%v'", xmpp.ErrOutputStreamClosed, err)
-			case mask&xmpp.OutputStreamClosed == 0 && err != nil:
+			if err := wc.EncodeToken(xml.CharData("chartoken")); err != nil {
 				t.Errorf("Unexpected error: `%v'", err)
 			}
 			switch err := s.Flush(); {
 			case mask&xmpp.OutputStreamClosed == xmpp.OutputStreamClosed && err != xmpp.ErrOutputStreamClosed:
-				t.Errorf("Unexpected error: want=`%v', got=`%v'", xmpp.ErrOutputStreamClosed, err)
+				t.Errorf("Unexpected error flushing: want=`%v', got=`%v'", xmpp.ErrOutputStreamClosed, err)
 			case mask&xmpp.OutputStreamClosed == 0 && err != nil:
 				t.Errorf("Unexpected error: `%v'", err)
 			}
