@@ -53,10 +53,7 @@ func StartTLS(required bool, cfg *tls.Config) StreamFeature {
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
 			conn := session.Conn()
 			state := session.State()
-			rc := session.TokenReader()
-			/* #nosec */
-			defer rc.Close()
-			d := xml.NewTokenDecoder(rc)
+			d := xml.NewTokenDecoder(session)
 
 			// If no TLSConfig was specified, use a default config.
 			if cfg == nil {

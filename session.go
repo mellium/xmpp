@@ -83,7 +83,6 @@ type Session struct {
 		cancel context.CancelFunc
 	}
 	out struct {
-		sync.Mutex
 		internal.StreamInfo
 		e xmlstream.TokenWriter
 	}
@@ -104,36 +103,6 @@ type Session struct {
 // (encoders, decoders, etc.) will be reset.
 type Negotiator func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, cache interface{}, err error)
 
-type stateCheckReader struct {
-	s *Session
-}
-
-func (r stateCheckReader) Read(p []byte) (int, error) {
-	r.s.slock.RLock()
-	defer r.s.slock.RUnlock()
-
-	if r.s.state&InputStreamClosed == InputStreamClosed {
-		return 0, ErrInputStreamClosed
-	}
-
-	return r.s.conn.Read(p)
-}
-
-type stateCheckWriter struct {
-	s *Session
-}
-
-func (w stateCheckWriter) Write(p []byte) (int, error) {
-	w.s.slock.RLock()
-	defer w.s.slock.RUnlock()
-
-	if w.s.state&OutputStreamClosed == OutputStreamClosed {
-		return 0, ErrOutputStreamClosed
-	}
-
-	return w.s.conn.Write(p)
-}
-
 // NegotiateSession creates an XMPP session using a custom negotiate function.
 // Calling NegotiateSession with a nil Negotiator panics.
 //
@@ -149,8 +118,8 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 		features:   make(map[string]interface{}),
 		negotiated: make(map[string]struct{}),
 	}
-	s.in.d = xml.NewDecoder(stateCheckReader{s: s})
-	s.out.e = xml.NewEncoder(stateCheckWriter{s: s})
+	s.in.d = xml.NewDecoder(s.conn)
+	s.out.e = xml.NewEncoder(s.conn)
 	s.in.ctx, s.in.cancel = context.WithCancel(context.Background())
 
 	// If rw was already a *tls.Conn, go ahead and mark the connection as secure
@@ -177,8 +146,8 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 				delete(s.negotiated, k)
 			}
 			s.conn = newConn(rw, s.conn)
-			s.in.d = xml.NewDecoder(stateCheckReader{s: s})
-			s.out.e = xml.NewEncoder(stateCheckWriter{s: s})
+			s.in.d = xml.NewDecoder(s.conn)
+			s.out.e = xml.NewEncoder(s.conn)
 		}
 		s.state |= mask
 	}
@@ -284,6 +253,9 @@ func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 // If the input stream is closed, Serve returns.
 // Serve does not close the output stream.
 func (s *Session) Serve(h Handler) error {
+	s.in.Lock()
+	defer s.in.Unlock()
+
 	return s.handleInputStream(h)
 }
 
@@ -292,13 +264,9 @@ func (s *Session) Serve(h Handler) error {
 // If an error is returned (the original error or a different one), it has not
 // been handled fully and must be handled by the caller.
 func (s *Session) sendError(err error) (e error) {
-	wc := s.TokenWriter()
-	/* #nosec */
-	defer wc.Close()
-
 	switch typErr := err.(type) {
 	case stream.Error:
-		if _, e = typErr.WriteXML(wc); e != nil {
+		if _, e = typErr.WriteXML(s); e != nil {
 			return e
 		}
 		if e = s.Close(); e != nil {
@@ -312,7 +280,7 @@ func (s *Session) sendError(err error) (e error) {
 	//     The error condition is not one of those defined by the other
 	//     conditions in this list; this error condition SHOULD NOT be used
 	//     except in conjunction with an application-specific condition.
-	if _, e = stream.UndefinedCondition.WriteXML(wc); e != nil {
+	if _, e = stream.UndefinedCondition.WriteXML(s); e != nil {
 		return e
 	}
 	return err
@@ -334,78 +302,60 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 			return s.in.ctx.Err()
 		default:
 		}
-
-		err = func() error {
-			rc := s.TokenReader()
-			/* #nosec */
-			defer rc.Close()
-
-			// TODO: should we change handle to not pass a writer? Why lock this if we
-			// don't know it's necessary? Maybe pass the session and the locked reader
-			// instead so they can aquire the write lock only if necessary.
-			wc := s.TokenWriter()
-			/* #nosec */
-			defer wc.Close()
-
-			tok, err := rc.Token()
-			// TODO: If this is a network issue we should return it, if not we should
-			// handle it.
-			if err != nil {
-				return s.sendError(err)
-			}
-
-			var start xml.StartElement
-			switch t := tok.(type) {
-			case xml.StartElement:
-				start = t
-			case xml.EndElement:
-				if t.Name.Space == ns.Stream && t.Name.Local == "stream" {
-					return nil
-				}
-				// If this is a stream level end element but not </stream:stream>,
-				// something is really weird…
-				return s.sendError(stream.BadFormat)
-			default:
-				// If this isn't a start element, the stream is in a bad state.
-				return s.sendError(stream.BadFormat)
-			}
-
-			rw := struct {
-				xml.TokenReader
-				xmlstream.TokenWriter
-			}{
-				TokenReader: xmlstream.Inner(rc),
-				TokenWriter: wc,
-			}
-
-			// Handle stream errors and unknown stream namespaced tokens first, before
-			// delegating to the normal handler.
-			if start.Name.Space == ns.Stream {
-				switch start.Name.Local {
-				case "error":
-					// TODO: Unmarshal the error and return it.
-					return nil
-				default:
-					return s.sendError(stream.UnsupportedStanzaType)
-				}
-			}
-
-			if err = handler.HandleXMPP(rw, &start); err != nil {
-				return s.sendError(err)
-			}
-			// Advance to the end of the current element before attempting to read the
-			// next.
-			//
-			// TODO: Error handling should be the same here as it would be for the
-			// rest of this loop.
-			_, err = xmlstream.Copy(discard, rw)
-			if err != nil {
-				return s.sendError(err)
-			}
-			return nil
-		}()
+		tok, err := s.Token()
+		// TODO: If this is a network issue we should return it, if not we should
+		// handle it.
 		if err != nil {
-			return err
+			return s.sendError(err)
+		}
+
+		var start xml.StartElement
+		switch t := tok.(type) {
+		case xml.StartElement:
+			start = t
+		case xml.EndElement:
+			if t.Name.Space == ns.Stream && t.Name.Local == "stream" {
+				return nil
+			}
+			// If this is a stream level end element but not </stream:stream>,
+			// something is really weird…
+			return s.sendError(stream.BadFormat)
+		default:
+			// If this isn't a start element, the stream is in a bad state.
+			return s.sendError(stream.BadFormat)
+		}
+
+		rw := struct {
+			xml.TokenReader
+			xmlstream.TokenWriter
+		}{
+			TokenReader: xmlstream.Inner(s),
+			TokenWriter: s,
+		}
+
+		// Handle stream errors and unknown stream namespaced tokens first, before
+		// delegating to the normal handler.
+		if start.Name.Space == ns.Stream {
+			switch start.Name.Local {
+			case "error":
+				// TODO: Unmarshal the error and return it.
+				return nil
+			default:
+				return s.sendError(stream.UnsupportedStanzaType)
+			}
+		}
+
+		if err = handler.HandleXMPP(rw, &start); err != nil {
+			return s.sendError(err)
+		}
+		// Advance to the end of the current element before attempting to read the
+		// next.
+		//
+		// TODO: Error handling should be the same here as it would be for the rest
+		// of this loop.
+		_, err = xmlstream.Copy(discard, rw)
+		if err != nil {
+			return s.sendError(err)
 		}
 	}
 }
@@ -428,50 +378,26 @@ func (s *Session) Conn() net.Conn {
 	return s.conn
 }
 
-type readCloser struct {
-	xml.TokenReader
-	c func() error
-}
+// Token satisfies the xml.TokenReader interface for Session.
+func (s *Session) Token() (xml.Token, error) {
+	s.slock.RLock()
+	defer s.slock.RUnlock()
 
-func (c readCloser) Close() error {
-	return c.c()
-}
-
-type writeCloser struct {
-	xmlstream.TokenWriter
-	c func() error
-}
-
-func (c writeCloser) Close() error {
-	return c.c()
-}
-
-// TokenReader locks the underlying XML input stream and returns a value that
-// has exclusive read access to it until Close is called.
-func (s *Session) TokenReader() xmlstream.TokenReadCloser {
-	s.in.Lock()
-
-	return readCloser{
-		TokenReader: s.in.d,
-		c: func() error {
-			s.in.Unlock()
-			return nil
-		},
+	if s.state&InputStreamClosed == InputStreamClosed {
+		return nil, ErrInputStreamClosed
 	}
+	return s.in.d.Token()
 }
 
-// TokenWriter locks the underlying XML output stream and returns a value that
-// has exclusive write access to it until Close is called.
-func (s *Session) TokenWriter() xmlstream.TokenWriteCloser {
-	s.out.Lock()
+// EncodeToken satisfies the xmlstream.TokenWriter interface.
+func (s *Session) EncodeToken(t xml.Token) error {
+	s.slock.RLock()
+	defer s.slock.RUnlock()
 
-	return writeCloser{
-		TokenWriter: s.out.e,
-		c: func() error {
-			s.out.Unlock()
-			return nil
-		},
+	if s.state&OutputStreamClosed == OutputStreamClosed {
+		return ErrOutputStreamClosed
 	}
+	return s.out.e.EncodeToken(t)
 }
 
 // Flush satisfies the xmlstream.TokenWriter interface.
@@ -506,6 +432,8 @@ func (s *Session) Close() error {
 // State returns the current state of the session. For more information, see the
 // SessionState type.
 func (s *Session) State() SessionState {
+	s.slock.RLock()
+	defer s.slock.RUnlock()
 	return s.state
 }
 

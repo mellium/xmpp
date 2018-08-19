@@ -94,9 +94,6 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 			}
 
 			conn := session.Conn()
-			rc := session.TokenReader()
-			/* #nosec */
-			defer rc.Close()
 
 			// Select a mechanism, preferring the client order.
 			var selected sasl.Mechanism
@@ -156,14 +153,14 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 			// If we're already done after the first step, decode the <success/> or
 			// <failure/> before we exit.
 			if !more {
-				tok, err := rc.Token()
+				tok, err := session.Token()
 				if err != nil {
 					return mask, nil, err
 				}
 				if t, ok := tok.(xml.StartElement); ok {
 					// TODO: Handle the additional data that could be returned if
 					// success?
-					_, _, err := decodeSASLChallenge(rc, t, false)
+					_, _, err := decodeSASLChallenge(session, t, false)
 					if err != nil {
 						return mask, nil, err
 					}
@@ -179,13 +176,13 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 					return mask, nil, ctx.Err()
 				default:
 				}
-				tok, err := rc.Token()
+				tok, err := session.Token()
 				if err != nil {
 					return mask, nil, err
 				}
 				var challenge []byte
 				if t, ok := tok.(xml.StartElement); ok {
-					challenge, success, err = decodeSASLChallenge(rc, t, true)
+					challenge, success, err = decodeSASLChallenge(session, t, true)
 					if err != nil {
 						return mask, nil, err
 					}
