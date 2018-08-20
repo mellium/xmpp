@@ -11,7 +11,6 @@ import (
 	"errors"
 	"io"
 	"net"
-	"sync"
 	"time"
 
 	"mellium.im/xmlstream"
@@ -65,7 +64,6 @@ type Session struct {
 	conn net.Conn
 
 	state SessionState
-	slock sync.RWMutex
 
 	origin   jid.JID
 	location jid.JID
@@ -277,7 +275,7 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 		tok, err := s.Token()
 		if err != nil {
 			// If this was a read timeout, don't try to send it. Just try to read
-			// again and see if the context has timed out.
+			// again.
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 				continue
 			}
@@ -355,9 +353,6 @@ func (s *Session) Conn() net.Conn {
 
 // Token satisfies the xml.TokenReader interface for Session.
 func (s *Session) Token() (xml.Token, error) {
-	s.slock.RLock()
-	defer s.slock.RUnlock()
-
 	if s.state&InputStreamClosed == InputStreamClosed {
 		return nil, ErrInputStreamClosed
 	}
@@ -366,9 +361,6 @@ func (s *Session) Token() (xml.Token, error) {
 
 // EncodeToken satisfies the xmlstream.TokenWriter interface.
 func (s *Session) EncodeToken(t xml.Token) error {
-	s.slock.RLock()
-	defer s.slock.RUnlock()
-
 	if s.state&OutputStreamClosed == OutputStreamClosed {
 		return ErrOutputStreamClosed
 	}
@@ -377,9 +369,6 @@ func (s *Session) EncodeToken(t xml.Token) error {
 
 // Flush satisfies the xmlstream.TokenWriter interface.
 func (s *Session) Flush() error {
-	s.slock.RLock()
-	defer s.slock.RUnlock()
-
 	if s.state&OutputStreamClosed == OutputStreamClosed {
 		return ErrOutputStreamClosed
 	}
@@ -391,8 +380,6 @@ func (s *Session) Flush() error {
 // Calling Close() multiple times will only result in one closing
 // </stream:stream> being sent.
 func (s *Session) Close() error {
-	s.slock.Lock()
-	defer s.slock.Unlock()
 	if s.state&OutputStreamClosed == OutputStreamClosed {
 		return nil
 	}
@@ -407,8 +394,6 @@ func (s *Session) Close() error {
 // State returns the current state of the session. For more information, see the
 // SessionState type.
 func (s *Session) State() SessionState {
-	s.slock.RLock()
-	defer s.slock.RUnlock()
 	return s.state
 }
 
@@ -445,9 +430,7 @@ func (s *Session) SetCloseDeadline(t time.Time) error {
 // closeInputStream immediately marks the input stream as closed and cancels any
 // deadlines associated with it.
 func (s *Session) closeInputStream() {
-	s.slock.Lock()
 	s.state |= InputStreamClosed
-	s.slock.Unlock()
 	s.in.cancel()
 }
 
