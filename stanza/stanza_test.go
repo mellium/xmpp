@@ -62,6 +62,9 @@ func TestIQ(t *testing.T) {
 			if _, err := xmlstream.Copy(e, iq); err != tc.err {
 				t.Errorf("Unexpected error: want=`%v', got=`%v'", tc.err, err)
 			}
+			if err := e.Flush(); err != nil {
+				t.Fatalf("Error flushing: %q", err)
+			}
 
 			o := b.String()
 			jidattr := fmt.Sprintf(`to="%s"`, tc.to)
@@ -108,6 +111,9 @@ func TestMessage(t *testing.T) {
 			message := stanza.WrapMessage(jid.MustParse(tc.to), tc.typ, tc.payload)
 			if _, err := xmlstream.Copy(e, message); err != tc.err {
 				t.Errorf("Unexpected error: want=`%v', got=`%v'", tc.err, err)
+			}
+			if err := e.Flush(); err != nil {
+				t.Fatalf("Error flushing: %q", err)
 			}
 
 			o := b.String()
@@ -156,6 +162,9 @@ func TestPresence(t *testing.T) {
 			presence := stanza.WrapPresence(&j, tc.typ, tc.payload)
 			if _, err := xmlstream.Copy(e, presence); err != tc.err {
 				t.Errorf("Unexpected error: want=`%v', got=`%v'", tc.err, err)
+			}
+			if err := e.Flush(); err != nil {
+				t.Fatalf("Error flushing: %q", err)
 			}
 
 			o := b.String()

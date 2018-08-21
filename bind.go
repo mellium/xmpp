@@ -90,11 +90,8 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			if err = e.EncodeToken(start); err != nil {
 				return req, err
 			}
-			if err = e.EncodeToken(start.End()); err != nil {
-				return req, err
-			}
-
-			return req, e.Flush()
+			err = e.EncodeToken(start.End())
+			return req, err
 		},
 		Parse: func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
@@ -157,7 +154,10 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 				}
 
 				_, err = resp.WriteXML(session)
-				return mask, nil, err
+				if err != nil {
+					return mask, nil, err
+				}
+				return mask, nil, session.Flush()
 			}
 
 			// Client encodes an IQ requesting resource binding.
@@ -173,6 +173,9 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			}
 			_, err = req.WriteXML(session)
 			if err != nil {
+				return mask, nil, err
+			}
+			if err = session.Flush(); err != nil {
 				return mask, nil, err
 			}
 

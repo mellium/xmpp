@@ -6,5 +6,5 @@ require (
 	golang.org/x/net v0.0.0-20180216171745-136a25c244d3
 	golang.org/x/text v0.0.0-20180208041248-4e4a3210bb54
 	mellium.im/sasl v0.1.1
-	mellium.im/xmlstream v0.12.1
+	mellium.im/xmlstream v0.13.0
 )

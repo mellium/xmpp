@@ -225,11 +225,7 @@ func (s Error) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 // WriteXML satisfies the xmlstream.WriterTo interface.
 // It is like MarshalXML except it writes tokens to w.
 func (s Error) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
-	n, err = xmlstream.Copy(w, s.TokenReader(nil))
-	if err != nil {
-		return n, err
-	}
-	return n, w.Flush()
+	return xmlstream.Copy(w, s.TokenReader(nil))
 }
 
 // TokenReader returns a new xml.TokenReader that returns an encoding of

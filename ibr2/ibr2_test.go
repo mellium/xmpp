@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"reflect"
 	"testing"
 )
@@ -27,12 +28,15 @@ func TestList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List returned error: %v\n", err)
 	}
+	if err = e.Flush(); err != nil {
+		t.Fatalf("Error flushing: %q", err)
+	}
 	o := struct {
 		XMLName   xml.Name `xml:"recover"`
 		Challenge []string `xml:"challenge"`
 	}{}
 	err = d.Decode(&o)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		t.Fatalf("Decoding error: %v\n", err)
 	}
 	if len(o.Challenge) != 2 {

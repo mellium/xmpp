@@ -40,7 +40,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 		Necessary: xmpp.Secure | xmpp.Authn,
 		List: func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error) {
 			if err = e.EncodeToken(start); err != nil {
-				return
+				return req, err
 			}
 
 			methodStart := xml.StartElement{Name: xml.Name{Local: "method"}}
@@ -53,20 +53,17 @@ func New(methods ...Method) xmpp.StreamFeature {
 				}
 
 				if err = e.EncodeToken(methodStart); err != nil {
-					return
+					return req, err
 				}
 				if err = e.EncodeToken(xml.CharData(m.Name)); err != nil {
-					return
+					return req, err
 				}
 				if err = e.EncodeToken(methodStart.End()); err != nil {
-					return
+					return req, err
 				}
 			}
 
-			if err = e.EncodeToken(start.End()); err != nil {
-				return
-			}
-			return false, e.Flush()
+			return req, e.EncodeToken(start.End())
 		},
 		Parse: func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			listed := struct {

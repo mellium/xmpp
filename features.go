@@ -270,7 +270,7 @@ func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeatu
 				Name: feature.Name,
 			})
 			if err != nil {
-				return
+				return list, err
 			}
 			list.cache[feature.Name.Space] = sfData{
 				req:     r,
@@ -284,12 +284,12 @@ func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeatu
 		}
 	}
 	if err = s.EncodeToken(start.End()); err != nil {
-		return
+		return list, err
 	}
 	if err = s.Flush(); err != nil {
-		return
+		return list, err
 	}
-	return
+	return list, err
 }
 
 func readStreamFeatures(ctx context.Context, s *Session, start xml.StartElement, features []StreamFeature) (*streamFeaturesList, error) {

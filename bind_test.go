@@ -24,6 +24,9 @@ func TestBindList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err = e.Flush(); err != nil {
+		t.Fatal(err)
+	}
 	if !req {
 		t.Error("Bind must always be required")
 	}

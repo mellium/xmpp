@@ -30,6 +30,9 @@ func Example_stream() {
 	if _, err := xmlstream.Copy(e, ping); err != nil {
 		log.Fatal(err)
 	}
+	if err := e.Flush(); err != nil {
+		log.Fatal(err)
+	}
 	// Output:
 	// <iq type="get" to="feste@example.net/siJo4eeT">
 	//	<ping xmlns="urn:xmpp:ping"></ping>

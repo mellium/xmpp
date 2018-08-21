@@ -21,10 +21,7 @@ func OOB(data *oob.Data, f func(*oob.Data) error) Challenge {
 	return Challenge{
 		Type: oob.NS,
 		Send: func(ctx context.Context, w xmlstream.TokenWriter) (err error) {
-			if err = writeDataTo(w, data); err != nil {
-				return err
-			}
-			return w.Flush()
+			return writeDataTo(w, data)
 		},
 		Receive: func(ctx context.Context, server bool, r xml.TokenReader, start *xml.StartElement) error {
 			// The server does not receive a reply for this mechanism.

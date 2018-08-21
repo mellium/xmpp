@@ -113,6 +113,9 @@ func TestFallback(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: `%v'", err)
 	}
+	if err = e.Flush(); err != nil {
+		t.Errorf("Unexpected error: `%v'", err)
+	}
 
 	const expected = `<iq to="juliet@example.com" from="romeo@example.com" type="error"><error type="cancel"><feature-not-implemented xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></feature-not-implemented></error></iq>`
 	if buf.String() != expected {

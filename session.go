@@ -82,7 +82,7 @@ type Session struct {
 	}
 	out struct {
 		internal.StreamInfo
-		e xmlstream.TokenWriter
+		e tokenWriteFlusher
 	}
 }
 
@@ -442,7 +442,12 @@ type wrapWriter struct {
 func (w wrapWriter) EncodeToken(t xml.Token) error { return w.encode(t) }
 func (w wrapWriter) Flush() error                  { return w.flush() }
 
-func stanzaAddID(w xmlstream.TokenWriter) xmlstream.TokenWriter {
+type tokenWriteFlusher interface {
+	xmlstream.TokenWriter
+	xmlstream.Flusher
+}
+
+func stanzaAddID(w tokenWriteFlusher) tokenWriteFlusher {
 	depth := 0
 	return wrapWriter{
 		encode: func(t xml.Token) error {

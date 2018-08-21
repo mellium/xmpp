@@ -47,7 +47,7 @@ func challengeStart(typ string) xml.StartElement {
 func listFunc(challenges ...Challenge) func(context.Context, xmlstream.TokenWriter, xml.StartElement) (bool, error) {
 	return func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error) {
 		if err = e.EncodeToken(start); err != nil {
-			return
+			return req, err
 		}
 
 		// List challenges
@@ -60,21 +60,19 @@ func listFunc(challenges ...Challenge) func(context.Context, xmlstream.TokenWrit
 				Name: xml.Name{Local: "challenge"},
 			}
 			if err = e.EncodeToken(challengeStart); err != nil {
-				return
+				return req, err
 			}
 			if err = e.EncodeToken(xml.CharData(c.Type)); err != nil {
-				return
+				return req, err
 			}
 			if err = e.EncodeToken(challengeStart.End()); err != nil {
-				return
+				return req, err
 			}
 			seen[c.Type] = struct{}{}
 		}
 
-		if err = e.EncodeToken(start.End()); err != nil {
-			return
-		}
-		return req, e.Flush()
+		err = e.EncodeToken(start.End())
+		return req, err
 	}
 }
 
