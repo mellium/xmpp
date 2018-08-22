@@ -25,13 +25,13 @@ type IQ struct {
 	stanza.IQ
 
 	Query struct {
-		Ver  string       `xml:"version,attr,omitempty"`
-		Item []RosterItem `xml:"item"`
+		Ver  string `xml:"version,attr,omitempty"`
+		Item []Item `xml:"item"`
 	} `xml:"jabber:iq:roster query"`
 }
 
 type itemMarshaler struct {
-	items []RosterItem
+	items []Item
 	cur   xml.TokenReader
 }
 
@@ -41,7 +41,7 @@ func (m itemMarshaler) Token() (xml.Token, error) {
 	}
 
 	if m.cur == nil {
-		var item RosterItem
+		var item Item
 		item, m.items = m.items[0], m.items[1:]
 		m.cur = item.TokenReader()
 	}
@@ -90,8 +90,8 @@ func (iq IQ) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 	return e.Flush()
 }
 
-// RosterItem represents a contact in the roster.
-type RosterItem struct {
+// Item represents a contact in the roster.
+type Item struct {
 	JID          jid.JID `xml:"jid,attr,omitempty"`
 	Name         string  `xml:"name,attr,omitempty"`
 	Subscription string  `xml:"subscription,attr,omitempty"`
@@ -99,7 +99,7 @@ type RosterItem struct {
 }
 
 // TokenReader satisfies the xmlstream.Marshaler interface.
-func (item RosterItem) TokenReader() xml.TokenReader {
+func (item Item) TokenReader() xml.TokenReader {
 	var group xml.TokenReader
 	if item.Group != "" {
 		group = xmlstream.Wrap(
@@ -132,12 +132,12 @@ func (item RosterItem) TokenReader() xml.TokenReader {
 
 // WriteXML satisfies the xmlstream.WriterTo interface.
 // It is like MarshalXML except it writes tokens to w.
-func (item RosterItem) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
+func (item Item) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
 	return xmlstream.Copy(w, item.TokenReader())
 }
 
 // MarshalXML satisfies the xml.Marshaler interface.
-func (item RosterItem) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
+func (item Item) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 	_, err := item.WriteXML(e)
 	if err != nil {
 		return err
