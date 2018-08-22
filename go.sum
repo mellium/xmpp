@@ -24,3 +24,5 @@ mellium.im/xmlstream v0.12.3 h1:gm7mpQCUPeyi2WcfxMN2n6PoFNdqkDFvK3pYNITYjtc=
 mellium.im/xmlstream v0.12.3/go.mod h1:PDwtcQeiAyF7FrUBRWnVO91nIskvhOFYzOeftngiM7Q=
 mellium.im/xmlstream v0.13.0 h1:xKeoziZFGs8NnlxB1oT73yuoCx1rF9+bCyy0ee0mY8E=
 mellium.im/xmlstream v0.13.0/go.mod h1:PDwtcQeiAyF7FrUBRWnVO91nIskvhOFYzOeftngiM7Q=
+mellium.im/xmlstream v0.13.1 h1:km33K3lpXe8eGK8mIRn3Vk7+uJEL7CKbsCrrYsRrIsk=
+mellium.im/xmlstream v0.13.1/go.mod h1:PDwtcQeiAyF7FrUBRWnVO91nIskvhOFYzOeftngiM7Q=
