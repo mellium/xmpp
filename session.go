@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"time"
@@ -74,6 +75,8 @@ type Session struct {
 	// The negotiated features (by namespace) for the current session.
 	negotiated map[string]struct{}
 
+	sentIQs map[string]chan xmlstream.TokenReadCloser
+
 	in struct {
 		internal.StreamInfo
 		d      xml.TokenReader
@@ -115,6 +118,7 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 		location:   location,
 		features:   make(map[string]interface{}),
 		negotiated: make(map[string]struct{}),
+		sentIQs:    make(map[string]chan xmlstream.TokenReadCloser),
 	}
 	s.in.d = xml.NewDecoder(s.conn)
 	s.out.e = xml.NewEncoder(s.conn)
@@ -251,6 +255,20 @@ func (nopHandler) HandleXMPP(_ xmlstream.TokenReadWriter, _ *xml.StartElement) e
 	return nil
 }
 
+type iqResponder struct {
+	r xml.TokenReader
+	c chan xmlstream.TokenReadCloser
+}
+
+func (r iqResponder) Token() (xml.Token, error) {
+	return r.r.Token()
+}
+
+func (r iqResponder) Close() error {
+	close(r.c)
+	return nil
+}
+
 func (s *Session) handleInputStream(handler Handler) (err error) {
 	if handler == nil {
 		handler = nopHandler{}
@@ -298,14 +316,6 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 			return s.sendError(stream.BadFormat)
 		}
 
-		rw := struct {
-			xml.TokenReader
-			xmlstream.TokenWriter
-		}{
-			TokenReader: xmlstream.Inner(s),
-			TokenWriter: s,
-		}
-
 		// Handle stream errors and unknown stream namespaced tokens first, before
 		// delegating to the normal handler.
 		if start.Name.Space == ns.Stream {
@@ -318,6 +328,39 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 			}
 		}
 
+		// If this is a response IQ (ie. an "error" or "result") check if we're
+		// handling it as part of a SendElement call.
+		if start.Name.Local == "iq" || start.Name.Space == "" || !iqNeedsResp(start.Attr) {
+			var id string
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "id" {
+					id = attr.Value
+					break
+				}
+			}
+
+			c := s.sentIQs[id]
+			if c == nil {
+				goto noreply
+			}
+
+			c <- iqResponder{
+				r: xmlstream.MultiReader(xmlstream.Token(start), xmlstream.Inner(s), xmlstream.Token(start.End())),
+				c: c,
+			}
+			<-c
+			continue
+		}
+
+	noreply:
+
+		rw := struct {
+			xml.TokenReader
+			xmlstream.TokenWriter
+		}{
+			TokenReader: xmlstream.Inner(s),
+			TokenWriter: s,
+		}
 		if err = handler.HandleXMPP(rw, &start); err != nil {
 			return s.sendError(err)
 		}
@@ -425,6 +468,119 @@ func (s *Session) SetCloseDeadline(t time.Time) error {
 	s.in.ctx, s.in.cancel = context.WithDeadline(context.Background(), t)
 	oldCancel()
 	return s.Conn().SetReadDeadline(t)
+}
+
+// Send transmits the first element read from the provided token reader.
+//
+// For more information, see SendElement.
+func (s *Session) Send(ctx context.Context, r xml.TokenReader) (xmlstream.TokenReadCloser, error) {
+	return s.SendElement(ctx, r, xml.StartElement{})
+}
+
+func iqNeedsResp(attrs []xml.Attr) bool {
+	var typ string
+	for _, attr := range attrs {
+		if attr.Name.Local == "type" {
+			typ = attr.Value
+			break
+		}
+	}
+
+	return typ == "get" || typ == "set"
+}
+
+// Send transmits the first element read from the provided token reader using
+// start as the outermost tag in the encoding.
+//
+// If the element is an IQ stanza, Send blocks until a response is received and
+// then returns a reader from which it can be read.
+// If the provided context is closed before the response is received SendElement
+// immediately returns an error and any response received at a later time must
+// be handled separately.
+// The response does not need to be consumed in its entirety, but it must be
+// closed before stream processing will resume.
+// If an error is returned, xml.TokenReader will be nil; the converse is not
+// necessarily true.
+// If the input stream is not being processed (a call to Serve is not running),
+// SendElement may block forever.
+func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.StartElement) (xmlstream.TokenReadCloser, error) {
+	if start.Name.Local == "" {
+		tok, err := r.Token()
+		if err != nil {
+			return nil, err
+		}
+
+		var ok bool
+		start, ok = tok.(xml.StartElement)
+		if !ok {
+			return nil, errors.New("xmpp: SendElement did not begin with a StartElement")
+		}
+	}
+
+	// If this is not an IQ (or is an IQ that's not of type "set" or "get") we
+	// don't expect a response and merely transmit the information.
+	if start.Name.Local == "iq" && start.Name.Space != "" && iqNeedsResp(start.Attr) {
+		err := s.EncodeToken(start)
+		if err != nil {
+			return nil, err
+		}
+		_, err = xmlstream.Copy(s, xmlstream.Inner(r))
+		if err != nil {
+			return nil, err
+		}
+		err = s.EncodeToken(start.End())
+		if err != nil {
+			return nil, err
+		}
+		_ = fmt.Println
+		return nil, s.Flush()
+	}
+
+	// We need to add an id to the IQ if one wasn't already set by the user so
+	// that we can use it to associate the response with the original query.
+	var id string
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "id" {
+			id = attr.Value
+			break
+		}
+	}
+	if id == "" {
+		id = internal.RandomID()
+		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: id})
+	}
+
+	c := make(chan xmlstream.TokenReadCloser)
+	s.sentIQs[id] = c
+
+	err := s.EncodeToken(start)
+	if err != nil {
+		return nil, err
+	}
+	_, err = xmlstream.Copy(s, xmlstream.Inner(r))
+	if err != nil {
+		return nil, err
+	}
+	err = s.EncodeToken(start.End())
+	if err != nil {
+		return nil, err
+	}
+	err = s.Flush()
+	if err != nil {
+		return nil, err
+	}
+
+	select {
+	case rr := <-c:
+		delete(s.sentIQs, id)
+		return rr, nil
+	case <-ctx.Done():
+		delete(s.sentIQs, id)
+		close(c)
+		return nil, ctx.Err()
+	}
+
+	panic("unreachable")
 }
 
 // closeInputStream immediately marks the input stream as closed and cancels any
