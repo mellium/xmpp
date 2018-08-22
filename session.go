@@ -579,8 +579,6 @@ func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.
 		close(c)
 		return nil, ctx.Err()
 	}
-
-	panic("unreachable")
 }
 
 // closeInputStream immediately marks the input stream as closed and cancels any
