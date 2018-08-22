@@ -329,7 +329,10 @@ func (se Error) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
 // MarshalXML satisfies the xml.Marshaler interface for Error.
 func (se Error) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 	_, err := se.WriteXML(e)
-	return err
+	if err != nil {
+		return err
+	}
+	return e.Flush()
 }
 
 // UnmarshalXML satisfies the xml.Unmarshaler interface for StanzaError.

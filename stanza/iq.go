@@ -13,8 +13,8 @@ import (
 )
 
 // WrapIQ wraps a payload in an IQ stanza.
-// The resulting IQ may not contain an id or from attribute and is thus may not
-// be valid without further processing.
+// The resulting IQ may not contain an id or from attribute and thus may not be
+// valid without further processing.
 func WrapIQ(iq *IQ, payload xml.TokenReader) xml.TokenReader {
 	attr := []xml.Attr{
 		{Name: xml.Name{Local: "type"}, Value: string(iq.Type)},
