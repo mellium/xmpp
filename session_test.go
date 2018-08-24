@@ -19,6 +19,7 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/stream"
 )
 
 func TestClosedInputStream(t *testing.T) {
@@ -122,6 +123,51 @@ func TestNegotiator(t *testing.T) {
 			}
 			if out := buf.String(); out != tc.out {
 				t.Errorf("Unexpected output:\nwant=%q,\n got=%q", tc.out, out)
+			}
+		})
+	}
+}
+
+var serveTests = [...]struct {
+	handler xmpp.Handler
+	out     string
+	in      string
+	err     error
+}{
+	0: {
+		in:  `<test></test>`,
+		out: `</stream:stream>`,
+		err: io.EOF,
+	},
+	1: {
+		in:  `a`,
+		out: `</stream:stream>`,
+		err: stream.BadFormat,
+	},
+}
+
+func TestServe(t *testing.T) {
+	for i, tc := range serveTests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			out := &bytes.Buffer{}
+			in := strings.NewReader(tc.in)
+			s := xmpptest.NewSession(0, struct {
+				io.Reader
+				io.Writer
+			}{
+				Reader: in,
+				Writer: out,
+			})
+
+			err := s.Serve(nil)
+			if err != tc.err {
+				t.Errorf("Unexpected error: want=%q, got=%q", tc.err, err)
+			}
+			if s := out.String(); s != tc.out {
+				t.Errorf("Unexpected output: want=%q, got=%q", tc.out, s)
+			}
+			if l := in.Len(); l != 0 {
+				t.Errorf("Did not finish read, %d bytes left", l)
 			}
 		})
 	}

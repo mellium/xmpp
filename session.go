@@ -466,7 +466,9 @@ func (s *Session) RemoteAddr() jid.JID {
 func (s *Session) SetCloseDeadline(t time.Time) error {
 	oldCancel := s.in.cancel
 	s.in.ctx, s.in.cancel = context.WithDeadline(context.Background(), t)
-	oldCancel()
+	if oldCancel != nil {
+		oldCancel()
+	}
 	return s.Conn().SetReadDeadline(t)
 }
 
