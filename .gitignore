@@ -1,8 +1,9 @@
-*.sw[op]
-*.svg
-*.xml
+*.html
 *.out
+*.svg
+*.sw[op]
 *.test
+*.xml
 vendor/
 Gopkg.lock
 new.txt
