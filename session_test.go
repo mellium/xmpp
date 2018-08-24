@@ -16,9 +16,11 @@ import (
 	"strings"
 	"testing"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
 )
 
@@ -128,6 +130,8 @@ func TestNegotiator(t *testing.T) {
 	}
 }
 
+const invalidIQ = `<iq type="error" id="1234"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`
+
 var serveTests = [...]struct {
 	handler xmpp.Handler
 	out     string
@@ -144,6 +148,59 @@ var serveTests = [...]struct {
 		out: `</stream:stream>`,
 		err: stream.BadFormat,
 	},
+	2: {
+		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
+		out: invalidIQ + `</stream:stream>`,
+		err: io.EOF,
+	},
+	3: {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(&stanza.IQ{
+				ID:   "1234",
+				Type: stanza.ResultIQ,
+			}, nil))
+			return err
+		}),
+		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
+		out: `<iq type="result" id="1234"></iq></stream:stream>`,
+		err: io.EOF,
+	},
+	4: {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(&stanza.IQ{
+				ID:   "wrongid",
+				Type: stanza.ResultIQ,
+			}, nil))
+			return err
+		}),
+		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
+		out: `<iq type="result" id="wrongid"></iq>` + invalidIQ + `</stream:stream>`,
+		err: io.EOF,
+	},
+	5: {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(&stanza.IQ{
+				ID:   "1234",
+				Type: stanza.ErrorIQ,
+			}, nil))
+			return err
+		}),
+		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
+		out: `<iq type="error" id="1234"></iq></stream:stream>`,
+		err: io.EOF,
+	},
+	6: {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(&stanza.IQ{
+				ID:   "1234",
+				Type: stanza.GetIQ,
+			}, nil))
+			return err
+		}),
+		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
+		out: `<iq type="get" id="1234"></iq>` + invalidIQ + `</stream:stream>`,
+		err: io.EOF,
+	},
 }
 
 func TestServe(t *testing.T) {
@@ -159,12 +216,12 @@ func TestServe(t *testing.T) {
 				Writer: out,
 			})
 
-			err := s.Serve(nil)
+			err := s.Serve(tc.handler)
 			if err != tc.err {
 				t.Errorf("Unexpected error: want=%q, got=%q", tc.err, err)
 			}
 			if s := out.String(); s != tc.out {
-				t.Errorf("Unexpected output: want=%q, got=%q", tc.out, s)
+				t.Errorf("Unexpected output:\nwant=%q,\n got=%q", tc.out, s)
 			}
 			if l := in.Len(); l != 0 {
 				t.Errorf("Did not finish read, %d bytes left", l)

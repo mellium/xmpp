@@ -18,6 +18,7 @@ import (
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
 )
 
@@ -212,9 +213,10 @@ func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 // If a stream error is received while serving it is not passed to the handler.
 // Instead, Serve unmarshals the error, closes the session, and returns it (h
 // handles stanza level errors, the session handles stream level errors).
+// If serve handles an incoming IQ stanza and the handler does not write a
+// response (an IQ with the same ID and type "result" or "error"), Serve writes
+// an error IQ with a service-unavailable payload.
 //
-// If the input stream is closed by the remote entity, Serve returns with a nil
-// error without closing the output stream.
 // If the user closes the output stream by calling Close, Serve continues until
 // the input stream is closed by the remote entity as above, or the deadline set
 // by SetCloseDeadline is reached in which case a timeout error is returned.
@@ -328,42 +330,61 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 			}
 		}
 
-		// If this is a response IQ (ie. an "error" or "result") check if we're
-		// handling it as part of a SendElement call.
 		var id string
-		if isIQ(start.Name) && !iqNeedsResp(start.Attr) {
-			for _, attr := range start.Attr {
-				if attr.Name.Local == "id" {
-					id = attr.Value
-					break
+		var needsResp bool
+		if isIQ(start.Name) {
+			id = getID(start)
+
+			// If this is a response IQ (ie. an "error" or "result") check if we're
+			// handling it as part of a SendElement call.
+			// If not, record this so that we can check if the user sends a response
+			// later.
+			if !iqNeedsResp(start.Attr) {
+				c := s.sentIQs[id]
+				if c == nil {
+					goto noreply
 				}
-			}
 
-			c := s.sentIQs[id]
-			if c == nil {
-				goto noreply
+				c <- iqResponder{
+					r: xmlstream.MultiReader(xmlstream.Token(start), xmlstream.Inner(s), xmlstream.Token(start.End())),
+					c: c,
+				}
+				<-c
+				continue
+			} else {
+				needsResp = true
 			}
-
-			c <- iqResponder{
-				r: xmlstream.MultiReader(xmlstream.Token(start), xmlstream.Inner(s), xmlstream.Token(start.End())),
-				c: c,
-			}
-			<-c
-			continue
 		}
 
 	noreply:
 
-		rw := struct {
-			xml.TokenReader
-			xmlstream.TokenWriter
-		}{
+		rw := &responseChecker{
 			TokenReader: xmlstream.Inner(s),
 			TokenWriter: s,
+			id:          id,
 		}
 		if err = handler.HandleXMPP(rw, &start); err != nil {
 			return s.sendError(err)
 		}
+
+		// If the user did not write a response to an IQ, send a default one.
+		if needsResp && !rw.wroteResp {
+			_, err := xmlstream.Copy(s, stanza.WrapIQ(&stanza.IQ{
+				ID:   id,
+				Type: stanza.ErrorIQ,
+			}, stanza.Error{
+				Type:      stanza.Cancel,
+				Condition: stanza.ServiceUnavailable,
+			}.TokenReader()))
+			if err != nil {
+				return err
+			}
+		}
+
+		if err := s.Flush(); err != nil {
+			return err
+		}
+
 		// Advance to the end of the current element before attempting to read the
 		// next.
 		//
@@ -374,6 +395,28 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 			return s.sendError(err)
 		}
 	}
+}
+
+type responseChecker struct {
+	xml.TokenReader
+	xmlstream.TokenWriter
+	id        string
+	wroteResp bool
+	level     int
+}
+
+func (rw *responseChecker) EncodeToken(t xml.Token) error {
+	switch tok := t.(type) {
+	case xml.StartElement:
+		id := getID(tok)
+		if rw.level < 1 && isIQ(tok.Name) && id == rw.id && !iqNeedsResp(tok.Attr) {
+			rw.wroteResp = true
+		}
+		rw.level++
+	case xml.EndElement:
+		rw.level--
+	}
+	return rw.TokenWriter.EncodeToken(t)
 }
 
 // Feature checks if a feature with the given namespace was advertised
@@ -495,6 +538,15 @@ func isIQ(name xml.Name) bool {
 	return name.Local == "iq" && (name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
 }
 
+func getID(start xml.StartElement) string {
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "id" {
+			return attr.Value
+		}
+	}
+	return ""
+}
+
 // Send transmits the first element read from the provided token reader using
 // start as the outermost tag in the encoding.
 //
@@ -544,13 +596,7 @@ func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.
 
 	// We need to add an id to the IQ if one wasn't already set by the user so
 	// that we can use it to associate the response with the original query.
-	var id string
-	for _, attr := range start.Attr {
-		if attr.Name.Local == "id" {
-			id = attr.Value
-			break
-		}
-	}
+	id := getID(start)
 	if id == "" {
 		id = internal.RandomID()
 		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: id})
