@@ -330,8 +330,8 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 
 		// If this is a response IQ (ie. an "error" or "result") check if we're
 		// handling it as part of a SendElement call.
-		if start.Name.Local == "iq" || start.Name.Space == "" || !iqNeedsResp(start.Attr) {
-			var id string
+		var id string
+		if isIQ(start.Name) && !iqNeedsResp(start.Attr) {
 			for _, attr := range start.Attr {
 				if attr.Name.Local == "id" {
 					id = attr.Value
@@ -487,6 +487,10 @@ func iqNeedsResp(attrs []xml.Attr) bool {
 	}
 
 	return typ == "get" || typ == "set"
+}
+
+func isIQ(name xml.Name) bool {
+	return name.Local == "iq" && (name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
 }
 
 // Send transmits the first element read from the provided token reader using
