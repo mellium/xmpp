@@ -53,6 +53,9 @@ func (c *conn) Read(b []byte) (n int, err error) {
 
 // RemoteAddr returns the remote network address.
 func (c *conn) RemoteAddr() net.Addr {
+	if c.c == nil {
+		return nil
+	}
 	return c.c.RemoteAddr()
 }
 
@@ -61,12 +64,18 @@ func (c *conn) RemoteAddr() net.Addr {
 // After a Write has timed out, the TLS state is corrupt and all future writes
 // will return the same error.
 func (c *conn) SetDeadline(t time.Time) error {
+	if c.c == nil {
+		return nil
+	}
 	return c.c.SetDeadline(t)
 }
 
 // SetReadDeadline sets the read deadline on the underlying connection.
 // A zero value for t means Read will not time out.
 func (c *conn) SetReadDeadline(t time.Time) error {
+	if c.c == nil {
+		return nil
+	}
 	return c.c.SetReadDeadline(t)
 }
 
@@ -75,6 +84,9 @@ func (c *conn) SetReadDeadline(t time.Time) error {
 // After a Write has timed out, the TLS state is corrupt and all future writes
 // will return the same error.
 func (c *conn) SetWriteDeadline(t time.Time) error {
+	if c.c == nil {
+		return nil
+	}
 	return c.c.SetWriteDeadline(t)
 }
 
