@@ -76,7 +76,7 @@ var testCases = [...]struct {
 		p: xml.Name{Local: "test", Space: "summertime"},
 	},
 	9: {
-		m: mux.New(mux.Handle(xml.Name{Space: "summertime"}, passHandler)),
+		m: mux.New(mux.HandleFunc(xml.Name{Space: "summertime"}, passHandler)),
 		p: xml.Name{Local: "test", Space: "summertime"},
 	},
 }

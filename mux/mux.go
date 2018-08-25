@@ -168,3 +168,10 @@ func Handle(n xml.Name, h xmpp.Handler) Option {
 		m.patterns[n] = h
 	}
 }
+
+// HandleFunc returns an option that matches on the provided XML name.
+func HandleFunc(n xml.Name, h xmpp.HandlerFunc) Option {
+	return func(m *ServeMux) {
+		m.patterns[n] = h
+	}
+}
