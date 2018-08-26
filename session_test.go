@@ -201,6 +201,58 @@ var serveTests = [...]struct {
 		out: `<iq type="get" id="1234"></iq>` + invalidIQ + `</stream:stream>`,
 		err: io.EOF,
 	},
+	7: {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "from" && attr.Value != "" {
+					panic("expected attr to be normalized")
+				}
+			}
+			return nil
+		}),
+		in:  `<iq from="test@example.net"></iq>`,
+		out: `</stream:stream>`,
+		err: io.EOF,
+	},
+	8: {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "from" && attr.Value == "" {
+					panic("expected attr not to be normalized")
+				}
+			}
+			return nil
+		}),
+		in:  `<iq from="test@example.net/test"></iq>`,
+		out: `</stream:stream>`,
+		err: io.EOF,
+	},
+	9: {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "from" && attr.Value == "" {
+					panic("expected attr not to be normalized")
+				}
+			}
+			return nil
+		}),
+		in:  `<iq from="test2@example.net"></iq>`,
+		out: `</stream:stream>`,
+		err: io.EOF,
+	},
+	10: {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "from" && attr.Value == "" {
+					panic("expected attr not to be normalized")
+				}
+			}
+			return nil
+		}),
+		in:  `<iq from="test@example.com"></iq>`,
+		out: `</stream:stream>`,
+		err: io.EOF,
+	},
 }
 
 func TestServe(t *testing.T) {

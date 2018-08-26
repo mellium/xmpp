@@ -330,6 +330,23 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 			}
 		}
 
+		// If this is a stanza, normalize the "from" attribute.
+		if (start.Name.Local == "iq" || start.Name.Local == "presence" || start.Name.Local == "message") && (start.Name.Space == ns.Client || start.Name.Space == ns.Server || start.Name.Space == "") {
+			for i, attr := range start.Attr {
+				if attr.Name.Local == "from" /*&& attr.Name.Space == start.Name.Space*/ {
+					local := s.LocalAddr().Bare().String()
+					// Try a direct comparison first to avoid expensive JID parsing.
+					// TODO: really we should be parsing the JID here in case the server
+					// is using a different version of PRECIS, stringprep, etc. and the
+					// canonical representation isn't the same.
+					if attr.Value == local {
+						start.Attr[i].Value = ""
+					}
+					break
+				}
+			}
+		}
+
 		var id string
 		var needsResp bool
 		if isIQ(start.Name) {
