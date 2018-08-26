@@ -152,14 +152,29 @@ func IQ(h xmpp.Handler) Option {
 	return registerStanza("iq", h)
 }
 
+// IQFunc returns an option that matches on all IQ stanzas.
+func IQFunc(h xmpp.HandlerFunc) Option {
+	return IQ(h)
+}
+
 // Message returns an option that matches on all message stanzas.
 func Message(h xmpp.Handler) Option {
 	return registerStanza("message", h)
 }
 
+// MessageFunc returns an option that matches on all message stanzas.
+func MessageFunc(h xmpp.HandlerFunc) Option {
+	return Message(h)
+}
+
 // Presence returns an option that matches on all presence stanzas.
 func Presence(h xmpp.Handler) Option {
 	return registerStanza("presence", h)
+}
+
+// PresenceFunc returns an option that matches on all presence stanzas.
+func PresenceFunc(h xmpp.HandlerFunc) Option {
+	return Presence(h)
 }
 
 // Handle returns an option that matches on the provided XML name.

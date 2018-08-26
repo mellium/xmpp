@@ -44,7 +44,7 @@ var testCases = [...]struct {
 		p: xml.Name{Local: "iq", Space: ns.Client},
 	},
 	1: {
-		m: mux.New(mux.IQ(passHandler), mux.Presence(failHandler)),
+		m: mux.New(mux.IQFunc(passHandler), mux.Presence(failHandler)),
 		p: xml.Name{Local: "iq", Space: ns.Server},
 	},
 	2: {
@@ -52,7 +52,7 @@ var testCases = [...]struct {
 		p: xml.Name{Local: "message", Space: ns.Client},
 	},
 	3: {
-		m: mux.New(mux.IQ(failHandler), mux.Message(passHandler)),
+		m: mux.New(mux.IQ(failHandler), mux.MessageFunc(passHandler)),
 		p: xml.Name{Local: "message", Space: ns.Server},
 	},
 	4: {
@@ -60,7 +60,7 @@ var testCases = [...]struct {
 		p: xml.Name{Local: "presence", Space: ns.Client},
 	},
 	5: {
-		m: mux.New(mux.Message(failHandler), mux.IQ(failHandler), mux.Presence(passHandler)),
+		m: mux.New(mux.Message(failHandler), mux.IQ(failHandler), mux.PresenceFunc(passHandler)),
 		p: xml.Name{Local: "presence", Space: ns.Server},
 	},
 	6: {
