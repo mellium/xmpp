@@ -23,7 +23,8 @@ func NopNegotiator(state xmpp.SessionState) xmpp.Negotiator {
 }
 
 // NewSession returns a new XMPP session with the state bits set to
-// state|xmpp.Ready.
+// state|xmpp.Ready, the origin JID set to "test@example.net" and the location
+// JID set to "example.net".
 //
 // NewSession panics on error for ease of use in testing, where a panic is
 // acceptable.
