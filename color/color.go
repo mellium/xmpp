@@ -2,7 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-// Package color implements XEP-0392: Consistent Color Generation.
+// Package color implements XEP-0392: Consistent Color Generation v0.4.
 package color
 
 import (
