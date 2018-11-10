@@ -1,0 +1,21 @@
+language: go
+go:
+  - 1.11.x
+  - master
+
+os:
+  - linux
+  - osx
+
+dist: trusty
+sudo: false
+install: true
+
+env:
+  - GO111MODULE=on
+script:
+  - go build
+  - go vet ./...
+  - go test -race ./...
+  - go test -cover ./...
+  - go test -run=NONE -bench . -benchmem ./...
