@@ -7,6 +7,7 @@ package xmpp
 import (
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -118,14 +119,18 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 			//     response, it MUST transmit the response as a single equals sign
 			//     character ("="), which indicates that the response is present but
 			//     contains no data.
+			var encodedResp []byte
 			if len(resp) == 0 {
-				resp = []byte{'='}
+				encodedResp = []byte{'='}
+			} else {
+				encodedResp = make([]byte, base64.StdEncoding.EncodedLen(len(resp)))
+				base64.StdEncoding.Encode(encodedResp, resp)
 			}
 
 			// Send <auth/> and the initial payload to start SASL auth.
 			if _, err = fmt.Fprintf(c,
 				`<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='%s'>%s</auth>`,
-				selected.Name, resp,
+				selected.Name, encodedResp,
 			); err != nil {
 				return mask, nil, err
 			}
@@ -178,9 +183,18 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 					// We're done with SASL and we're successful
 					break
 				}
+
+				var encodedResp []byte
+				if len(resp) == 0 {
+					encodedResp = []byte{'='}
+				} else {
+					encodedResp = make([]byte, base64.StdEncoding.EncodedLen(len(resp)))
+					base64.StdEncoding.Encode(encodedResp, resp)
+				}
+
 				// TODO: What happens if there's more and success (broken server)?
-				if _, err = fmt.Fprintf(c,
-					`<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>%s</response>`, resp); err != nil {
+				_, err = fmt.Fprintf(c, `<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>%s</response>`, encodedResp)
+				if err != nil {
 					return mask, nil, err
 				}
 			}
@@ -201,7 +215,15 @@ func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement, allowChallenge 
 		if err = d.DecodeElement(&challenge, &start); err != nil {
 			return nil, false, err
 		}
-		return challenge.Data, start.Name.Local == "success", nil
+
+		decodedChallenge := make([]byte, base64.StdEncoding.DecodedLen(len(challenge.Data)))
+		n, err := base64.StdEncoding.Decode(decodedChallenge, challenge.Data)
+		if err != nil {
+			return nil, false, err
+		}
+		decodedChallenge = decodedChallenge[:n]
+
+		return decodedChallenge, start.Name.Local == "success", nil
 	case xml.Name{Space: ns.SASL, Local: "failure"}:
 		fail := saslerr.Failure{}
 		if err = d.DecodeElement(&fail, &start); err != nil {

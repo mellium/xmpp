@@ -13,6 +13,7 @@ package sasl2 // import "mellium.im/xmpp/sasl2"
 import (
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -137,15 +138,19 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 			//     In order to explicitly transmit a zero-length SASL challenge or
 			//     response, the sending party sends a single equals sign character
 			//     ("=").
+			var encodedResp []byte
 			if len(resp) == 0 {
-				resp = []byte{'='}
+				encodedResp = []byte{'='}
+			} else {
+				encodedResp = make([]byte, base64.StdEncoding.EncodedLen(len(resp)))
+				base64.StdEncoding.Encode(encodedResp, resp)
 			}
 
 			// TODO: Printf'ing is probably a bad idea. Encode the tokens properly.
 			// Send <auth/> and the initial payload to start SASL auth.
 			if _, err = fmt.Fprintf(conn,
 				`<authenticate xmlns='%s' mechanism='%s'><initial-response>%s</initial-response></authenticate>`,
-				NS, selected.Name, resp,
+				NS, selected.Name, encodedResp,
 			); err != nil {
 				return mask, nil, err
 			}
@@ -196,9 +201,18 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 					// We're done with SASL and we're successful
 					break
 				}
+
+				var encodedResp []byte
+				if len(resp) == 0 {
+					encodedResp = []byte{'='}
+				} else {
+					encodedResp = make([]byte, base64.StdEncoding.EncodedLen(len(resp)))
+					base64.StdEncoding.Encode(encodedResp, resp)
+				}
+
 				// TODO: What happens if there's more and success (broken server)?
 				if _, err = fmt.Fprintf(conn,
-					`<response xmlns='urn:xmpp:sasl:0'>%s</response>`, resp); err != nil {
+					`<response xmlns='urn:xmpp:sasl:0'>%s</response>`, encodedResp); err != nil {
 					return mask, nil, err
 				}
 			}
@@ -220,7 +234,15 @@ func decodeSASLChallenge(r xml.TokenReader, start xml.StartElement, allowChallen
 		if err = d.DecodeElement(&challenge, &start); err != nil {
 			return nil, false, err
 		}
-		return challenge.Data, false, nil
+
+		decodedChallenge := make([]byte, base64.StdEncoding.DecodedLen(len(challenge.Data)))
+		n, err := base64.StdEncoding.Decode(decodedChallenge, challenge.Data)
+		if err != nil {
+			return nil, false, err
+		}
+		decodedChallenge = decodedChallenge[:n]
+
+		return decodedChallenge, false, nil
 	case xml.Name{Space: NS, Local: "success"}:
 		success := struct {
 			XMLName xml.Name `xml:"urn:xmpp:sasl:0 success"`
@@ -229,7 +251,15 @@ func decodeSASLChallenge(r xml.TokenReader, start xml.StartElement, allowChallen
 		if err = d.DecodeElement(&challenge, &start); err != nil {
 			return nil, true, err
 		}
-		return success.Data, true, nil
+
+		decodedChallenge := make([]byte, base64.StdEncoding.DecodedLen(len(success.Data)))
+		n, err := base64.StdEncoding.Decode(decodedChallenge, success.Data)
+		if err != nil {
+			return nil, false, err
+		}
+		decodedChallenge = decodedChallenge[:n]
+
+		return decodedChallenge, true, nil
 	case xml.Name{Space: NS, Local: "failure"}:
 		fail := saslerr.Failure{}
 		if err = d.DecodeElement(&fail, &start); err != nil {
