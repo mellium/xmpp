@@ -1,0 +1,32 @@
+image: freebsd
+packages:
+  - go
+environment:
+  GO111MODULE: 'on'
+sources:
+  - https://git.sr.ht/~samwhited/xmpp
+tasks:
+  - setup: |
+      export PATH=$(go env GOPATH)/bin:$PATH
+      echo 'export PATH=$(go env GOPATH)/bin:$PATH' >> ~/.buildenv
+
+      GO111MODULE=off go get golang.org/dl/go1.10.5
+      GO111MODULE=off go get golang.org/dl/go1.11.2
+      go1.10.5 download
+      go1.11.2 download
+  - vet: |
+      cd xmpp/
+      go vet ./...
+  - go110: |
+      mkdir -p `go env GOPATH`/src/mellium.im/
+      ln -s `pwd`/xmpp/ `go env GOPATH`/src/mellium.im/xmpp
+      cd `go env GOPATH`/src/mellium.im/xmpp
+      go1.10.5 env
+      go1.10.5 test -cover ./...
+  - go111: |
+      cd xmpp/
+      go1.11.2 env
+      go1.11.2 test -cover ./...
+  - bench: |
+      cd xmpp/
+      go test -run=NONE -bench . -benchmem ./...
