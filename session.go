@@ -9,7 +9,6 @@ import (
 	"crypto/tls"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"time"
@@ -607,7 +606,6 @@ func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.
 		if err != nil {
 			return nil, err
 		}
-		_ = fmt.Println
 		return nil, s.Flush()
 	}
 
