@@ -30,7 +30,7 @@ var lookupTests = [...]struct {
 		service: "xmpp-client",
 		addr:    jid.MustParse("me@example.net"),
 		addrs: []*net.SRV{
-			&net.SRV{
+			{
 				Target: "example.net",
 				Port:   5222,
 			},
@@ -40,7 +40,7 @@ var lookupTests = [...]struct {
 		service: "xmpp-client",
 		addr:    testConvJID,
 		addrs: []*net.SRV{
-			&net.SRV{
+			{
 				Target:   "xmpp.conversations.im.",
 				Port:     5222,
 				Priority: 5,
@@ -52,7 +52,7 @@ var lookupTests = [...]struct {
 		service: "xmpp-server",
 		addr:    &testConvJID,
 		addrs: []*net.SRV{
-			&net.SRV{
+			{
 				Target:   "xmpp.conversations.im.",
 				Port:     5269,
 				Priority: 5,
@@ -64,7 +64,7 @@ var lookupTests = [...]struct {
 		service: "xmpp-server",
 		addr:    jid.MustParse("samwhited.com"),
 		addrs: []*net.SRV{
-			&net.SRV{
+			{
 				Target:   "xmpp-hosting.conversations.im.",
 				Port:     5269,
 				Priority: 1,
