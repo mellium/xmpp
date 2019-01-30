@@ -3,30 +3,30 @@ packages:
   - go
 environment:
   GO111MODULE: 'on'
+  PATH: "$PATH:`go env GOPATH`/bin"
 sources:
-  - https://git.sr.ht/~samwhited/xmpp
+  - https://github.com/mellium/xmpp.git
 tasks:
   - setup: |
-      export PATH=$(go env GOPATH)/bin:$PATH
-      echo 'export PATH=$(go env GOPATH)/bin:$PATH' >> ~/.buildenv
+      GO111MODULE=off go get -u golang.org/x/lint/golint
 
-      GO111MODULE=off go get golang.org/dl/go1.10.7
-      GO111MODULE=off go get golang.org/dl/go1.11.4
-      go1.10.7 download
-      go1.11.4 download
-  - vet: |
-      cd xmpp/
-      go vet ./...
-  - go110: |
-      mkdir -p `go env GOPATH`/src/mellium.im/
-      ln -s `pwd`/xmpp/ `go env GOPATH`/src/mellium.im/xmpp
-      cd `go env GOPATH`/src/mellium.im/xmpp
-      go1.10.7 env
-      go1.10.7 test -cover ./...
+      GO111MODULE=off go get -u golang.org/dl/go1.11.5
+      go1.11.5 download
+
+      GO111MODULE=off go get -u golang.org/dl/gotip
+      gotip download
   - go111: |
       cd xmpp/
-      go1.11.4 env
-      go1.11.4 test -cover ./...
+      go1.11.5 vet ./...
+      go1.11.5 test -v -cover ./...
+  - gotip: |
+      cd xmpp/
+      gotip vet ./...
+      gotip test -v -cover ./...
+  - lint: |
+      cd xmpp/
+      golint ./...
+      ~/sdk/go1.11.5/bin/gofmt -s -l . && [ -z "$(~/sdk/go1.11.5/bin/gofmt -s -l .)" ]
   - bench: |
       cd xmpp/
-      go test -run=NONE -bench . -benchmem ./...
+      go1.11.5 test -run=NONE -bench . -benchmem ./...
