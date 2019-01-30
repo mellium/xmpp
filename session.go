@@ -563,8 +563,8 @@ func getID(start xml.StartElement) string {
 	return ""
 }
 
-// Send transmits the first element read from the provided token reader using
-// start as the outermost tag in the encoding.
+// SendElement transmits the first element read from the provided token reader
+// using start as the outermost tag in the encoding.
 //
 // If the element is an IQ stanza, Send blocks until a response is received and
 // then returns a reader from which it can be read.
