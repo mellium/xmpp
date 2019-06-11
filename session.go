@@ -601,7 +601,7 @@ func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.
 
 	// If this is not an IQ (or is an IQ that's not of type "set" or "get") we
 	// don't expect a response and merely transmit the information.
-	if start.Name.Local == "iq" && start.Name.Space != "" && iqNeedsResp(start.Attr) {
+	if start.Name.Local != "iq" || start.Name.Space != "" || !iqNeedsResp(start.Attr) {
 		err := s.EncodeToken(start)
 		if err != nil {
 			return nil, err
