@@ -1,0 +1,19 @@
+image: freebsd/latest
+packages:
+  - go
+sources:
+  - https://github.com/mellium/xmpp.git
+tasks:
+  - info: |
+      go version
+      go env
+  - test: |
+      cd xmpp/
+      go test -v -cover ./...
+  - lint: |
+      cd xmpp/
+      go vet ./...
+      gofmt -s -l . && [ -z "$(gofmt -s -l .)" ]
+
+      # This will modify go.mod, so do it last.
+      go run golang.org/x/lint/golint -set_exit_status ./...
