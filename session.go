@@ -338,7 +338,7 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 		}
 
 		// If this is a stanza, normalize the "from" attribute.
-		if (start.Name.Local == "iq" || start.Name.Local == "presence" || start.Name.Local == "message") && (start.Name.Space == ns.Client || start.Name.Space == ns.Server || start.Name.Space == "") {
+		if isStanza(start.Name) {
 			for i, attr := range start.Attr {
 				if attr.Name.Local == "from" /*&& attr.Name.Space == start.Name.Space*/ {
 					local := s.LocalAddr().Bare().String()
@@ -562,6 +562,11 @@ func isIQ(name xml.Name) bool {
 	return name.Local == "iq" && (name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
 }
 
+func isStanza(name xml.Name) bool {
+	return (name.Local == "iq" || name.Local == "message" || name.Local == "presence") &&
+		(name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
+}
+
 func getID(start xml.StartElement) string {
 	for _, attr := range start.Attr {
 		if attr.Name.Local == "id" {
@@ -601,7 +606,7 @@ func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.
 
 	// If this is not an IQ (or is an IQ that's not of type "set" or "get") we
 	// don't expect a response and merely transmit the information.
-	if start.Name.Local != "iq" || start.Name.Space != "" || !iqNeedsResp(start.Attr) {
+	if !isIQ(start.Name) || !iqNeedsResp(start.Attr) {
 		err := s.EncodeToken(start)
 		if err != nil {
 			return nil, err
