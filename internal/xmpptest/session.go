@@ -33,7 +33,7 @@ func NewSession(state xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
 	origin := jid.MustParse("test@example.net")
 
 	s, err := xmpp.NegotiateSession(
-		context.Background(), location, origin, rw,
+		context.Background(), location, origin, rw, false,
 		NopNegotiator(state),
 	)
 	if err != nil {

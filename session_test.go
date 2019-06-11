@@ -71,7 +71,7 @@ func TestNilNegotiatorPanics(t *testing.T) {
 			t.Error("Expected panic, did not get one")
 		}
 	}()
-	xmpp.NegotiateSession(context.Background(), jid.JID{}, jid.JID{}, nil, nil)
+	xmpp.NegotiateSession(context.Background(), jid.JID{}, jid.JID{}, nil, false, nil)
 }
 
 var errTestNegotiate = errors.New("a test error")
@@ -119,7 +119,7 @@ func TestNegotiator(t *testing.T) {
 				Reader: strings.NewReader(tc.in),
 				Writer: buf,
 			}
-			_, err := xmpp.NegotiateSession(context.Background(), tc.location, tc.origin, rw, tc.negotiator)
+			_, err := xmpp.NegotiateSession(context.Background(), tc.location, tc.origin, rw, false, tc.negotiator)
 			if ((err == nil || tc.err == nil) && (err != nil || tc.err != nil)) || err.Error() != tc.err.Error() {
 				t.Errorf("Unexpected error: want=%q, got=%q", tc.err, err)
 			}

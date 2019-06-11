@@ -116,7 +116,7 @@ func TestComponent(t *testing.T) {
 				io.Copy(out, spr)
 			}()
 
-			_, err := component.NewClientSession(ctx, addr, []byte("secret"), rw)
+			_, err := component.NewClientSession(ctx, addr, []byte("secret"), rw, false)
 			if _, ok := tc.err.(some); (ok && err == nil) || (!ok && !reflect.DeepEqual(err, tc.err)) {
 				t.Fatalf("Unexpected error, got='%v' want='%v'", err, tc.err)
 			}
