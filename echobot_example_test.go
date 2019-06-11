@@ -88,7 +88,7 @@ func Example_echobot() {
 		)
 		_, err = s.Send(context.TODO(), reply)
 		if err != nil {
-			log.Printf("Error responding to mid-%s: %q", msg.ID, err)
+			log.Printf("Error responding to message %q: %q", msg.ID, err)
 		}
 		return nil
 	}))
