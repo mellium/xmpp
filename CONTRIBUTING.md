@@ -25,6 +25,6 @@ in the work by you shall be licensed as above, without any additional terms or
 conditions.
 
 
-[issues]: https://www.soquee.net/issues/mellium/xmpp
-[starter]: https://www.soquee.net/issues/mellium/xmpp?q=status%3Aopen+label%3Astarter
+[issues]: https://github.com/mellium/xmpp/issues
+[starter]: https://github.com/mellium/xmpp/labels/starter
 [LICENSE]: ./LICENSE

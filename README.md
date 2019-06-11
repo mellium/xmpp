@@ -13,10 +13,6 @@ To use it in your project, import it (or one of its subproject's) like so:
 import mellium.im/xmpp
 ```
 
-## Issues and feature requests
-
-To file a bug report or submit a feature request, please use the
-[issue tracker][issues].
 
 ## License
 
@@ -30,5 +26,4 @@ in the work by you shall be licensed as above, without any additional terms or
 conditions.
 
 
-[issues]: https://www.soquee.net/issues/mellium/xmpp
 [LICENSE]: ./LICENSE
