@@ -376,6 +376,11 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 					c: c,
 				}
 				<-c
+				// Consume the rest of the stream before continuing the loop.
+				_, err = xmlstream.Copy(discard, s)
+				if err != nil {
+					return s.sendError(err)
+				}
 				continue
 			} else {
 				needsResp = true
