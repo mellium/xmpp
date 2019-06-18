@@ -6,10 +6,12 @@
 package roster
 
 import (
+	"context"
 	"encoding/xml"
 	"io"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
@@ -18,6 +20,113 @@ import (
 const (
 	NS = "jabber:iq:roster"
 )
+
+// Iter is an iterator over roster items.
+type Iter struct {
+	r    xmlstream.TokenReadCloser
+	d    *xml.Decoder
+	err  error
+	item Item
+	next *xml.StartElement
+}
+
+func (i *Iter) setNext() {
+	i.next = nil
+	t, err := i.d.Token()
+	if err != nil {
+		i.err = err
+		return
+	}
+	start, ok := t.(xml.StartElement)
+	// If we're done with the items and get the roster payload end element (or
+	// anything else), call it done.
+	if !ok {
+		return
+	}
+
+	// TODO: check the name of the payload to make sure the server is behaving
+	// correctly.
+
+	i.next = &start
+}
+
+// Returns true if there are more items to decode.
+func (i *Iter) Next() bool {
+	if i.err != nil || i.next == nil {
+		return false
+	}
+
+	// If this is a start element, decode the item.
+	item := Item{}
+	err := i.d.DecodeElement(&item, i.next)
+	if err != nil {
+		i.err = err
+		return false
+	}
+	i.item = item
+	ret := i.err == nil && i.next != nil
+	i.setNext()
+	return ret
+}
+
+// Returns the current roster item.
+func (i *Iter) Item() Item {
+	return i.item
+}
+
+// Returns the last error encountered by the iterator (if any).
+func (i *Iter) Err() error {
+	return i.err
+}
+
+// Close indicates that we are finished with the given roster.
+// Calling it multiple times has no effect.
+func (i *Iter) Close() error {
+	i.next = nil
+	return i.r.Close()
+}
+
+// Fetch requests the roster and returns an iterator over all roster items
+// (blocking until a response is received).
+//
+// The iterator must be closed before anything else is done on the session or it
+// will become invalid.
+// Any errors encountered while creating the iter are deferred until the iter is
+// used.
+func Fetch(ctx context.Context, s *xmpp.Session) *Iter {
+	return FetchIQ(ctx, stanza.IQ{}, s)
+}
+
+// FetchIQ is like Fetch but it allows you to customize the IQ.
+func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) *Iter {
+	rosterIQ := IQ{IQ: iq}
+	r, err := s.Send(ctx, rosterIQ.TokenReader())
+	if err != nil {
+		return &Iter{err: err}
+	}
+
+	d := xml.NewTokenDecoder(r)
+
+	// Pop the start IQ token.
+	_, err = d.Token()
+	if err != nil {
+		return &Iter{err: err}
+	}
+
+	// Pop the roster wrapper token.
+	_, err = d.Token()
+	if err != nil {
+		return &Iter{err: err}
+	}
+
+	// Return the iterator which will parse the rest of the payload incrementally.
+	iter := &Iter{
+		r: r,
+		d: d,
+	}
+	iter.setNext()
+	return iter
+}
 
 // IQ represents a user roster request or response.
 // The zero value is a valid query for the roster.
@@ -59,7 +168,7 @@ func (m itemMarshaler) Token() (xml.Token, error) {
 	return tok, nil
 }
 
-// TokenReader satisfies the xmlstream.Marshaler interface.
+// TokenReader returns a stream of XML tokens that match the IQ.
 func (iq IQ) TokenReader() xml.TokenReader {
 	attrs := []xml.Attr{}
 	if iq.Query.Ver != "" {
