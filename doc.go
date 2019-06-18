@@ -88,7 +88,7 @@
 // These can be sent with the Send and SendElement methods.
 //
 //     // Send initial presence to let the server know we want to receive messages.
-//     _, err = session.Send(stanza.WrapPresence(nil, stanza.AvailablePresence, nil))
+//     _, err = session.Send(context.TODO(), stanza.WrapPresence(nil, stanza.AvailablePresence, nil))
 //
 // For Send to correctly handle IQ responses, and to make the common case of
 // polling for incoming XML on the input stream—and possibly writing to the
