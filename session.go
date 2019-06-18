@@ -27,6 +27,8 @@ var (
 	ErrOutputStreamClosed = errors.New("xmpp: attempted to write token to closed stream")
 )
 
+var errNotStart = errors.New("xmpp: SendElement did not begin with a StartElement")
+
 // SessionState is a bitmask that represents the current state of an XMPP
 // session. For a description of each bit, see the various SessionState typed
 // constants.
@@ -600,7 +602,7 @@ func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.
 		var ok bool
 		start, ok = tok.(xml.StartElement)
 		if !ok {
-			return nil, errors.New("xmpp: SendElement did not begin with a StartElement")
+			return nil, errNotStart
 		}
 	}
 
