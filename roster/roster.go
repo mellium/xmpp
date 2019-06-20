@@ -23,11 +23,12 @@ const (
 
 // Iter is an iterator over roster items.
 type Iter struct {
-	r    xmlstream.TokenReadCloser
-	d    *xml.Decoder
-	err  error
-	item Item
-	next *xml.StartElement
+	r      xmlstream.TokenReadCloser
+	d      *xml.Decoder
+	err    error
+	item   Item
+	next   *xml.StartElement
+	closed bool
 }
 
 func (i *Iter) setNext() {
@@ -52,7 +53,7 @@ func (i *Iter) setNext() {
 
 // Returns true if there are more items to decode.
 func (i *Iter) Next() bool {
-	if i.err != nil || i.next == nil {
+	if i.err != nil || i.next == nil || i.closed {
 		return false
 	}
 
@@ -82,7 +83,11 @@ func (i *Iter) Err() error {
 // Close indicates that we are finished with the given roster.
 // Calling it multiple times has no effect.
 func (i *Iter) Close() error {
-	i.next = nil
+	if i.closed {
+		return nil
+	}
+
+	i.closed = true
 	return i.r.Close()
 }
 
