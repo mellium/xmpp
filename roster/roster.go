@@ -88,6 +88,10 @@ func (i *Iter) Close() error {
 	}
 
 	i.closed = true
+	if i.r == nil {
+		return nil
+	}
+
 	return i.r.Close()
 }
 
