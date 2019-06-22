@@ -11,6 +11,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"mellium.im/xmlstream"
@@ -88,6 +89,7 @@ type Session struct {
 	out struct {
 		internal.StreamInfo
 		e tokenWriteFlusher
+		sync.Mutex
 	}
 }
 
@@ -597,7 +599,12 @@ func getID(start xml.StartElement) string {
 // necessarily true.
 // If the input stream is not being processed (a call to Serve is not running),
 // SendElement may block forever.
+//
+// SendElement is safe for concurrent use by multiple goroutines.
 func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.StartElement) (xmlstream.TokenReadCloser, error) {
+	s.out.Lock()
+	defer s.out.Unlock()
+
 	if start.Name.Local == "" {
 		tok, err := r.Token()
 		if err != nil {
