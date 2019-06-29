@@ -68,8 +68,10 @@ type Dialer struct {
 }
 
 // Dial discovers and connects to the address on the named network.
-// It will attempt to look up SRV records for the given JIDs domainpart or
-// connect to the domainpart directly if no such SRV records exist.
+// It will attempt to look up SRV records for the JIDs domainpart or
+// connect to the domainpart directly if dialing the SRV records fails.
+// If Dial returns a net.DNSError, setting NoTLS and then NoLookup and trying
+// again may be a good fallback order.
 //
 // If the context expires before the connection is complete, an error is
 // returned. Once successfully connected, any expiration of the context will not
