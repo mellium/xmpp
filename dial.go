@@ -45,9 +45,6 @@ func DialServer(ctx context.Context, network string, addr jid.JID) (net.Conn, er
 type Dialer struct {
 	net.Dialer
 
-	// Resolver allows you to change options related to resolving DNS.
-	Resolver *net.Resolver
-
 	// NoLookup stops the dialer from looking up SRV or TXT records for the given
 	// domain. It also prevents fetching of the host metadata file.
 	// Instead, it will try to connect to the domain directly.
