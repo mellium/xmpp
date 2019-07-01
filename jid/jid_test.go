@@ -29,16 +29,17 @@ func TestValidJIDs(t *testing.T) {
 	for i, tc := range [...]struct {
 		jid, lp, dp, rp string
 	}{
-		0: {"example.net", "", "example.net", ""},
-		1: {"example.net/rp", "", "example.net", "rp"},
-		2: {"mercutio@example.net", "mercutio", "example.net", ""},
-		3: {"mercutio@example.net/rp", "mercutio", "example.net", "rp"},
-		4: {"mercutio@example.net/rp@rp", "mercutio", "example.net", "rp@rp"},
-		5: {"mercutio@example.net/rp@rp/rp", "mercutio", "example.net", "rp@rp/rp"},
-		6: {"mercutio@example.net/@", "mercutio", "example.net", "@"},
-		7: {"mercutio@example.net//@", "mercutio", "example.net", "/@"},
-		8: {"mercutio@example.net//@//", "mercutio", "example.net", "/@//"},
-		9: {"[::1]", "", "[::1]", ""},
+		0:  {"example.net", "", "example.net", ""},
+		1:  {"example.net/rp", "", "example.net", "rp"},
+		2:  {"mercutio@example.net", "mercutio", "example.net", ""},
+		3:  {"mercutio@example.net/rp", "mercutio", "example.net", "rp"},
+		4:  {"mercutio@example.net/rp@rp", "mercutio", "example.net", "rp@rp"},
+		5:  {"mercutio@example.net/rp@rp/rp", "mercutio", "example.net", "rp@rp/rp"},
+		6:  {"mercutio@example.net/@", "mercutio", "example.net", "@"},
+		7:  {"mercutio@example.net//@", "mercutio", "example.net", "/@"},
+		8:  {"mercutio@example.net//@//", "mercutio", "example.net", "/@//"},
+		9:  {"[::1]", "", "[::1]", ""},
+		10: {"juliet@example.com/ foo", "juliet", "example.com", " foo"},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			j, err := jid.Parse(tc.jid)
@@ -75,6 +76,11 @@ var invalidJIDs = [...]string{
 	11: `b>d@example.net`,
 	12: `e@example.net/`,
 	13: `@example.net/`,
+	14: `foo bar@example.com`,
+	15: `henryⅣ@example.com`,
+	16: `♚@example.com`,
+	17: `juliet@`,
+	18: `/foobar`,
 }
 
 func TestInvalidParseJIDs(t *testing.T) {
