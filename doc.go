@@ -83,8 +83,8 @@
 //
 // However, writing individual XML tokens can be tedious and error prone.
 // The mellium.im/xmpp/stanza package contains functions and structs that aid in
-// the construction of message, presence and IQ elements which have special
-// semantics in XMPP and are known as "stanzas".
+// the construction of message, presence and info/query (IQ) elements which have
+// special semantics in XMPP and are known as "stanzas".
 // These can be sent with the Send and SendElement methods.
 //
 //     // Send initial presence to let the server know we want to receive messages.
@@ -94,6 +94,7 @@
 // polling for incoming XML on the input stream—and possibly writing to the
 // output stream in response—easier, we need a long running goroutine.
 // Session includes the Serve method for starting this processing.
+//
 // Serve provides a Handler with access to the stream but prevents it from
 // advancing the stream beyond the current element and always advances the
 // stream to the end of the element when the handler returns (even if the

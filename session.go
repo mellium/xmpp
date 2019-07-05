@@ -588,17 +588,17 @@ func getID(start xml.StartElement) string {
 // SendElement transmits the first element read from the provided token reader
 // using start as the outermost tag in the encoding.
 //
-// If the element is an IQ stanza, Send blocks until a response is received and
-// then returns a reader from which it can be read.
+// If the element is an info/query (IQ) stanza, Send blocks until a response is
+// received and then returns a reader from which the response can be read.
+// If the input stream is not being processed (a call to Serve is not running),
+// SendElement may block forever.
 // If the provided context is closed before the response is received SendElement
-// immediately returns an error and any response received at a later time must
-// be handled separately.
+// immediately returns an error and any response received at a later time will
+// not be associated with the original request.
 // The response does not need to be consumed in its entirety, but it must be
 // closed before stream processing will resume.
 // If an error is returned, xml.TokenReader will be nil; the converse is not
 // necessarily true.
-// If the input stream is not being processed (a call to Serve is not running),
-// SendElement may block forever.
 //
 // SendElement is safe for concurrent use by multiple goroutines.
 func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.StartElement) (xmlstream.TokenReadCloser, error) {
