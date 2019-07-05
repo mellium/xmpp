@@ -8,10 +8,10 @@ tasks:
       go version
       go env
   - test: |
-      cd xmpp/
+      cd xmpp.git/
       go test -v -cover ./...
   - lint: |
-      cd xmpp/
+      cd xmpp.git/
       go vet ./...
       gofmt -s -l . && [ -z "$(gofmt -s -l .)" ]
 
