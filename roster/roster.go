@@ -51,7 +51,7 @@ func (i *Iter) setNext() {
 	i.next = &start
 }
 
-// Returns true if there are more items to decode.
+// Next returns true if there are more items to decode.
 func (i *Iter) Next() bool {
 	if i.err != nil || i.next == nil || i.closed {
 		return false
@@ -70,12 +70,12 @@ func (i *Iter) Next() bool {
 	return ret
 }
 
-// Returns the current roster item.
+// Item returns the current roster item.
 func (i *Iter) Item() Item {
 	return i.item
 }
 
-// Returns the last error encountered by the iterator (if any).
+// Err returns the last error encountered by the iterator (if any).
 func (i *Iter) Err() error {
 	return i.err
 }
