@@ -10,6 +10,13 @@ tasks:
   - test: |
       cd xmpp/
       go test -v -cover ./...
+  - examples: |
+      cd xmpp/examples/
+      for d in ./*/; do
+        pushd $d
+        go build
+        popd
+      done
   - lint: |
       cd xmpp/
       go vet ./...
