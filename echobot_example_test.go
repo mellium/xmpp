@@ -49,7 +49,7 @@ func Example_echobot() {
 	}()
 
 	// Send initial presence to let the server know we want to receive messages.
-	_, err = s.Send(context.TODO(), stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
+	err = s.Send(context.TODO(), stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
 	if err != nil {
 		log.Printf("Error sending initial presence: %q", err)
 		return
@@ -86,7 +86,7 @@ func Example_echobot() {
 				return xml.CharData(msg.Body), io.EOF
 			}), xml.StartElement{Name: xml.Name{Local: "body"}}),
 		)
-		_, err = s.Send(context.TODO(), reply)
+		err = s.Send(context.TODO(), reply)
 		if err != nil {
 			log.Printf("Error responding to message %q: %q", msg.ID, err)
 		}

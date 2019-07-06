@@ -48,6 +48,88 @@ var (
 	to          = jid.MustParse("test@example.net")
 )
 
+var sendIQTests = [...]struct {
+	iq         stanza.IQ
+	payload    xml.TokenReader
+	err        error
+	writesBody bool
+	resp       xml.TokenReader
+}{
+	0: {
+		iq:         stanza.IQ{ID: testIQID, Type: stanza.GetIQ},
+		writesBody: true,
+		resp:       stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}, nil),
+	},
+	1: {
+		iq:         stanza.IQ{ID: testIQID, Type: stanza.SetIQ},
+		writesBody: true,
+		resp:       stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.ErrorIQ}, nil),
+	},
+	2: {
+		iq:         stanza.IQ{Type: stanza.ResultIQ},
+		writesBody: true,
+	},
+	3: {
+		iq:         stanza.IQ{Type: stanza.ErrorIQ},
+		writesBody: true,
+	},
+}
+
+func TestSendIQ(t *testing.T) {
+	for i, tc := range sendIQTests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			br := &bytes.Buffer{}
+			bw := &bytes.Buffer{}
+			s := xmpptest.NewSession(0, struct {
+				io.Reader
+				io.Writer
+			}{
+				Reader: br,
+				Writer: bw,
+			})
+			if tc.resp != nil {
+				e := xml.NewEncoder(br)
+				_, err := xmlstream.Copy(e, tc.resp)
+				if err != nil {
+					t.Logf("error responding: %q", err)
+				}
+				err = e.Flush()
+				if err != nil {
+					t.Logf("error flushing after responding: %q", err)
+				}
+			}
+
+			go func() {
+				err := s.Serve(nil)
+				if err != nil && err != io.EOF {
+					panic(err)
+				}
+			}()
+
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+			defer cancel()
+			resp, err := s.SendIQ(ctx, tc.iq, tc.payload)
+			if err != tc.err {
+				t.Errorf("Unexpected error, want=%q, got=%q", tc.err, err)
+			}
+			if empty := bw.Len() != 0; tc.writesBody != empty {
+				t.Errorf("Unexpected body, want=%t, got=%t", tc.writesBody, empty)
+			}
+			switch {
+			case resp == nil && tc.resp != nil:
+				t.Fatalf("Expected response, but got none")
+			case resp != nil && tc.resp == nil:
+				buf := &bytes.Buffer{}
+				_, err := xmlstream.Copy(xml.NewEncoder(buf), resp)
+				if err != nil {
+					t.Fatalf("Error encoding unexpected response")
+				}
+				t.Fatalf("Did not expect response, but got: %s", buf.String())
+			}
+		})
+	}
+}
+
 var sendTests = [...]struct {
 	r          xml.TokenReader
 	err        error
@@ -79,16 +161,6 @@ var sendTests = [...]struct {
 	5: {
 		r:          stanza.WrapIQ(stanza.IQ{Type: stanza.ErrorIQ}, nil),
 		writesBody: true,
-	},
-	6: {
-		r:          stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.GetIQ}, nil),
-		writesBody: true,
-		resp:       stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}, nil),
-	},
-	7: {
-		r:          stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.SetIQ}, nil),
-		writesBody: true,
-		resp:       stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.ErrorIQ}, nil),
 	},
 }
 
@@ -125,23 +197,12 @@ func TestSend(t *testing.T) {
 
 			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
 			defer cancel()
-			resp, err := s.Send(ctx, tc.r)
+			err := s.Send(ctx, tc.r)
 			if err != tc.err {
 				t.Errorf("Unexpected error, want=%q, got=%q", tc.err, err)
 			}
 			if empty := bw.Len() != 0; tc.writesBody != empty {
 				t.Errorf("Unexpected body, want=%t, got=%t", tc.writesBody, empty)
-			}
-			switch {
-			case resp == nil && tc.resp != nil:
-				t.Fatalf("Expected response, but got none")
-			case resp != nil && tc.resp == nil:
-				buf := &bytes.Buffer{}
-				_, err := xmlstream.Copy(xml.NewEncoder(buf), resp)
-				if err != nil {
-					t.Fatalf("Error encoding unexpected response")
-				}
-				t.Fatalf("Did not expect response, but got: %s", buf.String())
 			}
 		})
 	}

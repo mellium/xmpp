@@ -78,7 +78,8 @@ type Session struct {
 	// The negotiated features (by namespace) for the current session.
 	negotiated map[string]struct{}
 
-	sentIQs map[string]chan xmlstream.TokenReadCloser
+	sentIQMutex sync.Mutex
+	sentIQs     map[string]chan xmlstream.TokenReadCloser
 
 	in struct {
 		internal.StreamInfo
@@ -364,11 +365,13 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 			id = getID(start)
 
 			// If this is a response IQ (ie. an "error" or "result") check if we're
-			// handling it as part of a SendElement call.
+			// handling it as part of a SendIQ call.
 			// If not, record this so that we can check if the user sends a response
 			// later.
 			if !iqNeedsResp(start.Attr) {
+				s.sentIQMutex.Lock()
 				c := s.sentIQs[id]
+				s.sentIQMutex.Unlock()
 				if c == nil {
 					goto noreply
 				}
@@ -550,8 +553,8 @@ func (s *Session) SetCloseDeadline(t time.Time) error {
 
 // Send transmits the first element read from the provided token reader.
 //
-// For more information, see SendElement.
-func (s *Session) Send(ctx context.Context, r xml.TokenReader) (xmlstream.TokenReadCloser, error) {
+// Send is safe for concurrent use by multiple goroutines.
+func (s *Session) Send(ctx context.Context, r xml.TokenReader) error {
 	return s.SendElement(ctx, r, xml.StartElement{})
 }
 
@@ -564,7 +567,7 @@ func iqNeedsResp(attrs []xml.Attr) bool {
 		}
 	}
 
-	return typ == "get" || typ == "set"
+	return typ == string(stanza.GetIQ) || typ == string(stanza.SetIQ)
 }
 
 func isIQ(name xml.Name) bool {
@@ -585,94 +588,102 @@ func getID(start xml.StartElement) string {
 	return ""
 }
 
-// SendElement transmits the first element read from the provided token reader
-// using start as the outermost tag in the encoding.
+// SendIQ is like Send or SendElement except that it wraps the payload in an
+// Info/Query (IQ) element and blocks until a response is received.
 //
-// If the element is an info/query (IQ) stanza, Send blocks until a response is
-// received and then returns a reader from which the response can be read.
 // If the input stream is not being processed (a call to Serve is not running),
-// SendElement may block forever.
-// If the provided context is closed before the response is received SendElement
-// immediately returns an error and any response received at a later time will
-// not be associated with the original request.
-// The response does not need to be consumed in its entirety, but it must be
-// closed before stream processing will resume.
-// If an error is returned, xml.TokenReader will be nil; the converse is not
+// SendIQ will never receive a response and will block until the provided
+// context is canceled.
+// If the response is non-nil, it does not need to be consumed in its entirety,
+// but it must be closed before stream processing will resume.
+// If the IQ type does not require a response—ie. it is a result or error IQ,
+// meaning that it is a response itself—SendIQ does not block and the response
+// is nil.
+//
+// If the context is closed before the response is received, SendIQ immediately
+// returns the context error.
+// Any response received at a later time will not be associated with the
+// original request but can still be handled by the Serve handler.
+//
+// If an error is returned, the response will be nil; the converse is not
 // necessarily true.
+// SendIQ is safe for concurrent use by multiple goroutines.
+func (s *Session) SendIQ(ctx context.Context, iq stanza.IQ, payload xml.TokenReader) (xmlstream.TokenReadCloser, error) {
+	// We need to add an id to the IQ if one wasn't already set by the user so
+	// that we can use it to associate the response with the original query.
+	if iq.ID == "" {
+		iq.ID = internal.RandomID()
+	}
+	needsResp := iq.Type == stanza.GetIQ || iq.Type == stanza.SetIQ
+
+	var c chan xmlstream.TokenReadCloser
+	if needsResp {
+		c = make(chan xmlstream.TokenReadCloser)
+
+		s.sentIQMutex.Lock()
+		s.sentIQs[iq.ID] = c
+		s.sentIQMutex.Unlock()
+		defer func() {
+			s.sentIQMutex.Lock()
+			delete(s.sentIQs, iq.ID)
+			s.sentIQMutex.Unlock()
+		}()
+	}
+
+	err := s.Send(ctx, stanza.WrapIQ(iq, payload))
+	if err != nil {
+		return nil, err
+	}
+
+	// If this is not an IQ of type "set" or "get" we don't expect a response and
+	// merely transmit the information, so don't block.
+	if !needsResp {
+		return nil, nil
+	}
+
+	select {
+	case rr := <-c:
+		return rr, nil
+	case <-ctx.Done():
+		close(c)
+		return nil, ctx.Err()
+	}
+}
+
+// SendElement is like Send except that it uses start as the outermost tag in
+// the encoding.
 //
 // SendElement is safe for concurrent use by multiple goroutines.
-func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.StartElement) (xmlstream.TokenReadCloser, error) {
+func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.StartElement) error {
 	s.out.Lock()
 	defer s.out.Unlock()
 
 	if start.Name.Local == "" {
 		tok, err := r.Token()
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		var ok bool
 		start, ok = tok.(xml.StartElement)
 		if !ok {
-			return nil, errNotStart
+			return errNotStart
 		}
 	}
-
-	// If this is not an IQ (or is an IQ that's not of type "set" or "get") we
-	// don't expect a response and merely transmit the information.
-	if !isIQ(start.Name) || !iqNeedsResp(start.Attr) {
-		err := s.EncodeToken(start)
-		if err != nil {
-			return nil, err
-		}
-		_, err = xmlstream.Copy(s, xmlstream.Inner(r))
-		if err != nil {
-			return nil, err
-		}
-		err = s.EncodeToken(start.End())
-		if err != nil {
-			return nil, err
-		}
-		return nil, s.Flush()
-	}
-
-	// We need to add an id to the IQ if one wasn't already set by the user so
-	// that we can use it to associate the response with the original query.
-	id := getID(start)
-	if id == "" {
-		id = internal.RandomID()
-		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: id})
-	}
-
-	c := make(chan xmlstream.TokenReadCloser)
-	s.sentIQs[id] = c
 
 	err := s.EncodeToken(start)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	_, err = xmlstream.Copy(s, xmlstream.Inner(r))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = s.EncodeToken(start.End())
 	if err != nil {
-		return nil, err
+		return err
 	}
-	err = s.Flush()
-	if err != nil {
-		return nil, err
-	}
-
-	select {
-	case rr := <-c:
-		delete(s.sentIQs, id)
-		return rr, nil
-	case <-ctx.Done():
-		delete(s.sentIQs, id)
-		close(c)
-		return nil, ctx.Err()
-	}
+	return s.Flush()
 }
 
 // closeInputStream immediately marks the input stream as closed and cancels any

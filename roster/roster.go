@@ -107,9 +107,14 @@ func Fetch(ctx context.Context, s *xmpp.Session) *Iter {
 }
 
 // FetchIQ is like Fetch but it allows you to customize the IQ.
+// Changing the type of the provided IQ has no effect.
 func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) *Iter {
+	if iq.Type != stanza.GetIQ {
+		iq.Type = stanza.GetIQ
+	}
 	rosterIQ := IQ{IQ: iq}
-	r, err := s.Send(ctx, rosterIQ.TokenReader())
+	payload := rosterIQ.payload()
+	r, err := s.SendIQ(ctx, iq, payload)
 	if err != nil {
 		return &Iter{err: err}
 	}
@@ -179,18 +184,25 @@ func (m itemMarshaler) Token() (xml.Token, error) {
 
 // TokenReader returns a stream of XML tokens that match the IQ.
 func (iq IQ) TokenReader() xml.TokenReader {
-	attrs := []xml.Attr{}
-	if iq.Query.Ver != "" {
-		attrs = append(attrs, xml.Attr{Name: xml.Name{Local: "version"}, Value: iq.Query.Ver})
-	}
 	if iq.IQ.Type != stanza.GetIQ {
 		iq.IQ.Type = stanza.GetIQ
 	}
 
-	return stanza.WrapIQ(iq.IQ, xmlstream.Wrap(
+	return stanza.WrapIQ(iq.IQ, iq.payload())
+}
+
+// Payload returns a stream of XML tokekns that match the roster query payload
+// without the IQ wrapper.
+func (iq IQ) payload() xml.TokenReader {
+	attrs := []xml.Attr{}
+	if iq.Query.Ver != "" {
+		attrs = append(attrs, xml.Attr{Name: xml.Name{Local: "version"}, Value: iq.Query.Ver})
+	}
+
+	return xmlstream.Wrap(
 		itemMarshaler{items: iq.Query.Item},
 		xml.StartElement{Name: xml.Name{Local: "query", Space: NS}, Attr: attrs},
-	))
+	)
 }
 
 // WriteXML satisfies the xmlstream.WriterTo interface.

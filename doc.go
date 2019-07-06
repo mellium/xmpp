@@ -85,12 +85,12 @@
 // The mellium.im/xmpp/stanza package contains functions and structs that aid in
 // the construction of message, presence and info/query (IQ) elements which have
 // special semantics in XMPP and are known as "stanzas".
-// These can be sent with the Send and SendElement methods.
+// These can be sent with the Send, SendElement, and SendIQ methods.
 //
 //     // Send initial presence to let the server know we want to receive messages.
 //     _, err = session.Send(context.TODO(), stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
 //
-// For Send to correctly handle IQ responses, and to make the common case of
+// For SendIQ to correctly handle IQ responses, and to make the common case of
 // polling for incoming XML on the input stream—and possibly writing to the
 // output stream in response—easier, we need a long running goroutine.
 // Session includes the Serve method for starting this processing.
