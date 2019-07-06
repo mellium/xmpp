@@ -73,22 +73,22 @@ var sendTests = [...]struct {
 		writesBody: true,
 	},
 	4: {
-		r:          stanza.WrapIQ(&stanza.IQ{Type: stanza.ResultIQ}, nil),
+		r:          stanza.WrapIQ(stanza.IQ{Type: stanza.ResultIQ}, nil),
 		writesBody: true,
 	},
 	5: {
-		r:          stanza.WrapIQ(&stanza.IQ{Type: stanza.ErrorIQ}, nil),
+		r:          stanza.WrapIQ(stanza.IQ{Type: stanza.ErrorIQ}, nil),
 		writesBody: true,
 	},
 	6: {
-		r:          stanza.WrapIQ(&stanza.IQ{ID: testIQID, Type: stanza.GetIQ}, nil),
+		r:          stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.GetIQ}, nil),
 		writesBody: true,
-		resp:       stanza.WrapIQ(&stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}, nil),
+		resp:       stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}, nil),
 	},
 	7: {
-		r:          stanza.WrapIQ(&stanza.IQ{ID: testIQID, Type: stanza.SetIQ}, nil),
+		r:          stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.SetIQ}, nil),
 		writesBody: true,
-		resp:       stanza.WrapIQ(&stanza.IQ{ID: testIQID, Type: stanza.ErrorIQ}, nil),
+		resp:       stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.ErrorIQ}, nil),
 	},
 }
 

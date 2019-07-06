@@ -402,7 +402,7 @@ func (s *Session) handleInputStream(handler Handler) (err error) {
 
 		// If the user did not write a response to an IQ, send a default one.
 		if needsResp && !rw.wroteResp {
-			_, err := xmlstream.Copy(s, stanza.WrapIQ(&stanza.IQ{
+			_, err := xmlstream.Copy(s, stanza.WrapIQ(stanza.IQ{
 				ID:   id,
 				Type: stanza.ErrorIQ,
 			}, stanza.Error{

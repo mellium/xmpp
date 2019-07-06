@@ -15,18 +15,22 @@ import (
 // WrapIQ wraps a payload in an IQ stanza.
 // The resulting IQ may not contain an id or from attribute and thus may not be
 // valid without further processing.
-func WrapIQ(iq *IQ, payload xml.TokenReader) xml.TokenReader {
+func WrapIQ(iq IQ, payload xml.TokenReader) xml.TokenReader {
 	attr := []xml.Attr{
 		{Name: xml.Name{Local: "type"}, Value: string(iq.Type)},
 	}
 
-	to, err := iq.To.MarshalXMLAttr(xml.Name{Space: "", Local: "to"})
-	if err == nil && to.Value != "" {
-		attr = append(attr, to)
+	if !iq.To.Equal(jid.JID{}) {
+		to, err := iq.To.MarshalXMLAttr(xml.Name{Space: "", Local: "to"})
+		if err == nil && to.Value != "" {
+			attr = append(attr, to)
+		}
 	}
-	from, err := iq.From.MarshalXMLAttr(xml.Name{Space: "", Local: "from"})
-	if err == nil && from.Value != "" {
-		attr = append(attr, from)
+	if !iq.From.Equal(jid.JID{}) {
+		from, err := iq.From.MarshalXMLAttr(xml.Name{Space: "", Local: "from"})
+		if err == nil && from.Value != "" {
+			attr = append(attr, from)
+		}
 	}
 
 	if iq.Lang != "" {

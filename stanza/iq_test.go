@@ -8,10 +8,63 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"strings"
 	"testing"
 
+	"mellium.im/xmlstream"
+	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
+
+type iqTest struct {
+	to      string
+	typ     stanza.IQType
+	payload xml.TokenReader
+	out     string
+	err     error
+}
+
+var iqTests = [...]iqTest{
+	0: {
+		to:      "new@example.net",
+		payload: &testReader{},
+	},
+	1: {
+		to:      "new@example.org",
+		payload: &testReader{start, start.End()},
+		out:     `<ping></ping>`,
+		typ:     stanza.GetIQ,
+	},
+}
+
+func TestIQ(t *testing.T) {
+	for i, tc := range iqTests {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			b := new(bytes.Buffer)
+			e := xml.NewEncoder(b)
+			iq := stanza.WrapIQ(stanza.IQ{To: jid.MustParse(tc.to), Type: tc.typ}, tc.payload)
+			if _, err := xmlstream.Copy(e, iq); err != tc.err {
+				t.Errorf("Unexpected error: want=`%v', got=`%v'", tc.err, err)
+			}
+			if err := e.Flush(); err != nil {
+				t.Fatalf("Error flushing: %q", err)
+			}
+
+			o := b.String()
+			jidattr := fmt.Sprintf(`to="%s"`, tc.to)
+			if !strings.Contains(o, jidattr) {
+				t.Errorf("Expected output to have attr `%s',\ngot=`%s'", jidattr, o)
+			}
+			typeattr := fmt.Sprintf(`type="%s"`, string(tc.typ))
+			if !strings.Contains(o, typeattr) {
+				t.Errorf("Expected output to have attr `%s',\ngot=`%s'", typeattr, o)
+			}
+			if !strings.Contains(o, tc.out) {
+				t.Errorf("Expected output to contain payload `%s',\ngot=`%s'", tc.out, o)
+			}
+		})
+	}
+}
 
 func TestMarshalIQTypeAttr(t *testing.T) {
 	for i, tc := range [...]struct {

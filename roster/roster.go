@@ -187,7 +187,7 @@ func (iq IQ) TokenReader() xml.TokenReader {
 		iq.IQ.Type = stanza.GetIQ
 	}
 
-	return stanza.WrapIQ(&iq.IQ, xmlstream.Wrap(
+	return stanza.WrapIQ(iq.IQ, xmlstream.Wrap(
 		itemMarshaler{items: iq.Query.Item},
 		xml.StartElement{Name: xml.Name{Local: "query", Space: NS}, Attr: attrs},
 	))

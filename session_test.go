@@ -155,7 +155,7 @@ var serveTests = [...]struct {
 	},
 	3: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
-			_, err := xmlstream.Copy(rw, stanza.WrapIQ(&stanza.IQ{
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
 				ID:   "1234",
 				Type: stanza.ResultIQ,
 			}, nil))
@@ -167,7 +167,7 @@ var serveTests = [...]struct {
 	},
 	4: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
-			_, err := xmlstream.Copy(rw, stanza.WrapIQ(&stanza.IQ{
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
 				ID:   "wrongid",
 				Type: stanza.ResultIQ,
 			}, nil))
@@ -179,7 +179,7 @@ var serveTests = [...]struct {
 	},
 	5: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
-			_, err := xmlstream.Copy(rw, stanza.WrapIQ(&stanza.IQ{
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
 				ID:   "1234",
 				Type: stanza.ErrorIQ,
 			}, nil))
@@ -191,7 +191,7 @@ var serveTests = [...]struct {
 	},
 	6: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
-			_, err := xmlstream.Copy(rw, stanza.WrapIQ(&stanza.IQ{
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
 				ID:   "1234",
 				Type: stanza.GetIQ,
 			}, nil))

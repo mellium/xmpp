@@ -55,7 +55,7 @@
 //    func PingIQ(to jid.JID) xml.TokenReader {
 //        start := xml.StartElement{Name: xml.Name{Space: "urn:xmpp:ping", Local: "ping"}}
 //        return stanza.WrapIQ(
-//            &stanza.IQ{To: to, Type: stanza.GetIQ},
+//            stanza.IQ{To: to, Type: stanza.GetIQ},
 //            xmlstream.Wrap(nil, start)
 //        )
 //    }
