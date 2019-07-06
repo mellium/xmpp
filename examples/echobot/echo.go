@@ -57,7 +57,7 @@ func echo(addr, pass string, xmlIn, xmlOut io.Writer, logger, debug *log.Logger)
 	}()
 
 	// Send initial presence to let the server know we want to receive messages.
-	_, err = s.Send(context.TODO(), stanza.WrapPresence(nil, stanza.AvailablePresence, nil))
+	err = s.Send(context.TODO(), stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
 	if err != nil {
 		return fmt.Errorf("Error sending initial presence: %w", err)
 	}
@@ -95,7 +95,7 @@ func echo(addr, pass string, xmlIn, xmlOut io.Writer, logger, debug *log.Logger)
 			}), xml.StartElement{Name: xml.Name{Local: "body"}}),
 		)
 		debug.Printf("Replying to message %q from %s with body %q", msg.ID, msg.From.Bare(), msg.Body)
-		_, err = s.Send(context.TODO(), reply)
+		err = s.Send(context.TODO(), reply)
 		if err != nil {
 			logger.Printf("Error responding to message %q: %q", msg.ID, err)
 		}
