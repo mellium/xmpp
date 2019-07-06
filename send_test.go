@@ -69,7 +69,7 @@ var sendTests = [...]struct {
 		writesBody: true,
 	},
 	3: {
-		r:          stanza.WrapPresence(&to, stanza.AvailablePresence, nil),
+		r:          stanza.WrapPresence(to, stanza.AvailablePresence, nil),
 		writesBody: true,
 	},
 	4: {

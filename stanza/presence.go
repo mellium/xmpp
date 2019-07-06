@@ -12,9 +12,12 @@ import (
 )
 
 // WrapPresence wraps a payload in a presence stanza.
-func WrapPresence(to *jid.JID, typ PresenceType, payload xml.TokenReader) xml.TokenReader {
+//
+// If to is the zero value for jid.JID, no to attribute is set on the resulting
+// presence.
+func WrapPresence(to jid.JID, typ PresenceType, payload xml.TokenReader) xml.TokenReader {
 	attrs := make([]xml.Attr, 0, 2)
-	if to != nil {
+	if !to.Equal(jid.JID{}) {
 		attrs = append(attrs, xml.Attr{Name: xml.Name{Local: "to"}, Value: to.String()})
 	}
 	if typ != AvailablePresence {

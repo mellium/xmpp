@@ -8,10 +8,65 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"strconv"
 	"testing"
 
+	"mellium.im/xmlstream"
+	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
+
+var exampleJID = jid.MustParse("example.net")
+
+var wrapPresenceTests = [...]struct {
+	to      jid.JID
+	typ     stanza.PresenceType
+	payload xml.TokenReader
+	out     string
+}{
+	0: {out: "<presence></presence>"},
+	1: {
+		to:  exampleJID,
+		out: `<presence to="example.net"></presence>`,
+	},
+	2: {
+		typ: stanza.SubscribedPresence,
+		out: `<presence type="subscribed"></presence>`,
+	},
+	3: {
+		to:  exampleJID,
+		typ: stanza.SubscribedPresence,
+		out: `<presence to="example.net" type="subscribed"></presence>`,
+	},
+	4: {
+		payload: &testReader{},
+		out:     `<presence></presence>`,
+	},
+	5: {
+		payload: &testReader{start, start.End()},
+		out:     `<presence><ping></ping></presence>`,
+	},
+}
+
+func TestWrapPresence(t *testing.T) {
+	for i, tc := range wrapPresenceTests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			buf := &bytes.Buffer{}
+			e := xml.NewEncoder(buf)
+			presence := stanza.WrapPresence(tc.to, tc.typ, tc.payload)
+			_, err := xmlstream.Copy(e, presence)
+			if err != nil {
+				t.Fatalf("Error encoding stream: %q", err)
+			}
+			if err := e.Flush(); err != nil {
+				t.Fatalf("Error flushing stream: %q", err)
+			}
+			if s := buf.String(); s != tc.out {
+				t.Fatalf("Wrong encoding:\nwant=\n%q,\ngot=\n%q", tc.out, s)
+			}
+		})
+	}
+}
 
 func TestMarshalPresenceTypeAttr(t *testing.T) {
 	for i, tc := range [...]struct {
@@ -21,7 +76,7 @@ func TestMarshalPresenceTypeAttr(t *testing.T) {
 		0: {stanza.PresenceType(""), ""},
 		1: {stanza.ErrorPresence, "error"},
 	} {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			b, err := xml.Marshal(stanza.Presence{Type: tc.presencetype})
 			if err != nil {
 				t.Fatal("Unexpected error while marshaling:", err)
@@ -51,7 +106,7 @@ func TestUnmarshalPresenceTypeAttr(t *testing.T) {
 		1: {`<presence type=""/>`, stanza.PresenceType("")},
 		2: {`<presence type="probe"/>`, stanza.ProbePresence},
 	} {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			presence := stanza.Presence{}
 			switch err := xml.Unmarshal([]byte(tc.presence), &presence); {
 			case err != nil:
