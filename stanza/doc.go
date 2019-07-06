@@ -11,11 +11,15 @@
 // Presence is a publish-subscribe mechanism and is used to broadcast
 // availability on the network (sometimes called "status" in chat, eg.  online,
 // offline, or away).
-// IQ (Info-Query) is a request response mechanism for data that requires a
+// IQ (Info/Query) is a request response mechanism for data that requires a
 // response (eg. fetching an avatar or a list of client features).
 //
-// Stanzas created using the structs in this package are not guaranteed to be
-// valid or enforce specific stanza semantics.
+// There are two APIs for creating stanzas in this package, a token based XML
+// stream API where the final stanza can be read from an xml.TokenReader, and a
+// struct based API that relies on embedding structs in this package into the
+// users own types.
+// Stanzas created using either API are not guaranteed to be valid or enforce
+// specific stanza semantics.
 // For instance, using this package you could create an IQ without a unique ID,
 // which is illegal in XMPP.
 // Packages that require correct stanza semantics, such as the `mellium.im/xmpp`
@@ -26,8 +30,8 @@
 //
 // The stanza types in this package aren't very useful by themselves. To
 // transmit meaningful data our stanzas must contain a payload.
-// To add a payload we use composition to create a new struct that contains the
-// payload as additional fields.
+// To add a payload with the struct based API we use composition to create a new
+// struct that contains the payload as additional fields.
 // For example, XEP-0199: XMPP Ping defines an IQ stanza with a payload named
 // "ping" qualified by the "urn:xmpp:ping" namespace.
 // To implement this in our own code we might create a Ping struct similar to
@@ -40,6 +44,19 @@
 //        Ping struct{} `xml:"urn:xmpp:ping ping"`
 //    }
 //
+//
 // For details on marshaling and the use of the xml tag, refer to the
 // encoding/xml package.
+//
+// We could also create a similar stanza with the token stream API:
+//
+//    // PingIQ returns an xml.TokenReader that outputs a new IQ stanza with a
+//    // ping payload.
+//    func PingIQ(to jid.JID) xml.TokenReader {
+//        start := xml.StartElement{Name: xml.Name{Space: "urn:xmpp:ping", Local: "ping"}}
+//        return stanza.WrapIQ(
+//            &stanza.IQ{To: to, Type: stanza.GetIQ},
+//            xmlstream.Wrap(nil, start)
+//        )
+//    }
 package stanza // import "mellium.im/xmpp/stanza"

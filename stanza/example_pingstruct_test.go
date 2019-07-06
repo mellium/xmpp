@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 
+	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -23,14 +24,18 @@ func Example_struct() {
 	e := xml.NewEncoder(os.Stdout)
 	e.Indent("", "\t")
 
+	j := jid.MustParse("feste@example.net/siJo4eeT")
 	err := e.Encode(PingIQ{
-		IQ: stanza.IQ{Type: stanza.GetIQ},
+		IQ: stanza.IQ{
+			Type: stanza.GetIQ,
+			To:   j,
+		},
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Output:
-	// <iq id="" to="" from="" type="get">
+	// <iq id="" to="feste@example.net/siJo4eeT" from="" type="get">
 	//	<ping xmlns="urn:xmpp:ping"></ping>
 	// </iq>
 }
