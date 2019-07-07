@@ -30,6 +30,8 @@ var (
 
 var errNotStart = errors.New("xmpp: SendElement did not begin with a StartElement")
 
+var closeStreamTag = []byte(`</stream:stream>`)
+
 // SessionState is a bitmask that represents the current state of an XMPP
 // session. For a description of each bit, see the various SessionState typed
 // constants.
@@ -505,11 +507,13 @@ func (s *Session) Close() error {
 	if s.state&OutputStreamClosed == OutputStreamClosed {
 		return nil
 	}
+	s.out.Lock()
+	defer s.out.Unlock()
 
 	s.state |= OutputStreamClosed
 	// We wrote the opening stream instead of encoding it, so do the same with the
 	// closing to ensure that the encoder doesn't think the tokens are mismatched.
-	_, err := s.Conn().Write([]byte(`</stream:stream>`))
+	_, err := s.Conn().Write(closeStreamTag)
 	return err
 }
 
