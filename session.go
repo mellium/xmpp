@@ -243,6 +243,9 @@ func (s *Session) Serve(h Handler) error {
 // If an error is returned (the original error or a different one), it has not
 // been handled fully and must be handled by the caller.
 func (s *Session) sendError(err error) (e error) {
+	s.out.Lock()
+	defer s.out.Unlock()
+
 	switch typErr := err.(type) {
 	case stream.Error:
 		if _, e = typErr.WriteXML(s); e != nil {
