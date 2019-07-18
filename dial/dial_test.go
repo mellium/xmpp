@@ -2,7 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-package xmpp
+package dial
 
 import (
 	"strconv"
@@ -17,7 +17,7 @@ func TestDialClientPanicsIfNilContext(t *testing.T) {
 			t.Error("Expected Dial to panic when passed a nil context.")
 		}
 	}()
-	DialClient(nil, "tcp", jid.MustParse("feste@shakespeare.lit"))
+	Client(nil, "tcp", jid.MustParse("feste@shakespeare.lit"))
 }
 
 var connTypeTests = [...]struct {

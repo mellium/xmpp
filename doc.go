@@ -20,7 +20,6 @@
 // These methods use sane defaults to dial a TCP connection and perform stream
 // negotiation.
 //
-//
 //     session, err := xmpp.DialClientSession(
 //         context.TODO(), addr,
 //         xmpp.BindResource(),
@@ -29,12 +28,13 @@
 //     )
 //
 // If control over DNS or HTTP-based service discovery is desired, the user can
-// create a Dialer or use DialClient (c2s) or DialServer (s2s).
+// use the dial package to create a dial.Dialer or use dial.Client (c2s) or
+// dial.Server (s2s).
 // To use the resulting connection, or to use something other than a TCP
 // connection (eg. to communicate over a Unix domain socket, an in-memory pipe,
 // etc.) the connection can be passed to NewClientSession or NewServerSession.
 //
-//     conn, err := xmpp.DialClient(context.TODO(), "tcp", addr)
+//     conn, err := dial.Client(context.TODO(), "tcp", addr)
 //     …
 //     session, err := xmpp.NewClientSession(
 //         context.TODO(), addr, conn,

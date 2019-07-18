@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/dial"
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
@@ -176,7 +177,7 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 // If the provided context is canceled after stream negotiation is complete it
 // has no effect on the session.
 func DialClientSession(ctx context.Context, origin jid.JID, features ...StreamFeature) (*Session, error) {
-	conn, err := DialClient(ctx, "tcp", origin)
+	conn, err := dial.Client(ctx, "tcp", origin)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +190,7 @@ func DialClientSession(ctx context.Context, origin jid.JID, features ...StreamFe
 // If the provided context is canceled after stream negotiation is complete it
 // has no effect on the session.
 func DialServerSession(ctx context.Context, location, origin jid.JID, features ...StreamFeature) (*Session, error) {
-	conn, err := DialServer(ctx, "tcp", location)
+	conn, err := dial.Server(ctx, "tcp", location)
 	if err != nil {
 		return nil, err
 	}

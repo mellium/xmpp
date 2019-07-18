@@ -2,7 +2,8 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-package xmpp
+// Package dial contains methods and types for dialing XMPP connections.
+package dial
 
 import (
 	"context"
@@ -15,20 +16,20 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-// DialClient discovers and connects to the address on the named network with a
+// Client discovers and connects to the address on the named network with a
 // client-to-server (c2s) connection.
 //
 // For more information see the Dialer type.
-func DialClient(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
+func Client(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
 	var d Dialer
 	return d.Dial(ctx, network, addr)
 }
 
-// DialServer discovers and connects to the address on the named network with a
+// Server discovers and connects to the address on the named network with a
 // server-to-server connection (s2s).
 //
 // For more info see the Dialer type.
-func DialServer(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
+func Server(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
 	d := Dialer{
 		S2S: true,
 	}
@@ -40,7 +41,7 @@ func DialServer(ctx context.Context, network string, addr jid.JID) (net.Conn, er
 // an XMPP session on the connection.
 //
 // The zero value for each field is equivalent to dialing without that option.
-// Dialing with the zero value of Dialer is equivalent to calling the DialClient
+// Dialing with the zero value of Dialer is equivalent to calling the Client
 // function.
 type Dialer struct {
 	net.Dialer
@@ -77,8 +78,6 @@ type Dialer struct {
 // Network may be any of the network types supported by net.Dial, but you most
 // likely want to use one of the tcp connection types ("tcp", "tcp4", or
 // "tcp6").
-//
-// For more information see the Dialer type.
 func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
 	return d.dial(ctx, network, addr)
 }
@@ -164,7 +163,7 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 }
 
 // Copied from the net package in the standard library. Copyright The Go
-// Authors.
+// Authors. See LICENSE-GO.
 func minNonzeroTime(a, b time.Time) time.Time {
 	if a.IsZero() {
 		return b
