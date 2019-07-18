@@ -114,7 +114,7 @@ func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) *Iter {
 	}
 	rosterIQ := IQ{IQ: iq}
 	payload := rosterIQ.payload()
-	r, err := s.SendIQ(ctx, iq, payload)
+	r, err := s.SendIQElement(ctx, payload, iq)
 	if err != nil {
 		return &Iter{err: err}
 	}
