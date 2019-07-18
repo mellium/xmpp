@@ -243,12 +243,15 @@ func (s *Session) Serve(h Handler) error {
 // If an error is returned (the original error or a different one), it has not
 // been handled fully and must be handled by the caller.
 func (s *Session) sendError(err error) (e error) {
+	s.out.Lock()
+	defer s.out.Unlock()
+
 	switch typErr := err.(type) {
 	case stream.Error:
 		if _, e = typErr.WriteXML(s); e != nil {
 			return e
 		}
-		if e = s.Close(); e != nil {
+		if e = s.closeSession(); e != nil {
 			return e
 		}
 		return err
@@ -504,11 +507,16 @@ func (s *Session) Flush() error {
 // Calling Close() multiple times will only result in one closing
 // </stream:stream> being sent.
 func (s *Session) Close() error {
+	s.out.Lock()
+	defer s.out.Unlock()
+
+	return s.closeSession()
+}
+
+func (s *Session) closeSession() error {
 	if s.state&OutputStreamClosed == OutputStreamClosed {
 		return nil
 	}
-	s.out.Lock()
-	defer s.out.Unlock()
 
 	s.state |= OutputStreamClosed
 	// We wrote the opening stream instead of encoding it, so do the same with the
