@@ -15,6 +15,7 @@ import (
 	"mellium.im/sasl"
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/dial"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
@@ -25,7 +26,7 @@ func echo(addr, pass string, xmlIn, xmlOut io.Writer, logger, debug *log.Logger)
 		return fmt.Errorf("Error parsing address %q: %w", addr, err)
 	}
 
-	conn, err := xmpp.DialClient(context.TODO(), "tcp", j)
+	conn, err := dial.Client(context.TODO(), "tcp", j)
 	if err != nil {
 		return fmt.Errorf("Error dialing sesion: %w", err)
 	}
