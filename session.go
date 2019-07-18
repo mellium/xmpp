@@ -577,6 +577,42 @@ func (s *Session) Send(ctx context.Context, r xml.TokenReader) error {
 	return s.SendElement(ctx, r, xml.StartElement{})
 }
 
+// SendElement is like Send except that it uses start as the outermost tag in
+// the encoding.
+//
+// SendElement is safe for concurrent use by multiple goroutines.
+func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.StartElement) error {
+	s.out.Lock()
+	defer s.out.Unlock()
+
+	if start.Name.Local == "" {
+		tok, err := r.Token()
+		if err != nil {
+			return err
+		}
+
+		var ok bool
+		start, ok = tok.(xml.StartElement)
+		if !ok {
+			return errNotStart
+		}
+	}
+
+	err := s.EncodeToken(start)
+	if err != nil {
+		return err
+	}
+	_, err = xmlstream.Copy(s, xmlstream.Inner(r))
+	if err != nil {
+		return err
+	}
+	err = s.EncodeToken(start.End())
+	if err != nil {
+		return err
+	}
+	return s.Flush()
+}
+
 func iqNeedsResp(attrs []xml.Attr) bool {
 	var typ string
 	for _, attr := range attrs {
@@ -709,42 +745,6 @@ func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenRead
 		close(c)
 		return nil, ctx.Err()
 	}
-}
-
-// SendElement is like Send except that it uses start as the outermost tag in
-// the encoding.
-//
-// SendElement is safe for concurrent use by multiple goroutines.
-func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.StartElement) error {
-	s.out.Lock()
-	defer s.out.Unlock()
-
-	if start.Name.Local == "" {
-		tok, err := r.Token()
-		if err != nil {
-			return err
-		}
-
-		var ok bool
-		start, ok = tok.(xml.StartElement)
-		if !ok {
-			return errNotStart
-		}
-	}
-
-	err := s.EncodeToken(start)
-	if err != nil {
-		return err
-	}
-	_, err = xmlstream.Copy(s, xmlstream.Inner(r))
-	if err != nil {
-		return err
-	}
-	err = s.EncodeToken(start.End())
-	if err != nil {
-		return err
-	}
-	return s.Flush()
 }
 
 // closeInputStream immediately marks the input stream as closed and cancels any
