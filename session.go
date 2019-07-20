@@ -5,6 +5,7 @@
 package xmpp
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/xml"
@@ -602,6 +603,47 @@ func (s *Session) SetCloseDeadline(t time.Time) error {
 		oldCancel()
 	}
 	return s.Conn().SetReadDeadline(t)
+}
+
+// Encode writes the XML encoding of v to the stream.
+//
+// For more information see "encoding/xml".Encode.
+func (s *Session) Encode(v interface{}) error {
+	s.out.Lock()
+	defer s.out.Unlock()
+
+	// TODO: this is very inefficient, but doing it in a saner way requires
+	// significant changes in encoding/xml.
+	// We can't just encode directly to the connection because the token stream
+	// is being manipulated (eg. to add missing id's on IQ stanzas).
+	var b bytes.Buffer
+	err := xml.NewEncoder(&b).Encode(v)
+	if err != nil {
+		return err
+	}
+	_, err = xmlstream.Copy(s.out.e, xml.NewDecoder(&b))
+	return err
+}
+
+// EncodeElement writes the XML encoding of v to the stream, using start as the
+// outermost tag in the encoding.
+//
+// For more information see "encoding/xml".EncodeElement.
+func (s *Session) EncodeElement(v interface{}, start xml.StartElement) error {
+	s.out.Lock()
+	defer s.out.Unlock()
+
+	// TODO: this is very inefficient, but doing it in a saner way requires
+	// significant changes in encoding/xml.
+	// We can't just encode directly to the connection because the token stream
+	// is being manipulated (eg. to add missing id's on IQ stanzas).
+	var b bytes.Buffer
+	err := xml.NewEncoder(&b).EncodeElement(v, start)
+	if err != nil {
+		return err
+	}
+	_, err = xmlstream.Copy(s.out.e, xml.NewDecoder(&b))
+	return err
 }
 
 // Send transmits the first element read from the provided token reader.
