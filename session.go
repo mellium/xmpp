@@ -472,7 +472,6 @@ func (rw *responseChecker) EncodeToken(t xml.Token) error {
 // by the server for the current stream. If it was data will be the canonical
 // representation of the feature as returned by the feature's Parse function.
 func (s *Session) Feature(namespace string) (data interface{}, ok bool) {
-	// TODO: Make the features struct actually store the parsed representation.
 	data, ok = s.features[namespace]
 	return data, ok
 }
