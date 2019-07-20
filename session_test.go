@@ -48,8 +48,10 @@ func TestClosedOutputStream(t *testing.T) {
 			mask := xmpp.SessionState(i)
 			buf := new(bytes.Buffer)
 			s := xmpptest.NewSession(mask, buf)
+			w := s.TokenWriter()
+			defer w.Close()
 
-			switch err := s.EncodeToken(xml.CharData("chartoken")); {
+			switch err := w.EncodeToken(xml.CharData("chartoken")); {
 			case mask&xmpp.OutputStreamClosed == xmpp.OutputStreamClosed && err != xmpp.ErrOutputStreamClosed:
 				t.Errorf("Unexpected error: want=`%v', got=`%v'", xmpp.ErrOutputStreamClosed, err)
 			case mask&xmpp.OutputStreamClosed == 0 && err != nil:

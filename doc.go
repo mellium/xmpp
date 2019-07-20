@@ -76,16 +76,18 @@
 // To receive XML on the input stream, Session implements the xml.TokenReader
 // interface defined in encoding/xml; this allows session to be wrapped with
 // xml.NewTokenDecoder.
-// To send XML on the output stream, Session has an EncodeToken method like the
-// "mellium.im/xmlstream".TokenWriter interface.
+// To send XML on the output stream, Session has a TokenEncoder method that
+// returns a token encoder that holds a lock on the output stream until it is
+// closed.
 // The session may also buffer writes and has a Flush method which will write
 // any buffered XML to the underlying connection.
 //
-// However, writing individual XML tokens can be tedious and error prone.
-// The mellium.im/xmpp/stanza package contains functions and structs that aid in
-// the construction of message, presence and info/query (IQ) elements which have
+// Writing individual XML tokens can be tedious and error prone.
+// The stanza package contains functions and structs that aid in the
+// construction of message, presence and info/query (IQ) elements which have
 // special semantics in XMPP and are known as "stanzas".
-// These can be sent with the Send, SendElement, and SendIQ methods.
+// These can be sent with the Send, SendElement, SendIQ, and SendIQElement
+// methods.
 //
 //     // Send initial presence to let the server know we want to receive messages.
 //     _, err = session.Send(context.TODO(), stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
@@ -118,6 +120,7 @@
 //             log.Println("Got message: %q", msg.Body)
 //         }
 //     }))
+//
 //
 // Be Advised
 //

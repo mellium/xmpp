@@ -133,6 +133,8 @@ func decodeClientResp(ctx context.Context, r xml.TokenReader, decode func(ctx co
 func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session, interface{}) (xmpp.SessionState, io.ReadWriter, error) {
 	return func(ctx context.Context, session *xmpp.Session, supported interface{}) (mask xmpp.SessionState, rw io.ReadWriter, err error) {
 		server := (session.State() & xmpp.Received) == xmpp.Received
+		w := session.TokenWriter()
+		defer w.Close()
 
 		if !server && !supported.(bool) {
 			// We don't support some of the challenge types advertised by the server.
@@ -147,15 +149,15 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 			for _, c := range challenges {
 				// Send the challenge.
 				start := challengeStart(c.Type)
-				err = session.EncodeToken(start)
+				err = w.EncodeToken(start)
 				if err != nil {
 					return
 				}
-				err = c.Send(ctx, session)
+				err = c.Send(ctx, w)
 				if err != nil {
 					return
 				}
-				err = session.EncodeToken(start.End())
+				err = w.EncodeToken(start.End())
 				if err != nil {
 					return
 				}
@@ -214,16 +216,16 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 			respStart := xml.StartElement{
 				Name: xml.Name{Local: "response"},
 			}
-			if err = session.EncodeToken(respStart); err != nil {
+			if err = w.EncodeToken(respStart); err != nil {
 				return
 			}
 			if c.Respond != nil {
-				err = c.Respond(ctx, session)
+				err = c.Respond(ctx, w)
 				if err != nil {
 					return
 				}
 			}
-			if err = session.EncodeToken(respStart.End()); err != nil {
+			if err = w.EncodeToken(respStart.End()); err != nil {
 				return
 			}
 

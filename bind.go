@@ -101,6 +101,8 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
 			d := xml.NewTokenDecoder(session)
+			w := session.TokenWriter()
+			defer w.Close()
 
 			// Handle the server side of resource binding if we're on the receiving
 			// end of the connection.
@@ -153,7 +155,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 					resp.Bind = bindPayload{JID: j}
 				}
 
-				_, err = resp.WriteXML(session)
+				_, err = resp.WriteXML(w)
 				if err != nil {
 					return mask, nil, err
 				}
@@ -171,7 +173,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 					Resource: session.origin.Resourcepart(),
 				},
 			}
-			_, err = req.WriteXML(session)
+			_, err = req.WriteXML(w)
 			if err != nil {
 				return mask, nil, err
 			}

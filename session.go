@@ -254,7 +254,7 @@ func (s *Session) sendError(err error) (e error) {
 
 	switch typErr := err.(type) {
 	case stream.Error:
-		if _, e = typErr.WriteXML(s); e != nil {
+		if _, e = typErr.WriteXML(s.out.e); e != nil {
 			return e
 		}
 		if e = s.closeSession(); e != nil {
@@ -268,7 +268,7 @@ func (s *Session) sendError(err error) (e error) {
 	//     The error condition is not one of those defined by the other
 	//     conditions in this list; this error condition SHOULD NOT be used
 	//     except in conjunction with an application-specific condition.
-	if _, e = stream.UndefinedCondition.WriteXML(s); e != nil {
+	if _, e = stream.UndefinedCondition.WriteXML(s.out.e); e != nil {
 		return e
 	}
 	return err
@@ -407,7 +407,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 
 		rw := &responseChecker{
 			TokenReader: xmlstream.Inner(s),
-			TokenWriter: s,
+			TokenWriter: s.out.e,
 			id:          id,
 		}
 		if err = handler.HandleXMPP(rw, &start); err != nil {
@@ -416,7 +416,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 
 		// If the user did not write a response to an IQ, send a default one.
 		if needsResp && !rw.wroteResp {
-			_, err := xmlstream.Copy(s, stanza.WrapIQ(stanza.IQ{
+			_, err := xmlstream.Copy(s.out.e, stanza.WrapIQ(stanza.IQ{
 				ID:   id,
 				Type: stanza.ErrorIQ,
 			}, stanza.Error{
@@ -493,12 +493,46 @@ func (s *Session) Token() (xml.Token, error) {
 	return s.in.d.Token()
 }
 
-// EncodeToken satisfies the xmlstream.TokenWriter interface.
-func (s *Session) EncodeToken(t xml.Token) error {
-	if s.state&OutputStreamClosed == OutputStreamClosed {
+type lockWriteCloser struct {
+	w   *Session
+	err error
+	m   *sync.Mutex
+}
+
+func (lwc *lockWriteCloser) EncodeToken(t xml.Token) error {
+	if lwc.err != nil {
+		return lwc.err
+	}
+
+	if lwc.w.state&OutputStreamClosed == OutputStreamClosed {
 		return ErrOutputStreamClosed
 	}
-	return s.out.e.EncodeToken(t)
+
+	return lwc.w.out.e.EncodeToken(t)
+}
+
+func (lwc *lockWriteCloser) Close() error {
+	if lwc.err != nil {
+		return nil
+	}
+	lwc.err = io.EOF
+	lwc.m.Unlock()
+	return nil
+}
+
+// TokenWriter returns a new xmlstream.TokenWriteCloser that can be used to
+// write raw XML tokens to the session.
+// All other writes and future calls to TokenWriter will block until the Close
+// method is called.
+// After the TokenWriteCloser has been closed, any future writes will return
+// io.EOF.
+func (s *Session) TokenWriter() xmlstream.TokenWriteCloser {
+	s.out.Lock()
+
+	return &lockWriteCloser{
+		m: &s.out.Mutex,
+		w: s,
+	}
 }
 
 // Flush satisfies the xmlstream.TokenWriter interface.
@@ -598,15 +632,15 @@ func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.
 		}
 	}
 
-	err := s.EncodeToken(start)
+	err := s.out.e.EncodeToken(start)
 	if err != nil {
 		return err
 	}
-	_, err = xmlstream.Copy(s, xmlstream.Inner(r))
+	_, err = xmlstream.Copy(s.out.e, xmlstream.Inner(r))
 	if err != nil {
 		return err
 	}
-	err = s.EncodeToken(start.End())
+	err = s.out.e.EncodeToken(start.End())
 	if err != nil {
 		return err
 	}
