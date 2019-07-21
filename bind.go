@@ -161,7 +161,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 				if err != nil {
 					return mask, nil, err
 				}
-				return mask, nil, session.Flush()
+				return mask, nil, w.Flush()
 			}
 
 			// Client encodes an IQ requesting resource binding.
@@ -179,7 +179,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			if err != nil {
 				return mask, nil, err
 			}
-			if err = session.Flush(); err != nil {
+			if err = w.Flush(); err != nil {
 				return mask, nil, err
 			}
 

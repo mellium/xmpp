@@ -59,7 +59,7 @@ func TestClosedOutputStream(t *testing.T) {
 			case mask&xmpp.OutputStreamClosed == 0 && err != nil:
 				t.Errorf("Unexpected error: `%v'", err)
 			}
-			switch err := s.Flush(); {
+			switch err := w.Flush(); {
 			case mask&xmpp.OutputStreamClosed == xmpp.OutputStreamClosed && err != xmpp.ErrOutputStreamClosed:
 				t.Errorf("Unexpected error flushing: want=`%v', got=`%v'", xmpp.ErrOutputStreamClosed, err)
 			case mask&xmpp.OutputStreamClosed == 0 && err != nil:

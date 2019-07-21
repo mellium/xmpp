@@ -288,7 +288,7 @@ func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeatu
 	if err = w.EncodeToken(start.End()); err != nil {
 		return list, err
 	}
-	if err = s.Flush(); err != nil {
+	if err = w.Flush(); err != nil {
 		return list, err
 	}
 	return list, err

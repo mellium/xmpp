@@ -87,7 +87,10 @@ func fallback(s *xmpp.Session, start *xml.StartElement) error {
 	w := s.TokenWriter()
 	defer w.Close()
 	_, err := xmlstream.Copy(w, xmlstream.Wrap(e.TokenReader(), *start))
-	return err
+	if err != nil {
+		return err
+	}
+	return w.Flush()
 }
 
 // New allocates and returns a new ServeMux.

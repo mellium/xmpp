@@ -163,7 +163,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 				if err != nil {
 					return
 				}
-				err = session.Flush()
+				err = w.Flush()
 				if err != nil {
 					return
 				}

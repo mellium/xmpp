@@ -440,7 +440,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 			}
 		}
 
-		if err := s.Flush(); err != nil {
+		if err := s.out.e.Flush(); err != nil {
 			return err
 		}
 
@@ -518,6 +518,16 @@ func (lwc *lockWriteCloser) EncodeToken(t xml.Token) error {
 	return lwc.w.out.e.EncodeToken(t)
 }
 
+func (lwc *lockWriteCloser) Flush() error {
+	if lwc.err != nil {
+		return nil
+	}
+	if lwc.w.state&OutputStreamClosed == OutputStreamClosed {
+		return ErrOutputStreamClosed
+	}
+	return lwc.w.out.e.Flush()
+}
+
 func (lwc *lockWriteCloser) Close() error {
 	if lwc.err != nil {
 		return nil
@@ -560,7 +570,7 @@ func (lrc *lockReadCloser) Close() error {
 // method is called.
 // After the TokenWriteCloser has been closed, any future writes will return
 // io.EOF.
-func (s *Session) TokenWriter() xmlstream.TokenWriteCloser {
+func (s *Session) TokenWriter() xmlstream.TokenWriteFlushCloser {
 	s.out.Lock()
 
 	return &lockWriteCloser{
@@ -582,14 +592,6 @@ func (s *Session) TokenReader() xmlstream.TokenReadCloser {
 		m: s.in.Locker,
 		s: s,
 	}
-}
-
-// Flush satisfies the xmlstream.TokenWriter interface.
-func (s *Session) Flush() error {
-	if s.state&OutputStreamClosed == OutputStreamClosed {
-		return ErrOutputStreamClosed
-	}
-	return s.out.e.Flush()
 }
 
 // Close ends the output stream (by sending a closing </stream:stream> token).
@@ -670,7 +672,10 @@ func (s *Session) Encode(v interface{}) error {
 		return err
 	}
 	_, err = xmlstream.Copy(s.out.e, xml.NewDecoder(&b))
-	return err
+	if err != nil {
+		return err
+	}
+	return s.out.e.Flush()
 }
 
 // EncodeElement writes the XML encoding of v to the stream, using start as the
@@ -691,7 +696,10 @@ func (s *Session) EncodeElement(v interface{}, start xml.StartElement) error {
 		return err
 	}
 	_, err = xmlstream.Copy(s.out.e, xml.NewDecoder(&b))
-	return err
+	if err != nil {
+		return err
+	}
+	return s.out.e.Flush()
 }
 
 // Send transmits the first element read from the provided token reader.
@@ -734,7 +742,7 @@ func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.
 	if err != nil {
 		return err
 	}
-	return s.Flush()
+	return s.out.e.Flush()
 }
 
 func iqNeedsResp(attrs []xml.Attr) bool {
