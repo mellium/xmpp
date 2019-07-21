@@ -158,10 +158,8 @@ var serveTests = [...]struct {
 		err: io.EOF,
 	},
 	3: {
-		handler: xmpp.HandlerFunc(func(s *xmpp.Session, start *xml.StartElement) error {
-			w := s.TokenWriter()
-			defer w.Close()
-			_, err := xmlstream.Copy(w, stanza.WrapIQ(stanza.IQ{
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
 				ID:   "1234",
 				Type: stanza.ResultIQ,
 			}, nil))
@@ -172,10 +170,8 @@ var serveTests = [...]struct {
 		err: io.EOF,
 	},
 	4: {
-		handler: xmpp.HandlerFunc(func(s *xmpp.Session, start *xml.StartElement) error {
-			w := s.TokenWriter()
-			defer w.Close()
-			_, err := xmlstream.Copy(w, stanza.WrapIQ(stanza.IQ{
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
 				ID:   "wrongid",
 				Type: stanza.ResultIQ,
 			}, nil))
@@ -186,10 +182,8 @@ var serveTests = [...]struct {
 		err: io.EOF,
 	},
 	5: {
-		handler: xmpp.HandlerFunc(func(s *xmpp.Session, start *xml.StartElement) error {
-			w := s.TokenWriter()
-			defer w.Close()
-			_, err := xmlstream.Copy(w, stanza.WrapIQ(stanza.IQ{
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
 				ID:   "1234",
 				Type: stanza.ErrorIQ,
 			}, nil))
@@ -200,10 +194,8 @@ var serveTests = [...]struct {
 		err: io.EOF,
 	},
 	6: {
-		handler: xmpp.HandlerFunc(func(s *xmpp.Session, start *xml.StartElement) error {
-			w := s.TokenWriter()
-			defer w.Close()
-			_, err := xmlstream.Copy(w, stanza.WrapIQ(stanza.IQ{
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
 				ID:   "1234",
 				Type: stanza.GetIQ,
 			}, nil))
@@ -214,7 +206,7 @@ var serveTests = [...]struct {
 		err: io.EOF,
 	},
 	7: {
-		handler: xmpp.HandlerFunc(func(_ *xmpp.Session, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
 			for _, attr := range start.Attr {
 				if attr.Name.Local == "from" && attr.Value != "" {
 					panic("expected attr to be normalized")
@@ -227,7 +219,7 @@ var serveTests = [...]struct {
 		err: io.EOF,
 	},
 	8: {
-		handler: xmpp.HandlerFunc(func(_ *xmpp.Session, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
 			for _, attr := range start.Attr {
 				if attr.Name.Local == "from" && attr.Value == "" {
 					panic("expected attr not to be normalized")
@@ -240,7 +232,7 @@ var serveTests = [...]struct {
 		err: io.EOF,
 	},
 	9: {
-		handler: xmpp.HandlerFunc(func(_ *xmpp.Session, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
 			for _, attr := range start.Attr {
 				if attr.Name.Local == "from" && attr.Value == "" {
 					panic("expected attr not to be normalized")
@@ -253,7 +245,7 @@ var serveTests = [...]struct {
 		err: io.EOF,
 	},
 	10: {
-		handler: xmpp.HandlerFunc(func(_ *xmpp.Session, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
 			for _, attr := range start.Attr {
 				if attr.Name.Local == "from" && attr.Value == "" {
 					panic("expected attr not to be normalized")

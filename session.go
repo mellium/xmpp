@@ -280,7 +280,7 @@ func (s *Session) sendError(err error) (e error) {
 
 type nopHandler struct{}
 
-func (nopHandler) HandleXMPP(_ *Session, _ *xml.StartElement) error {
+func (nopHandler) HandleXMPP(_ xmlstream.TokenReadWriter, _ *xml.StartElement) error {
 	return nil
 }
 
@@ -409,45 +409,44 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 
 	noreply:
 
-		rw := &responseChecker{
-			twf:         s.out.e,
-			TokenReader: xmlstream.Inner(s.in.d),
-			id:          id,
-		}
-		// Make a copy of the session and set its output stream to the response
-		// checker. This means that HandleXMPP will see the state bits as they were
-		// when it was first called and will not recieve updates, and that we don't
-		// have to take a lock to ensure that nothing else reads or writes through
-		// the responseChecker. Instead, the lock will only be taken if something
-		// tries to read/write XML from inside the handler.
-		ss := *s
-		ss.out.e = rw
-		ss.in.d = rw
-		if err = handler.HandleXMPP(&ss, &start); err != nil {
-			return s.sendError(err)
-		}
+		err = func() error {
+			r := s.TokenReader()
+			w := s.TokenWriter()
+			defer r.Close()
+			defer w.Close()
 
-		// If the user did not write a response to an IQ, send a default one.
-		if needsResp && !rw.wroteResp {
-			_, err := xmlstream.Copy(s.out.e, stanza.WrapIQ(stanza.IQ{
-				ID:   id,
-				Type: stanza.ErrorIQ,
-			}, stanza.Error{
-				Type:      stanza.Cancel,
-				Condition: stanza.ServiceUnavailable,
-			}.TokenReader()))
-			if err != nil {
+			rw := &responseChecker{
+				TokenReader: xmlstream.Inner(r),
+				TokenWriter: w,
+				id:          id,
+			}
+			if err := handler.HandleXMPP(rw, &start); err != nil {
 				return err
 			}
-		}
 
-		if err := s.out.e.Flush(); err != nil {
+			// If the user did not write a response to an IQ, send a default one.
+			if needsResp && !rw.wroteResp {
+				_, err := xmlstream.Copy(w, stanza.WrapIQ(stanza.IQ{
+					ID:   id,
+					Type: stanza.ErrorIQ,
+				}, stanza.Error{
+					Type:      stanza.Cancel,
+					Condition: stanza.ServiceUnavailable,
+				}.TokenReader()))
+				if err != nil {
+					return err
+				}
+			}
+
+			if err := w.Flush(); err != nil {
+				return err
+			}
+
+			// Advance to the end of the current element before attempting to read the
+			// next.
+			_, err = xmlstream.Copy(discard, rw)
 			return err
-		}
-
-		// Advance to the end of the current element before attempting to read the
-		// next.
-		_, err = xmlstream.Copy(discard, rw)
+		}()
 		if err != nil {
 			return s.sendError(err)
 		}
@@ -455,15 +454,11 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 }
 
 type responseChecker struct {
-	twf tokenWriteFlusher
 	xml.TokenReader
+	xmlstream.TokenWriter
 	id        string
 	wroteResp bool
 	level     int
-}
-
-func (rw *responseChecker) Flush() error {
-	return rw.twf.Flush()
 }
 
 func (rw *responseChecker) EncodeToken(t xml.Token) error {
@@ -478,7 +473,7 @@ func (rw *responseChecker) EncodeToken(t xml.Token) error {
 		rw.level--
 	}
 
-	return rw.twf.EncodeToken(t)
+	return rw.TokenWriter.EncodeToken(t)
 }
 
 // Feature checks if a feature with the given namespace was advertised

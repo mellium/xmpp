@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
@@ -21,11 +22,11 @@ import (
 
 var passTest = errors.New("mux_test: PASSED")
 
-var passHandler xmpp.HandlerFunc = func(*xmpp.Session, *xml.StartElement) error {
+var passHandler xmpp.HandlerFunc = func(xmlstream.TokenReadWriter, *xml.StartElement) error {
 	return passTest
 }
 
-var failHandler xmpp.HandlerFunc = func(*xmpp.Session, *xml.StartElement) error {
+var failHandler xmpp.HandlerFunc = func(xmlstream.TokenReadWriter, *xml.StartElement) error {
 	return errors.New("mux_test: FAILED")
 }
 
@@ -78,7 +79,7 @@ var testCases = [...]struct {
 func TestMux(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			err := tc.m.HandleXMPP(&xmpp.Session{}, &xml.StartElement{Name: tc.p})
+			err := tc.m.HandleXMPP(nil, &xml.StartElement{Name: tc.p})
 			if err != passTest {
 				t.Fatalf("unexpected error: `%v'", err)
 			}
@@ -104,9 +105,20 @@ func TestFallback(t *testing.T) {
 		t.Fatalf("Bad start token read: `%v'", err)
 	}
 	start := tok.(xml.StartElement)
-	err = mux.New().HandleXMPP(s, &start)
+	w := s.TokenWriter()
+	defer w.Close()
+	err = mux.New().HandleXMPP(struct {
+		xml.TokenReader
+		xmlstream.TokenWriter
+	}{
+		TokenReader: r,
+		TokenWriter: w,
+	}, &start)
 	if err != nil {
 		t.Errorf("Unexpected error: `%v'", err)
+	}
+	if err := w.Flush(); err != nil {
+		t.Errorf("Unexpected error flushing token writer: %q", err)
 	}
 
 	const expected = `<iq to="juliet@example.com" from="romeo@example.com" id="123" type="error"><error type="cancel"><feature-not-implemented xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></feature-not-implemented></error></iq>`
