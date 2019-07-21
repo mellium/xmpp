@@ -240,6 +240,10 @@ func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 // If the user closes the output stream by calling Close, Serve continues until
 // the input stream is closed by the remote entity as above, or the deadline set
 // by SetCloseDeadline is reached in which case a timeout error is returned.
+// Serve takes a lock on the input and output stream before calling the handler,
+// so the handler should not close over the session or use any of its send
+// methods or a deadlock will occur.
+// After Serve finishes running the handler, it flushes the output stream.
 func (s *Session) Serve(h Handler) error {
 	return handleInputStream(s, h)
 }
