@@ -422,6 +422,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 		// tries to read/write XML from inside the handler.
 		ss := *s
 		ss.out.e = rw
+		ss.in.d = rw
 		if err = handler.HandleXMPP(&ss, &start); err != nil {
 			return s.sendError(err)
 		}
@@ -446,9 +447,6 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 
 		// Advance to the end of the current element before attempting to read the
 		// next.
-		//
-		// TODO: Error handling should be the same here as it would be for the rest
-		// of this loop.
 		_, err = xmlstream.Copy(discard, rw)
 		if err != nil {
 			return s.sendError(err)
