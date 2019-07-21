@@ -56,7 +56,9 @@ func Example_echobot() {
 	}
 
 	s.Serve(xmpp.HandlerFunc(func(s *xmpp.Session, start *xml.StartElement) error {
-		d := xml.NewTokenDecoder(s)
+		r := s.TokenReader()
+		defer r.Close()
+		d := xml.NewTokenDecoder(r)
 
 		// Ignore anything that's not a message. In a real system we'd want to at
 		// least respond to IQs.

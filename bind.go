@@ -100,7 +100,9 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			return true, nil, xml.NewTokenDecoder(r).DecodeElement(&parsed, start)
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
-			d := xml.NewTokenDecoder(session)
+			r := session.TokenReader()
+			defer r.Close()
+			d := xml.NewTokenDecoder(r)
 			w := session.TokenWriter()
 			defer w.Close()
 

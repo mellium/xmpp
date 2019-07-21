@@ -91,6 +91,7 @@ type Session struct {
 		d      xml.TokenReader
 		ctx    context.Context
 		cancel context.CancelFunc
+		sync.Locker
 	}
 	out struct {
 		internal.StreamInfo
@@ -134,6 +135,7 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 		s.state |= Received
 	}
 	s.out.Locker = &sync.Mutex{}
+	s.in.Locker = &sync.Mutex{}
 	s.in.d = xml.NewDecoder(s.conn)
 	s.out.e = xml.NewEncoder(s.conn)
 	s.in.ctx, s.in.cancel = context.WithCancel(context.Background())
@@ -317,7 +319,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 			return s.in.ctx.Err()
 		default:
 		}
-		tok, err := s.Token()
+		tok, err := s.in.d.Token()
 		if err != nil {
 			// If this was a read timeout, don't try to send it. Just try to read
 			// again.
@@ -390,12 +392,12 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 				}
 
 				c <- iqResponder{
-					r: xmlstream.MultiReader(xmlstream.Token(start), xmlstream.Inner(s), xmlstream.Token(start.End())),
+					r: xmlstream.MultiReader(xmlstream.Token(start), xmlstream.Inner(s.in.d), xmlstream.Token(start.End())),
 					c: c,
 				}
 				<-c
 				// Consume the rest of the stream before continuing the loop.
-				_, err = xmlstream.Copy(discard, s)
+				_, err = xmlstream.Copy(discard, s.in.d)
 				if err != nil {
 					return s.sendError(err)
 				}
@@ -409,7 +411,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 
 		rw := &responseChecker{
 			twf:         s.out.e,
-			TokenReader: xmlstream.Inner(s),
+			TokenReader: xmlstream.Inner(s.in.d),
 			id:          id,
 		}
 		// Make a copy of the session and set its output stream to the response
@@ -498,14 +500,6 @@ func (s *Session) Conn() net.Conn {
 	return s.conn
 }
 
-// Token satisfies the xml.TokenReader interface for Session.
-func (s *Session) Token() (xml.Token, error) {
-	if s.state&InputStreamClosed == InputStreamClosed {
-		return nil, ErrInputStreamClosed
-	}
-	return s.in.d.Token()
-}
-
 type lockWriteCloser struct {
 	w   *Session
 	err error
@@ -533,6 +527,33 @@ func (lwc *lockWriteCloser) Close() error {
 	return nil
 }
 
+type lockReadCloser struct {
+	s   *Session
+	err error
+	m   sync.Locker
+}
+
+func (lrc *lockReadCloser) Token() (xml.Token, error) {
+	if lrc.err != nil {
+		return nil, lrc.err
+	}
+
+	if lrc.s.state&InputStreamClosed == InputStreamClosed {
+		return nil, ErrInputStreamClosed
+	}
+
+	return lrc.s.in.d.Token()
+}
+
+func (lrc *lockReadCloser) Close() error {
+	if lrc.err != nil {
+		return nil
+	}
+	lrc.err = io.EOF
+	lrc.m.Unlock()
+	return nil
+}
+
 // TokenWriter returns a new xmlstream.TokenWriteCloser that can be used to
 // write raw XML tokens to the session.
 // All other writes and future calls to TokenWriter will block until the Close
@@ -545,6 +566,21 @@ func (s *Session) TokenWriter() xmlstream.TokenWriteCloser {
 	return &lockWriteCloser{
 		m: s.out.Locker,
 		w: s,
+	}
+}
+
+// TokenReader returns a new xmlstream.TokenReadCloser that can be used to read
+// raw XML tokens from the session.
+// All other reads and future calls to TokenReader will block until the Close
+// method is called.
+// After the TokenReadCloser has been closed, any future reads will return
+// io.EOF.
+func (s *Session) TokenReader() xmlstream.TokenReadCloser {
+	s.in.Lock()
+
+	return &lockReadCloser{
+		m: s.in.Locker,
+		s: s,
 	}
 }
 

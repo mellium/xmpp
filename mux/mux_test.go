@@ -97,7 +97,9 @@ func TestFallback(t *testing.T) {
 	}
 	s := xmpptest.NewSession(0, rw)
 
-	tok, err := s.Token()
+	r := s.TokenReader()
+	defer r.Close()
+	tok, err := r.Token()
 	if err != nil {
 		t.Fatalf("Bad start token read: `%v'", err)
 	}

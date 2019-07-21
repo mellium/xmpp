@@ -135,6 +135,8 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 		server := (session.State() & xmpp.Received) == xmpp.Received
 		w := session.TokenWriter()
 		defer w.Close()
+		r := session.TokenReader()
+		defer r.Close()
 
 		if !server && !supported.(bool) {
 			// We don't support some of the challenge types advertised by the server.
@@ -168,7 +170,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 
 				// Decode the clients response
 				var cancel bool
-				cancel, err = decodeClientResp(ctx, session, c.Receive)
+				cancel, err = decodeClientResp(ctx, r, c.Receive)
 				if err != nil || cancel {
 					return
 				}
@@ -177,7 +179,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 		}
 
 		// If we're the client, decode the challenge.
-		tok, err = session.Token()
+		tok, err = r.Token()
 		if err != nil {
 			return
 		}
@@ -208,7 +210,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 				continue
 			}
 
-			err = c.Receive(ctx, false, session, &start)
+			err = c.Receive(ctx, false, r, &start)
 			if err != nil {
 				return
 			}

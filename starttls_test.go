@@ -2,7 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-package xmpp
+package xmpp_test
 
 import (
 	"bytes"
@@ -14,7 +14,9 @@ import (
 	"strings"
 	"testing"
 
+	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/ns"
+	"mellium.im/xmpp/internal/xmpptest"
 )
 
 // There is no room for variation on the starttls feature negotiation, so step
@@ -26,7 +28,7 @@ func TestStartTLSList(t *testing.T) {
 			name = "required"
 		}
 		t.Run(name, func(t *testing.T) {
-			stls := StartTLS(req, nil)
+			stls := xmpp.StartTLS(req, nil)
 			var b bytes.Buffer
 			e := xml.NewEncoder(&b)
 			start := xml.StartElement{Name: xml.Name{Space: ns.StartTLS, Local: "starttls"}}
@@ -86,7 +88,7 @@ func TestStartTLSList(t *testing.T) {
 }
 
 func TestStartTLSParse(t *testing.T) {
-	stls := StartTLS(true, nil)
+	stls := xmpp.StartTLS(true, nil)
 	for i, test := range [...]struct {
 		msg string
 		req bool
@@ -126,9 +128,9 @@ func (nopRWC) Close() error {
 }
 
 func TestNegotiateServer(t *testing.T) {
-	stls := StartTLS(true, &tls.Config{})
+	stls := xmpp.StartTLS(true, &tls.Config{})
 	var b bytes.Buffer
-	c := &Session{state: Received, conn: newConn(nopRWC{&b, &b}, nil)}
+	c := xmpptest.NewSession(xmpp.Received, nopRWC{&b, &b})
 	_, rw, err := stls.Negotiate(context.Background(), c, nil)
 	switch {
 	case err != nil:
@@ -152,10 +154,10 @@ func TestNegotiateClient(t *testing.T) {
 		responses []string
 		err       bool
 		rw        bool
-		state     SessionState
+		state     xmpp.SessionState
 	}{
-		0: {[]string{`<proceed xmlns="badns"/>`}, true, false, Secure},
-		1: {[]string{`<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`}, false, true, Secure},
+		0: {[]string{`<proceed xmlns="badns"/>`}, true, false, xmpp.Secure},
+		1: {[]string{`<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`}, false, true, xmpp.Secure},
 		2: {[]string{`<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'></bad>`}, true, false, 0},
 		3: {[]string{`<failure xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`}, false, false, 0},
 		4: {[]string{`<failure xmlns='urn:ietf:params:xml:ns:xmpp-tls'></bad>`}, true, false, 0},
@@ -164,11 +166,10 @@ func TestNegotiateClient(t *testing.T) {
 		7: {[]string{`chardata not start element`}, true, false, 0},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			stls := StartTLS(true, &tls.Config{})
+			stls := xmpp.StartTLS(true, &tls.Config{})
 			r := strings.NewReader(strings.Join(test.responses, "\n"))
 			var b bytes.Buffer
-			c := &Session{conn: newConn(nopRWC{r, &b}, nil)}
-			c.in.d = xml.NewDecoder(c.conn)
+			c := xmpptest.NewSession(0, nopRWC{r, &b})
 			mask, rw, err := stls.Negotiate(context.Background(), c, nil)
 			switch {
 			case test.err && err == nil:

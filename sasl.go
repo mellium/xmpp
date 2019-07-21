@@ -135,7 +135,9 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 				return mask, nil, err
 			}
 
-			d := xml.NewTokenDecoder(session)
+			r := session.TokenReader()
+			defer r.Close()
+			d := xml.NewTokenDecoder(r)
 
 			// If we're already done after the first step, decode the <success/> or
 			// <failure/> before we exit.
