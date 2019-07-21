@@ -95,7 +95,7 @@ type Session struct {
 	out struct {
 		internal.StreamInfo
 		e tokenWriteFlusher
-		sync.Mutex
+		sync.Locker
 	}
 }
 
@@ -133,6 +133,7 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	if received {
 		s.state |= Received
 	}
+	s.out.Locker = &sync.Mutex{}
 	s.in.d = xml.NewDecoder(s.conn)
 	s.out.e = xml.NewEncoder(s.conn)
 	s.in.ctx, s.in.cancel = context.WithCancel(context.Background())
@@ -277,7 +278,7 @@ func (s *Session) sendError(err error) (e error) {
 
 type nopHandler struct{}
 
-func (nopHandler) HandleXMPP(_ xmlstream.TokenReadWriter, _ *xml.StartElement) error {
+func (nopHandler) HandleXMPP(_ *Session, _ *xml.StartElement) error {
 	return nil
 }
 
@@ -407,11 +408,19 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 	noreply:
 
 		rw := &responseChecker{
+			twf:         s.out.e,
 			TokenReader: xmlstream.Inner(s),
-			TokenWriter: s.out.e,
 			id:          id,
 		}
-		if err = handler.HandleXMPP(rw, &start); err != nil {
+		// Make a copy of the session and set its output stream to the response
+		// checker. This means that HandleXMPP will see the state bits as they were
+		// when it was first called and will not recieve updates, and that we don't
+		// have to take a lock to ensure that nothing else reads or writes through
+		// the responseChecker. Instead, the lock will only be taken if something
+		// tries to read/write XML from inside the handler.
+		ss := *s
+		ss.out.e = rw
+		if err = handler.HandleXMPP(&ss, &start); err != nil {
 			return s.sendError(err)
 		}
 
@@ -446,11 +455,15 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 }
 
 type responseChecker struct {
+	twf tokenWriteFlusher
 	xml.TokenReader
-	xmlstream.TokenWriter
 	id        string
 	wroteResp bool
 	level     int
+}
+
+func (rw *responseChecker) Flush() error {
+	return rw.twf.Flush()
 }
 
 func (rw *responseChecker) EncodeToken(t xml.Token) error {
@@ -465,7 +478,7 @@ func (rw *responseChecker) EncodeToken(t xml.Token) error {
 		rw.level--
 	}
 
-	return rw.TokenWriter.EncodeToken(t)
+	return rw.twf.EncodeToken(t)
 }
 
 // Feature checks if a feature with the given namespace was advertised
@@ -496,7 +509,7 @@ func (s *Session) Token() (xml.Token, error) {
 type lockWriteCloser struct {
 	w   *Session
 	err error
-	m   *sync.Mutex
+	m   sync.Locker
 }
 
 func (lwc *lockWriteCloser) EncodeToken(t xml.Token) error {
@@ -530,7 +543,7 @@ func (s *Session) TokenWriter() xmlstream.TokenWriteCloser {
 	s.out.Lock()
 
 	return &lockWriteCloser{
-		m: &s.out.Mutex,
+		m: s.out.Locker,
 		w: s,
 	}
 }

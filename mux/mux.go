@@ -32,7 +32,7 @@ type ServeMux struct {
 	patterns map[xml.Name]xmpp.Handler
 }
 
-func fallback(t xmlstream.TokenReadWriter, start *xml.StartElement) error {
+func fallback(s *xmpp.Session, start *xml.StartElement) error {
 	if start.Name.Local != "iq" {
 		return nil
 	}
@@ -84,7 +84,9 @@ func fallback(t xmlstream.TokenReadWriter, start *xml.StartElement) error {
 		Type:      stanza.Cancel,
 		Condition: stanza.FeatureNotImplemented,
 	}
-	_, err := xmlstream.Copy(t, xmlstream.Wrap(e.TokenReader(), *start))
+	w := s.TokenWriter()
+	defer w.Close()
+	_, err := xmlstream.Copy(w, xmlstream.Wrap(e.TokenReader(), *start))
 	return err
 }
 
@@ -113,23 +115,23 @@ func (m *ServeMux) Handler(name xml.Name) (h xmpp.Handler, ok bool) {
 
 // HandleXMPP dispatches the request to the handler whose pattern most closely
 // matches start.Name.
-func (m *ServeMux) HandleXMPP(t xmlstream.TokenReadWriter, start *xml.StartElement) error {
+func (m *ServeMux) HandleXMPP(s *xmpp.Session, start *xml.StartElement) error {
 	h, ok := m.Handler(start.Name)
 	if ok {
-		return h.HandleXMPP(t, start)
+		return h.HandleXMPP(s, start)
 	}
 
 	n := start.Name
 	n.Space = ""
 	h, ok = m.Handler(n)
 	if ok {
-		return h.HandleXMPP(t, start)
+		return h.HandleXMPP(s, start)
 	}
 
 	n = start.Name
 	n.Local = ""
 	h, _ = m.Handler(n)
-	return h.HandleXMPP(t, start)
+	return h.HandleXMPP(s, start)
 }
 
 // Option configures a ServeMux.

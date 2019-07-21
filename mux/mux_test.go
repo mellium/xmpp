@@ -13,27 +13,21 @@ import (
 	"strings"
 	"testing"
 
-	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/ns"
+	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/mux"
 )
 
 var passTest = errors.New("mux_test: PASSED")
 
-var passHandler xmpp.HandlerFunc = func(xmlstream.TokenReadWriter, *xml.StartElement) error {
+var passHandler xmpp.HandlerFunc = func(*xmpp.Session, *xml.StartElement) error {
 	return passTest
 }
 
-var failHandler xmpp.HandlerFunc = func(xmlstream.TokenReadWriter, *xml.StartElement) error {
+var failHandler xmpp.HandlerFunc = func(*xmpp.Session, *xml.StartElement) error {
 	return errors.New("mux_test: FAILED")
 }
-
-type nopRW struct{}
-
-func (nopRW) EncodeToken(xml.Token) error { return nil }
-func (nopRW) Flush() error                { return nil }
-func (nopRW) Token() (xml.Token, error)   { return nil, io.EOF }
 
 var testCases = [...]struct {
 	m *mux.ServeMux
@@ -84,7 +78,7 @@ var testCases = [...]struct {
 func TestMux(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			err := tc.m.HandleXMPP(nopRW{}, &xml.StartElement{Name: tc.p})
+			err := tc.m.HandleXMPP(&xmpp.Session{}, &xml.StartElement{Name: tc.p})
 			if err != passTest {
 				t.Fatalf("unexpected error: `%v'", err)
 			}
@@ -93,31 +87,30 @@ func TestMux(t *testing.T) {
 }
 
 func TestFallback(t *testing.T) {
-	d := xml.NewDecoder(strings.NewReader(`<iq to="romeo@example.com" from="juliet@example.com"><test/></iq>`))
-	buf := new(bytes.Buffer)
-	e := xml.NewEncoder(buf)
+	buf := &bytes.Buffer{}
 	rw := struct {
-		xml.TokenReader
-		xmlstream.TokenWriter
+		io.Reader
+		io.Writer
 	}{
-		TokenReader: d,
-		TokenWriter: e,
+		Reader: strings.NewReader(`<iq to="romeo@example.com" from="juliet@example.com" id="123"><test/></iq>`),
+		Writer: buf,
 	}
+	s := xmpptest.NewSession(0, rw)
 
-	tok, err := rw.Token()
+	tok, err := s.Token()
 	if err != nil {
 		t.Fatalf("Bad start token read: `%v'", err)
 	}
 	start := tok.(xml.StartElement)
-	err = mux.New().HandleXMPP(rw, &start)
+	err = mux.New().HandleXMPP(s, &start)
 	if err != nil {
 		t.Errorf("Unexpected error: `%v'", err)
 	}
-	if err = e.Flush(); err != nil {
+	if err = s.Flush(); err != nil {
 		t.Errorf("Unexpected error: `%v'", err)
 	}
 
-	const expected = `<iq to="juliet@example.com" from="romeo@example.com" type="error"><error type="cancel"><feature-not-implemented xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></feature-not-implemented></error></iq>`
+	const expected = `<iq to="juliet@example.com" from="romeo@example.com" id="123" type="error"><error type="cancel"><feature-not-implemented xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></feature-not-implemented></error></iq>`
 	if buf.String() != expected {
 		t.Errorf("Bad output:\nwant=`%v'\n got=`%v'", expected, buf.String())
 	}

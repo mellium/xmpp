@@ -6,22 +6,20 @@ package xmpp
 
 import (
 	"encoding/xml"
-
-	"mellium.im/xmlstream"
 )
 
 // A Handler triggers events or responds to incoming elements in an XML stream.
 type Handler interface {
-	HandleXMPP(t xmlstream.TokenReadWriter, start *xml.StartElement) error
+	HandleXMPP(s *Session, start *xml.StartElement) error
 }
 
 // The HandlerFunc type is an adapter to allow the use of ordinary functions as
 // XMPP handlers.
 // If f is a function with the appropriate signature, HandlerFunc(f) is a
 // Handler that calls f.
-type HandlerFunc func(t xmlstream.TokenReadWriter, start *xml.StartElement) error
+type HandlerFunc func(s *Session, start *xml.StartElement) error
 
 // HandleXMPP calls f(t, start).
-func (f HandlerFunc) HandleXMPP(t xmlstream.TokenReadWriter, start *xml.StartElement) error {
-	return f(t, start)
+func (f HandlerFunc) HandleXMPP(s *Session, start *xml.StartElement) error {
+	return f(s, start)
 }

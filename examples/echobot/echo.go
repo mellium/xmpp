@@ -63,8 +63,8 @@ func echo(addr, pass string, xmlIn, xmlOut io.Writer, logger, debug *log.Logger)
 		return fmt.Errorf("Error sending initial presence: %w", err)
 	}
 
-	return s.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadWriter, start *xml.StartElement) error {
-		d := xml.NewTokenDecoder(t)
+	return s.Serve(xmpp.HandlerFunc(func(s *xmpp.Session, start *xml.StartElement) error {
+		d := xml.NewTokenDecoder(s)
 
 		// Ignore anything that's not a message. In a real system we'd want to at
 		// least respond to IQs.
