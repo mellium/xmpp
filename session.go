@@ -875,6 +875,8 @@ func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenRead
 // closeInputStream immediately marks the input stream as closed and cancels any
 // deadlines associated with it.
 func (s *Session) closeInputStream() {
+	s.in.Lock()
+	defer s.in.Unlock()
 	s.state |= InputStreamClosed
 	s.in.cancel()
 }
