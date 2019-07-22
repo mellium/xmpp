@@ -20,18 +20,18 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
-func echo(addr, pass string, xmlIn, xmlOut io.Writer, logger, debug *log.Logger) error {
+func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logger, debug *log.Logger) error {
 	j, err := jid.Parse(addr)
 	if err != nil {
 		return fmt.Errorf("Error parsing address %q: %w", addr, err)
 	}
 
-	conn, err := dial.Client(context.TODO(), "tcp", j)
+	conn, err := dial.Client(ctx, "tcp", j)
 	if err != nil {
 		return fmt.Errorf("Error dialing sesion: %w", err)
 	}
 
-	s, err := xmpp.NegotiateSession(context.TODO(), j.Domain(), j, conn, false, xmpp.NewNegotiator(xmpp.StreamConfig{
+	s, err := xmpp.NegotiateSession(ctx, j.Domain(), j, conn, false, xmpp.NewNegotiator(xmpp.StreamConfig{
 		Lang: "en",
 		Features: []xmpp.StreamFeature{
 			xmpp.BindResource(),
@@ -47,18 +47,24 @@ func echo(addr, pass string, xmlIn, xmlOut io.Writer, logger, debug *log.Logger)
 		return fmt.Errorf("Error establishing a session: %w", err)
 	}
 	defer func() {
-		logger.Println("Closing session…")
-		if err := s.Close(); err != nil {
-			logger.Printf("Error closing session: %q", err)
-		}
 		logger.Println("Closing conn…")
 		if err := s.Conn().Close(); err != nil {
 			logger.Printf("Error closing connection: %q", err)
 		}
 	}()
 
+	go func() {
+		select {
+		case <-ctx.Done():
+			logger.Println("Closing session…")
+			if err := s.Close(); err != nil {
+				logger.Printf("Error closing session: %q", err)
+			}
+		}
+	}()
+
 	// Send initial presence to let the server know we want to receive messages.
-	err = s.Send(context.TODO(), stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
+	err = s.Send(ctx, stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
 	if err != nil {
 		return fmt.Errorf("Error sending initial presence: %w", err)
 	}

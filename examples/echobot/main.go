@@ -11,12 +11,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/signal"
 )
 
 const (
@@ -84,7 +86,22 @@ func main() {
 		debug.Printf("The environment variable $%s is empty", envPass)
 	}
 
-	if err := echo(addr, pass, xmlIn, xmlOut, logger, debug); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Handle SIGINT and gracefully shut down the bot.
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	go func() {
+		select {
+		case <-ctx.Done():
+		case <-c:
+			cancel()
+		}
+	}()
+
+	if err := echo(ctx, addr, pass, xmlIn, xmlOut, logger, debug); err != nil {
 		logger.Fatal(err)
 	}
 }
