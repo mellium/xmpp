@@ -86,7 +86,10 @@ func Example_echobot() {
 				return xml.CharData(msg.Body), io.EOF
 			}), xml.StartElement{Name: xml.Name{Local: "body"}}),
 		)
-		err = s.Send(context.TODO(), reply)
+
+		// Serve takes a lock on the output stream when the handler is called, so
+		// copy the raw XML instead of using the Send method or similar.
+		_, err = xmlstream.Copy(t, reply)
 		if err != nil {
 			log.Printf("Error responding to message %q: %q", msg.ID, err)
 		}
