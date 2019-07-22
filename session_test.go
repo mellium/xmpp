@@ -145,7 +145,6 @@ var serveTests = [...]struct {
 	0: {
 		in:  `<test></test>`,
 		out: `</stream:stream>`,
-		err: io.EOF,
 	},
 	1: {
 		in:  `a`,
@@ -155,7 +154,6 @@ var serveTests = [...]struct {
 	2: {
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
 		out: invalidIQ + `</stream:stream>`,
-		err: io.EOF,
 	},
 	3: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
@@ -167,7 +165,6 @@ var serveTests = [...]struct {
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
 		out: `<iq type="result" id="1234"></iq></stream:stream>`,
-		err: io.EOF,
 	},
 	4: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
@@ -179,7 +176,6 @@ var serveTests = [...]struct {
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
 		out: `<iq type="result" id="wrongid"></iq>` + invalidIQ + `</stream:stream>`,
-		err: io.EOF,
 	},
 	5: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
@@ -191,7 +187,6 @@ var serveTests = [...]struct {
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
 		out: `<iq type="error" id="1234"></iq></stream:stream>`,
-		err: io.EOF,
 	},
 	6: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
@@ -203,7 +198,6 @@ var serveTests = [...]struct {
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
 		out: `<iq type="get" id="1234"></iq>` + invalidIQ + `</stream:stream>`,
-		err: io.EOF,
 	},
 	7: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
@@ -216,7 +210,6 @@ var serveTests = [...]struct {
 		}),
 		in:  `<iq from="test@example.net"></iq>`,
 		out: `</stream:stream>`,
-		err: io.EOF,
 	},
 	8: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
@@ -229,7 +222,6 @@ var serveTests = [...]struct {
 		}),
 		in:  `<iq from="test@example.net/test"></iq>`,
 		out: `</stream:stream>`,
-		err: io.EOF,
 	},
 	9: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
@@ -242,7 +234,6 @@ var serveTests = [...]struct {
 		}),
 		in:  `<iq from="test2@example.net"></iq>`,
 		out: `</stream:stream>`,
-		err: io.EOF,
 	},
 	10: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadWriter, start *xml.StartElement) error {
@@ -255,7 +246,6 @@ var serveTests = [...]struct {
 		}),
 		in:  `<iq from="test@example.com"></iq>`,
 		out: `</stream:stream>`,
-		err: io.EOF,
 	},
 }
 
