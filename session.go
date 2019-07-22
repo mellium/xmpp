@@ -264,7 +264,12 @@ func (s *Session) Serve(h Handler) (err error) {
 		default:
 		}
 		err := handleInputStream(s, h)
-		if err != nil {
+		switch err {
+		case nil:
+			// No error and no sentinal error telling us to shut down; try again!
+		case io.EOF:
+			return nil
+		default:
 			return s.sendError(err)
 		}
 	}
