@@ -2,6 +2,7 @@
 
 [![GoDoc](https://godoc.org/mellium.im/xmpp?status.svg)](https://godoc.org/mellium.im/xmpp)
 [![License](https://img.shields.io/badge/license-FreeBSD-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
+[![Build Status](https://builds.sr.ht/~samwhited/xmpp.svg)](https://builds.sr.ht/~samwhited/xmpp?)
 
 [![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/purple_img.png)](https://www.buymeacoffee.com/samwhited)
 
