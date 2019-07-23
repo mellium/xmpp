@@ -21,6 +21,7 @@ import (
 	"os/signal"
 )
 
+/* #nosec */
 const (
 	envAddr = "ECHOBOT_ADDR"
 	envPass = "ECHOBOT_PASS"
