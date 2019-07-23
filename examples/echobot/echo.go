@@ -20,6 +20,13 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
+// MessageBody is a message stanza that contains a body. It is normally used for
+// chat messages.
+type MessageBody struct {
+	stanza.Message
+	Body string `xml:"body"`
+}
+
 func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logger, debug *log.Logger) error {
 	j, err := jid.Parse(addr)
 	if err != nil {
@@ -78,10 +85,7 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 			return nil
 		}
 
-		msg := struct {
-			stanza.Message
-			Body string `xml:"body"`
-		}{}
+		msg := MessageBody{}
 		err = d.DecodeElement(&msg, start)
 		if err != nil && err != io.EOF {
 			logger.Printf("Error decoding message: %q", err)
@@ -95,14 +99,14 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 			return nil
 		}
 
-		reply := stanza.WrapMessage(
-			msg.From.Bare(), stanza.ChatMessage,
-			xmlstream.Wrap(xmlstream.ReaderFunc(func() (xml.Token, error) {
-				return xml.CharData(msg.Body), io.EOF
-			}), xml.StartElement{Name: xml.Name{Local: "body"}}),
-		)
-		debug.Printf("Replying to message %q from %s with body %q", msg.ID, msg.From.Bare(), msg.Body)
-		_, err = xmlstream.Copy(t, reply)
+		reply := MessageBody{
+			Message: stanza.Message{
+				To: msg.From.Bare(),
+			},
+			Body: msg.Body,
+		}
+		debug.Printf("Replying to message %q from %s with body %q", msg.ID, reply.To, reply.Body)
+		err = t.Encode(reply)
 		if err != nil {
 			logger.Printf("Error responding to message %q: %q", msg.ID, err)
 		}
