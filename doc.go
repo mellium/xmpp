@@ -102,7 +102,7 @@
 // stream to the end of the element when the handler returns (even if the
 // handler did not consume the entire element).
 //
-//     err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadWriter, start *xml.StartElement) error {
+//     err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 //         d := xml.NewTokenDecoder(t)
 //
 //         // Ignore anything that's not a message.
