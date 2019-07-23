@@ -69,7 +69,7 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 		return fmt.Errorf("Error sending initial presence: %w", err)
 	}
 
-	return s.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadWriter, start *xml.StartElement) error {
+	return s.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 		d := xml.NewTokenDecoder(t)
 
 		// Ignore anything that's not a message. In a real system we'd want to at

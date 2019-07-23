@@ -310,7 +310,7 @@ func (s *Session) sendError(err error) (e error) {
 
 type nopHandler struct{}
 
-func (nopHandler) HandleXMPP(_ xmlstream.TokenReadWriter, _ *xml.StartElement) error {
+func (nopHandler) HandleXMPP(xmlstream.TokenReadEncoder, *xml.StartElement) error {
 	return nil
 }
 
@@ -478,6 +478,14 @@ func (rw *responseChecker) EncodeToken(t xml.Token) error {
 	}
 
 	return rw.TokenWriter.EncodeToken(t)
+}
+
+func (rw *responseChecker) Encode(v interface{}) error {
+	return internal.EncodeXML(rw, v)
+}
+
+func (rw *responseChecker) EncodeElement(v interface{}, start xml.StartElement) error {
+	return internal.EncodeXMLElement(rw, v, start)
 }
 
 // Feature checks if a feature with the given namespace was advertised

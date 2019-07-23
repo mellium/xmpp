@@ -32,7 +32,7 @@ type ServeMux struct {
 	patterns map[xml.Name]xmpp.Handler
 }
 
-func fallback(t xmlstream.TokenReadWriter, start *xml.StartElement) error {
+func fallback(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 	if start.Name.Local != "iq" {
 		return nil
 	}
@@ -113,7 +113,7 @@ func (m *ServeMux) Handler(name xml.Name) (h xmpp.Handler, ok bool) {
 
 // HandleXMPP dispatches the request to the handler whose pattern most closely
 // matches start.Name.
-func (m *ServeMux) HandleXMPP(t xmlstream.TokenReadWriter, start *xml.StartElement) error {
+func (m *ServeMux) HandleXMPP(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 	h, ok := m.Handler(start.Name)
 	if ok {
 		return h.HandleXMPP(t, start)

@@ -13,12 +13,14 @@ var errHandlerFuncSentinal = errors.New("handler test")
 
 type sentinalReadWriter struct{}
 
-func (sentinalReadWriter) Token() (xml.Token, error)   { return nil, nil }
-func (sentinalReadWriter) EncodeToken(xml.Token) error { return nil }
+func (sentinalReadWriter) Token() (xml.Token, error)                         { return nil, nil }
+func (sentinalReadWriter) EncodeToken(xml.Token) error                       { return nil }
+func (sentinalReadWriter) Encode(interface{}) error                          { return nil }
+func (sentinalReadWriter) EncodeElement(interface{}, xml.StartElement) error { return nil }
 
 func TestHandlerFunc(t *testing.T) {
 	s := &xml.StartElement{}
-	var f xmpp.HandlerFunc = func(r xmlstream.TokenReadWriter, start *xml.StartElement) error {
+	var f xmpp.HandlerFunc = func(r xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 		if _, ok := r.(sentinalReadWriter); !ok {
 			t.Errorf("HandleXMPP did not pass reader to HandlerFunc")
 		}

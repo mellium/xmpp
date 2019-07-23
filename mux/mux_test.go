@@ -15,6 +15,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/mux"
@@ -22,11 +23,11 @@ import (
 
 var passTest = errors.New("mux_test: PASSED")
 
-var passHandler xmpp.HandlerFunc = func(xmlstream.TokenReadWriter, *xml.StartElement) error {
+var passHandler xmpp.HandlerFunc = func(xmlstream.TokenReadEncoder, *xml.StartElement) error {
 	return passTest
 }
 
-var failHandler xmpp.HandlerFunc = func(xmlstream.TokenReadWriter, *xml.StartElement) error {
+var failHandler xmpp.HandlerFunc = func(xmlstream.TokenReadEncoder, *xml.StartElement) error {
 	return errors.New("mux_test: FAILED")
 }
 
@@ -87,6 +88,18 @@ func TestMux(t *testing.T) {
 	}
 }
 
+type testEncoder struct {
+	xml.TokenReader
+	xmlstream.TokenWriter
+}
+
+func (e testEncoder) Encode(v interface{}) error {
+	return internal.EncodeXML(e.TokenWriter, v)
+}
+func (e testEncoder) EncodeElement(v interface{}, start xml.StartElement) error {
+	return internal.EncodeXMLElement(e.TokenWriter, v, start)
+}
+
 func TestFallback(t *testing.T) {
 	buf := &bytes.Buffer{}
 	rw := struct {
@@ -107,10 +120,7 @@ func TestFallback(t *testing.T) {
 	start := tok.(xml.StartElement)
 	w := s.TokenWriter()
 	defer w.Close()
-	err = mux.New().HandleXMPP(struct {
-		xml.TokenReader
-		xmlstream.TokenWriter
-	}{
+	err = mux.New().HandleXMPP(testEncoder{
 		TokenReader: r,
 		TokenWriter: w,
 	}, &start)

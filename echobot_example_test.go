@@ -55,7 +55,7 @@ func Example_echobot() {
 		return
 	}
 
-	s.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadWriter, start *xml.StartElement) error {
+	s.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 		d := xml.NewTokenDecoder(t)
 
 		// Ignore anything that's not a message. In a real system we'd want to at
