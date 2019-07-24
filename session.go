@@ -18,6 +18,7 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/dial"
 	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/internal/marshal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
@@ -481,11 +482,11 @@ func (rw *responseChecker) EncodeToken(t xml.Token) error {
 }
 
 func (rw *responseChecker) Encode(v interface{}) error {
-	return internal.EncodeXML(rw, v)
+	return marshal.EncodeXML(rw, v)
 }
 
 func (rw *responseChecker) EncodeElement(v interface{}, start xml.StartElement) error {
-	return internal.EncodeXMLElement(rw, v, start)
+	return marshal.EncodeXMLElement(rw, v, start)
 }
 
 // Feature checks if a feature with the given namespace was advertised
@@ -667,7 +668,7 @@ func (s *Session) Encode(v interface{}) error {
 	s.out.Lock()
 	defer s.out.Unlock()
 
-	return internal.EncodeXML(s.out.e, v)
+	return marshal.EncodeXML(s.out.e, v)
 }
 
 // EncodeElement writes the XML encoding of v to the stream, using start as the
@@ -678,7 +679,7 @@ func (s *Session) EncodeElement(v interface{}, start xml.StartElement) error {
 	s.out.Lock()
 	defer s.out.Unlock()
 
-	return internal.EncodeXMLElement(s.out.e, v, start)
+	return marshal.EncodeXMLElement(s.out.e, v, start)
 }
 
 // Send transmits the first element read from the provided token reader.

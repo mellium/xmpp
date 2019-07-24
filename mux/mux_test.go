@@ -15,7 +15,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
-	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/internal/marshal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/mux"
@@ -94,10 +94,10 @@ type testEncoder struct {
 }
 
 func (e testEncoder) Encode(v interface{}) error {
-	return internal.EncodeXML(e.TokenWriter, v)
+	return marshal.EncodeXML(e.TokenWriter, v)
 }
 func (e testEncoder) EncodeElement(v interface{}, start xml.StartElement) error {
-	return internal.EncodeXMLElement(e.TokenWriter, v, start)
+	return marshal.EncodeXMLElement(e.TokenWriter, v, start)
 }
 
 func TestFallback(t *testing.T) {

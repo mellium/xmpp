@@ -2,7 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-package internal
+package marshal
 
 import (
 	"bytes"
@@ -11,8 +11,7 @@ import (
 	"mellium.im/xmlstream"
 )
 
-// TODO: functions in this file are very inefficient, but doing it in a saner
-// way requires significant changes to encoding/xml.
+// BUG(ssw): Functions in this package are extremely inefficient.
 
 // EncodeXML writes the XML encoding of v to the stream.
 //
