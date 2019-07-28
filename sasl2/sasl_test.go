@@ -58,16 +58,22 @@ func TestSASLList(t *testing.T) {
 		t.Errorf("Unexpected name for mechanisms start element: %+v", se.Name)
 	}
 	// Skip two mechanisms
-	tok, err = d.Token()
+	_, err = d.Token()
 	if err != nil {
 		t.Fatal(err)
 	}
-	d.Skip()
-	tok, err = d.Token()
+	err = d.Skip()
 	if err != nil {
 		t.Fatal(err)
 	}
-	d.Skip()
+	_, err = d.Token()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = d.Skip()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Check the end token.
 	tok, err = d.Token()

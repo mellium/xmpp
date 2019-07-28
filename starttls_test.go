@@ -68,6 +68,9 @@ func TestStartTLSList(t *testing.T) {
 					t.Errorf("Expected starttls required to have no attributes but got %d", len(se.Attr))
 				}
 				tok, err = d.Token()
+				if err != nil {
+					t.Fatal(err)
+				}
 				ee := tok.(xml.EndElement)
 				switch {
 				case se.Name != xml.Name{Space: ns.StartTLS, Local: "required"}:
