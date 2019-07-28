@@ -9,9 +9,9 @@ import (
 	"log"
 	"os"
 
-	"mellium.im/xmlstream"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/ping"
+	"mellium.im/xmpp/stanza"
 )
 
 func ExampleIQ() {
@@ -19,16 +19,16 @@ func ExampleIQ() {
 	e := xml.NewEncoder(os.Stdout)
 	e.Indent("", "\t")
 
-	ping := ping.IQ(j)
-	if _, err := xmlstream.Copy(e, ping); err != nil {
-		log.Fatal(err)
+	ping := ping.IQ{
+		IQ: stanza.IQ{To: j},
 	}
-	if err := e.Flush(); err != nil {
+	err := e.Encode(ping)
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Output:
-	// <iq type="get" to="feste@example.net/siJo4eeT">
+	// <iq id="" to="feste@example.net/siJo4eeT" from="" type="get">
 	//	<ping xmlns="urn:xmpp:ping"></ping>
 	// </iq>
 }

@@ -9,19 +9,30 @@ import (
 	"encoding/xml"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
 
 // NS is the XML namespace used by XMPP pings. It is provided as a convenience.
 const NS = `urn:xmpp:ping`
 
-// IQ returns an xml.TokenReader that outputs a new IQ stanza with a ping
-// payload.
-func IQ(to jid.JID) xml.TokenReader {
+// IQ is encoded as a ping request.
+type IQ struct {
+	stanza.IQ
+
+	Ping struct{} `xml:"urn:xmpp:ping ping"`
+}
+
+// WriteXML satisfies the xmlstream.WriterTo interface. It is like MarshalXML
+// except it writes tokens to w.
+func (iq IQ) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
+	return xmlstream.Copy(w, iq.TokenReader())
+}
+
+// TokenReader satisfies the xmlstream.Marshaler interface.
+func (iq IQ) TokenReader() xml.TokenReader {
 	start := xml.StartElement{Name: xml.Name{Local: "ping", Space: NS}}
-	return stanza.WrapIQ(stanza.IQ{
-		To:   to,
-		Type: stanza.GetIQ,
-	}, xmlstream.Wrap(nil, start))
+	return stanza.WrapIQ(
+		iq.IQ,
+		xmlstream.Wrap(nil, start),
+	)
 }
