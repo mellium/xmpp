@@ -6,6 +6,7 @@ package stanza_test
 
 import (
 	"bytes"
+	"encoding"
 	"encoding/xml"
 	"fmt"
 	"strings"
@@ -15,6 +16,8 @@ import (
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
+
+var _ encoding.TextMarshaler = stanza.IQType("")
 
 type iqTest struct {
 	to      string
@@ -71,7 +74,7 @@ func TestMarshalIQTypeAttr(t *testing.T) {
 		iqtype stanza.IQType
 		value  string
 	}{
-		0: {stanza.IQType(""), ""},
+		0: {stanza.IQType(""), "get"},
 		1: {stanza.GetIQ, "get"},
 		2: {stanza.SetIQ, "set"},
 		3: {stanza.ResultIQ, "result"},

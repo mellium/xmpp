@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## Unreleased
+
+### Changed
+
+- stanza: a zero value `IQType` now marshals as "get".
+
+
 ## v0.13.0 — 2019-07-27
 
 ### Breaking

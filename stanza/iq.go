@@ -77,3 +77,13 @@ const (
 	// processing of a get or set IQ.
 	ErrorIQ IQType = "error"
 )
+
+// MarshalText ensures that the zero value for IQType is marshaled to XML as a
+// valid IQ get request.
+// It satisfies the encoding.TextMarshaler interface for IQType.
+func (t IQType) MarshalText() ([]byte, error) {
+	if t == "" {
+		t = GetIQ
+	}
+	return []byte(t), nil
+}
