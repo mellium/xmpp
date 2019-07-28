@@ -83,8 +83,8 @@ func TestMarshalIQTypeAttr(t *testing.T) {
 				t.Fatal("Got unexpected error while marshaling IQ:", err)
 			}
 
-			if err == nil && !bytes.Contains(b, []byte(fmt.Sprintf(`type="%s"`, tc.iqtype))) {
-				t.Errorf(`Expected output to contain type="%s", found: %s`, tc.iqtype, b)
+			if err == nil && !bytes.Contains(b, []byte(fmt.Sprintf(`type="%s"`, tc.value))) {
+				t.Errorf(`Expected output to contain type="%s", found: %s`, tc.value, b)
 			}
 		})
 	}
