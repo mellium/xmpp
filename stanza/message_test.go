@@ -39,8 +39,8 @@ func TestMarshalMessageTypeAttr(t *testing.T) {
 				return
 			}
 
-			if err == nil && !bytes.Contains(b, []byte(fmt.Sprintf(`type="%s"`, tc.messagetype))) {
-				t.Errorf(`Expected output to contain type="%s", found: %s`, tc.messagetype, b)
+			if err == nil && !bytes.Contains(b, []byte(fmt.Sprintf(`type="%s"`, tc.value))) {
+				t.Errorf(`Expected output to contain type="%s", found: %s`, tc.value, b)
 			}
 		})
 	}

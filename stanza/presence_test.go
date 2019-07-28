@@ -90,8 +90,8 @@ func TestMarshalPresenceTypeAttr(t *testing.T) {
 				return
 			}
 
-			if !bytes.Contains(b, []byte(fmt.Sprintf(`type="%s"`, tc.presencetype))) {
-				t.Errorf(`Expected output to contain type="%s", found: %s`, tc.presencetype, b)
+			if !bytes.Contains(b, []byte(fmt.Sprintf(`type="%s"`, tc.value))) {
+				t.Errorf(`Expected output to contain type="%s", found: %s`, tc.value, b)
 			}
 		})
 	}
