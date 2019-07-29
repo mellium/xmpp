@@ -5,9 +5,7 @@
 package roster_test
 
 import (
-	"bytes"
 	"context"
-	"encoding/xml"
 	"io"
 	"io/ioutil"
 	"reflect"
@@ -15,7 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/roster"
@@ -28,12 +25,10 @@ var testCases = [...]struct {
 	err   error
 }{
 	0: {
-		reply: `<query xmlns='jabber:iq:roster'>
-  <item jid='juliet@example.com' name='Juliet' subscription='both'>
-    <group>Friends</group>
-  </item>
-  <item jid='benvolio@example.org' name='Benvolio' subscription='to'/>
-</query>`,
+		reply: `<query xmlns='jabber:iq:roster'/>`,
+	},
+	1: {
+		reply: `<query xmlns='jabber:iq:roster'><item jid='juliet@example.com' name='Juliet' subscription='both'><group>Friends</group></item><item jid='benvolio@example.org' name='Benvolio' subscription='to'/></query>`,
 		items: []roster.Item{{
 			JID:          jid.MustParse("juliet@example.com"),
 			Name:         "Juliet",
@@ -62,24 +57,19 @@ func TestFetch(t *testing.T) {
 			s := xmpptest.NewSession(0, rw)
 			// Start serving the session.
 			go func() {
-				/* #nosec */
-				s.Serve(nil)
+				if err := s.Serve(nil); err != nil {
+					panic(err)
+				}
 			}()
 			// The remote server sends a reply.
 			go func() {
-				/* #nosec */
-				e := xml.NewEncoder(pw)
-				d := xml.NewDecoder(strings.NewReader(`<iq id="123">` + tc.reply + `</iq>`))
-				// Stripe whitespace
-				remover := xmlstream.Remove(func(t xml.Token) bool {
-					chars, ok := t.(xml.CharData)
-					return ok && len(bytes.TrimSpace(chars)) == 0
-				})
-				xmlstream.Copy(e, remover(d))
-				e.Flush()
+				_, err := io.Copy(pw, strings.NewReader(`<iq id="123">`+tc.reply+`</iq>`))
+				if err != nil {
+					panic(err)
+				}
 			}()
 			iter := roster.FetchIQ(context.Background(), stanza.IQ{ID: "123"}, s)
-			items := []roster.Item{}
+			items := make([]roster.Item, 0, len(tc.items))
 			for iter.Next() {
 				items = append(items, iter.Item())
 			}
@@ -87,6 +77,11 @@ func TestFetch(t *testing.T) {
 				t.Errorf("Wrong error after iter: want=%q, got=%q", tc.err, err)
 			}
 			iter.Close()
+
+			// Don't try to compare nil and empty slice with DeepEqual
+			if len(items) == 0 && len(tc.items) == 0 {
+				return
+			}
 
 			if !reflect.DeepEqual(items, tc.items) {
 				t.Errorf("Wrong items:\nwant=\n%+v,\ngot=\n%+v", tc.items, items)
