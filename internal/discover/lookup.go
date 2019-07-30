@@ -100,7 +100,7 @@ func LookupService(ctx context.Context, resolver *net.Resolver, service, network
 		addr = j.Domain()
 	}
 	_, addrs, err = resolver.LookupSRV(ctx, service, "tcp", addr.String())
-	if dnsErr, ok := err.(*net.DNSError); (ok && dnsErr.Err != "no such host") || (!ok && err != nil) {
+	if dnsErr, ok := err.(*net.DNSError); (ok && !isNotFound(dnsErr)) || (!ok && err != nil) {
 		return addrs, err
 	}
 
@@ -117,7 +117,7 @@ func LookupService(ctx context.Context, resolver *net.Resolver, service, network
 		return nil, ErrNoServiceAtAddress
 	}
 
-	return addrs, err
+	return addrs, nil
 }
 
 // LookupWebsocket discovers websocket endpoints that are valid for the given
