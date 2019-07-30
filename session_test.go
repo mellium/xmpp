@@ -136,6 +136,10 @@ func TestNegotiator(t *testing.T) {
 
 const invalidIQ = `<iq type="error" id="1234"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`
 
+var failHandler xmpp.HandlerFunc = func(r xmlstream.TokenReadEncoder, t *xml.StartElement) error {
+	return errors.New("mux_test: FAILED")
+}
+
 var serveTests = [...]struct {
 	handler xmpp.Handler
 	out     string
@@ -246,6 +250,11 @@ var serveTests = [...]struct {
 		}),
 		in:  `<iq from="test@example.com"></iq>`,
 		out: `</stream:stream>`,
+	},
+	11: {
+		handler: failHandler,
+		in:      "\n\t \r\n \t  ",
+		out:     `</stream:stream>`,
 	},
 }
 

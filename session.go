@@ -5,6 +5,7 @@
 package xmpp
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/xml"
@@ -355,8 +356,16 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 		// If this is a stream level end element but not </stream:stream>,
 		// something is really weird…
 		return stream.BadFormat
+	case xml.CharData:
+		if len(bytes.TrimLeft(t, " \t\r\n")) != 0 {
+			// Whitespace is allowed, but anything else at the top of the stream is
+			// disallowed.
+			return stream.BadFormat
+		}
+		return nil
 	default:
-		// If this isn't a start element, the stream is in a bad state.
+		// If this isn't a start element or a whitespace keepalive, the stream is in
+		// a bad state.
 		return stream.BadFormat
 	}
 
