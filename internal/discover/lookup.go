@@ -103,6 +103,7 @@ func LookupService(ctx context.Context, resolver *net.Resolver, service, network
 	if dnsErr, ok := err.(*net.DNSError); (ok && !isNotFound(dnsErr)) || (!ok && err != nil) {
 		return addrs, err
 	}
+	err = nil
 
 	// RFC 6230 §3.2.1
 	//    3.  If a response is received, it will contain one or more
