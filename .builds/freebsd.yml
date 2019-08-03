@@ -4,12 +4,19 @@ packages:
 sources:
   - https://github.com/mellium/xmpp.git
 tasks:
-  - info: |
+  - setup: |
       go version
       go env
-  - test: |
+      go get golang.org/dl/gotip
+      echo 'export PATH=$(go env GOPATH)/bin:$PATH' >> ~/.buildenv
+      export PATH=$(go env GOPATH)/bin:$PATH
+      gotip download
+  - stable: |
       cd xmpp/
       go test -v -cover ./...
+  - tip: |
+      cd xmpp/
+      gotip test -v -cover ./...
   - examples: |
       cd xmpp/examples/
       for d in ./*/; do
