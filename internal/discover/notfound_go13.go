@@ -10,6 +10,7 @@ import (
 	"net"
 )
 
-func isNotFound(dnsErr *net.DNSError) bool {
-	return dnsErr.IsNotFound
+func isNotFound(err error) bool {
+	dnsErr, ok := err.(*net.DNSError)
+	return ok && dnsErr.IsNotFound
 }

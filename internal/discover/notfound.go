@@ -12,5 +12,6 @@ import (
 )
 
 func isNotFound(dnsErr *net.DNSError) bool {
-	return strings.Contains(dnsErr.Error(), "no such host")
+	dnsErr, ok := err.(*net.DNSError)
+	return ok && strings.Contains(dnsErr.Error(), "no such host")
 }
