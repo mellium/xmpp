@@ -122,8 +122,9 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 			if err != nil {
 				return nil, err
 			}
+
 			addrs = []*net.SRV{{
-				Target: addr.String(),
+				Target: addr.Domainpart(),
 				Port:   uint16(p),
 			}}
 		}
