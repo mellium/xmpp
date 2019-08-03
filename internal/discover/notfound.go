@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func isNotFound(dnsErr *net.DNSError) bool {
+func isNotFound(err error) bool {
 	dnsErr, ok := err.(*net.DNSError)
 	return ok && strings.Contains(dnsErr.Error(), "no such host")
 }
