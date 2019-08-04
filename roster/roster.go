@@ -12,6 +12,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/internal/iter"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
@@ -23,76 +24,50 @@ const (
 
 // Iter is an iterator over roster items.
 type Iter struct {
-	r      xmlstream.TokenReadCloser
-	d      *xml.Decoder
-	err    error
-	item   Item
-	next   *xml.StartElement
-	closed bool
-}
-
-func (i *Iter) setNext() {
-	i.next = nil
-	t, err := i.d.Token()
-	if err != nil {
-		i.err = err
-		return
-	}
-	start, ok := t.(xml.StartElement)
-	// If we're done with the items and get the roster payload end element (or
-	// anything else), call it done.
-	if !ok {
-		return
-	}
-
-	// TODO: check the name of the payload to make sure the server is behaving
-	// correctly.
-
-	i.next = &start
+	iter    *iter.Iter
+	current Item
+	err     error
 }
 
 // Next returns true if there are more items to decode.
 func (i *Iter) Next() bool {
-	if i.err != nil || i.next == nil || i.closed {
+	if i.err != nil {
 		return false
 	}
-
-	// If this is a start element, decode the item.
+	n := i.iter.Next()
+	if !n {
+		return false
+	}
+	start, r := i.iter.Current()
+	d := xml.NewTokenDecoder(xmlstream.Wrap(r, start.Copy()))
 	item := Item{}
-	err := i.d.DecodeElement(&item, i.next)
-	if err != nil {
-		i.err = err
+	i.err = d.Decode(&item)
+	if i.err != nil {
 		return false
 	}
-	i.item = item
-	ret := i.err == nil && i.next != nil
-	i.setNext()
-	return ret
-}
-
-// Item returns the current roster item.
-func (i *Iter) Item() Item {
-	return i.item
+	i.current = item
+	return true
 }
 
 // Err returns the last error encountered by the iterator (if any).
 func (i *Iter) Err() error {
-	return i.err
+	if i.err != nil {
+		return i.err
+	}
+
+	return i.iter.Err()
 }
 
-// Close indicates that we are finished with the given roster.
+// Item returns the last roster item parsed by the iterator.
+func (i *Iter) Item() Item {
+	return i.current
+}
+
+// Close indicates that we are finished with the given iterator and processing
+// the stream may continue.
 // Calling it multiple times has no effect.
 func (i *Iter) Close() error {
-	if i.closed {
-		return nil
-	}
-
-	i.closed = true
-	if i.r == nil {
-		return nil
-	}
-
-	return i.r.Close()
+	return i.iter.Close()
 }
 
 // Fetch requests the roster and returns an iterator over all roster items
@@ -119,27 +94,22 @@ func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) *Iter {
 		return &Iter{err: err}
 	}
 
-	d := xml.NewTokenDecoder(r)
-
 	// Pop the start IQ token.
-	_, err = d.Token()
+	_, err = r.Token()
 	if err != nil {
 		return &Iter{err: err}
 	}
 
 	// Pop the roster wrapper token.
-	_, err = d.Token()
+	_, err = r.Token()
 	if err != nil {
 		return &Iter{err: err}
 	}
 
 	// Return the iterator which will parse the rest of the payload incrementally.
-	iter := &Iter{
-		r: r,
-		d: d,
+	return &Iter{
+		iter: iter.New(r),
 	}
-	iter.setNext()
-	return iter
 }
 
 // IQ represents a user roster request or response.

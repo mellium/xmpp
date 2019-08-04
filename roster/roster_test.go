@@ -28,7 +28,7 @@ var testCases = [...]struct {
 		reply: `<query xmlns='jabber:iq:roster'/>`,
 	},
 	1: {
-		reply: `<query xmlns='jabber:iq:roster'><item jid='juliet@example.com' name='Juliet' subscription='both'><group>Friends</group></item><item jid='benvolio@example.org' name='Benvolio' subscription='to'/></query>`,
+		reply: `<query xmlns='jabber:iq:roster'><item jid='juliet@example.com' name='Juliet' subscription='both'><group>Friends</group></item><item jid='benvolio@example.org' name='Benvolio' subscription='to'/></query><foo/>`,
 		items: []roster.Item{{
 			JID:          jid.MustParse("juliet@example.com"),
 			Name:         "Juliet",
