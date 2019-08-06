@@ -28,9 +28,9 @@ func WrapMessage(to jid.JID, typ MessageType, payload xml.TokenReader) xml.Token
 // alerts that don't require a response.
 type Message struct {
 	XMLName xml.Name    `xml:"message"`
-	ID      string      `xml:"id,attr"`
-	To      jid.JID     `xml:"to,attr"`
-	From    jid.JID     `xml:"from,attr"`
+	ID      string      `xml:"id,attr,omitempty"`
+	To      jid.JID     `xml:"to,attr,omitempty"`
+	From    jid.JID     `xml:"from,attr,omitempty"`
 	Lang    string      `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 	Type    MessageType `xml:"type,attr,omitempty"`
 }
