@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 
+	"mellium.im/xmpp/internal/decl"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stream"
@@ -135,7 +136,8 @@ func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang string, loc
 // negotiation for the new stream.
 // If an XML header is discovered instead, it is skipped.
 func ExpectNewStream(ctx context.Context, d xml.TokenReader, recv bool) (streamData StreamInfo, err error) {
-	var foundHeader bool
+	// Skip the XML declaration (if any).
+	d = decl.Skip(d)
 
 	for {
 		select {
@@ -176,11 +178,6 @@ func ExpectNewStream(ctx context.Context, d xml.TokenReader, recv bool) (streamD
 			}
 			return streamData, nil
 		case xml.ProcInst:
-			// TODO: If version or encoding are declared, validate XML 1.0 and UTF-8
-			if !foundHeader && tok.Target == "xml" {
-				foundHeader = true
-				continue
-			}
 			return streamData, stream.RestrictedXML
 		case xml.EndElement:
 			return streamData, stream.NotWellFormed
