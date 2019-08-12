@@ -350,7 +350,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 	case xml.StartElement:
 		start = t
 	case xml.EndElement:
-		if t.Name.Space == ns.Stream && t.Name.Local == "stream" {
+		if t.Name.Space == stream.NS && t.Name.Local == "stream" {
 			return nil
 		}
 		// If this is a stream level end element but not </stream:stream>,
@@ -371,7 +371,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 
 	// Handle stream errors and unknown stream namespaced tokens first, before
 	// delegating to the normal handler.
-	if start.Name.Space == ns.Stream {
+	if start.Name.Space == stream.NS {
 		switch start.Name.Local {
 		case "error":
 			// TODO: Unmarshal the error and return it.

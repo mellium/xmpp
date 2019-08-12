@@ -62,7 +62,7 @@ func streamFromStartElement(s xml.StartElement) (StreamInfo, error) {
 			}
 			streamData.xmlns = attr.Value
 		case xml.Name{Space: "xmlns", Local: "stream"}:
-			if attr.Value != ns.Stream {
+			if attr.Value != stream.NS {
 				return streamData, stream.InvalidNamespace
 			}
 		case xml.Name{Space: "xml", Local: "lang"}:
@@ -152,7 +152,7 @@ func ExpectNewStream(ctx context.Context, d xml.TokenReader, recv bool) (streamD
 		switch tok := t.(type) {
 		case xml.StartElement:
 			switch {
-			case tok.Name.Local == "error" && tok.Name.Space == ns.Stream:
+			case tok.Name.Local == "error" && tok.Name.Space == stream.NS:
 				se := stream.Error{}
 				if err := xml.NewTokenDecoder(d).DecodeElement(&se, &tok); err != nil {
 					return streamData, err
@@ -160,7 +160,7 @@ func ExpectNewStream(ctx context.Context, d xml.TokenReader, recv bool) (streamD
 				return streamData, se
 			case tok.Name.Local != "stream":
 				return streamData, stream.BadFormat
-			case tok.Name.Space != ns.Stream:
+			case tok.Name.Space != stream.NS:
 				return streamData, stream.InvalidNamespace
 			}
 

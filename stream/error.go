@@ -2,11 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-// Package stream contains XMPP stream errors as defined by RFC 6120 §4.9.
-//
-// Most people will want to use the facilities of the mellium.im/xmpp package
-// and not create stream errors directly.
-package stream // import "mellium.im/xmpp/stream"
+package stream
 
 import (
 	"encoding/xml"
@@ -14,7 +10,6 @@ import (
 	"net"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp/internal/ns"
 )
 
 // A list of stream errors defined in RFC 6120 §4.9.3
@@ -231,7 +226,7 @@ func (s Error) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
 // TokenReader returns a new xml.TokenReader that returns an encoding of
 // the error.
 func (s Error) TokenReader(payload xml.TokenReader) xml.TokenReader {
-	inner := xmlstream.Wrap(s.innerXML, xml.StartElement{Name: xml.Name{Local: s.Err, Space: ns.XMPPStream}})
+	inner := xmlstream.Wrap(s.innerXML, xml.StartElement{Name: xml.Name{Local: s.Err, Space: ErrorNS}})
 	if payload != nil {
 		inner = xmlstream.MultiReader(
 			inner,
@@ -241,7 +236,7 @@ func (s Error) TokenReader(payload xml.TokenReader) xml.TokenReader {
 	return xmlstream.Wrap(
 		inner,
 		xml.StartElement{
-			Name: xml.Name{Local: "error", Space: ns.Stream},
+			Name: xml.Name{Local: "error", Space: NS},
 		},
 	)
 }

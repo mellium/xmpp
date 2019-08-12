@@ -18,7 +18,6 @@ import (
 	"io"
 
 	"mellium.im/xmpp"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stream"
 )
@@ -89,7 +88,7 @@ func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 			}
 		}
 
-		if start.Name.Local != "stream" || start.Name.Space != ns.Stream {
+		if start.Name.Local != "stream" || start.Name.Space != stream.NS {
 			return mask, nil, nil, errors.New("Expected stream:stream from server")
 		}
 
