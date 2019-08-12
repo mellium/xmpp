@@ -18,8 +18,8 @@ import (
 	"mellium.im/xmpp/stream"
 )
 
-// StreamInfo contains metadata extracted from a stream start token.
-type StreamInfo struct {
+// Info contains metadata extracted from a stream start token.
+type Info struct {
 	to      *jid.JID
 	from    *jid.JID
 	id      string
@@ -30,8 +30,8 @@ type StreamInfo struct {
 
 // This MUST only return stream errors.
 // TODO: Is the above true? Just make it return a StreamError?
-func streamFromStartElement(s xml.StartElement) (StreamInfo, error) {
-	streamData := StreamInfo{}
+func streamFromStartElement(s xml.StartElement) (Info, error) {
+	streamData := Info{}
 	for _, attr := range s.Attr {
 		switch attr.Name {
 		case xml.Name{Space: "", Local: "to"}:
@@ -67,14 +67,16 @@ func streamFromStartElement(s xml.StartElement) (StreamInfo, error) {
 	return streamData, nil
 }
 
-// SendNewStream sends a new XML header followed by a stream start element on
-// the given io.Writer. We don't use an xml.Encoder both because Go's standard
-// library xml package really doesn't like the namespaced stream:stream
-// attribute and because we can guarantee well-formedness of the XML with a
-// print in this case and printing is much faster than encoding. Afterwards,
-// clear the StreamRestartRequired bit and set the output stream information.
-func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang string, location, origin, id string) (StreamInfo, error) {
-	streamData := StreamInfo{}
+// Send sends a new XML header followed by a stream start element on the given
+// io.Writer.
+// We don't use an xml.Encoder both because Go's standard library xml package
+// really doesn't like the namespaced stream:stream attribute and because we can
+// guarantee well-formedness of the XML with a print in this case and printing
+// is much faster than encoding.
+// Afterwards, clear the StreamRestartRequired bit and set the output stream
+// information.
+func Send(rw io.ReadWriter, s2s bool, version Version, lang string, location, origin, id string) (Info, error) {
+	streamData := Info{}
 	switch s2s {
 	case true:
 		streamData.xmlns = ns.Server
@@ -126,11 +128,12 @@ func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang string, loc
 	return streamData, b.Flush()
 }
 
-// ExpectNewStream reads a token from d and expects that it will be a new stream
-// start token. If not, an error is returned. It then handles feature
-// negotiation for the new stream.
+// Expect reads a token from d and expects that it will be a new stream start
+// token.
+// If not, an error is returned. It then handles feature negotiation for the new
+// stream.
 // If an XML header is discovered instead, it is skipped.
-func ExpectNewStream(ctx context.Context, d xml.TokenReader, recv bool) (streamData StreamInfo, err error) {
+func Expect(ctx context.Context, d xml.TokenReader, recv bool) (streamData Info, err error) {
 	// Skip the XML declaration (if any).
 	d = decl.Skip(d)
 

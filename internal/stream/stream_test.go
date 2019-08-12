@@ -34,7 +34,7 @@ func TestSendNewS2S(t *testing.T) {
 			if tc.id {
 				ids = "abc"
 			}
-			_, err := stream.SendNewStream(&b, tc.s2s, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
+			_, err := stream.Send(&b, tc.s2s, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
 
 			str := b.String()
 			if !strings.HasPrefix(str, decl.XMLHeader) {
@@ -77,7 +77,7 @@ func (nopReader) Read(p []byte) (n int, err error) {
 }
 
 func TestSendNewS2SReturnsWriteErr(t *testing.T) {
-	_, err := stream.SendNewStream(struct {
+	_, err := stream.Send(struct {
 		io.Reader
 		io.Writer
 	}{
