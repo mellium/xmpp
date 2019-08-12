@@ -2,7 +2,8 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-package internal
+// Package stream contains internal stream parsing and handling behavior.
+package stream // import "mellium.im/xmpp/internal/stream"
 
 import (
 	"bufio"
@@ -15,12 +16,6 @@ import (
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stream"
-)
-
-const (
-	// XMLHeader is an XML header like the one in encoding/xml but without a
-	// newline at the end.
-	XMLHeader = `<?xml version="1.0" encoding="UTF-8"?>`
 )
 
 // StreamInfo contains metadata extracted from a stream start token.
@@ -96,7 +91,7 @@ func SendNewStream(rw io.ReadWriter, s2s bool, version Version, lang string, loc
 
 	b := bufio.NewWriter(rw)
 	_, err := fmt.Fprintf(b,
-		XMLHeader+`<stream:stream%sto='%s' from='%s' version='%s' `,
+		decl.XMLHeader+`<stream:stream%sto='%s' from='%s' version='%s' `,
 		id,
 		location,
 		origin,

@@ -9,6 +9,12 @@ import (
 	"encoding/xml"
 )
 
+const (
+	// XMLHeader is an XML header like the one in encoding/xml but without a
+	// newline at the end.
+	XMLHeader = `<?xml version="1.0" encoding="UTF-8"?>`
+)
+
 type skipper struct {
 	r       xml.TokenReader
 	started bool

@@ -21,6 +21,7 @@ import (
 	"mellium.im/xmpp/internal"
 	"mellium.im/xmpp/internal/marshal"
 	"mellium.im/xmpp/internal/ns"
+	intstream "mellium.im/xmpp/internal/stream"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
@@ -88,14 +89,14 @@ type Session struct {
 	sentIQs     map[string]chan xmlstream.TokenReadCloser
 
 	in struct {
-		internal.StreamInfo
+		intstream.StreamInfo
 		d      xml.TokenReader
 		ctx    context.Context
 		cancel context.CancelFunc
 		sync.Locker
 	}
 	out struct {
-		internal.StreamInfo
+		intstream.StreamInfo
 		e tokenWriteFlusher
 		sync.Locker
 	}

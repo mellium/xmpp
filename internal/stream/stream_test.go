@@ -2,7 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-package internal_test
+package stream_test
 
 import (
 	"bytes"
@@ -11,7 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/internal/decl"
+	"mellium.im/xmpp/internal/stream"
 )
 
 func TestSendNewS2S(t *testing.T) {
@@ -33,13 +34,13 @@ func TestSendNewS2S(t *testing.T) {
 			if tc.id {
 				ids = "abc"
 			}
-			_, err := internal.SendNewStream(&b, tc.s2s, internal.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
+			_, err := stream.SendNewStream(&b, tc.s2s, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
 
 			str := b.String()
-			if !strings.HasPrefix(str, internal.XMLHeader) {
+			if !strings.HasPrefix(str, decl.XMLHeader) {
 				t.Errorf("Expected string to start with XML header but got: %s", str)
 			}
-			str = strings.TrimPrefix(str, internal.XMLHeader)
+			str = strings.TrimPrefix(str, decl.XMLHeader)
 
 			switch {
 			case err != tc.err:
@@ -76,13 +77,13 @@ func (nopReader) Read(p []byte) (n int, err error) {
 }
 
 func TestSendNewS2SReturnsWriteErr(t *testing.T) {
-	_, err := internal.SendNewStream(struct {
+	_, err := stream.SendNewStream(struct {
 		io.Reader
 		io.Writer
 	}{
 		nopReader{},
 		errWriter{},
-	}, true, internal.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", "abc")
+	}, true, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", "abc")
 	if err != io.ErrUnexpectedEOF {
 		t.Errorf("Expected errWriterErr (%s) but got `%s`", io.ErrUnexpectedEOF, err)
 	}

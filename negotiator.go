@@ -10,6 +10,7 @@ import (
 	"net"
 
 	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/internal/stream"
 )
 
 // teeConn is a net.Conn that also copies reads and writes to the provided
@@ -135,12 +136,12 @@ func negotiator(cfg StreamConfig) Negotiator {
 				// If we're the receiving entity wait for a new stream, then send one in
 				// response.
 
-				s.in.StreamInfo, err = internal.ExpectNewStream(ctx, s.in.d, s.State()&Received == Received)
+				s.in.StreamInfo, err = stream.ExpectNewStream(ctx, s.in.d, s.State()&Received == Received)
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
 				}
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), cfg.S2S, internal.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), internal.RandomID())
+				s.out.StreamInfo, err = stream.SendNewStream(s.Conn(), cfg.S2S, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), internal.RandomID())
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -148,12 +149,12 @@ func negotiator(cfg StreamConfig) Negotiator {
 			} else {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
-				s.out.StreamInfo, err = internal.SendNewStream(s.Conn(), cfg.S2S, internal.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
+				s.out.StreamInfo, err = stream.SendNewStream(s.Conn(), cfg.S2S, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
 				}
-				s.in.StreamInfo, err = internal.ExpectNewStream(ctx, s.in.d, s.State()&Received == Received)
+				s.in.StreamInfo, err = stream.ExpectNewStream(ctx, s.in.d, s.State()&Received == Received)
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
