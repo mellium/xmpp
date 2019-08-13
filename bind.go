@@ -10,7 +10,7 @@ import (
 	"io"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/internal/attr"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
@@ -127,13 +127,13 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 					return mask, nil, stream.BadFormat
 				}
 
-				iqid := internal.GetAttr(start.Attr, "id")
+				iqid := attr.Get(start.Attr, "id")
 
 				var j jid.JID
 				if server != nil {
 					j, err = server(session.RemoteAddr(), resReq.Bind.Resource)
 				} else {
-					j, err = session.RemoteAddr().WithResource(internal.RandomID())
+					j, err = session.RemoteAddr().WithResource(attr.RandomID())
 				}
 				stanzaErr, ok := err.(stanza.Error)
 				if err != nil && !ok {
@@ -165,7 +165,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			}
 
 			// Client encodes an IQ requesting resource binding.
-			reqID := internal.RandomID()
+			reqID := attr.RandomID()
 			req := &bindIQ{
 				IQ: stanza.IQ{
 					ID:   reqID,

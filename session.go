@@ -18,7 +18,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/dial"
-	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/internal/attr"
 	"mellium.im/xmpp/internal/marshal"
 	"mellium.im/xmpp/internal/ns"
 	intstream "mellium.im/xmpp/internal/stream"
@@ -806,7 +806,7 @@ func (s *Session) SendIQ(ctx context.Context, r xml.TokenReader) (xmlstream.Toke
 		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: ""})
 	}
 	if id == "" {
-		id = internal.RandomID()
+		id = attr.RandomID()
 		start.Attr[idx].Value = id
 	}
 
@@ -829,7 +829,7 @@ func (s *Session) SendIQElement(ctx context.Context, payload xml.TokenReader, iq
 	// We need to add an id to the IQ if one wasn't already set by the user so
 	// that we can use it to associate the response with the original query.
 	if iq.ID == "" {
-		iq.ID = internal.RandomID()
+		iq.ID = attr.RandomID()
 	}
 	needsResp := iq.Type == stanza.GetIQ || iq.Type == stanza.SetIQ
 
@@ -907,7 +907,7 @@ func stanzaAddID(w tokenWriteFlusher) tokenWriteFlusher {
 					}
 					tok.Attr = append(tok.Attr, xml.Attr{
 						Name:  xml.Name{Local: "id"},
-						Value: internal.RandomID(),
+						Value: attr.RandomID(),
 					})
 					t = tok
 				}

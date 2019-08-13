@@ -2,12 +2,18 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-package internal
+package attr
 
 import (
 	"errors"
 	"testing"
 )
+
+func TestPublicRandomIDLength(t *testing.T) {
+	if s := RandomID(); len(s) != IDLen {
+		t.Errorf("Expected length %d got %d", IDLen, len(s))
+	}
+}
 
 type zeroReader struct{}
 
@@ -22,8 +28,7 @@ func (z zeroReader) Read(b []byte) (n int, err error) {
 func TestRandomIDLength(t *testing.T) {
 	for i := 0; i <= 15; i++ {
 		if s := randomID(i, zeroReader{}); len(s) != i {
-			t.Logf("Expected length %d got %d", i, len(s))
-			t.Fail()
+			t.Errorf("Expected length %d got %d", i, len(s))
 		}
 	}
 }

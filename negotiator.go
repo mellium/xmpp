@@ -9,7 +9,7 @@ import (
 	"io"
 	"net"
 
-	"mellium.im/xmpp/internal"
+	"mellium.im/xmpp/internal/attr"
 	"mellium.im/xmpp/internal/stream"
 )
 
@@ -141,7 +141,7 @@ func negotiator(cfg StreamConfig) Negotiator {
 					nState.doRestart = false
 					return mask, nil, nState, err
 				}
-				s.out.Info, err = stream.Send(s.Conn(), cfg.S2S, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), internal.RandomID())
+				s.out.Info, err = stream.Send(s.Conn(), cfg.S2S, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), attr.RandomID())
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
