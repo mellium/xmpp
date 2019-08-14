@@ -157,6 +157,7 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 		s.state |= mask
 	}
 
+	s.in.d = intstream.Reader(s.in.d)
 	s.out.e = stanzaAddID(s.out.e)
 
 	return s, nil
@@ -318,8 +319,9 @@ func (r iqResponder) Close() error {
 
 func handleInputStream(s *Session, handler Handler) (err error) {
 	discard := xmlstream.Discard()
-	r := s.TokenReader()
-	defer r.Close()
+	rc := s.TokenReader()
+	defer rc.Close()
+	r := intstream.Reader(rc)
 
 	tok, err := r.Token()
 	if err != nil {
@@ -335,13 +337,6 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 	switch t := tok.(type) {
 	case xml.StartElement:
 		start = t
-	case xml.EndElement:
-		if t.Name.Space == stream.NS && t.Name.Local == "stream" {
-			return nil
-		}
-		// If this is a stream level end element but not </stream:stream>,
-		// something is really weird…
-		return stream.BadFormat
 	case xml.CharData:
 		if len(bytes.TrimLeft(t, " \t\r\n")) != 0 {
 			// Whitespace is allowed, but anything else at the top of the stream is
@@ -353,18 +348,6 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 		// If this isn't a start element or a whitespace keepalive, the stream is in
 		// a bad state.
 		return stream.BadFormat
-	}
-
-	// Handle stream errors and unknown stream namespaced tokens first, before
-	// delegating to the normal handler.
-	if start.Name.Space == stream.NS {
-		switch start.Name.Local {
-		case "error":
-			// TODO: Unmarshal the error and return it.
-			return nil
-		default:
-			return stream.UnsupportedStanzaType
-		}
 	}
 
 	// If this is a stanza, normalize the "from" attribute.

@@ -18,6 +18,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	intstream "mellium.im/xmpp/internal/stream"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
@@ -255,6 +256,28 @@ var serveTests = [...]struct {
 		handler: failHandler,
 		in:      "\n\t \r\n \t  ",
 		out:     `</stream:stream>`,
+	},
+	12: {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			if start.Name.Space == stream.NS || start.Name.Space == "stream" {
+				return fmt.Errorf("handler should never receive stream namespaced elements but got %v", start)
+			}
+			return nil
+		}),
+		in:  `<stream:error xmlns:stream="` + stream.NS + `"><not-well-formed xmlns='urn:ietf:params:xml:ns:xmpp-streams'/></stream:error>`,
+		out: `</stream:stream>`,
+		err: stream.InternalServerError,
+	},
+	13: {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			if start.Name.Space == stream.NS || start.Name.Space == "stream" {
+				return fmt.Errorf("handler should never receive stream namespaced elements but got %v", start)
+			}
+			return nil
+		}),
+		in:  `<stream:unknown xmlns:stream="` + stream.NS + `"/>`,
+		out: `</stream:stream>`,
+		err: intstream.ErrUnknownStreamElement,
 	},
 }
 
