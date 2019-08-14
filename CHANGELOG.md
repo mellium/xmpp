@@ -10,14 +10,20 @@ All notable changes to this project will be documented in this file.
 - ping: remove `IQ` function and replace with struct based API.
 
 
+### Added
+
+- ping: add `IQ` struct based encoding API.
+
+
 ### Changed
 
 - stanza: a zero value `IQType` now marshals as "get".
 
 
-### Added
+### Fixed
 
-- ping: add `IQ` struct based encoding API.
+- dial: fix broken fallback to domainpart.
+- xmpp: allow whitespace keepalives.
 
 
 ## v0.13.0 — 2019-07-27
