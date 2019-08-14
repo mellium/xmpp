@@ -325,11 +325,6 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 
 	tok, err := r.Token()
 	if err != nil {
-		// If this was a read timeout, don't try to send it. Just try to read
-		// again.
-		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			return nil
-		}
 		return err
 	}
 
