@@ -7,16 +7,10 @@ tasks:
   - setup: |
       go version
       go env
-      go get golang.org/dl/gotip
       echo 'export PATH=$(go env GOPATH)/bin:$PATH' >> ~/.buildenv
-      export PATH=$(go env GOPATH)/bin:$PATH
-      gotip download
   - stable: |
       cd xmpp/
       go test -v -cover ./...
-  - tip: |
-      cd xmpp/
-      gotip test -v -cover ./...
   - examples: |
       cd xmpp/examples/
       for d in ./*/; do
@@ -32,3 +26,8 @@ tasks:
       # This modifies go.mod, so do it last.
       go run golang.org/x/lint/golint ./...
       go run github.com/securego/gosec/cmd/gosec ./...
+  - tip: |
+      go get golang.org/dl/gotip
+      gotip download
+      cd xmpp/
+      gotip test -v -cover ./...
