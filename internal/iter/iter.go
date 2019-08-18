@@ -18,7 +18,7 @@ import (
 // Successive calls to the Next method will step through each child, returning
 // its start element and a reader that is limited to the remainder of the child.
 type Iter struct {
-	r       xml.TokenReader
+	r       xmlstream.TokenReadCloser
 	err     error
 	next    *xml.StartElement
 	cur     xml.TokenReader
@@ -26,11 +26,32 @@ type Iter struct {
 	discard xmlstream.TokenWriter
 }
 
+type nopCloser struct{}
+
+func (nopCloser) Close() error { return nil }
+
+func wrapClose(r xml.TokenReader) xmlstream.TokenReadCloser {
+	var c io.Closer
+	var ok bool
+	c, ok = r.(io.Closer)
+	if !ok {
+		c = nopCloser{}
+	}
+
+	return struct {
+		xml.TokenReader
+		io.Closer
+	}{
+		TokenReader: xmlstream.Inner(r),
+		Closer:      c,
+	}
+}
+
 // New returns a new iterator that iterates over the children of the most recent start
 // element already consumed from r.
 func New(r xml.TokenReader) *Iter {
 	iter := &Iter{
-		r:       xmlstream.Inner(r),
+		r:       wrapClose(r),
 		discard: xmlstream.Discard(),
 	}
 	return iter
@@ -92,8 +113,5 @@ func (i *Iter) Close() error {
 	if err != nil {
 		return err
 	}
-	if c, ok := i.r.(xmlstream.TokenReadCloser); ok {
-		return c.Close()
-	}
-	return nil
+	return i.r.Close()
 }

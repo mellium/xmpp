@@ -83,3 +83,31 @@ func TestIter(t *testing.T) {
 		})
 	}
 }
+
+type recordCloser struct {
+	called bool
+}
+
+func (c *recordCloser) Close() error {
+	c.called = true
+	return nil
+}
+
+func TestIterClosesInner(t *testing.T) {
+	recorder := &recordCloser{}
+	rc := struct {
+		xml.TokenReader
+		io.Closer
+	}{
+		TokenReader: xml.NewDecoder(strings.NewReader(`<nums><int>1</int><foo/></nums>`)),
+		Closer:      recorder,
+	}
+	iter := iter.New(rc)
+	err := iter.Close()
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if !recorder.called {
+		t.Errorf("Expected iter to close the inner reader if it is a TokenReadCloser")
+	}
+}
