@@ -114,7 +114,7 @@ func TestSendIQ(t *testing.T) {
 					}
 				}()
 
-				ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+				ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 				defer cancel()
 
 				resp, err := s.SendIQElement(ctx, tc.payload, tc.iq)
