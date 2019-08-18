@@ -3,27 +3,30 @@
 All notable changes to this project will be documented in this file.
 
 
-## Unreleased
+## v0.14.0 — 2019-08-18
 
 ### Breaking
 
-- ping: remove `IQ` function and replace with struct based API.
+- ping: remove `IQ` function and replace with struct based API
 
 
 ### Added
 
-- ping: add `IQ` struct based encoding API.
+- ping: add `IQ` struct based encoding API
 
 
 ### Changed
 
-- stanza: a zero value `IQType` now marshals as "get".
+- stanza: a zero value `IQType` now marshals as "get"
+- xmpp: read timeouts are now returned instead of ignored
 
 
 ### Fixed
 
-- dial: fix broken fallback to domainpart.
-- xmpp: allow whitespace keepalives.
+- dial: fix broken fallback to domainpart
+- xmpp: allow whitespace keepalives
+- roster: the iterator now correctly closes the underlying TokenReadCloser
+- xmpp: fix bug where stream processing could stop after an IQ was received
 
 
 ## v0.13.0 — 2019-07-27
