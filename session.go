@@ -379,13 +379,14 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 				goto noreply
 			}
 
+			inner := xmlstream.Inner(r)
 			c <- iqResponder{
-				r: xmlstream.MultiReader(xmlstream.Token(start), xmlstream.Inner(r), xmlstream.Token(start.End())),
+				r: xmlstream.MultiReader(xmlstream.Token(start), inner, xmlstream.Token(start.End())),
 				c: c,
 			}
 			<-c
 			// Consume the rest of the stream before continuing the loop.
-			_, err = xmlstream.Copy(discard, r)
+			_, err = xmlstream.Copy(discard, inner)
 			if err != nil {
 				return err
 			}
