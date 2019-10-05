@@ -7,6 +7,10 @@ tasks:
   - setup: |
       go version
       go env
+
+      go get -u golang.org/x/lint/golint
+      go get -u github.com/securego/gosec/cmd/gosec
+
       echo 'export PATH=$(go env GOPATH)/bin:$PATH' >> ~/.buildenv
   - stable: |
       cd xmpp/
@@ -23,9 +27,12 @@ tasks:
       go vet ./...
       gofmt -s -l . && [ -z "$(gofmt -s -l .)" ]
 
-      # This modifies go.mod, so do it last.
-      go run golang.org/x/lint/golint ./...
-      go run github.com/securego/gosec/cmd/gosec ./...
+      golint ./...
+      gosec ./...
+  - validate: |
+      cd xmpp/
+      go mod tidy
+      git diff --exit-code -- go.mod go.sum
   - tip: |
       go get golang.org/dl/gotip
       gotip download
