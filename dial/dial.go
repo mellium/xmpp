@@ -10,7 +10,6 @@ import (
 	"crypto/tls"
 	"net"
 	"strconv"
-	"time"
 
 	"mellium.im/xmpp/internal/discover"
 	"mellium.im/xmpp/jid"
@@ -82,6 +81,22 @@ func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (net.Co
 	return d.dial(ctx, network, addr)
 }
 
+func getHostPort(domain, network, service string) (host string, port uint16, err error) {
+	host, strPort, splitErr := net.SplitHostPort(domain)
+	bigPort, parseErr := strconv.ParseUint(strPort, 10, 16)
+	p := uint16(bigPort)
+	if splitErr != nil || parseErr != nil {
+		// If there is no port in the domain part, pick a default port.
+		p, err = discover.LookupPort(network, service)
+	}
+	// If the error was during splitting return the domain instead of the split
+	// host.
+	if splitErr != nil {
+		return domain, p, err
+	}
+	return host, p, err
+}
+
 func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
 	domain := addr.Domainpart()
 	service := connType(!d.NoTLS, d.S2S)
@@ -90,12 +105,12 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 
 	// If we're not looking up SRV records, make up some fake ones.
 	if d.NoLookup {
-		p, err := discover.LookupPort(network, service)
+		host, p, err := getHostPort(domain, network, service)
 		if err != nil {
 			return nil, err
 		}
 		addrs = append(addrs, &net.SRV{
-			Target:   domain,
+			Target:   host,
 			Port:     p,
 			Priority: 1,
 			Weight:   1,
@@ -118,13 +133,13 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 		// If there aren't any records, try connecting on the main domain.
 		if len(addrs) == 0 {
 			// If there are no SRV records, use domain and default port.
-			p, err := discover.LookupPort(network, service)
+			host, p, err := getHostPort(domain, network, service)
 			if err != nil {
 				return nil, err
 			}
 
 			addrs = []*net.SRV{{
-				Target: addr.Domainpart(),
+				Target: host,
 				Port:   uint16(p),
 			}}
 		}
@@ -161,36 +176,6 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 		return c, nil
 	}
 	return nil, err
-}
-
-// Copied from the net package in the standard library. Copyright The Go
-// Authors. See LICENSE-GO.
-func minNonzeroTime(a, b time.Time) time.Time {
-	if a.IsZero() {
-		return b
-	}
-	if b.IsZero() || a.Before(b) {
-		return a
-	}
-	return b
-}
-
-// Copied from the net package in the standard library. Copyright The Go
-// Authors.
-//
-// deadline returns the earliest of:
-//   - now+Timeout
-//   - d.Deadline
-//   - the context's deadline
-// Or zero, if none of Timeout, Deadline, or context's deadline is set.
-func (d *Dialer) deadline(ctx context.Context, now time.Time) (earliest time.Time) {
-	if d.Timeout != 0 { // including negative, for historical reasons
-		earliest = now.Add(d.Timeout)
-	}
-	if d, ok := ctx.Deadline(); ok {
-		earliest = minNonzeroTime(earliest, d)
-	}
-	return minNonzeroTime(earliest, d.Deadline)
 }
 
 func connType(useTLS, s2s bool) string {
