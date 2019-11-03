@@ -94,7 +94,7 @@ func main() {
 
 	// Handle incoming messages.
 	go func() {
-		session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 			d := xml.NewTokenDecoder(t)
 			// Ignore anything that's not a message. In a real system we'd want to at
 			// least respond to IQs.
@@ -114,6 +114,9 @@ func main() {
 			}
 			return nil
 		}))
+		if err != nil {
+			logger.Fatalf("Error handling incoming messages: %w", err)
+		}
 	}()
 
 	printHelp()
