@@ -23,8 +23,8 @@ import (
 
 /* #nosec */
 const (
-	envAddr = "ECHOBOT_ADDR"
-	envPass = "ECHOBOT_PASS"
+	envAddr = "XMPP_ADDR"
+	envPass = "XMPP_PASS"
 )
 
 type logWriter struct {
