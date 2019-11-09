@@ -15,6 +15,23 @@ If you're not sure where to begin, grab any of the issues labeled
 ask!
 
 
+## Sign your work
+
+All commits must be signed before they can be accepted. Your signature
+indicates that you have the right to contribute the work and that it can be
+contributed as open source. The exact rules can be viewed at
+[developercertificate.org], or in the file [DCO].
+
+To add your signature, add a line like the following to the end of your commit
+message with your name and email:
+
+    Signed-off-by: John Smith <john.smith@example.net>
+
+You can add this line easily using Git by committing with `git commit -s`.
+If you forget to add a signature to a commit, quickly add it to the latest
+commit with `git commit --amend -s --no-edit`.
+
+
 ## License
 
 The package may be used under the terms of the BSD 2-Clause License a copy of
@@ -27,4 +44,6 @@ conditions.
 
 [issues]: https://github.com/mellium/xmpp/issues
 [starter]: https://github.com/mellium/xmpp/labels/starter
+[developercertificate.org]: https://developercertificate.org/
+[DCO]: ./DCO
 [LICENSE]: ./LICENSE
