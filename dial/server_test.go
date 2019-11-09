@@ -7,20 +7,55 @@ package dial_test
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"net"
 	"syscall"
 	"testing"
+
+	"golang.org/x/net/dns/dnsmessage"
+	"golang.org/x/net/nettest"
 )
 
 // Server listens for service discovery and connection attempts and records the
 // types of requests that were made.
 type Server struct {
-	Dialed   string
-	Resolved bool
+	Dialed    string
+	Questions []dnsmessage.Question
+
+	resolved bool
+	t        *testing.T
+	dns      net.Listener
 }
 
 func newServer(t *testing.T) *Server {
-	return &Server{}
+	dns, err := nettest.NewLocalListener("unix")
+	if err != nil {
+		panic(fmt.Errorf("dial_test: error dialing server: %w", err))
+	}
+
+	s := &Server{
+		t:   t,
+		dns: dns,
+	}
+
+	go func() {
+		for {
+			conn, err := dns.Accept()
+			if err != nil {
+				t.Logf("dial_test: error accepting connection: %v", err)
+				return
+			}
+			defer func() {
+				err := conn.Close()
+				t.Logf("dial_test: error closing connection: %v", err)
+			}()
+
+			s.handleDNS(t, conn)
+		}
+	}()
+
+	return s
 }
 
 // resolver returns a DNS resolver that uses Go's built in DNS resolver if
@@ -30,8 +65,13 @@ func (s *Server) resolver() *net.Resolver {
 		PreferGo:     true,
 		StrictErrors: true,
 		Dial: func(ctx context.Context, network string, address string) (net.Conn, error) {
-			s.Resolved = true
-			return nil, errors.New("dial_test: expected error: preventing resolver dial")
+			if s.resolved {
+				return nil, fmt.Errorf("dial_test: expected error: only resolve once")
+			}
+
+			s.resolved = true
+			d := &net.Dialer{}
+			return d.DialContext(ctx, "unix", s.dns.Addr().String())
 		},
 	}
 }
@@ -45,5 +85,37 @@ func (s *Server) Dialer() net.Dialer {
 			s.Dialed = address
 			return errors.New("dial_test: expected error: preventing dial")
 		},
+	}
+}
+
+func (s *Server) handleDNS(t *testing.T, conn net.Conn) {
+	buf, err := ioutil.ReadAll(conn)
+	if err != nil {
+		t.Fatalf("dial_test: error reading DNS request: %v", err)
+	}
+
+	var p dnsmessage.Parser
+	_, err = p.Start(buf)
+	if err != nil {
+		t.Fatalf("dial_test: error parsing DNS request header: %v", err)
+	}
+
+	// Parse DNS question
+	for {
+		q, err := p.Question()
+		if err == dnsmessage.ErrSectionDone {
+			break
+		}
+		if err != nil {
+			t.Fatalf("dial_test: error parsing DNS question: %v", err)
+		}
+
+		s.Questions = append(s.Questions, q)
+	}
+
+	// Parse DNS answers
+	err = p.SkipAllAnswers()
+	if err != nil {
+		t.Fatalf("dial_test: error skipping DNS answers: %v", err)
 	}
 }
