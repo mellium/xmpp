@@ -2,7 +2,7 @@ image: freebsd/latest
 packages:
   - go
 sources:
-  - https://github.com/mellium/xmpp.git
+  - https://github.com/mellium/xmpp
 tasks:
   - setup: |
       go version
