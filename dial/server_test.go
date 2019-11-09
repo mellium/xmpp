@@ -110,6 +110,11 @@ func (s *Server) handleDNS(t *testing.T, conn net.Conn) {
 			t.Fatalf("dial_test: error parsing DNS question: %v", err)
 		}
 
+		// Normalize A lookups to AAAA to prevent test flaky-ness since we don't
+		// really care which was used.
+		if q.Type == dnsmessage.TypeA {
+			q.Type = dnsmessage.TypeAAAA
+		}
 		s.Questions = append(s.Questions, q)
 	}
 
