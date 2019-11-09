@@ -37,7 +37,7 @@
 //     conn, err := dial.Client(context.TODO(), "tcp", addr)
 //     …
 //     session, err := xmpp.NewClientSession(
-//         context.TODO(), addr, conn,
+//         context.TODO(), addr, conn, false,
 //         xmpp.BindResource(),
 //         xmpp.StartTLS(true, nil),
 //         xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
