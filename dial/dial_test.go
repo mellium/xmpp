@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
 
 	"golang.org/x/net/dns/dnsmessage"
 
@@ -141,10 +142,10 @@ func TestDial(t *testing.T) {
 
 	for i, tc := range dialTests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
 
-			server := newServer(t)
+			server := newServer(ctx, t)
 
 			if tc.dialer == nil {
 				tc.dialer = &dial.Dialer{}
@@ -166,6 +167,8 @@ func TestDial(t *testing.T) {
 					}
 				}
 			}()
+
+			<-server.ctx.Done()
 
 			if server.Dialed != tc.socketAddr {
 				t.Errorf("Dialed wrong address: want=%q, got=%q", tc.socketAddr, server.Dialed)

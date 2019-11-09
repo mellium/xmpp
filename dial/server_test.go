@@ -20,6 +20,8 @@ import (
 // Server listens for service discovery and connection attempts and records the
 // types of requests that were made.
 type Server struct {
+	ctx context.Context
+
 	Dialed    string
 	Questions []dnsmessage.Question
 
@@ -28,13 +30,16 @@ type Server struct {
 	dns      net.Listener
 }
 
-func newServer(t *testing.T) *Server {
+func newServer(ctx context.Context, t *testing.T) *Server {
 	dns, err := nettest.NewLocalListener("unix")
 	if err != nil {
 		panic(fmt.Errorf("dial_test: error dialing server: %w", err))
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
+
 	s := &Server{
+		ctx: ctx,
 		t:   t,
 		dns: dns,
 	}
@@ -52,6 +57,8 @@ func newServer(t *testing.T) *Server {
 			}()
 
 			s.handleDNS(t, conn)
+			cancel()
+			return
 		}
 	}()
 
