@@ -83,6 +83,23 @@ change and that it stands a good chance of being merged after the changes are
 complete!
 
 
+## Sign your work
+
+All commits must be signed before they can be accepted. Your signature
+indicates that you have the right to contribute the work and that it can be
+contributed as open source. The exact rules can be viewed at
+[developercertificate.org], or in the file [DCO].
+
+To add your signature, add a line like the following to the end of your commit
+message with your name and email:
+
+    Signed-off-by: Andrew Aguecheek <aaguecheek@example.net>
+
+You can add this line easily using Git by committing with `git commit -s`.
+If you forget to add a signature to a commit, quickly add it to the latest
+commit with `git commit --amend -s --no-edit`.
+
+
 ## License
 
 The package may be used under the terms of the BSD 2-Clause License a copy of
@@ -99,4 +116,6 @@ conditions.
 [`starter`]: https://github.com/mellium/xmpp/labels/starter
 [`security@mellium.im`]: mailto:security@mellium.im
 [benchstat]: https://godoc.org/golang.org/x/perf/cmd/benchstat
+[developercertificate.org]: https://developercertificate.org/
+[DCO]: ./DCO
 [LICENSE]: ./LICENSE
