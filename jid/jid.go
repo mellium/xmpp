@@ -18,8 +18,14 @@ import (
 )
 
 var (
-	errInvalidDomainLen = errors.New("The domainpart must be between 1 and 1023 bytes")
-	errInvalidUTF8      = errors.New("JID contains invalid UTF-8")
+	errForbiddenLocalpart = errors.New("Localpart contains forbidden characters")
+	errInvalidDomainLen   = errors.New("The domainpart must be between 1 and 1023 bytes")
+	errInvalidIPv6        = errors.New("Domainpart is not a valid IPv6 address")
+	errInvalidUTF8        = errors.New("JID contains invalid UTF-8")
+	errLongLocalpart      = errors.New("The localpart must be smaller than 1024 bytes")
+	errLongResourcepart   = errors.New("The resourcepart must be smaller than 1024 bytes")
+	errNoLocalpart        = errors.New("The localpart must be larger than 0 bytes")
+	errNoResourcepart     = errors.New("The resourcepart must be larger than 0 bytes")
 )
 
 // JID represents an XMPP address (Jabber ID) comprising a localpart,
@@ -355,7 +361,7 @@ func splitString(s string, safe bool) (localpart, domainpart, resourcepart strin
 	} else {
 		// If the resource part exists, make sure it isn't empty.
 		if safe && sep == len(s)-1 {
-			err = errors.New("The resourcepart must be larger than 0 bytes")
+			err = errNoResourcepart
 			return
 		}
 		resourcepart = s[sep+1:]
@@ -374,7 +380,7 @@ func splitString(s string, safe bool) (localpart, domainpart, resourcepart strin
 		domainpart = s
 	case safe && sep == 0:
 		// The JID starts with an @ sign (invalid empty localpart)
-		err = errors.New("The localpart must be larger than 0 bytes")
+		err = errNoLocalpart
 		return
 	default:
 		domainpart = s[sep+1:]
@@ -401,7 +407,7 @@ func checkIP6String(domainpart string) error {
 	if l := len(domainpart); l > 2 && strings.HasPrefix(domainpart, "[") &&
 		strings.HasSuffix(domainpart, "]") {
 		if ip := net.ParseIP(domainpart[1 : l-1]); ip == nil || ip.To4() != nil {
-			return errors.New("Domainpart is not a valid IPv6 address")
+			return errInvalidIPv6
 		}
 	}
 	return nil
@@ -423,7 +429,7 @@ func commonChecks(localpart []byte, domainpart string, resourcepart []byte) erro
 
 func localChecks(localpart []byte) error {
 	if len(localpart) > 1023 {
-		return errors.New("The localpart must be smaller than 1024 bytes")
+		return errLongLocalpart
 	}
 
 	// RFC 7622 §3.3.1 provides a small table of characters which are still not
@@ -433,7 +439,7 @@ func localChecks(localpart []byte) error {
 	// checked before the profile is applied (so some characters may still be
 	// normalized to characters in this set).
 	if bytes.ContainsAny(localpart, `"&'/:<>@`) {
-		return errors.New("Localpart contains forbidden characters")
+		return errForbiddenLocalpart
 	}
 
 	return nil
@@ -441,7 +447,7 @@ func localChecks(localpart []byte) error {
 
 func resourceChecks(resourcepart []byte) error {
 	if len(resourcepart) > 1023 {
-		return errors.New("The resourcepart must be smaller than 1024 bytes")
+		return errLongResourcepart
 	}
 	return nil
 }
