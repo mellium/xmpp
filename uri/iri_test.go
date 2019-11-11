@@ -109,15 +109,15 @@ var parseTests = [...]struct {
 		},
 	},
 	14: {
+		// Errors from unescaping the path should be passed through.
 		raw: "xmpp:test%%bad",
 		err: func() error {
 			_, err := url.PathUnescape("xmpp:%%b")
 			return err
 		}(),
 	},
-
-	// Tests from RFC 3987 §3.2.1
 	15: {
+		// Test from RFC 3987 §3.2.1
 		raw: "xmpp:example.org/D%C3%BCrst",
 		iri: "xmpp:example.org/Dürst",
 		u: &uri.URI{
@@ -125,6 +125,7 @@ var parseTests = [...]struct {
 		},
 	},
 	16: {
+		// Test from RFC 3987 §3.2.1
 		raw: "xmpp:example.org/D%FCrst",
 		iri: "xmpp:example.org/D%FCrst",
 		u: &uri.URI{
@@ -132,10 +133,20 @@ var parseTests = [...]struct {
 		},
 	},
 	17: {
+		// Test from RFC 3987 §3.2.1
 		raw: "xmpp:xn--99zt52a.example.org/%e2%80%ae",
 		iri: "xmpp:xn--99zt52a.example.org/%E2%80%AE",
 		u: &uri.URI{
 			ToAddr: jid.MustParse("\u7D0D\u8C46.example.org/%E2%80%AE"),
+		},
+	},
+	18: {
+		// Check that allowed multi-byte scalar values get written even if the fast
+		// path is skipped.
+		raw: "xmpp:feste@example.net/%E2%80☃",
+		iri: "xmpp:feste@example.net/%E2%80☃",
+		u: &uri.URI{
+			ToAddr: jid.MustParse("feste@example.net/%E2%80☃"),
 		},
 	},
 }
@@ -208,4 +219,19 @@ func jidErr(addr string) error {
 		panic("test requires bad data, but no error was encountered parsing JID")
 	}
 	return err
+}
+
+func BenchmarkParse(b *testing.B) {
+	for i, tc := range parseTests {
+		b.Run(strconv.Itoa(i), func(b *testing.B) {
+			if tc.err != nil {
+				b.Skip("don't benchmark tests that would error")
+			}
+
+			b.ResetTimer()
+			for n := 0; n < b.N; n++ {
+				_, _ = uri.Parse(tc.raw)
+			}
+		})
+	}
 }

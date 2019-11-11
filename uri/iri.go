@@ -26,9 +26,20 @@ var (
 type URI struct {
 	*url.URL
 
-	ToAddr   jid.JID
+	// ToAddr is the recipient address.
+	ToAddr jid.JID
+
+	// AuthAddr is empty if we should perform an action as the currently
+	// authenticated account or ask the uesr to input the account to use.
+	// Otherwise it is the auth address if present in an xmpp:// URI or IRI.
 	AuthAddr jid.JID
-	Action   string
+
+	// Action is the first query component without a value and normally determines
+	// the action to take when handling the URI. For example, the query string
+	// might be ?join to join a chatroom, or ?message to send a message.
+	//
+	// For more information see XEP-0147: XMPP URI Scheme Query Components.
+	Action string
 }
 
 // TODO: encoding and escaping, see
@@ -126,11 +137,9 @@ func toIRI(u string, needsUnescape bool) (string, error) {
 	// 4. Re-percent-encode all octets produced in step 3 that in UTF-8
 	//    represent characters that are not appropriate according to
 	//    sections 2.2, 4.1, and 6.1.
-	u = escapeInvalidUTF8(u)
-
 	// 5. Interpret the resulting octet sequence as a sequence of characters
 	//    encoded in UTF-8.
-	// TODO:
+	u = escapeInvalidUTF8(u)
 
 	return u, nil
 }
