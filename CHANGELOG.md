@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
   [XEP-0163: Personal Eventing Protocol]
 - carbons: add `WrapReceived` and `WrapSent` functions
 - forward: add `Unwrap` function
+- ibb: new package implementing [XEP-0047: In-Band Bytestreams]
 - stanza: add `NSError`, `NSClient`, and `NSServer` constants
 
 
@@ -26,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - mux: unhandled IQ result stanzas with no payload no longer result in an error
 - mux: responses are no longer sent for unhandled IQ result stanzas
 
+[XEP-0047: In-Band Bytestreams]: https://xmpp.org/extensions/xep-0047.html
 [XEP-0060: Publish-Subscribe]: https://xmpp.org/extensions/xep-0060.html
 [XEP-0163: Personal Eventing Protocol]: https://xmpp.org/extensions/xep-0163.html
 
