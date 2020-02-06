@@ -4,6 +4,10 @@
 
 // Package compress implements XEP-0138: Stream Compression and XEP-0229: Stream
 // Compression with LZW.
+//
+// Be advised: stream compression has many of the same security considerations
+// as TLS compression (see RFC3749 §6) and may be difficult to implement safely
+// without special expertise.
 package compress // import "mellium.im/xmpp/compress"
 
 import (
