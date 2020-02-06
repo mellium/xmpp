@@ -4,8 +4,6 @@
 
 // Package component is used to establish XEP-0114: Jabber Component Protocol
 // connections.
-//
-// Be advised: This API is still unstable and is subject to change.
 package component // import "mellium.im/xmpp/component"
 
 import (
