@@ -23,6 +23,13 @@ const (
 	pass  = "just an example don't hardcode passwords"
 )
 
+// MessageBody is a message stanza that contains a body. It is normally used for
+// chat messages.
+type MessageBody struct {
+	stanza.Message
+	Body string `xml:"body"`
+}
+
 func Example_echobot() {
 	j := jid.MustParse(login)
 	s, err := xmpp.DialClientSession(
@@ -64,10 +71,7 @@ func Example_echobot() {
 			return nil
 		}
 
-		msg := struct {
-			stanza.Message
-			Body string `xml:"body"`
-		}{}
+		msg := MessageBody{}
 		err = d.DecodeElement(&msg, start)
 		if err != nil && err != io.EOF {
 			log.Printf("Error decoding message: %q", err)
@@ -76,20 +80,19 @@ func Example_echobot() {
 
 		// Don't reflect messages unless they are chat messages and actually have a
 		// body.
+		// In a real world situation we'd probably want to respond to IQs, at least.
 		if msg.Body == "" || msg.Type != stanza.ChatMessage {
 			return nil
 		}
 
-		reply := stanza.WrapMessage(
-			msg.From.Bare(), stanza.ChatMessage,
-			xmlstream.Wrap(xmlstream.ReaderFunc(func() (xml.Token, error) {
-				return xml.CharData(msg.Body), io.EOF
-			}), xml.StartElement{Name: xml.Name{Local: "body"}}),
-		)
-
-		// Serve takes a lock on the output stream when the handler is called, so
-		// copy the raw XML instead of using the Send method or similar.
-		_, err = xmlstream.Copy(t, reply)
+		reply := MessageBody{
+			Message: stanza.Message{
+				To: msg.From.Bare(),
+			},
+			Body: msg.Body,
+		}
+		log.Printf("Replying to message %q from %s with body %q", msg.ID, reply.To, reply.Body)
+		err = t.Encode(reply)
 		if err != nil {
 			log.Printf("Error responding to message %q: %q", msg.ID, err)
 		}
