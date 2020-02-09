@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- uri: new package for parsing XMPP URI's and IRI's
+
+
+### Fixed
+
+- dial: if a port number is present in a JID it was previously ignored
+
 
 ## v0.14.0 — 2019-08-18
 
