@@ -32,5 +32,5 @@ in the work by you shall be licensed as above, without any additional terms or
 conditions.
 
 
-[docs]: https://godoc.org/mellium.im/xmpp
+[docs]: https://pkg.go.dev/mellium.im/xmpp
 [LICENSE]: ./LICENSE
