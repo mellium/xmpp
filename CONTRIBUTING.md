@@ -35,9 +35,10 @@ and code formatting.
   - Submit a pull request and wait for review
 
 Commit messages should start with the name of the Go package being modified, or
-the string "all" if it affects the entire package, followed by a colon.
+the string "all" if it affects the entire module, followed by a colon.
 The rest of the first line should be a short description of how it modifies the
-project, for example, the following is a good first line for a commit message:
+project, for example, the following is a good first line for a commit message to
+the `dial` package:
 
     dial: fix flaky tests
 
@@ -45,8 +46,9 @@ After the first line should be a blank line, followed by a paragraph or so
 describing the change in more detail.
 This provides context for the commit and should be written in full sentences.
 Do not use Markdown, HTML, or other formatting in your commit messages.
-You may also include benchmarks and other data that showcases why your commit
-should be merged, the Go [benchstat] tool may be helpful for this.
+You may also include benchmarks and other data that provides context and shows
+why your commit should be merged, the Go [benchstat] tool may be helpful for
+this.
 
 For example, a good full commit message might be:
 
@@ -64,11 +66,21 @@ Once your pull request is submitted, you will hear back from a maintainer within
 If you haven't heard back by then, feel free to ping the PR to move it back to
 the top of peoples inboxes.
 
-To update an existing pull request please add more commits on top of the first
-commit so that a reviewer can tell what changed between patches.
+To update an existing pull request you may add more commits on top of the first
+commit or amend and push the existing commit.
 Once your change is accepted your reviewer may ask you to rebase your branch
 on top of the base branch and squash it into a single commit that can be merged,
 or they may handle this for you.
+
+
+## Review
+
+All patches must be reviewed by a maintainer before being merged.
+Don't be discouraged if the maintainer asks questions or requests changes, even
+for simple patches.
+This is perfectly normal, and means that the maintainers are interested in your
+change and that it stands a good chance of being merged after the changes are
+complete!
 
 
 ## License
