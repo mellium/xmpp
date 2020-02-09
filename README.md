@@ -1,6 +1,6 @@
 # XMPP
 
-[![GoDoc](https://godoc.org/mellium.im/xmpp?status.svg)](https://godoc.org/mellium.im/xmpp)
+[![GoDoc](https://godoc.org/mellium.im/xmpp?status.svg)][docs]
 [![License](https://img.shields.io/badge/license-FreeBSD-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![Build Status](https://builds.sr.ht/~samwhited/xmpp.svg)](https://builds.sr.ht/~samwhited/xmpp?)
 
@@ -10,11 +10,14 @@
 
 An XMPP library in Go.
 
-To use it in your project, import it (or one of its subproject's) like so:
+To use it in your project, import it (or any of its other packages) like so:
 
 ```go
 import mellium.im/xmpp
 ```
+
+If you're looking to get started and need some help, see the API [docs] or look
+in the `examples/` tree for several simple usage examples.
 
 
 ## License
@@ -29,4 +32,5 @@ in the work by you shall be licensed as above, without any additional terms or
 conditions.
 
 
+[docs]: https://godoc.org/mellium.im/xmpp
 [LICENSE]: ./LICENSE
