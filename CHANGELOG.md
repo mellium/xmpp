@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- mux: ability to route by IQ payload
 - uri: new package for parsing XMPP URI's and IRI's
 
 

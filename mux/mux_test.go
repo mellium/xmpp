@@ -60,18 +60,14 @@ var testCases = [...]struct {
 		p: xml.Name{Local: "presence", Space: ns.Server},
 	},
 	6: {
-		m: mux.New(mux.IQ(passHandler), mux.IQ(nil)),
-		p: xml.Name{Local: "iq", Space: ns.Server},
-	},
-	7: {
 		m: mux.New(mux.IQ(passHandler)),
 		p: xml.Name{Local: "iq", Space: ns.Server},
 	},
-	8: {
+	7: {
 		m: mux.New(mux.Handle(xml.Name{Local: "test"}, passHandler)),
 		p: xml.Name{Local: "test", Space: "summertime"},
 	},
-	9: {
+	8: {
 		m: mux.New(mux.HandleFunc(xml.Name{Space: "summertime"}, passHandler)),
 		p: xml.Name{Local: "test", Space: "summertime"},
 	},
@@ -131,8 +127,33 @@ func TestFallback(t *testing.T) {
 		t.Errorf("Unexpected error flushing token writer: %q", err)
 	}
 
-	const expected = `<iq to="juliet@example.com" from="romeo@example.com" id="123" type="error"><error type="cancel"><feature-not-implemented xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></feature-not-implemented></error></iq>`
+	const expected = `<iq type="error" to="juliet@example.com" from="romeo@example.com" id="123"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`
 	if buf.String() != expected {
 		t.Errorf("Bad output:\nwant=`%v'\n got=`%v'", expected, buf.String())
 	}
+}
+
+func TestNilHandlerPanics(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected a panic when trying to register a nil handler")
+		}
+	}()
+	mux.New(mux.IQ(nil))
+}
+
+func TestIdenticalHandlerPanics(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("Expected a panic when trying to register a duplicate handler")
+		}
+	}()
+	mux.New(mux.IQ(failHandler), mux.IQ(failHandler))
+}
+
+func TestLazyServeMuxMapInitialization(t *testing.T) {
+	m := &mux.ServeMux{}
+
+	// This will panic if the map isn't initialized lazily.
+	mux.IQ(failHandler)(m)
 }

@@ -11,7 +11,6 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/ns"
-	"mellium.im/xmpp/stanza"
 )
 
 // ServeMux is an XMPP stream multiplexer.
@@ -22,10 +21,9 @@ import (
 // Patterns are XML names.
 // If either the namespace or the localname is left off, any namespace or
 // localname will be matched.
-// Full XML names take precedence, followed by wildcard namespaces, followed by
-// wildcard localnames.
+// Full XML names take precedence, followed by wildcard localnames, followed by
+// wildcard namespaces.
 type ServeMux struct {
-	fallback xmpp.Handler
 	patterns map[xml.Name]xmpp.Handler
 }
 
@@ -34,63 +32,17 @@ func fallback(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 		return nil
 	}
 
-	typeIdx := -1
-	toIdx := -1
-	fromIdx := -1
-	for i, a := range start.Attr {
-		switch a.Name.Local {
-		case "type":
-			if a.Value == "error" {
-				return nil
-			}
-			typeIdx = i
-		case "from":
-			fromIdx = i
-		case "to":
-			toIdx = i
-		}
-		if typeIdx > -1 && fromIdx > -1 && toIdx > -1 {
-			break
-		}
+	iq, start, err := getPayload(t, start)
+	if err != nil {
+		return err
 	}
 
-	switch {
-	case toIdx < 0 && fromIdx < 0:
-		// nothing to do here
-	case toIdx < 0:
-		start.Attr[fromIdx].Name.Local = "to"
-	case fromIdx < 0:
-		start.Attr[toIdx].Name.Local = "from"
-	default:
-		// swap values
-		start.Attr[toIdx].Value, start.Attr[fromIdx].Value = start.Attr[fromIdx].Value, start.Attr[toIdx].Value
-	}
-
-	// TODO: double check with RFC 6120 that if there is no type the default
-	// is "get" (and thus an error response should be generated).
-	if typeIdx >= 0 {
-		start.Attr[typeIdx].Value = "error"
-	} else {
-		start.Attr = append(start.Attr, xml.Attr{
-			Name:  xml.Name{Local: "type"},
-			Value: "error",
-		})
-	}
-
-	e := stanza.Error{
-		Type:      stanza.Cancel,
-		Condition: stanza.FeatureNotImplemented,
-	}
-	_, err := xmlstream.Copy(t, xmlstream.Wrap(e.TokenReader(), *start))
-	return err
+	return iqFallback(iq, t, start)
 }
 
 // New allocates and returns a new ServeMux.
 func New(opt ...Option) *ServeMux {
-	m := &ServeMux{
-		fallback: xmpp.HandlerFunc(fallback),
-		patterns: make(map[xml.Name]xmpp.Handler),
-	}
+	m := &ServeMux{}
 	for _, o := range opt {
 		o(m)
 	}
@@ -121,7 +73,7 @@ func (m *ServeMux) Handler(name xml.Name) (h xmpp.Handler, ok bool) {
 		return h, true
 	}
 
-	return m.fallback, false
+	return xmpp.HandlerFunc(fallback), false
 }
 
 // HandleXMPP dispatches the request to the handler whose pattern most closely
@@ -136,13 +88,8 @@ type Option func(m *ServeMux)
 
 func registerStanza(local string, h xmpp.Handler) Option {
 	return func(m *ServeMux) {
-		if h == nil {
-			return
-		}
-		n := xml.Name{Local: local, Space: ns.Client}
-		m.patterns[n] = h
-		n = xml.Name{Local: local, Space: ns.Server}
-		m.patterns[n] = h
+		Handle(xml.Name{Local: local, Space: ns.Client}, h)(m)
+		Handle(xml.Name{Local: local, Space: ns.Server}, h)(m)
 	}
 }
 
@@ -177,15 +124,24 @@ func PresenceFunc(h xmpp.HandlerFunc) Option {
 }
 
 // Handle returns an option that matches on the provided XML name.
+// If a handler already exists for n when the option is applied, the option
+// panics.
 func Handle(n xml.Name, h xmpp.Handler) Option {
 	return func(m *ServeMux) {
+		if h == nil {
+			panic("mux: nil handler")
+		}
+		if _, ok := m.patterns[n]; ok {
+			panic("mux: multiple registrations for {" + n.Space + "}" + n.Local)
+		}
+		if m.patterns == nil {
+			m.patterns = make(map[xml.Name]xmpp.Handler)
+		}
 		m.patterns[n] = h
 	}
 }
 
 // HandleFunc returns an option that matches on the provided XML name.
 func HandleFunc(n xml.Name, h xmpp.HandlerFunc) Option {
-	return func(m *ServeMux) {
-		m.patterns[n] = h
-	}
+	return Handle(n, h)
 }
