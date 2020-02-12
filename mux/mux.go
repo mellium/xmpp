@@ -99,33 +99,35 @@ func New(opt ...Option) *ServeMux {
 
 // Handler returns the handler to use for a top level element with the provided
 // XML name.
-// If no handler exists, a default handler is returned (h is always non-nil).
+// If no exact match or wildcard handler exists, a default handler is returned
+// (h is always non-nil) and ok will be false.
 func (m *ServeMux) Handler(name xml.Name) (h xmpp.Handler, ok bool) {
 	h = m.patterns[name]
-	if h == nil {
-		return m.fallback, false
+	if h != nil {
+		return h, true
 	}
-	return h, true
+
+	n := name
+	n.Space = ""
+	h = m.patterns[n]
+	if h != nil {
+		return h, true
+	}
+
+	n = name
+	n.Local = ""
+	h = m.patterns[n]
+	if h != nil {
+		return h, true
+	}
+
+	return m.fallback, false
 }
 
 // HandleXMPP dispatches the request to the handler whose pattern most closely
 // matches start.Name.
 func (m *ServeMux) HandleXMPP(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-	h, ok := m.Handler(start.Name)
-	if ok {
-		return h.HandleXMPP(t, start)
-	}
-
-	n := start.Name
-	n.Space = ""
-	h, ok = m.Handler(n)
-	if ok {
-		return h.HandleXMPP(t, start)
-	}
-
-	n = start.Name
-	n.Local = ""
-	h, _ = m.Handler(n)
+	h, _ := m.Handler(start.Name)
 	return h.HandleXMPP(t, start)
 }
 
