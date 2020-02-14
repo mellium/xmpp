@@ -3,6 +3,7 @@
 **Author(s):** Sam Whited  
 **Last updated:** 2020-02-13  
 **Status:** thinking
+**Discussion:** https://mellium.im/issue/18
 
 ## Abstract
 
