@@ -160,9 +160,19 @@ func GetIQ(n xml.Name, h IQHandler) IQOption {
 	return HandleIQ(stanza.GetIQ, n, h)
 }
 
+// GetIQFunc is a shortcut for HandleIQFunc with the type set to "get".
+func GetIQFunc(n xml.Name, h IQHandlerFunc) IQOption {
+	return GetIQ(n, h)
+}
+
 // SetIQ is a shortcut for HandleIQ with the type set to "set".
 func SetIQ(n xml.Name, h IQHandler) IQOption {
 	return HandleIQ(stanza.SetIQ, n, h)
+}
+
+// SetIQFunc is a shortcut for HandleIQ with the type set to "set".
+func SetIQFunc(n xml.Name, h IQHandlerFunc) IQOption {
+	return SetIQ(n, h)
 }
 
 // ErrorIQ is a shortcut for HandleIQ with the type set to "error" and a
@@ -177,6 +187,14 @@ func ErrorIQ(h IQHandler) IQOption {
 	return HandleIQ(stanza.ErrorIQ, xml.Name{}, h)
 }
 
+// ErrorIQFunc is a shortcut for HandleIQFunc with the type set to "error" and a
+// wildcard XML name.
+//
+// For more information, see ErrorIQ.
+func ErrorIQFunc(h IQHandlerFunc) IQOption {
+	return ErrorIQ(h)
+}
+
 // ResultIQ is a shortcut for HandleIQ with the type set to "result".
 //
 // Unlike IQs of type get, set, and error, result type IQs may or may not
@@ -185,6 +203,13 @@ func ErrorIQ(h IQHandler) IQOption {
 // handlers meant to handle result type IQs.
 func ResultIQ(n xml.Name, h IQHandler) IQOption {
 	return HandleIQ(stanza.ResultIQ, n, h)
+}
+
+// ResultIQFunc is a shortcut for HandleIQFunc with the type set to "result".
+//
+// For more information, see ResultIQ.
+func ResultIQFunc(n xml.Name, h IQHandlerFunc) IQOption {
+	return ResultIQ(n, h)
 }
 
 // HandleIQFunc returns an option that matches the IQ payload by XML name and IQ

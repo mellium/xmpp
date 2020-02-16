@@ -47,7 +47,7 @@ var iqTestCases = [...]struct {
 		// If no exact match is available, fallback to the namespace wildcard
 		// handler.
 		m: mux.NewIQMux(
-			mux.HandleIQ(stanza.GetIQ, xml.Name{Local: "test", Space: ""}, passIQHandler),
+			mux.GetIQFunc(xml.Name{Local: "test", Space: ""}, passIQHandler),
 			mux.HandleIQ(stanza.GetIQ, xml.Name{Local: "", Space: exampleNS}, failIQHandler),
 		),
 		p: xml.Name{Local: "test", Space: exampleNS},
@@ -64,8 +64,8 @@ var iqTestCases = [...]struct {
 		// If no exact match or localname/namespace wildcard is available, fallback
 		// to just matching on type alone.
 		m: mux.NewIQMux(
-			mux.ResultIQ(xml.Name{Local: "test", Space: exampleNS}, failIQHandler),
-			mux.ErrorIQ(passIQHandler),
+			mux.ResultIQFunc(xml.Name{Local: "test", Space: exampleNS}, failIQHandler),
+			mux.ErrorIQFunc(passIQHandler),
 		),
 		p:      xml.Name{Local: "test", Space: exampleNS},
 		iqType: stanza.ErrorIQ,
@@ -74,7 +74,7 @@ var iqTestCases = [...]struct {
 		// IQs must be routed correctly by type.
 		m: mux.NewIQMux(
 			mux.GetIQ(xml.Name{Local: "test", Space: exampleNS}, failIQHandler),
-			mux.SetIQ(xml.Name{Local: "test", Space: exampleNS}, failIQHandler),
+			mux.SetIQFunc(xml.Name{Local: "test", Space: exampleNS}, failIQHandler),
 			mux.ResultIQ(xml.Name{Local: "test", Space: exampleNS}, passIQHandler),
 			mux.ErrorIQ(passIQHandler),
 		),
