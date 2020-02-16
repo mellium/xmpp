@@ -1,8 +1,8 @@
 # Proposal: Implement a method of muxing based on IQ payloads
 
 **Author(s):** Sam Whited  
-**Last updated:** 2020-02-13  
-**Status:** thinking  
+**Last updated:** 2020-02-16  
+**Status:** accepted  
 **Discussion:** https://mellium.im/issue/18
 
 ## Abstract
@@ -115,8 +115,3 @@ to remain backwards compatible after we reach 1.0.
 
     func SetIQ(n xml.Name, h IQHandler) IQOption
         SetIQ is a shortcut for HandleIQ with the type set to "set".
-
-## Open Questions
-
- - What should we do if an `IQMux` is registered on a top level element other
-   than IQ?
