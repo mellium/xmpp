@@ -1,9 +1,11 @@
 # Proposal: Implement a method of muxing based on IQ payloads
 
 **Author(s):** Sam Whited  
-**Last updated:** 2020-02-16  
-**Status:** accepted  
+**Last updated:** 2020-02-17  
+**Status:** [superseded]  
 **Discussion:** https://mellium.im/issue/18
+
+[superseded]: https://mellium.im/design/25_stanzamux
 
 ## Abstract
 
