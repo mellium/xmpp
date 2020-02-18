@@ -89,6 +89,8 @@ added.
 
 - What happens if the normal [`Handle`] options are used to register a handler
   that would match stanzas?
+- We still need some way to match on Message/Presence payloads, otherwise how do
+  we have different handlers for eg. IBB data payloads or messages with a body.
 
 
 [`Handle`]: https://godoc.org/mellium.im/xmpp/mux#Handle
