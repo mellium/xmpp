@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package roster implements contact list functionality.
-package roster
+package roster // import "mellium.im/xmpp/roster"
 
 import (
 	"context"

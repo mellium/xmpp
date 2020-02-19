@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package decl contains functionality related to XML declarations.
-package decl
+package decl // import "mellium.im/xmpp/internal/decl"
 
 import (
 	"encoding/xml"

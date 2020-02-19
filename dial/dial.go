@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package dial contains methods and types for dialing XMPP connections.
-package dial
+package dial // import "mellium.im/xmpp/dial"
 
 import (
 	"context"

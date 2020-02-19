@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package discover is used to look up information about XMPP-based services.
-package discover
+package discover // import "mellium.im/xmpp/internal/discover"
 
 import (
 	"context"

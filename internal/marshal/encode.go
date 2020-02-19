@@ -4,7 +4,7 @@
 
 // Package marshal contains functions for encoding structs as an XML token
 // stream.
-package marshal
+package marshal // import "mellium.im/xmpp/internal/marshal"
 
 import (
 	"bytes"

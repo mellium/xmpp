@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package color implements XEP-0392: Consistent Color Generation v0.4.
-package color
+package color // import "mellium.im/xmpp/color"
 
 import (
 	/* #nosec */

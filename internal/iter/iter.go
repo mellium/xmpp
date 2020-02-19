@@ -5,7 +5,7 @@
 // Package iter provides a streaming iterator over an XML elements children.
 //
 // This will likely be moved to mellium.im/xmlstream once the API is finalized.
-package iter
+package iter // import "mellium.im/xmpp/internal/iter"
 
 import (
 	"encoding/xml"

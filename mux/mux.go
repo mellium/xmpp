@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package mux implements an XMPP multiplexer.
-package mux
+package mux // import "mellium.im/xmpp/mux"
 
 import (
 	"encoding/xml"
