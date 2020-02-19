@@ -7,8 +7,10 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - mux: ability to route by IQ payload
-- uri: new package for parsing XMPP URI's and IRI's
+- ping: a function for easily encoding pings and handling errors
+- ping: a handler and mux option for responding to pings
 - stanza: API to simplify replying to IQs
+- uri: new package for parsing XMPP URI's and IRI's
 
 
 ### Fixed
