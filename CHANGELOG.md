@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
 - ping: a handler and mux option for responding to pings
 - stanza: API to simplify replying to IQs
 - uri: new package for parsing XMPP URI's and IRI's
+- xtime: new package for handling [XEP-0202: Entity Time] and [XEP-0082: XMPP Date and Time Profiles]
+
+[XEP-0202: Entity Time]: https://xmpp.org/extensions/xep-0202.html
+[XEP-0082: XMPP Date and Time Profiles]: https://xmpp.org/extensions/xep-0082.html
 
 
 ### Fixed
