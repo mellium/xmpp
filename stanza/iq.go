@@ -58,6 +58,18 @@ type IQ struct {
 	Type    IQType   `xml:"type,attr"`
 }
 
+// Result returns a token reader that wraps the first element from payload in an
+// IQ stanza with the to and from attributes switched and the type set to
+// ResultIQ.
+func (iq IQ) Result(payload xml.TokenReader) xml.TokenReader {
+	return WrapIQ(IQ{
+		ID:   iq.ID,
+		To:   iq.From,
+		From: iq.To,
+		Type: ResultIQ,
+	}, payload)
+}
+
 // IQType is the type of an IQ stanza.
 // It should normally be one of the constants defined in this package.
 type IQType string

@@ -116,3 +116,30 @@ func TestUnmarshalIQTypeAttr(t *testing.T) {
 		})
 	}
 }
+
+func TestIQResult(t *testing.T) {
+	iq := stanza.IQ{
+		ID:   "123",
+		To:   jid.MustParse("to@example.net"),
+		From: jid.MustParse("from@example.net"),
+		Type: stanza.SetIQ,
+	}
+	reply := iq.Result(xmlstream.Wrap(nil, xml.StartElement{Name: xml.Name{Local: "foo"}}))
+
+	var b strings.Builder
+	e := xml.NewEncoder(&b)
+	_, err := xmlstream.Copy(e, reply)
+	if err != nil {
+		t.Fatalf("error copying tokens: %v", err)
+	}
+	err = e.Flush()
+	if err != nil {
+		t.Fatalf("error flushing encoder: %v", err)
+	}
+
+	const expected = `<iq type="result" to="from@example.net" from="to@example.net" id="123"><foo></foo></iq>`
+	out := b.String()
+	if out != expected {
+		t.Errorf("want=%q, got=%q", expected, out)
+	}
+}

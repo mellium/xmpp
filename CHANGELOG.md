@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - mux: ability to route by IQ payload
 - uri: new package for parsing XMPP URI's and IRI's
+- stanza: API to simplify replying to IQs
 
 
 ### Fixed
