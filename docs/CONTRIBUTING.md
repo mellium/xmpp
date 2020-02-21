@@ -1,6 +1,10 @@
 # Contributing
 
-## Issues
+Thanks for wanting to contribute to Mellium! Before submitting a patch, please
+read our [Code of Conduct].
+
+
+## Filing Issues
 
 Bugs and feature requests can be started by opening an [issue][issues] (unless
 it is a sensitive security issue, in which case keep reading).
@@ -19,7 +23,7 @@ If you're not sure where to begin, grab any of the issues labeled
 ask!
 
 Security sensitive issues should be reported directly to the project maintainer
-by emailing [`security@mellium.im`].
+by emailing [`security@mellium.im`] for more information see [SECURITY.md].
 
 
 ## Creating Patches
@@ -89,6 +93,8 @@ All commits must be signed before they can be accepted. Your signature
 indicates that you have the right to contribute the work and that it can be
 contributed as open source. The exact rules can be viewed at
 [developercertificate.org], or in the file [DCO].
+Your signature also indicates that you have read and agree to the license
+statement in the next section.
 
 To add your signature, add a line like the following to the end of your commit
 message with your name and email:
@@ -119,3 +125,5 @@ conditions.
 [developercertificate.org]: https://developercertificate.org/
 [DCO]: ./DCO
 [LICENSE]: ./LICENSE
+[SECURITY.md]: ./SECURITY.md
+[Code of Conduct]: ./CODE_OF_CONDUCT.md
