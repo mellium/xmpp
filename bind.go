@@ -127,7 +127,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 					return mask, nil, stream.BadFormat
 				}
 
-				iqid := attr.Get(start.Attr, "id")
+				_, iqid := attr.Get(start.Attr, "id")
 
 				var j jid.JID
 				if server != nil {

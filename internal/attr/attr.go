@@ -8,13 +8,14 @@ import (
 	"encoding/xml"
 )
 
-// Get returns the value of the first attribute with the provided local name
-// from a list of attributes or an empty string if no such attribute exists.
-func Get(attr []xml.Attr, local string) string {
-	for _, a := range attr {
+// Get returns the value and index of the first attribute with the provided
+// local name from a list of attributes or -1 and an empty string if no such
+// attribute exists.
+func Get(attr []xml.Attr, local string) (int, string) {
+	for idx, a := range attr {
 		if a.Name.Local == local {
-			return a.Value
+			return idx, a.Value
 		}
 	}
-	return ""
+	return -1, ""
 }
