@@ -17,8 +17,8 @@ To use it in your project, import it (or any of its other packages) like so:
 import mellium.im/xmpp
 ```
 
-If you're looking to get started and need some help, see the [API docs] or look
-in the `examples/` tree for several simple usage examples.
+If you're looking to get started and need some help, see the [API docs][docs] or
+look in the `examples/` tree for several simple usage examples.
 
 If you'd like to contribute to the project, see [CONTRIBUTING.md].
 
@@ -33,6 +33,6 @@ in the work by you shall be licensed as above, without any additional terms or
 conditions.
 
 
-[API docs]: https://pkg.go.dev/mellium.im/xmpp
+[docs]: https://pkg.go.dev/mellium.im/xmpp
 [CONTRIBUTING.md]: ./docs/CONTRIBUTING.md
 [LICENSE]: ./LICENSE
