@@ -365,7 +365,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 	var id string
 	var needsResp bool
 	if isIQ(start.Name) {
-		_, id = getID(start)
+		_, id = attr.Get(start.Attr, "id")
 
 		// If this is a response IQ (ie. an "error" or "result") check if we're
 		// handling it as part of a SendIQ call.
@@ -443,7 +443,7 @@ type responseChecker struct {
 func (rw *responseChecker) EncodeToken(t xml.Token) error {
 	switch tok := t.(type) {
 	case xml.StartElement:
-		_, id := getID(tok)
+		_, id := attr.Get(tok.Attr, "id")
 		if rw.level < 1 && isIQ(tok.Name) && id == rw.id && !iqNeedsResp(tok.Attr) {
 			rw.wroteResp = true
 		}
@@ -720,15 +720,6 @@ func isStanza(name xml.Name) bool {
 		(name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
 }
 
-func getID(start xml.StartElement) (int, string) {
-	for i, attr := range start.Attr {
-		if attr.Name.Local == "id" {
-			return i, attr.Value
-		}
-	}
-	return -1, ""
-}
-
 // SendIQ is like Send except that it returns an error if the first token read
 // from the stream is not an Info/Query (IQ) start element and blocks until a
 // response is received.
@@ -764,7 +755,7 @@ func (s *Session) SendIQ(ctx context.Context, r xml.TokenReader) (xmlstream.Toke
 	}
 
 	// If there's no ID, add one.
-	idx, id := getID(start)
+	idx, id := attr.Get(start.Attr, "id")
 	if idx == -1 {
 		idx = len(start.Attr)
 		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: ""})
