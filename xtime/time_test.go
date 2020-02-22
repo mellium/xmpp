@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
@@ -52,6 +53,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	d := xml.NewDecoder(strings.NewReader(req.String()))
+	d.DefaultSpace = ns.Server
 	tok, _ := d.Token()
 	start := tok.(xml.StartElement)
 	var b strings.Builder

@@ -444,7 +444,7 @@ func (rw *responseChecker) EncodeToken(t xml.Token) error {
 	switch tok := t.(type) {
 	case xml.StartElement:
 		_, id := attr.Get(tok.Attr, "id")
-		if rw.level < 1 && isIQ(tok.Name) && id == rw.id && !iqNeedsResp(tok.Attr) {
+		if rw.level < 1 && isIQEmptySpace(tok.Name) && id == rw.id && !iqNeedsResp(tok.Attr) {
 			rw.wroteResp = true
 		}
 		rw.level++
@@ -712,12 +712,16 @@ func iqNeedsResp(attrs []xml.Attr) bool {
 }
 
 func isIQ(name xml.Name) bool {
+	return name.Local == "iq" && (name.Space == ns.Client || name.Space == ns.Server)
+}
+
+func isIQEmptySpace(name xml.Name) bool {
 	return name.Local == "iq" && (name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
 }
 
 func isStanza(name xml.Name) bool {
 	return (name.Local == "iq" || name.Local == "message" || name.Local == "presence") &&
-		(name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
+		(name.Space == ns.Client || name.Space == ns.Server)
 }
 
 // SendIQ is like Send except that it returns an error if the first token read
@@ -750,7 +754,7 @@ func (s *Session) SendIQ(ctx context.Context, r xml.TokenReader) (xmlstream.Toke
 	if !ok {
 		return nil, fmt.Errorf("expected IQ start element, got %T", tok)
 	}
-	if !isIQ(start.Name) {
+	if !isIQEmptySpace(start.Name) {
 		return nil, fmt.Errorf("expected start element to be an IQ")
 	}
 

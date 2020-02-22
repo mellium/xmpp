@@ -70,10 +70,7 @@ func (m *ServeMux) Handler(name xml.Name) (h xmpp.Handler, ok bool) {
 		return h, true
 	}
 
-	// Route stanzas.
-	// TODO: Fix the session so that a default namespace is always declared and
-	// then remove the check for an empty namespace.
-	if name.Space == "" || name.Space == ns.Client || name.Space == ns.Server {
+	if name.Space == ns.Client || name.Space == ns.Server {
 		switch name.Local {
 		case "iq":
 			return xmpp.HandlerFunc(m.iqRouter), true
