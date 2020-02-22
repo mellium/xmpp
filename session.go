@@ -748,7 +748,7 @@ func (s *Session) SendIQ(ctx context.Context, r xml.TokenReader) (xmlstream.Toke
 	}
 	start, ok := tok.(xml.StartElement)
 	if !ok {
-		return nil, fmt.Errorf("expected IQ start element, got %T", start)
+		return nil, fmt.Errorf("expected IQ start element, got %T", tok)
 	}
 	if !isIQ(start.Name) {
 		return nil, fmt.Errorf("expected start element to be an IQ")
