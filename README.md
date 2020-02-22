@@ -27,6 +27,9 @@ If you'd like to contribute to the project, see [CONTRIBUTING.md].
 
 The package may be used under the terms of the BSD 2-Clause License a copy of
 which may be found in the file "[LICENSE]".
+Some code in this package has been copied from Go and is used under the terms of
+Go's modified BSD license, a copy of which can be found in the [LICENSE-GO]
+file.
 
 Unless you explicitly state otherwise, any contribution submitted for inclusion
 in the work by you shall be licensed as above, without any additional terms or
@@ -36,3 +39,4 @@ conditions.
 [docs]: https://pkg.go.dev/mellium.im/xmpp
 [CONTRIBUTING.md]: ./docs/CONTRIBUTING.md
 [LICENSE]: ./LICENSE
+[LICENSE-GO]: ./LICENSE-GO
