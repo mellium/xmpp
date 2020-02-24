@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - mux: ability to route by IQ payload
 - ping: a function for easily encoding pings and handling errors
 - ping: a handler and mux option for responding to pings
+- stanza: ability to convert stanzas to/from `xml.StartElement`
 - stanza: API to simplify replying to IQs
 - uri: new package for parsing XMPP URI's and IRI's
 - xtime: new package for handling [XEP-0202: Entity Time] and [XEP-0082: XMPP Date and Time Profiles]

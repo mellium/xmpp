@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 )
 
@@ -40,6 +41,44 @@ type Presence struct {
 	From    jid.JID      `xml:"from,attr"`
 	Lang    string       `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 	Type    PresenceType `xml:"type,attr,omitempty"`
+}
+
+// NewPresence unmarshals an XML token into a Presence.
+func NewPresence(start xml.StartElement) (Presence, error) {
+	v := Presence{}
+	d := xml.NewTokenDecoder(xmlstream.Wrap(nil, start))
+	err := d.Decode(&v)
+	return v, err
+}
+
+// StartElement converts the Presence into an XML token.
+func (p Presence) StartElement() xml.StartElement {
+	// Keep whatever namespace we're already using but make sure the localname is
+	// "presence".
+	name := p.XMLName
+	name.Local = "presence"
+
+	attr := make([]xml.Attr, 0, 5)
+	if p.ID != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: p.ID})
+	}
+	if !p.To.Equal(jid.JID{}) {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "to"}, Value: p.To.String()})
+	}
+	if !p.From.Equal(jid.JID{}) {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "from"}, Value: p.From.String()})
+	}
+	if p.Lang != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Space: ns.XML, Local: "lang"}, Value: p.Lang})
+	}
+	if p.Type != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(p.Type)})
+	}
+
+	return xml.StartElement{
+		Name: name,
+		Attr: attr,
+	}
 }
 
 // PresenceType is the type of a presence stanza.

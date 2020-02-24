@@ -58,6 +58,44 @@ type IQ struct {
 	Type    IQType   `xml:"type,attr"`
 }
 
+// NewIQ unmarshals an XML token into a IQ.
+func NewIQ(start xml.StartElement) (IQ, error) {
+	v := IQ{}
+	d := xml.NewTokenDecoder(xmlstream.Wrap(nil, start))
+	err := d.Decode(&v)
+	return v, err
+}
+
+// StartElement converts the IQ into an XML token.
+func (iq IQ) StartElement() xml.StartElement {
+	// Keep whatever namespace we're already using but make sure the localname is
+	// "iq".
+	name := iq.XMLName
+	name.Local = "iq"
+
+	attr := make([]xml.Attr, 0, 5)
+	if iq.ID != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: iq.ID})
+	}
+	if !iq.To.Equal(jid.JID{}) {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "to"}, Value: iq.To.String()})
+	}
+	if !iq.From.Equal(jid.JID{}) {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "from"}, Value: iq.From.String()})
+	}
+	if iq.Lang != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Space: ns.XML, Local: "lang"}, Value: iq.Lang})
+	}
+	if iq.Type != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(iq.Type)})
+	}
+
+	return xml.StartElement{
+		Name: name,
+		Attr: attr,
+	}
+}
+
 // Result returns a token reader that wraps the first element from payload in an
 // IQ stanza with the to and from attributes switched and the type set to
 // ResultIQ.

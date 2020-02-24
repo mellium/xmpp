@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 )
 
@@ -33,6 +34,44 @@ type Message struct {
 	From    jid.JID     `xml:"from,attr,omitempty"`
 	Lang    string      `xml:"http://www.w3.org/XML/1998/namespace lang,attr,omitempty"`
 	Type    MessageType `xml:"type,attr,omitempty"`
+}
+
+// NewMessage unmarshals an XML token into a Message.
+func NewMessage(start xml.StartElement) (Message, error) {
+	v := Message{}
+	d := xml.NewTokenDecoder(xmlstream.Wrap(nil, start))
+	err := d.Decode(&v)
+	return v, err
+}
+
+// StartElement converts the Message into an XML token.
+func (msg Message) StartElement() xml.StartElement {
+	// Keep whatever namespace we're already using but make sure the localname is
+	// "message".
+	name := msg.XMLName
+	name.Local = "message"
+
+	attr := make([]xml.Attr, 0, 5)
+	if msg.ID != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: msg.ID})
+	}
+	if !msg.To.Equal(jid.JID{}) {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "to"}, Value: msg.To.String()})
+	}
+	if !msg.From.Equal(jid.JID{}) {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "from"}, Value: msg.From.String()})
+	}
+	if msg.Lang != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Space: ns.XML, Local: "lang"}, Value: msg.Lang})
+	}
+	if msg.Type != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(msg.Type)})
+	}
+
+	return xml.StartElement{
+		Name: name,
+		Attr: attr,
+	}
 }
 
 // MessageType is the type of a message stanza.

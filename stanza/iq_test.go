@@ -9,10 +9,13 @@ import (
 	"encoding"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal/attr"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
@@ -142,4 +145,96 @@ func TestIQResult(t *testing.T) {
 	if out != expected {
 		t.Errorf("want=%q, got=%q", expected, out)
 	}
+}
+
+func TestIQStartElement(t *testing.T) {
+	to := jid.MustParse("to@example.net")
+	from := jid.MustParse("from@example.net")
+	msg := stanza.IQ{
+		XMLName: xml.Name{Space: "ns", Local: "badname"},
+		ID:      "123",
+		To:      to,
+		From:    from,
+		Lang:    "te",
+		Type:    stanza.SetIQ,
+	}
+
+	start := msg.StartElement()
+	if start.Name.Local != "iq" || start.Name.Space != testNS {
+		t.Errorf("wrong value for name: want=%v, got=%v", xml.Name{Space: testNS, Local: "iq"}, start.Name)
+	}
+	if _, v := attr.Get(start.Attr, "id"); v != msg.ID {
+		t.Errorf("wrong value for id: want=%q, got=%q", msg.ID, v)
+	}
+	if _, v := attr.Get(start.Attr, "to"); v != msg.To.String() {
+		t.Errorf("wrong value for to: want=%q, got=%q", msg.To, v)
+	}
+	if _, v := attr.Get(start.Attr, "from"); v != msg.From.String() {
+		t.Errorf("wrong value for from: want=%q, got=%q", msg.From, v)
+	}
+	if i, v := attr.Get(start.Attr, "lang"); v != msg.Lang || start.Attr[i].Name.Space != ns.XML {
+		t.Errorf("wrong value for xml:lang: want=%q, got=%q", xml.Attr{
+			Name:  xml.Name{Space: ns.XML, Local: "lang"},
+			Value: msg.Lang,
+		}, xml.Attr{
+			Name:  start.Attr[i].Name,
+			Value: v,
+		})
+	}
+	if _, v := attr.Get(start.Attr, "type"); v != string(msg.Type) {
+		t.Errorf("wrong value for type: want=%q, got=%q", msg.Type, v)
+	}
+}
+
+func TestIQFromStartElement(t *testing.T) {
+	t.Run("not_an_iq", func(t *testing.T) {
+		start := xml.StartElement{
+			Name: xml.Name{Local: "presence"},
+		}
+		_, err := stanza.NewIQ(start)
+		if err == nil || err == io.EOF {
+			t.Errorf("expected error, got %v", err)
+		}
+	})
+
+	t.Run("iq", func(t *testing.T) {
+		langAttr := xml.Attr{Name: xml.Name{Space: ns.XML, Local: "lang"}, Value: "lo"}
+		start := xml.StartElement{
+			Name: xml.Name{Local: "iq", Space: testNS},
+			Attr: []xml.Attr{
+				{Name: xml.Name{Local: "id"}, Value: "123"},
+				{Name: xml.Name{Local: "to"}, Value: "to@example.com"},
+				{Name: xml.Name{Local: "from"}, Value: "from@example.com"},
+				{Name: xml.Name{Local: "lang"}, Value: "de"},
+				langAttr,
+				{Name: xml.Name{Local: "type"}, Value: "chat"},
+			},
+		}
+		msg, err := stanza.NewIQ(start)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if msg.XMLName.Local != "iq" {
+			t.Errorf("wrong localname value: want=%q, got=%q", "iq", msg.XMLName.Local)
+		}
+		if msg.XMLName.Space != testNS {
+			t.Errorf("wrong namespace value: want=%q, got=%q", testNS, msg.XMLName.Space)
+		}
+		if _, v := attr.Get(start.Attr, "id"); v != msg.ID {
+			t.Errorf("wrong value for id: want=%q, got=%q", v, msg.ID)
+		}
+		if _, v := attr.Get(start.Attr, "to"); v != msg.To.String() {
+			t.Errorf("wrong value for to: want=%q, got=%q", v, msg.To)
+		}
+		if _, v := attr.Get(start.Attr, "from"); v != msg.From.String() {
+			t.Errorf("wrong value for from: want=%q, got=%q", v, msg.From)
+		}
+		if langAttr.Value != msg.Lang {
+			t.Errorf("wrong value for xml:lang: want=%q, got=%q", langAttr.Value, msg.Lang)
+		}
+		if _, v := attr.Get(start.Attr, "type"); v != string(msg.Type) {
+			t.Errorf("wrong value for type: want=%q, got=%q", v, msg.Type)
+		}
+	})
 }
