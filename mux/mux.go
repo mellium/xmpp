@@ -219,6 +219,11 @@ func PresenceFunc(typ stanza.PresenceType, h PresenceHandlerFunc) Option {
 	return Presence(typ, h)
 }
 
+func isStanza(name xml.Name) bool {
+	return (name.Local == "iq" || name.Local == "message" || name.Local == "presence") &&
+		(name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
+}
+
 // Handle returns an option that matches on the provided XML name.
 // If a handler already exists for n when the option is applied, the option
 // panics.
@@ -226,6 +231,9 @@ func Handle(n xml.Name, h xmpp.Handler) Option {
 	return func(m *ServeMux) {
 		if h == nil {
 			panic("mux: nil handler")
+		}
+		if isStanza(n) {
+			panic("mux: tried to register stanza handler with Handle, use HandleIQ, HandleMessage, or HandlePresence instead")
 		}
 		if _, ok := m.patterns[n]; ok {
 			panic("mux: multiple registrations for {" + n.Space + "}" + n.Local)

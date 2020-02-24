@@ -15,6 +15,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/marshal"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
@@ -237,6 +238,69 @@ var testCases = [...]struct {
 		},
 		expectPanic: true,
 	},
+	24: {
+		// Expect {}message registration with Handle to panic
+		m: []mux.Option{
+			mux.Handle(xml.Name{Local: "message"}, failHandler{}),
+		},
+		expectPanic: true,
+	},
+	25: {
+		// Expect {jabber:server}message registration with Handle to panic
+		m: []mux.Option{
+			mux.Handle(xml.Name{Space: ns.Server, Local: "message"}, failHandler{}),
+		},
+		expectPanic: true,
+	},
+	26: {
+		// Expect {jabber:server}message registration with Handle to panic
+		m: []mux.Option{
+			mux.Handle(xml.Name{Space: ns.Client, Local: "message"}, failHandler{}),
+		},
+		expectPanic: true,
+	},
+	27: {
+		// Expect {}presence registration with Handle to panic
+		m: []mux.Option{
+			mux.Handle(xml.Name{Local: "presence"}, failHandler{}),
+		},
+		expectPanic: true,
+	},
+	28: {
+		// Expect {jabber:server}presence registration with Handle to panic
+		m: []mux.Option{
+			mux.Handle(xml.Name{Space: ns.Server, Local: "presence"}, failHandler{}),
+		},
+		expectPanic: true,
+	},
+	29: {
+		// Expect {jabber:server}presence registration with Handle to panic
+		m: []mux.Option{
+			mux.Handle(xml.Name{Space: ns.Client, Local: "presence"}, failHandler{}),
+		},
+		expectPanic: true,
+	},
+	30: {
+		// Expect {}iq registration with Handle to panic
+		m: []mux.Option{
+			mux.Handle(xml.Name{Local: "iq"}, failHandler{}),
+		},
+		expectPanic: true,
+	},
+	31: {
+		// Expect {jabber:server}iq registration with Handle to panic
+		m: []mux.Option{
+			mux.Handle(xml.Name{Space: ns.Server, Local: "iq"}, failHandler{}),
+		},
+		expectPanic: true,
+	},
+	32: {
+		// Expect {jabber:server}iq registration with Handle to panic
+		m: []mux.Option{
+			mux.Handle(xml.Name{Space: ns.Client, Local: "iq"}, failHandler{}),
+		},
+		expectPanic: true,
+	},
 }
 
 type nopEncoder struct {
@@ -250,13 +314,18 @@ func (nopEncoder) EncodeToken(xml.Token) error                       { return ni
 func TestMux(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			if tc.expectPanic {
-				defer func() {
-					if r := recover(); r == nil {
-						t.Errorf("Expected panic")
+			defer func() {
+				r := recover()
+				if tc.expectPanic {
+					if r == nil {
+						t.Error("Expected panic")
 					}
-				}()
-			}
+				} else {
+					if r != nil {
+						t.Errorf("Did not expect panic, got %v", r)
+					}
+				}
+			}()
 			m := mux.New(tc.m...)
 			d := xml.NewDecoder(strings.NewReader(tc.x))
 			tok, _ := d.Token()
