@@ -158,7 +158,7 @@ func (iq IQ) TokenReader() xml.TokenReader {
 		iq.IQ.Type = stanza.GetIQ
 	}
 
-	return stanza.WrapIQ(iq.IQ, iq.payload())
+	return iq.IQ.Wrap(iq.payload())
 }
 
 // Payload returns a stream of XML tokekns that match the roster query payload

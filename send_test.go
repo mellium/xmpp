@@ -59,12 +59,12 @@ var sendIQTests = [...]struct {
 	0: {
 		iq:         stanza.IQ{ID: testIQID, Type: stanza.GetIQ},
 		writesBody: true,
-		resp:       stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}, nil),
+		resp:       stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(nil),
 	},
 	1: {
 		iq:         stanza.IQ{ID: testIQID, Type: stanza.SetIQ},
 		writesBody: true,
-		resp:       stanza.WrapIQ(stanza.IQ{ID: testIQID, Type: stanza.ErrorIQ}, nil),
+		resp:       stanza.IQ{ID: testIQID, Type: stanza.ErrorIQ}.Wrap(nil),
 	},
 	2: {
 		iq:         stanza.IQ{Type: stanza.ResultIQ, ID: testIQID},
@@ -168,7 +168,7 @@ func TestSendIQ(t *testing.T) {
 				ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
 				defer cancel()
 
-				resp, err := s.SendIQ(ctx, stanza.WrapIQ(tc.iq, tc.payload))
+				resp, err := s.SendIQ(ctx, tc.iq.Wrap(tc.payload))
 				if err != tc.err {
 					t.Errorf("Unexpected error, want=%q, got=%q", tc.err, err)
 				}
@@ -215,19 +215,19 @@ var sendTests = [...]struct {
 		err: xmpp.ErrNotStart,
 	},
 	2: {
-		r:          stanza.WrapMessage(to, stanza.NormalMessage, nil),
+		r:          stanza.Message{To: to, Type: stanza.NormalMessage}.Wrap(nil),
 		writesBody: true,
 	},
 	3: {
-		r:          stanza.WrapPresence(to, stanza.AvailablePresence, nil),
+		r:          stanza.Presence{To: to, Type: stanza.AvailablePresence}.Wrap(nil),
 		writesBody: true,
 	},
 	4: {
-		r:          stanza.WrapIQ(stanza.IQ{Type: stanza.ResultIQ}, nil),
+		r:          stanza.IQ{Type: stanza.ResultIQ}.Wrap(nil),
 		writesBody: true,
 	},
 	5: {
-		r:          stanza.WrapIQ(stanza.IQ{Type: stanza.ErrorIQ}, nil),
+		r:          stanza.IQ{Type: stanza.ErrorIQ}.Wrap(nil),
 		writesBody: true,
 	},
 }

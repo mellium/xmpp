@@ -410,10 +410,10 @@ noreply:
 
 	// If the user did not write a response to an IQ, send a default one.
 	if needsResp && !rw.wroteResp {
-		_, err := xmlstream.Copy(w, stanza.WrapIQ(stanza.IQ{
+		_, err := xmlstream.Copy(w, stanza.IQ{
 			ID:   id,
 			Type: stanza.ErrorIQ,
-		}, stanza.Error{
+		}.Wrap(stanza.Error{
 			Type:      stanza.Cancel,
 			Condition: stanza.ServiceUnavailable,
 		}.TokenReader()))
@@ -794,12 +794,12 @@ func (s *Session) SendIQElement(ctx context.Context, payload xml.TokenReader, iq
 
 	// If this an IQ of type "set" or "get" we expect a response.
 	if needsResp {
-		return s.sendResp(ctx, iq.ID, stanza.WrapIQ(iq, payload))
+		return s.sendResp(ctx, iq.ID, iq.Wrap(payload))
 	}
 
 	// If this is an IQ of type result or error, we don't expect a response so
 	// just send it normally.
-	return nil, s.Send(ctx, stanza.WrapIQ(iq, payload))
+	return nil, s.Send(ctx, iq.Wrap(payload))
 }
 
 func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenReader) (xmlstream.TokenReadCloser, error) {

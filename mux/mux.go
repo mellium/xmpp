@@ -497,6 +497,6 @@ func iqFallback(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElem
 		Type:      stanza.Cancel,
 		Condition: stanza.ServiceUnavailable,
 	}
-	_, err := xmlstream.Copy(t, stanza.WrapIQ(iq, e.TokenReader()))
+	_, err := xmlstream.Copy(t, iq.Wrap(e.TokenReader()))
 	return err
 }

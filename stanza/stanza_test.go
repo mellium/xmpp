@@ -58,7 +58,7 @@ func TestMessage(t *testing.T) {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			b := new(bytes.Buffer)
 			e := xml.NewEncoder(b)
-			message := stanza.WrapMessage(jid.MustParse(tc.to), tc.typ, tc.payload)
+			message := stanza.Message{To: jid.MustParse(tc.to), Type: tc.typ}.Wrap(tc.payload)
 			if _, err := xmlstream.Copy(e, message); err != tc.err {
 				t.Errorf("Unexpected error: want=`%v', got=`%v'", tc.err, err)
 			}

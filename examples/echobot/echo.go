@@ -71,7 +71,7 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 	}()
 
 	// Send initial presence to let the server know we want to receive messages.
-	err = s.Send(ctx, stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
+	err = s.Send(ctx, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
 	if err != nil {
 		return fmt.Errorf("Error sending initial presence: %w", err)
 	}

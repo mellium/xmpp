@@ -12,17 +12,6 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-// WrapMessage wraps a payload in a message stanza.
-func WrapMessage(to jid.JID, typ MessageType, payload xml.TokenReader) xml.TokenReader {
-	return xmlstream.Wrap(payload, xml.StartElement{
-		Name: xml.Name{Local: "message"},
-		Attr: []xml.Attr{
-			{Name: xml.Name{Local: "to"}, Value: to.String()},
-			{Name: xml.Name{Local: "type"}, Value: string(typ)},
-		},
-	})
-}
-
 // Message is an XMPP stanza that contains a payload for direct one-to-one
 // communication with another network entity. It is often used for sending chat
 // messages to an individual or group chat server, or for notifications and
@@ -52,6 +41,7 @@ func (msg Message) StartElement() xml.StartElement {
 	name.Local = "message"
 
 	attr := make([]xml.Attr, 0, 5)
+	attr = append(attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(msg.Type)})
 	if msg.ID != "" {
 		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: msg.ID})
 	}
@@ -64,14 +54,16 @@ func (msg Message) StartElement() xml.StartElement {
 	if msg.Lang != "" {
 		attr = append(attr, xml.Attr{Name: xml.Name{Space: ns.XML, Local: "lang"}, Value: msg.Lang})
 	}
-	if msg.Type != "" {
-		attr = append(attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(msg.Type)})
-	}
 
 	return xml.StartElement{
 		Name: name,
 		Attr: attr,
 	}
+}
+
+// Wrap wraps the payload in a stanza.
+func (msg Message) Wrap(payload xml.TokenReader) xml.TokenReader {
+	return xmlstream.Wrap(payload, msg.StartElement())
 }
 
 // MessageType is the type of a message stanza.

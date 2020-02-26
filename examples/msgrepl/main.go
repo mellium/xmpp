@@ -87,7 +87,7 @@ func main() {
 	}()
 
 	// Send initial presence to let the server know we want to receive messages.
-	err = session.Send(ctx, stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
+	err = session.Send(ctx, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
 	if err != nil {
 		logger.Fatalf("Error sending initial presence: %w", err)
 	}

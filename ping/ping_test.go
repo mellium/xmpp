@@ -104,7 +104,7 @@ func TestRoundTrip(t *testing.T) {
 	out := b.String()
 	// TODO: figure out a better way to ignore randomly generated IDs.
 	out = regexp.MustCompile(`id=".*?"`).ReplaceAllString(out, `id="123"`)
-	const expected = `<iq type="result" from="to@example.net" id="123"></iq>`
+	const expected = `<iq xmlns="jabber:client" type="result" from="to@example.net" id="123"></iq>`
 	if out != expected {
 		t.Errorf("got=%s, want=%s", out, expected)
 	}

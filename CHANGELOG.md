@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Breaking
+
+- mux: move `Wrap{IQ,Presence,Message}` functions to methods on the stanza types
+- mux: new handler types and API
+
+
 ### Added
 
 - mux: ability to select handlers by stanza payload

@@ -12,40 +12,6 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-// WrapIQ wraps a payload in an IQ stanza.
-// The resulting IQ may not contain an id or from attribute and thus may not be
-// valid without further processing.
-func WrapIQ(iq IQ, payload xml.TokenReader) xml.TokenReader {
-	attr := []xml.Attr{
-		{Name: xml.Name{Local: "type"}, Value: string(iq.Type)},
-	}
-
-	if !iq.To.Equal(jid.JID{}) {
-		to, err := iq.To.MarshalXMLAttr(xml.Name{Space: "", Local: "to"})
-		if err == nil && to.Value != "" {
-			attr = append(attr, to)
-		}
-	}
-	if !iq.From.Equal(jid.JID{}) {
-		from, err := iq.From.MarshalXMLAttr(xml.Name{Space: "", Local: "from"})
-		if err == nil && from.Value != "" {
-			attr = append(attr, from)
-		}
-	}
-
-	if iq.Lang != "" {
-		attr = append(attr, xml.Attr{Name: xml.Name{Local: "lang", Space: ns.XML}, Value: iq.Lang})
-	}
-	if iq.ID != "" {
-		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: iq.ID})
-	}
-
-	return xmlstream.Wrap(payload, xml.StartElement{
-		Name: xml.Name{Local: "iq"},
-		Attr: attr,
-	})
-}
-
 // IQ ("Information Query") is used as a general request response mechanism.
 // IQ's are one-to-one, provide get and set semantics, and always require a
 // response in the form of a result or an error.
@@ -74,20 +40,18 @@ func (iq IQ) StartElement() xml.StartElement {
 	name.Local = "iq"
 
 	attr := make([]xml.Attr, 0, 5)
-	if iq.ID != "" {
-		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: iq.ID})
-	}
+	attr = append(attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(iq.Type)})
 	if !iq.To.Equal(jid.JID{}) {
 		attr = append(attr, xml.Attr{Name: xml.Name{Local: "to"}, Value: iq.To.String()})
 	}
 	if !iq.From.Equal(jid.JID{}) {
 		attr = append(attr, xml.Attr{Name: xml.Name{Local: "from"}, Value: iq.From.String()})
 	}
+	if iq.ID != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: iq.ID})
+	}
 	if iq.Lang != "" {
 		attr = append(attr, xml.Attr{Name: xml.Name{Space: ns.XML, Local: "lang"}, Value: iq.Lang})
-	}
-	if iq.Type != "" {
-		attr = append(attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(iq.Type)})
 	}
 
 	return xml.StartElement{
@@ -96,16 +60,21 @@ func (iq IQ) StartElement() xml.StartElement {
 	}
 }
 
+// Wrap wraps the payload in a stanza.
+//
+// The resulting IQ may not contain an id or from attribute and thus may not be
+// valid without further processing.
+func (iq IQ) Wrap(payload xml.TokenReader) xml.TokenReader {
+	return xmlstream.Wrap(payload, iq.StartElement())
+}
+
 // Result returns a token reader that wraps the first element from payload in an
 // IQ stanza with the to and from attributes switched and the type set to
 // ResultIQ.
 func (iq IQ) Result(payload xml.TokenReader) xml.TokenReader {
-	return WrapIQ(IQ{
-		ID:   iq.ID,
-		To:   iq.From,
-		From: iq.To,
-		Type: ResultIQ,
-	}, payload)
+	iq.Type = ResultIQ
+	iq.From, iq.To = iq.To, iq.From
+	return iq.Wrap(payload)
 }
 
 // IQType is the type of an IQ stanza.

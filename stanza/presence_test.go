@@ -56,7 +56,7 @@ func TestWrapPresence(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			buf := &bytes.Buffer{}
 			e := xml.NewEncoder(buf)
-			presence := stanza.WrapPresence(tc.to, tc.typ, tc.payload)
+			presence := stanza.Presence{To: tc.to, Type: tc.typ}.Wrap(tc.payload)
 			_, err := xmlstream.Copy(e, presence)
 			if err != nil {
 				t.Fatalf("Error encoding stream: %q", err)

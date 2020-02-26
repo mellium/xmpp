@@ -84,8 +84,5 @@ func (iq IQ) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
 // TokenReader satisfies the xmlstream.Marshaler interface.
 func (iq IQ) TokenReader() xml.TokenReader {
 	start := xml.StartElement{Name: xml.Name{Local: "ping", Space: NS}}
-	return stanza.WrapIQ(
-		iq.IQ,
-		xmlstream.Wrap(nil, start),
-	)
+	return iq.Wrap(xmlstream.Wrap(nil, start))
 }

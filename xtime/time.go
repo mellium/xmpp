@@ -91,10 +91,10 @@ func (t *Time) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 // Get sends a request to the provided JID asking for its time.
 func Get(ctx context.Context, s *xmpp.Session, to jid.JID) (time.Time, error) {
-	result, err := s.SendIQ(ctx, stanza.WrapIQ(stanza.IQ{
+	result, err := s.SendIQ(ctx, stanza.IQ{
 		Type: stanza.GetIQ,
 		To:   to,
-	}, xmlstream.Wrap(nil, xml.StartElement{Name: xml.Name{Local: "time", Space: NS}})))
+	}.Wrap(xmlstream.Wrap(nil, xml.StartElement{Name: xml.Name{Local: "time", Space: NS}})))
 	var t time.Time
 	if err != nil {
 		return t, err

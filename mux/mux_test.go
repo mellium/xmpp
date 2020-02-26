@@ -518,7 +518,7 @@ func TestFallback(t *testing.T) {
 		t.Errorf("Unexpected error flushing token writer: %q", err)
 	}
 
-	const expected = `<iq type="error" to="juliet@example.com" from="romeo@example.com" id="123"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`
+	const expected = `<iq xmlns="jabber:client" type="error" to="juliet@example.com" from="romeo@example.com" id="123"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`
 	if buf.String() != expected {
 		t.Errorf("Bad output:\nwant=`%v'\n got=`%v'", expected, buf.String())
 	}

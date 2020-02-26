@@ -162,10 +162,10 @@ var serveTests = [...]struct {
 	},
 	3: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
+			_, err := xmlstream.Copy(rw, stanza.IQ{
 				ID:   "1234",
 				Type: stanza.ResultIQ,
-			}, nil))
+			}.Wrap(nil))
 			return err
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
@@ -173,10 +173,10 @@ var serveTests = [...]struct {
 	},
 	4: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
+			_, err := xmlstream.Copy(rw, stanza.IQ{
 				ID:   "wrongid",
 				Type: stanza.ResultIQ,
-			}, nil))
+			}.Wrap(nil))
 			return err
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
@@ -184,10 +184,10 @@ var serveTests = [...]struct {
 	},
 	5: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
+			_, err := xmlstream.Copy(rw, stanza.IQ{
 				ID:   "1234",
 				Type: stanza.ErrorIQ,
-			}, nil))
+			}.Wrap(nil))
 			return err
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
@@ -195,10 +195,10 @@ var serveTests = [...]struct {
 	},
 	6: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-			_, err := xmlstream.Copy(rw, stanza.WrapIQ(stanza.IQ{
+			_, err := xmlstream.Copy(rw, stanza.IQ{
 				ID:   "1234",
 				Type: stanza.GetIQ,
-			}, nil))
+			}.Wrap(nil))
 			return err
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,

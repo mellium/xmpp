@@ -12,24 +12,6 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-// WrapPresence wraps a payload in a presence stanza.
-//
-// If to is the zero value for jid.JID, no to attribute is set on the resulting
-// presence.
-func WrapPresence(to jid.JID, typ PresenceType, payload xml.TokenReader) xml.TokenReader {
-	attrs := make([]xml.Attr, 0, 2)
-	if !to.Equal(jid.JID{}) {
-		attrs = append(attrs, xml.Attr{Name: xml.Name{Local: "to"}, Value: to.String()})
-	}
-	if typ != AvailablePresence {
-		attrs = append(attrs, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(typ)})
-	}
-	return xmlstream.Wrap(payload, xml.StartElement{
-		Name: xml.Name{Local: "presence"},
-		Attr: attrs,
-	})
-}
-
 // Presence is an XMPP stanza that is used as an indication that an entity is
 // available for communication. It is used to set a status message, broadcast
 // availability, and advertise entity capabilities. It can be directed
@@ -79,6 +61,14 @@ func (p Presence) StartElement() xml.StartElement {
 		Name: name,
 		Attr: attr,
 	}
+}
+
+// Wrap wraps the payload in a stanza.
+//
+// If to is the zero value for jid.JID, no to attribute is set on the resulting
+// presence.
+func (p Presence) Wrap(payload xml.TokenReader) xml.TokenReader {
+	return xmlstream.Wrap(payload, p.StartElement())
 }
 
 // PresenceType is the type of a presence stanza.

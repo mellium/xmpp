@@ -56,7 +56,7 @@ func Example_echobot() {
 	}()
 
 	// Send initial presence to let the server know we want to receive messages.
-	err = s.Send(context.TODO(), stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
+	err = s.Send(context.TODO(), stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
 	if err != nil {
 		log.Printf("Error sending initial presence: %q", err)
 		return
