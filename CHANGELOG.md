@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- mux: ability to route by IQ payload
+- mux: ability to select handlers by stanza payload
 - ping: a function for easily encoding pings and handling errors
 - ping: a handler and mux option for responding to pings
 - stanza: ability to convert stanzas to/from `xml.StartElement`
