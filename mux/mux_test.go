@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -37,6 +38,50 @@ func (passHandler) HandleIQ(stanza.IQ, xmlstream.TokenReadEncoder, *xml.StartEle
 	return passTest
 }
 
+type multiHandler struct{}
+
+func (multiHandler) HandlePresence(_ stanza.Presence, t xmlstream.TokenReadEncoder) error {
+	d := xml.NewTokenDecoder(t)
+	data := struct {
+		stanza.Presence
+
+		Test    string `xml:"com.example test"`
+		Example string `xml:"com.example example"`
+	}{}
+	err := d.Decode(&data)
+	if err != nil {
+		return err
+	}
+	if data.Test != "test" {
+		return fmt.Errorf("wrong value for test element: want=%q, got=%q", "test", data.Test)
+	}
+	if data.Example != "example" {
+		return fmt.Errorf("wrong value for example element: want=%q, got=%q", "example", data.Test)
+	}
+	return passTest
+}
+
+func (m multiHandler) HandleMessage(_ stanza.Message, t xmlstream.TokenReadEncoder) error {
+	d := xml.NewTokenDecoder(t)
+	data := struct {
+		stanza.Message
+
+		Test    string `xml:"com.example test"`
+		Example string `xml:"com.example example"`
+	}{}
+	err := d.Decode(&data)
+	if err != nil {
+		return err
+	}
+	if data.Test != "test" {
+		return fmt.Errorf("wrong value for test element: want=%q, got=%q", "test", data.Test)
+	}
+	if data.Example != "example" {
+		return fmt.Errorf("wrong value for example element: want=%q, got=%q", "example", data.Test)
+	}
+	return passTest
+}
+
 type failHandler struct{}
 
 func (failHandler) HandleXMPP(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
@@ -55,71 +100,79 @@ func (failHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *x
 var testCases = [...]struct {
 	m           []mux.Option
 	x           string
-	expectNil   bool
 	expectPanic bool
+	err         error
 }{
 	0: {
 		// Basic muxing based on localname and IQ type should work.
 		m: []mux.Option{
 			mux.IQ(stanza.GetIQ, xml.Name{}, passHandler{}),
 			mux.IQ(stanza.SetIQ, xml.Name{}, failHandler{}),
-			mux.Presence(stanza.AvailablePresence, failHandler{}),
+			mux.Presence(stanza.AvailablePresence, xml.Name{}, failHandler{}),
 		},
-		x: `<iq xml:lang="en-us" type="get" xmlns="jabber:client"></iq>`,
+		x:   `<iq xml:lang="en-us" type="get" xmlns="jabber:client"></iq>`,
+		err: passTest,
 	},
 	1: {
 		// Basic muxing isn't affected by the server namespace.
 		m: []mux.Option{
 			mux.IQFunc(stanza.SetIQ, xml.Name{}, passHandler{}),
 			mux.IQ(stanza.GetIQ, xml.Name{}, failHandler{}),
-			mux.Presence(stanza.AvailablePresence, failHandler{}),
+			mux.Presence(stanza.AvailablePresence, xml.Name{}, failHandler{}),
 		},
-		x: `<iq type="set" xmlns="jabber:server"></iq>`,
+		x:   `<iq type="set" xmlns="jabber:server"></iq>`,
+		err: passTest,
 	},
 	2: {
 		// The message option works with a client namespace.
 		m: []mux.Option{
 			mux.IQ(stanza.GetIQ, xml.Name{}, failHandler{}),
-			mux.Message(stanza.ChatMessage, passHandler{}),
+			mux.Message(stanza.ChatMessage, xml.Name{}, passHandler{}),
 		},
-		x: `<message id="123" type="chat" xmlns="jabber:client"></message>`,
+		x:   `<message id="123" type="chat" xmlns="jabber:client"></message>`,
+		err: passTest,
 	},
 	3: {
 		// The message option works with a server namespace.
 		m: []mux.Option{
 			mux.IQ(stanza.GetIQ, xml.Name{}, failHandler{}),
-			mux.MessageFunc(stanza.ChatMessage, passHandler{}.HandleMessage),
+			mux.MessageFunc(stanza.ChatMessage, xml.Name{}, passHandler{}.HandleMessage),
 		},
-		x: `<message to="feste@example.net" from="olivia@example.net" type="chat" xmlns="jabber:server"></message>`,
+		x:   `<message to="feste@example.net" from="olivia@example.net" type="chat" xmlns="jabber:server"></message>`,
+		err: passTest,
 	},
 	4: {
 		// The presence option works with a client namespace and no type attribute.
 		m: []mux.Option{
-			mux.Message(stanza.HeadlineMessage, failHandler{}),
+			mux.Message(stanza.HeadlineMessage, xml.Name{}, failHandler{}),
 			mux.IQ(stanza.SetIQ, xml.Name{}, failHandler{}),
-			mux.Presence(stanza.AvailablePresence, passHandler{}),
+			mux.Presence(stanza.AvailablePresence, xml.Name{}, passHandler{}),
 		},
-		x: `<presence id="484" xml:lang="es" xmlns="jabber:client"></presence>`,
+		x:   `<presence id="484" xml:lang="es" xmlns="jabber:client"></presence>`,
+		err: passTest,
 	},
 	5: {
 		m: []mux.Option{
 			// The presence option works with a server namespace and an empty type
 			// attribute.
-			mux.Message(stanza.ChatMessage, failHandler{}),
+			mux.Message(stanza.ChatMessage, xml.Name{}, failHandler{}),
 			mux.IQ(stanza.GetIQ, xml.Name{}, failHandler{}),
-			mux.PresenceFunc(stanza.AvailablePresence, passHandler{}.HandlePresence),
+			mux.PresenceFunc(stanza.AvailablePresence, xml.Name{}, passHandler{}.HandlePresence),
 		},
-		x: `<presence type="" xmlns="jabber:server"></presence>`,
+		x:   `<presence type="" xmlns="jabber:server"></presence>`,
+		err: passTest,
 	},
 	6: {
 		// Other top level elements can be routed with a wildcard namespace.
-		m: []mux.Option{mux.Handle(xml.Name{Local: "test"}, passHandler{})},
-		x: `<test xmlns="summertime"/>`,
+		m:   []mux.Option{mux.Handle(xml.Name{Local: "test"}, passHandler{})},
+		x:   `<test xmlns="summertime"/>`,
+		err: passTest,
 	},
 	7: {
 		// Other top level elements can be routed with a wildcard localname.
-		m: []mux.Option{mux.HandleFunc(xml.Name{Space: "summertime"}, passHandler{}.HandleXMPP)},
-		x: `<test xmlns="summertime"/>`,
+		m:   []mux.Option{mux.HandleFunc(xml.Name{Space: "summertime"}, passHandler{}.HandleXMPP)},
+		x:   `<test xmlns="summertime"/>`,
+		err: passTest,
 	},
 	8: {
 		// Other top level elements can be routed with an exact match.
@@ -128,7 +181,8 @@ var testCases = [...]struct {
 			mux.HandleFunc(xml.Name{Space: "summertime"}, failHandler{}.HandleXMPP),
 			mux.HandleFunc(xml.Name{Local: "test", Space: "summertime"}, passHandler{}.HandleXMPP),
 		},
-		x: `<test xmlns="summertime"/>`,
+		x:   `<test xmlns="summertime"/>`,
+		err: passTest,
 	},
 	9: {
 		// IQ exact child match handler.
@@ -140,7 +194,8 @@ var testCases = [...]struct {
 			mux.IQ(stanza.SetIQ, xml.Name{Local: "test", Space: exampleNS}, failHandler{}),
 			mux.IQ(stanza.GetIQ, xml.Name{Local: "test", Space: exampleNS}, passHandler{}),
 		},
-		x: `<iq type="get" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
+		x:   `<iq type="get" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
+		err: passTest,
 	},
 	10: {
 		// If no exact match is available, fallback to the namespace wildcard
@@ -149,7 +204,8 @@ var testCases = [...]struct {
 			mux.IQ(stanza.GetIQ, xml.Name{Local: "test", Space: ""}, passHandler{}),
 			mux.IQ(stanza.GetIQ, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
 		},
-		x: `<iq type="get" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
+		x:   `<iq type="get" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
+		err: passTest,
 	},
 	11: {
 		// If no exact match or namespace handler is available, fallback local name
@@ -158,7 +214,8 @@ var testCases = [...]struct {
 			mux.IQ(stanza.GetIQ, xml.Name{Local: "", Space: exampleNS}, passHandler{}),
 			mux.IQ(stanza.ResultIQ, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
 		},
-		x: `<iq type="get" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
+		x:   `<iq type="get" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
+		err: passTest,
 	},
 	12: {
 		// If no exact match or localname/namespace wildcard is available, fallback
@@ -167,24 +224,22 @@ var testCases = [...]struct {
 			mux.IQ(stanza.ResultIQ, xml.Name{Local: "test", Space: exampleNS}, failHandler{}),
 			mux.IQ(stanza.ErrorIQ, xml.Name{}, passHandler{}),
 		},
-		x: `<iq type="error" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
+		x:   `<iq type="error" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
+		err: passTest,
 	},
 	13: {
 		// Test nop non-stanza handler.
-		x:         `<nop/>`,
-		expectNil: true,
+		x: `<nop/>`,
 	},
 	14: {
 		// Test nop message handler.
-		m:         []mux.Option{mux.Message(stanza.HeadlineMessage, failHandler{})},
-		x:         `<message xml:lang="de" type="chat" xmlns="jabber:server"/>`,
-		expectNil: true,
+		m: []mux.Option{mux.Message(stanza.HeadlineMessage, xml.Name{}, failHandler{})},
+		x: `<message xml:lang="de" type="chat" xmlns="jabber:server"/>`,
 	},
 	15: {
 		// Test nop presence handler.
-		m:         []mux.Option{mux.Presence(stanza.SubscribedPresence, failHandler{})},
-		x:         `<presence to="romeo@example.net" from="mercutio@example.net" xmlns="jabber:server"/>`,
-		expectNil: true,
+		m: []mux.Option{mux.Presence(stanza.SubscribedPresence, xml.Name{}, failHandler{})},
+		x: `<presence to="romeo@example.net" from="mercutio@example.net" xmlns="jabber:server"/>`,
 	},
 	16: {
 		// Expect nil IQ handler to panic.
@@ -193,12 +248,12 @@ var testCases = [...]struct {
 	},
 	17: {
 		// Expect nil message handler to panic.
-		m:           []mux.Option{mux.Message(stanza.ChatMessage, nil)},
+		m:           []mux.Option{mux.Message(stanza.ChatMessage, xml.Name{}, nil)},
 		expectPanic: true,
 	},
 	18: {
 		// Expect nil presence handler to panic.
-		m:           []mux.Option{mux.Presence(stanza.ProbePresence, nil)},
+		m:           []mux.Option{mux.Presence(stanza.ProbePresence, xml.Name{}, nil)},
 		expectPanic: true,
 	},
 	19: {
@@ -217,16 +272,16 @@ var testCases = [...]struct {
 	21: {
 		// Expect duplicate message handler to panic.
 		m: []mux.Option{
-			mux.Message(stanza.ChatMessage, failHandler{}),
-			mux.Message(stanza.ChatMessage, failHandler{}),
+			mux.Message(stanza.ChatMessage, xml.Name{}, failHandler{}),
+			mux.Message(stanza.ChatMessage, xml.Name{}, failHandler{}),
 		},
 		expectPanic: true,
 	},
 	22: {
 		// Expect duplicate presence handler to panic.
 		m: []mux.Option{
-			mux.Presence(stanza.ProbePresence, failHandler{}),
-			mux.Presence(stanza.ProbePresence, failHandler{}),
+			mux.Presence(stanza.ProbePresence, xml.Name{}, failHandler{}),
+			mux.Presence(stanza.ProbePresence, xml.Name{}, failHandler{}),
 		},
 		expectPanic: true,
 	},
@@ -301,6 +356,84 @@ var testCases = [...]struct {
 		},
 		expectPanic: true,
 	},
+	33: {
+		// If no exact match is available, fallback to the namespace wildcard
+		// handler.
+		m: []mux.Option{
+			mux.Message(stanza.ChatMessage, xml.Name{Local: "test", Space: ""}, passHandler{}),
+			mux.Message(stanza.ChatMessage, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
+		},
+		x:   `<message type="chat" xmlns="jabber:client"><test xmlns="com.example"/></message>`,
+		err: passTest,
+	},
+	34: {
+		// If no exact match or namespace handler is available, fallback local name
+		// handler.
+		m: []mux.Option{
+			mux.Message(stanza.ChatMessage, xml.Name{Local: "", Space: exampleNS}, passHandler{}),
+			mux.Message(stanza.NormalMessage, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
+		},
+		x:   `<message type="chat" xmlns="jabber:client"><test xmlns="com.example"/></message>`,
+		err: passTest,
+	},
+	35: {
+		// If no exact match or localname/namespace wildcard is available, fallback
+		// to just matching on type alone.
+		m: []mux.Option{
+			mux.Message(stanza.NormalMessage, xml.Name{Local: "test", Space: exampleNS}, failHandler{}),
+			mux.Message(stanza.ChatMessage, xml.Name{}, passHandler{}),
+		},
+		x:   `<message type="chat" xmlns="jabber:client"><test xmlns="com.example"/></message>`,
+		err: passTest,
+	},
+	36: {
+		// If no exact match is available, fallback to the namespace wildcard
+		// handler.
+		m: []mux.Option{
+			mux.Presence(stanza.SubscribePresence, xml.Name{Local: "test", Space: ""}, passHandler{}),
+			mux.Presence(stanza.SubscribePresence, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
+		},
+		x:   `<presence type="subscribe" xmlns="jabber:client"><test xmlns="com.example"/></presence>`,
+		err: passTest,
+	},
+	37: {
+		// If no exact match or namespace handler is available, fallback local name
+		// handler.
+		m: []mux.Option{
+			mux.Presence(stanza.SubscribePresence, xml.Name{Local: "", Space: exampleNS}, passHandler{}),
+			mux.Presence(stanza.SubscribedPresence, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
+		},
+		x:   `<presence type="subscribe" xmlns="jabber:client"><test xmlns="com.example"/></presence>`,
+		err: passTest,
+	},
+	38: {
+		// If no exact match or localname/namespace wildcard is available, fallback
+		// to just matching on type alone.
+		m: []mux.Option{
+			mux.Presence(stanza.SubscribedPresence, xml.Name{Local: "test", Space: exampleNS}, failHandler{}),
+			mux.Presence(stanza.SubscribePresence, xml.Name{}, passHandler{}),
+		},
+		x:   `<presence type="subscribe" xmlns="jabber:client"><test xmlns="com.example"/></presence>`,
+		err: passTest,
+	},
+	39: {
+		// Test that multiple handlers can run correctly for presence.
+		m: []mux.Option{
+			mux.Presence(stanza.SubscribePresence, xml.Name{Local: "test", Space: exampleNS}, multiHandler{}),
+			mux.Presence(stanza.SubscribePresence, xml.Name{Local: "example", Space: exampleNS}, multiHandler{}),
+		},
+		x:   `<presence type="subscribe" xmlns="jabber:client"><example xmlns="com.example">example</example><test xmlns="com.example">test</test></presence>`,
+		err: errors.New("mux_test: PASSED, mux_test: PASSED"),
+	},
+	40: {
+		// Test that multiple handlers can run correctly for messages.
+		m: []mux.Option{
+			mux.Message(stanza.NormalMessage, xml.Name{Local: "test", Space: exampleNS}, multiHandler{}),
+			mux.Message(stanza.NormalMessage, xml.Name{Local: "example", Space: exampleNS}, multiHandler{}),
+		},
+		x:   `<message type="normal" xmlns="jabber:server"><test xmlns="com.example">test</test><example xmlns="com.example">example</example></message>`,
+		err: errors.New("mux_test: PASSED, mux_test: PASSED"),
+	},
 }
 
 type nopEncoder struct {
@@ -314,26 +447,29 @@ func (nopEncoder) EncodeToken(xml.Token) error                       { return ni
 func TestMux(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			defer func() {
-				r := recover()
-				if tc.expectPanic {
+			if tc.expectPanic {
+				defer func() {
+					r := recover()
 					if r == nil {
 						t.Error("Expected panic")
 					}
-				} else {
-					if r != nil {
-						t.Errorf("Did not expect panic, got %v", r)
-					}
-				}
-			}()
+				}()
+			}
 			m := mux.New(tc.m...)
 			d := xml.NewDecoder(strings.NewReader(tc.x))
 			tok, _ := d.Token()
 			start := tok.(xml.StartElement)
 
 			err := m.HandleXMPP(nopEncoder{TokenReader: d}, &start)
-			if (!tc.expectNil && err != passTest) || (tc.expectNil && err != nil) {
-				t.Fatalf("unexpected error: `%v'", err)
+			switch {
+			case tc.err == nil && err != nil:
+				t.Fatalf("unexpected error: %v", err)
+			case tc.err != nil && err == nil:
+				t.Fatalf("got nil error but expected %v", tc.err)
+			case tc.err == nil && err == nil:
+				// All good
+			case tc.err.Error() != err.Error():
+				t.Fatalf("unexpected error: want=%v, got=%v", tc.err.Error(), err.Error())
 			}
 		})
 	}
@@ -392,5 +528,8 @@ func TestLazyServeMuxMapInitialization(t *testing.T) {
 	m := &mux.ServeMux{}
 
 	// This will panic if the map isn't initialized lazily.
+	mux.Handle(xml.Name{}, failHandler{})(m)
 	mux.IQ(stanza.GetIQ, xml.Name{}, failHandler{})(m)
+	mux.Message(stanza.NormalMessage, xml.Name{}, failHandler{})(m)
+	mux.Presence(stanza.SubscribePresence, xml.Name{}, failHandler{})(m)
 }

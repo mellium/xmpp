@@ -7,17 +7,30 @@ package mux // import "mellium.im/xmpp/mux"
 
 import (
 	"encoding/xml"
+	"fmt"
+	"io"
+	"strings"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/ns"
-	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
 
-type iqPattern struct {
+const (
+	iqStanza   = "iq"
+	msgStanza  = "message"
+	presStanza = "presence"
+)
+
+type pattern struct {
 	Payload xml.Name
-	Type    stanza.IQType
+	Stanza  string
+	Type    string
+}
+
+func (p pattern) String() string {
+	return fmt.Sprintf("%s %s with payload {%s}%s", p.Type, p.Stanza, p.Payload.Space, p.Payload.Local)
 }
 
 // ServeMux is an XMPP stream multiplexer.
@@ -32,9 +45,9 @@ type iqPattern struct {
 // wildcard namespaces.
 type ServeMux struct {
 	patterns         map[xml.Name]xmpp.Handler
-	iqPatterns       map[iqPattern]IQHandler
-	msgPatterns      map[stanza.MessageType]MessageHandler
-	presencePatterns map[stanza.PresenceType]PresenceHandler
+	iqPatterns       map[pattern]IQHandler
+	msgPatterns      map[pattern]MessageHandler
+	presencePatterns map[pattern]PresenceHandler
 }
 
 // New allocates and returns a new ServeMux.
@@ -72,11 +85,11 @@ func (m *ServeMux) Handler(name xml.Name) (h xmpp.Handler, ok bool) {
 
 	if name.Space == ns.Client || name.Space == ns.Server {
 		switch name.Local {
-		case "iq":
+		case iqStanza:
 			return xmpp.HandlerFunc(m.iqRouter), true
-		case "message":
+		case msgStanza:
 			return xmpp.HandlerFunc(m.msgRouter), true
-		case "presence":
+		case presStanza:
 			return xmpp.HandlerFunc(m.presenceRouter), true
 		}
 	}
@@ -88,7 +101,7 @@ func (m *ServeMux) Handler(name xml.Name) (h xmpp.Handler, ok bool) {
 // and payload name.
 // If no handler exists, a default handler is returned (h is always non-nil).
 func (m *ServeMux) IQHandler(typ stanza.IQType, payload xml.Name) (h IQHandler, ok bool) {
-	pattern := iqPattern{Payload: payload, Type: typ}
+	pattern := pattern{Stanza: iqStanza, Payload: payload, Type: string(typ)}
 	h = m.iqPatterns[pattern]
 	if h != nil {
 		return h, true
@@ -118,11 +131,33 @@ func (m *ServeMux) IQHandler(typ stanza.IQType, payload xml.Name) (h IQHandler, 
 	return IQHandlerFunc(iqFallback), false
 }
 
-// MessageHandler returns the handler to use for a message payload with the
-// given type.
+// MessageHandler returns the handler to use for a message with the given type
+// and payload.
 // If no handler exists, a default handler is returned (h is always non-nil).
-func (m *ServeMux) MessageHandler(typ stanza.MessageType) (h MessageHandler, ok bool) {
-	h = m.msgPatterns[typ]
+func (m *ServeMux) MessageHandler(typ stanza.MessageType, payload xml.Name) (h MessageHandler, ok bool) {
+	pattern := pattern{Stanza: msgStanza, Payload: payload, Type: string(typ)}
+	h = m.msgPatterns[pattern]
+	if h != nil {
+		return h, true
+	}
+
+	pattern.Payload.Space = ""
+	pattern.Payload.Local = payload.Local
+	h = m.msgPatterns[pattern]
+	if h != nil {
+		return h, true
+	}
+
+	pattern.Payload.Space = payload.Space
+	pattern.Payload.Local = ""
+	h = m.msgPatterns[pattern]
+	if h != nil {
+		return h, true
+	}
+
+	pattern.Payload.Space = ""
+	pattern.Payload.Local = ""
+	h = m.msgPatterns[pattern]
 	if h != nil {
 		return h, true
 	}
@@ -133,8 +168,30 @@ func (m *ServeMux) MessageHandler(typ stanza.MessageType) (h MessageHandler, ok 
 // PresenceHandler returns the handler to use for a presence payload with the
 // given type.
 // If no handler exists, a default handler is returned (h is always non-nil).
-func (m *ServeMux) PresenceHandler(typ stanza.PresenceType) (h PresenceHandler, ok bool) {
-	h = m.presencePatterns[typ]
+func (m *ServeMux) PresenceHandler(typ stanza.PresenceType, payload xml.Name) (h PresenceHandler, ok bool) {
+	pattern := pattern{Stanza: presStanza, Payload: payload, Type: string(typ)}
+	h = m.presencePatterns[pattern]
+	if h != nil {
+		return h, true
+	}
+
+	pattern.Payload.Space = ""
+	pattern.Payload.Local = payload.Local
+	h = m.presencePatterns[pattern]
+	if h != nil {
+		return h, true
+	}
+
+	pattern.Payload.Space = payload.Space
+	pattern.Payload.Local = ""
+	h = m.presencePatterns[pattern]
+	if h != nil {
+		return h, true
+	}
+
+	pattern.Payload.Space = ""
+	pattern.Payload.Local = ""
+	h = m.presencePatterns[pattern]
 	if h != nil {
 		return h, true
 	}
@@ -158,14 +215,14 @@ func IQ(typ stanza.IQType, payload xml.Name, h IQHandler) Option {
 		if h == nil {
 			panic("mux: nil IQ handler")
 		}
-		pattern := iqPattern{Payload: payload, Type: typ}
-		if _, ok := m.iqPatterns[pattern]; ok {
-			panic("mux: multiple registrations for " + string(typ) + " iq with payload {" + pattern.Payload.Space + "}" + pattern.Payload.Local)
+		pat := pattern{Stanza: iqStanza, Payload: payload, Type: string(typ)}
+		if _, ok := m.iqPatterns[pat]; ok {
+			panic("mux: multiple registrations for " + pat.String())
 		}
 		if m.iqPatterns == nil {
-			m.iqPatterns = make(map[iqPattern]IQHandler)
+			m.iqPatterns = make(map[pattern]IQHandler)
 		}
-		m.iqPatterns[pattern] = h
+		m.iqPatterns[pat] = h
 	}
 }
 
@@ -176,51 +233,53 @@ func IQFunc(typ stanza.IQType, payload xml.Name, h IQHandler) Option {
 }
 
 // Message returns an option that matches message stanzas by type.
-func Message(typ stanza.MessageType, h MessageHandler) Option {
+func Message(typ stanza.MessageType, payload xml.Name, h MessageHandler) Option {
 	return func(m *ServeMux) {
 		if h == nil {
 			panic("mux: nil message handler")
 		}
-		if _, ok := m.msgPatterns[typ]; ok {
-			panic("mux: multiple registrations for " + typ + " message")
+		pat := pattern{Stanza: msgStanza, Payload: payload, Type: string(typ)}
+		if _, ok := m.msgPatterns[pat]; ok {
+			panic("mux: multiple registrations for " + pat.String())
 		}
 		if m.msgPatterns == nil {
-			m.msgPatterns = make(map[stanza.MessageType]MessageHandler)
+			m.msgPatterns = make(map[pattern]MessageHandler)
 		}
-		m.msgPatterns[typ] = h
+		m.msgPatterns[pat] = h
 	}
 }
 
 // MessageFunc returns an option that matches message stanzas.
 // For more information see Message.
-func MessageFunc(typ stanza.MessageType, h MessageHandlerFunc) Option {
-	return Message(typ, h)
+func MessageFunc(typ stanza.MessageType, payload xml.Name, h MessageHandlerFunc) Option {
+	return Message(typ, payload, h)
 }
 
 // Presence returns an option that matches presence stanzas by type.
-func Presence(typ stanza.PresenceType, h PresenceHandler) Option {
+func Presence(typ stanza.PresenceType, payload xml.Name, h PresenceHandler) Option {
 	return func(m *ServeMux) {
 		if h == nil {
 			panic("mux: nil presence handler")
 		}
-		if _, ok := m.presencePatterns[typ]; ok {
-			panic("mux: multiple registrations for " + typ + " presence")
+		pat := pattern{Stanza: presStanza, Payload: payload, Type: string(typ)}
+		if _, ok := m.presencePatterns[pat]; ok {
+			panic("mux: multiple registrations for " + pat.String())
 		}
 		if m.presencePatterns == nil {
-			m.presencePatterns = make(map[stanza.PresenceType]PresenceHandler)
+			m.presencePatterns = make(map[pattern]PresenceHandler)
 		}
-		m.presencePatterns[typ] = h
+		m.presencePatterns[pat] = h
 	}
 }
 
 // PresenceFunc returns an option that matches on presence stanzas.
 // For more information see Presence.
-func PresenceFunc(typ stanza.PresenceType, h PresenceHandlerFunc) Option {
-	return Presence(typ, h)
+func PresenceFunc(typ stanza.PresenceType, payload xml.Name, h PresenceHandlerFunc) Option {
+	return Presence(typ, payload, h)
 }
 
 func isStanza(name xml.Name) bool {
-	return (name.Local == "iq" || name.Local == "message" || name.Local == "presence") &&
+	return (name.Local == iqStanza || name.Local == msgStanza || name.Local == presStanza) &&
 		(name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
 }
 
@@ -257,7 +316,7 @@ func (nopHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder
 func (nopHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEncoder) error   { return nil }
 
 func (m *ServeMux) iqRouter(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-	iq, err := newIQFromStart(start)
+	iq, err := stanza.NewIQ(*start)
 	if err != nil {
 		return err
 	}
@@ -271,24 +330,159 @@ func (m *ServeMux) iqRouter(t xmlstream.TokenReadEncoder, start *xml.StartElemen
 	return h.HandleIQ(iq, t, &payloadStart)
 }
 
+type bufReader struct {
+	r      xml.TokenReader
+	buf    []xml.Token
+	offset uint
+}
+
+func (r *bufReader) Token() (xml.Token, error) {
+	if r.offset < uint(len(r.buf)) {
+		o := r.offset
+		r.offset++
+		return r.buf[o], nil
+	}
+
+	tok, err := r.r.Token()
+	if err != nil {
+		return nil, err
+	}
+	switch tt := tok.(type) {
+	case xml.CharData:
+		tok = tt.Copy()
+	case xml.StartElement:
+		tok = tt.Copy()
+	}
+	r.buf = append(r.buf, tok)
+	r.offset++
+	return tok, nil
+}
+
+// TODO: this is terrible error handling, figure out a better way to handle
+// multiple errors that should be turned into a single stanza error.
+type multiErr []error
+
+func (e multiErr) Error() string {
+	var buf strings.Builder
+	for i, err := range e {
+		if i == 0 {
+			buf.WriteString(err.Error())
+			continue
+		}
+		fmt.Fprintf(&buf, ", %s", err.Error())
+	}
+	return buf.String()
+}
+
 func (m *ServeMux) msgRouter(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-	msg, err := newMsgFromStart(start)
+	msg, err := stanza.NewMessage(*start)
 	if err != nil {
 		return err
 	}
 
-	h, _ := m.MessageHandler(msg.Type)
-	return h.HandleMessage(msg, t)
+	return forChildren(m, msg, t, start)
 }
 
 func (m *ServeMux) presenceRouter(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-	presence, err := newPresenceFromStart(start)
+	presence, err := stanza.NewPresence(*start)
 	if err != nil {
 		return err
 	}
 
-	h, _ := m.PresenceHandler(presence.Type)
-	return h.HandlePresence(presence, t)
+	return forChildren(m, presence, t, start)
+}
+
+func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+	r := &bufReader{
+		r: t,
+		// TODO: figure out a good buffer size
+		buf: make([]xml.Token, 0, 10),
+	}
+	r.buf = append(r.buf, *start)
+
+	// TODO: figure out a good buffer size
+	errs := make([]error, 0, 10)
+	lastStart := uint(len(r.buf))
+	r.offset = lastStart
+
+	for {
+		tok, err := r.Token()
+		if err != nil && err != io.EOF {
+			return err
+		}
+		if tok == nil {
+			break
+		}
+		start, ok := tok.(xml.StartElement)
+		if !ok {
+			continue
+		}
+
+		r.offset = 0
+		switch s := stanzaVal.(type) {
+		case stanza.Presence:
+			h, _ := m.PresenceHandler(s.Type, start.Name)
+			err = h.HandlePresence(s, struct {
+				xml.TokenReader
+				xmlstream.Encoder
+			}{
+				TokenReader: r,
+				Encoder:     t,
+			})
+		case stanza.Message:
+			h, _ := m.MessageHandler(s.Type, start.Name)
+			err = h.HandleMessage(s, struct {
+				xml.TokenReader
+				xmlstream.Encoder
+			}{
+				TokenReader: r,
+				Encoder:     t,
+			})
+		}
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+		// Fast forward to the next start token and record its offset
+		r.offset = lastStart
+		// Pop the last start token
+		_, err = r.Token()
+		if err != nil {
+			return err
+		}
+		n, err := xmlstream.Copy(xmlstream.Discard(), xmlstream.Inner(r))
+		if err != nil {
+			return err
+		}
+		lastStart += uint(n) + 1
+	}
+	if len(errs) > 0 {
+		return multiErr(errs)
+	}
+	// If the only tokens are the start presence and the close presence
+	if len(r.buf) == 2 {
+		switch s := stanzaVal.(type) {
+		case stanza.Presence:
+			h, _ := m.PresenceHandler(s.Type, xml.Name{})
+			return h.HandlePresence(s, struct {
+				xml.TokenReader
+				xmlstream.Encoder
+			}{
+				TokenReader: r,
+				Encoder:     t,
+			})
+		case stanza.Message:
+			h, _ := m.MessageHandler(s.Type, xml.Name{})
+			return h.HandleMessage(s, struct {
+				xml.TokenReader
+				xmlstream.Encoder
+			}{
+				TokenReader: r,
+				Encoder:     t,
+			})
+		}
+	}
+	return nil
 }
 
 func iqFallback(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
@@ -303,135 +497,6 @@ func iqFallback(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElem
 		Type:      stanza.Cancel,
 		Condition: stanza.ServiceUnavailable,
 	}
-	_, err := xmlstream.Copy(t, stanza.WrapIQ(
-		iq,
-		e.TokenReader(),
-	))
+	_, err := xmlstream.Copy(t, stanza.WrapIQ(iq, e.TokenReader()))
 	return err
-}
-
-// newIQFromStart takes a start element and returns an IQ.
-func newIQFromStart(start *xml.StartElement) (stanza.IQ, error) {
-	iq := stanza.IQ{}
-	var err error
-	for _, a := range start.Attr {
-		switch a.Name.Local {
-		case "id":
-			if a.Name.Space != "" {
-				continue
-			}
-			iq.ID = a.Value
-		case "to":
-			if a.Name.Space != "" {
-				continue
-			}
-			iq.To, err = jid.Parse(a.Value)
-			if err != nil {
-				return iq, err
-			}
-		case "from":
-			if a.Name.Space != "" {
-				continue
-			}
-			iq.From, err = jid.Parse(a.Value)
-			if err != nil {
-				return iq, err
-			}
-		case "lang":
-			if a.Name.Space != ns.XML {
-				continue
-			}
-			iq.Lang = a.Value
-		case "type":
-			if a.Name.Space != "" {
-				continue
-			}
-			iq.Type = stanza.IQType(a.Value)
-		}
-	}
-	return iq, nil
-}
-
-// newMsgFromStart takes a start element and returns a message.
-func newMsgFromStart(start *xml.StartElement) (stanza.Message, error) {
-	msg := stanza.Message{}
-	var err error
-	for _, a := range start.Attr {
-		switch a.Name.Local {
-		case "id":
-			if a.Name.Space != "" {
-				continue
-			}
-			msg.ID = a.Value
-		case "to":
-			if a.Name.Space != "" {
-				continue
-			}
-			msg.To, err = jid.Parse(a.Value)
-			if err != nil {
-				return msg, err
-			}
-		case "from":
-			if a.Name.Space != "" {
-				continue
-			}
-			msg.From, err = jid.Parse(a.Value)
-			if err != nil {
-				return msg, err
-			}
-		case "lang":
-			if a.Name.Space != ns.XML {
-				continue
-			}
-			msg.Lang = a.Value
-		case "type":
-			if a.Name.Space != "" {
-				continue
-			}
-			msg.Type = stanza.MessageType(a.Value)
-		}
-	}
-	return msg, nil
-}
-
-// newPresenceFromStart takes a start element and returns a message.
-func newPresenceFromStart(start *xml.StartElement) (stanza.Presence, error) {
-	presence := stanza.Presence{}
-	var err error
-	for _, a := range start.Attr {
-		switch a.Name.Local {
-		case "id":
-			if a.Name.Space != "" {
-				continue
-			}
-			presence.ID = a.Value
-		case "to":
-			if a.Name.Space != "" {
-				continue
-			}
-			presence.To, err = jid.Parse(a.Value)
-			if err != nil {
-				return presence, err
-			}
-		case "from":
-			if a.Name.Space != "" {
-				continue
-			}
-			presence.From, err = jid.Parse(a.Value)
-			if err != nil {
-				return presence, err
-			}
-		case "lang":
-			if a.Name.Space != ns.XML {
-				continue
-			}
-			presence.Lang = a.Value
-		case "type":
-			if a.Name.Space != "" {
-				continue
-			}
-			presence.Type = stanza.PresenceType(a.Value)
-		}
-	}
-	return presence, nil
 }
