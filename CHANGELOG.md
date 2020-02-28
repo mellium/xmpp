@@ -2,17 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## v0.15.0 — 2020-02-28
 
 ### Breaking
 
+- all: dropped support for versions of Go before 1.13
 - mux: move `Wrap{IQ,Presence,Message}` functions to methods on the stanza types
-- mux: new handler types and API
 
 
 ### Added
 
 - mux: ability to select handlers by stanza payload
+- mux: new handler types and API
 - ping: a function for easily encoding pings and handling errors
 - ping: a handler and mux option for responding to pings
 - stanza: ability to convert stanzas to/from `xml.StartElement`
