@@ -31,11 +31,7 @@ type Iter struct {
 
 // Next returns true if there are more items to decode.
 func (i *Iter) Next() bool {
-	if i.err != nil {
-		return false
-	}
-	n := i.iter.Next()
-	if !n {
+	if i.err != nil || !i.iter.Next() {
 		return false
 	}
 	start, r := i.iter.Current()
