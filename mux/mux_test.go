@@ -97,6 +97,27 @@ func (failHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *x
 	return failTest
 }
 
+type decodeHandler struct {
+	Body string
+}
+
+func (h decodeHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
+	d := xml.NewTokenDecoder(t)
+	data := struct {
+		stanza.Message
+
+		Body string `xml:"body"`
+	}{}
+	err := d.Decode(&data)
+	if err != nil {
+		return err
+	}
+	if h.Body != data.Body {
+		return fmt.Errorf("wrong body: want=%q, got=%q", h.Body, data.Body)
+	}
+	return passTest
+}
+
 var testCases = [...]struct {
 	m           []mux.Option
 	x           string
@@ -433,6 +454,13 @@ var testCases = [...]struct {
 		},
 		x:   `<message type="normal" xmlns="jabber:server"><test xmlns="com.example">test</test><example xmlns="com.example">example</example></message>`,
 		err: errors.New("mux_test: PASSED, mux_test: PASSED"),
+	},
+	41: {
+		m: []mux.Option{
+			mux.Message(stanza.ChatMessage, xml.Name{}, decodeHandler{}),
+		},
+		x:   `<message xmlns='jabber:client' type='chat'/>`,
+		err: passTest,
 	},
 }
 

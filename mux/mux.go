@@ -396,15 +396,13 @@ func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncode
 	r := &bufReader{
 		r: t,
 		// TODO: figure out a good buffer size
-		buf: make([]xml.Token, 0, 10),
+		buf:    make([]xml.Token, 0, 10),
+		offset: 1,
 	}
 	r.buf = append(r.buf, *start)
 
 	// TODO: figure out a good buffer size
 	errs := make([]error, 0, 10)
-	lastStart := uint(len(r.buf))
-	r.offset = lastStart
-
 	for {
 		tok, err := r.Token()
 		if err != nil && err != io.EOF {
@@ -418,49 +416,45 @@ func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncode
 			continue
 		}
 
-		r.offset = 0
 		switch s := stanzaVal.(type) {
 		case stanza.Presence:
+			br := &bufReader{r: t, buf: r.buf}
 			h, _ := m.PresenceHandler(s.Type, start.Name)
 			err = h.HandlePresence(s, struct {
 				xml.TokenReader
 				xmlstream.Encoder
 			}{
-				TokenReader: r,
+				TokenReader: br,
 				Encoder:     t,
 			})
+			r.buf = br.buf
 		case stanza.Message:
+			br := &bufReader{r: t, buf: r.buf}
 			h, _ := m.MessageHandler(s.Type, start.Name)
 			err = h.HandleMessage(s, struct {
 				xml.TokenReader
 				xmlstream.Encoder
 			}{
-				TokenReader: r,
+				TokenReader: br,
 				Encoder:     t,
 			})
+			r.buf = br.buf
 		}
 		if err != nil {
 			errs = append(errs, err)
 		}
-
-		// Fast forward to the next start token and record its offset
-		r.offset = lastStart
-		// Pop the last start token
-		_, err = r.Token()
+		err = xmlstream.Skip(r)
 		if err != nil {
 			return err
 		}
-		n, err := xmlstream.Copy(xmlstream.Discard(), xmlstream.Inner(r))
-		if err != nil {
-			return err
-		}
-		lastStart += uint(n) + 1
 	}
 	if len(errs) > 0 {
 		return multiErr(errs)
 	}
-	// If the only tokens are the start presence and the close presence
+	// If the only tokens are the start and close tokens, trigger any wildcard
+	// handlers.
 	if len(r.buf) == 2 {
+		r.offset = 0
 		switch s := stanzaVal.(type) {
 		case stanza.Presence:
 			h, _ := m.PresenceHandler(s.Type, xml.Name{})
