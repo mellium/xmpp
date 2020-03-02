@@ -347,12 +347,7 @@ func (r *bufReader) Token() (xml.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	switch tt := tok.(type) {
-	case xml.CharData:
-		tok = tt.Copy()
-	case xml.StartElement:
-		tok = tt.Copy()
-	}
+	tok = xml.CopyToken(tok)
 	r.buf = append(r.buf, tok)
 	r.offset++
 	return tok, nil
