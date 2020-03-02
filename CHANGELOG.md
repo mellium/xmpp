@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 - xmpp: the end element is now included in the token stream passed to handlers
 
 
+### Added
+
+- roster: add handler and mux option for roster pushes
+
+
 ## v0.15.0 — 2020-02-28
 
 ### Breaking

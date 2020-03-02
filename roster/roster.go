@@ -14,6 +14,7 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/iter"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -27,6 +28,26 @@ type Iter struct {
 	iter    *iter.Iter
 	current Item
 	err     error
+}
+
+// Handle returns an option that registers a Handler for roster pushes.
+func Handle(h Handler) mux.Option {
+	return mux.IQ(stanza.SetIQ, xml.Name{Local: "query", Space: NS}, h)
+}
+
+// Handler responds to roster pushes.
+type Handler struct {
+	Push func(Item) error
+}
+
+// HandleIQ responds to roster push IQs.
+func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+	item := Item{}
+	err := xml.NewTokenDecoder(t).Decode(&item)
+	if err != nil {
+		return err
+	}
+	return h.Push(item)
 }
 
 // Next returns true if there are more items to decode.
