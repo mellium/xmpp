@@ -131,7 +131,7 @@ var testCases = [...]struct {
 			mux.IQ(stanza.SetIQ, xml.Name{}, failHandler{}),
 			mux.Presence(stanza.AvailablePresence, xml.Name{}, failHandler{}),
 		},
-		x:   `<iq xml:lang="en-us" type="get" xmlns="jabber:client"></iq>`,
+		x:   `<iq xml:lang="en-us" type="get" xmlns="jabber:client"><a/></iq>`,
 		err: passTest,
 	},
 	1: {
@@ -141,7 +141,7 @@ var testCases = [...]struct {
 			mux.IQ(stanza.GetIQ, xml.Name{}, failHandler{}),
 			mux.Presence(stanza.AvailablePresence, xml.Name{}, failHandler{}),
 		},
-		x:   `<iq type="set" xmlns="jabber:server"></iq>`,
+		x:   `<iq type="set" xmlns="jabber:server"><b/></iq>`,
 		err: passTest,
 	},
 	2: {
@@ -461,6 +461,16 @@ var testCases = [...]struct {
 		},
 		x:   `<message xmlns='jabber:client' type='chat'/>`,
 		err: passTest,
+	},
+	42: {
+		// An empty IQ is illegal and should result in EOF.
+		m: []mux.Option{
+			mux.IQ(stanza.GetIQ, xml.Name{}, failHandler{}),
+			mux.IQ(stanza.SetIQ, xml.Name{}, failHandler{}),
+			mux.Presence(stanza.AvailablePresence, xml.Name{}, failHandler{}),
+		},
+		x:   `<iq xml:lang="en-us" type="get" xmlns="jabber:client"></iq>`,
+		err: io.EOF,
 	},
 }
 

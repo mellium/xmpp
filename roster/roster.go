@@ -35,9 +35,9 @@ func (i *Iter) Next() bool {
 		return false
 	}
 	start, r := i.iter.Current()
-	d := xml.NewTokenDecoder(xmlstream.Wrap(r, start.Copy()))
+	d := xml.NewTokenDecoder(r)
 	item := Item{}
-	i.err = d.Decode(&item)
+	i.err = d.DecodeElement(&item, start)
 	if i.err != nil {
 		return false
 	}

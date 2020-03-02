@@ -321,6 +321,16 @@ func (m *ServeMux) iqRouter(t xmlstream.TokenReadEncoder, start *xml.StartElemen
 		return err
 	}
 
+	// Limit the stream to the inside of the IQ element, don't allow handlers to
+	// advance to the end token since they don't have access to the IQ start
+	// token.
+	t = struct {
+		xml.TokenReader
+		xmlstream.Encoder
+	}{
+		Encoder:     t,
+		TokenReader: xmlstream.Inner(t),
+	}
 	tok, err := t.Token()
 	if err != nil {
 		return err

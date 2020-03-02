@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Breaking
+
+- xmpp: the end element is now included in the token stream passed to handlers
+
+
 ## v0.15.0 — 2020-02-28
 
 ### Breaking

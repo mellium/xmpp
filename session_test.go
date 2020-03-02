@@ -279,6 +279,24 @@ var serveTests = [...]struct {
 		out: `</stream:stream>`,
 		err: intstream.ErrUnknownStreamElement,
 	},
+	14: {
+		// Regression test to ensure that we can't advance beyond the end of the
+		// current element and that the close element is included in the stream.
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			if start.Name.Local == "b" {
+				return nil
+			}
+
+			err := rw.EncodeToken(*start)
+			if err != nil {
+				return err
+			}
+			_, err = xmlstream.Copy(rw, rw)
+			return err
+		}),
+		in:  `<a>test</a><b></b>`,
+		out: `<a xmlns="jabber:client">test</a></stream:stream>`,
+	},
 }
 
 func TestServe(t *testing.T) {

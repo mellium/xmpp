@@ -400,7 +400,7 @@ noreply:
 	w := s.TokenWriter()
 	defer w.Close()
 	rw := &responseChecker{
-		TokenReader: xmlstream.Inner(r),
+		TokenReader: xmlstream.MultiReader(xmlstream.Inner(r), xmlstream.Token(start.End())),
 		TokenWriter: w,
 		id:          id,
 	}
