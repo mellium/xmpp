@@ -8,11 +8,11 @@ package mux // import "mellium.im/xmpp/mux"
 import (
 	"encoding/xml"
 	"fmt"
-	"io"
 	"strings"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/internal/iter"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stanza"
 )
@@ -403,19 +403,11 @@ func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncode
 
 	// TODO: figure out a good buffer size
 	errs := make([]error, 0, 10)
-	for {
-		tok, err := r.Token()
-		if err != nil && err != io.EOF {
-			return err
-		}
-		if tok == nil {
-			break
-		}
-		start, ok := tok.(xml.StartElement)
-		if !ok {
-			continue
-		}
+	iterator := iter.New(r)
+	for iterator.Next() {
+		start, _ := iterator.Current()
 
+		var err error
 		switch s := stanzaVal.(type) {
 		case stanza.Presence:
 			br := &bufReader{r: t, buf: r.buf}
@@ -443,10 +435,9 @@ func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncode
 		if err != nil {
 			errs = append(errs, err)
 		}
-		err = xmlstream.Skip(r)
-		if err != nil {
-			return err
-		}
+	}
+	if err := iterator.Err(); err != nil {
+		return err
 	}
 	if len(errs) > 0 {
 		return multiErr(errs)
