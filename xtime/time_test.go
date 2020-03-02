@@ -65,7 +65,7 @@ func TestRoundTrip(t *testing.T) {
 		Encoder:     e,
 	}, &start)
 	if err != nil {
-		t.Errorf("unexpected error handling ping: %v", err)
+		t.Errorf("unexpected error in handler: %v", err)
 	}
 	err = e.Flush()
 	if err != nil {
