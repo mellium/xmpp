@@ -354,13 +354,12 @@ func (r *bufReader) Token() (xml.Token, error) {
 	}
 
 	tok, err := r.r.Token()
-	if err != nil {
-		return nil, err
+	if tok != nil {
+		tok = xml.CopyToken(tok)
+		r.buf = append(r.buf, tok)
+		r.offset++
 	}
-	tok = xml.CopyToken(tok)
-	r.buf = append(r.buf, tok)
-	r.offset++
-	return tok, nil
+	return tok, err
 }
 
 // TODO: this is terrible error handling, figure out a better way to handle

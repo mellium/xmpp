@@ -14,6 +14,12 @@ All notable changes to this project will be documented in this file.
 - roster: add handler and mux option for roster pushes
 
 
+### Fixed
+
+- mux: fix broken `Decode` and possible infinite loop due to cutting off the
+  last token in a buffered XML token stream
+
+
 ## v0.15.0 — 2020-02-28
 
 ### Breaking
