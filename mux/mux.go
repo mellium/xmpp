@@ -407,7 +407,11 @@ func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncode
 
 	// TODO: figure out a good buffer size
 	errs := make([]error, 0, 10)
+
 	iterator := iter.New(r)
+	/* #nosec */
+	defer iterator.Close()
+
 	for iterator.Next() {
 		start, _ := iterator.Current()
 
