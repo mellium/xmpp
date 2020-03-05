@@ -27,10 +27,37 @@ type Message struct {
 
 // NewMessage unmarshals an XML token into a Message.
 func NewMessage(start xml.StartElement) (Message, error) {
-	v := Message{}
-	d := xml.NewTokenDecoder(xmlstream.Wrap(nil, start))
-	err := d.Decode(&v)
-	return v, err
+	v := Message{
+		XMLName: start.Name,
+	}
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "lang" && attr.Name.Space == ns.XML {
+			v.Lang = attr.Value
+			continue
+		}
+		if attr.Name.Space != "" && attr.Name.Space != start.Name.Space {
+			continue
+		}
+
+		var err error
+		switch attr.Name.Local {
+		case "id":
+			v.ID = attr.Value
+		case "to":
+			v.To, err = jid.Parse(attr.Value)
+			if err != nil {
+				return v, err
+			}
+		case "from":
+			v.From, err = jid.Parse(attr.Value)
+			if err != nil {
+				return v, err
+			}
+		case "type":
+			v.Type = MessageType(attr.Value)
+		}
+	}
+	return v, nil
 }
 
 // StartElement converts the Message into an XML token.

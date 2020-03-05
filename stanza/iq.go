@@ -26,10 +26,37 @@ type IQ struct {
 
 // NewIQ unmarshals an XML token into a IQ.
 func NewIQ(start xml.StartElement) (IQ, error) {
-	v := IQ{}
-	d := xml.NewTokenDecoder(xmlstream.Wrap(nil, start))
-	err := d.Decode(&v)
-	return v, err
+	v := IQ{
+		XMLName: start.Name,
+	}
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "lang" && attr.Name.Space == ns.XML {
+			v.Lang = attr.Value
+			continue
+		}
+		if attr.Name.Space != "" && attr.Name.Space != start.Name.Space {
+			continue
+		}
+
+		var err error
+		switch attr.Name.Local {
+		case "id":
+			v.ID = attr.Value
+		case "to":
+			v.To, err = jid.Parse(attr.Value)
+			if err != nil {
+				return v, err
+			}
+		case "from":
+			v.From, err = jid.Parse(attr.Value)
+			if err != nil {
+				return v, err
+			}
+		case "type":
+			v.Type = IQType(attr.Value)
+		}
+	}
+	return v, nil
 }
 
 // StartElement converts the IQ into an XML token.
