@@ -11,7 +11,11 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- receipts: new package implementing [XEP-0333: Chat Markers]
 - roster: add handler and mux option for roster pushes
+
+
+[XEP-0333: Chat Markers]: https://xmpp.org/extensions/xep-0333.html
 
 
 ### Fixed
