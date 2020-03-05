@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
 
 - mux: fix broken `Decode` and possible infinite loop due to cutting off the
   last token in a buffered XML token stream
+- roster: work around a bug in Go 1.13 where `io.EOF` may be returned from the
+  XML decoder
 
 
 ## v0.15.0 — 2020-02-28
