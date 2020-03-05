@@ -73,9 +73,11 @@ func (h *Handler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder
 			_, id := attr.Get(start.Attr, "id")
 			h.m.Lock()
 			c, ok := h.sent[id]
-			h.m.Unlock()
-
-			if !ok {
+			if ok {
+				delete(h.sent, id)
+				h.m.Unlock()
+			} else {
+				h.m.Unlock()
 				return nil
 			}
 
@@ -163,6 +165,9 @@ func (h *Handler) SendMessageElement(ctx context.Context, w xmlstream.TokenWrite
 	case <-c:
 		return nil
 	case <-ctx.Done():
+		h.m.Lock()
+		delete(h.sent, msg.ID)
+		h.m.Unlock()
 		close(c)
 		return ctx.Err()
 	}

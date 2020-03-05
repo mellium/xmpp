@@ -19,6 +19,49 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
+func TestClosedDoesNotPanic(t *testing.T) {
+	h := &receipts.Handler{}
+
+	bw := &bytes.Buffer{}
+	e := xml.NewEncoder(bw)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := h.SendMessageElement(ctx, e, nil, stanza.Message{
+		ID: "123",
+	})
+	if err != context.Canceled {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	err = e.Flush()
+	if err != nil {
+		t.Fatalf("error flushing encoder: %v", err)
+	}
+
+	msg := stanza.Message{
+		XMLName: xml.Name{Space: ns.Client, Local: "message"},
+		Type:    stanza.ChatMessage,
+	}
+	r := msg.Wrap(xmlstream.Wrap(nil, xml.StartElement{
+		Name: xml.Name{Local: "received", Space: receipts.NS},
+		Attr: []xml.Attr{{Name: xml.Name{Local: "id"}, Value: "123"}},
+	}))
+
+	bw = &bytes.Buffer{}
+	e = xml.NewEncoder(bw)
+	// If the has not been removed from handling when the context is canceled,
+	// this will panic (effectively failing the test).
+	err = h.HandleMessage(msg, struct {
+		xml.TokenReader
+		xmlstream.Encoder
+	}{
+		TokenReader: r,
+		Encoder:     e,
+	})
+	if err != nil {
+		t.Fatalf("error handling response: %v", err)
+	}
+}
+
 // TODO: find a way to test that SendMessageElement actually matches up the
 // response correctly (ie. don't timeout, use the test server).
 func TestRoundTrip(t *testing.T) {
