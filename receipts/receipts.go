@@ -26,7 +26,7 @@ const (
 	NS = "urn:xmpp:receipts"
 )
 
-// Handle returns an option that registers a Handler for entity time requests.
+// Handle returns an option that registers a Handler for message receipts.
 func Handle(h *Handler) mux.Option {
 	return func(m *mux.ServeMux) {
 		received := xml.Name{Local: "received", Space: NS}
