@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Breaking
 
 - xmpp: the end element is now included in the token stream passed to handlers
+- xmpp: SendElement now wraps the entire stream, not just the first element
 
 
 ### Added

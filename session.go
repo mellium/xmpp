@@ -660,35 +660,40 @@ func (s *Session) EncodeElement(v interface{}, start xml.StartElement) error {
 //
 // Send is safe for concurrent use by multiple goroutines.
 func (s *Session) Send(ctx context.Context, r xml.TokenReader) error {
-	return s.SendElement(ctx, r, xml.StartElement{})
+	return send(s, r, nil)
 }
 
 // SendElement is like Send except that it uses start as the outermost tag in
-// the encoding.
+// the encoding and uses the entire token stream as the payload.
 //
 // SendElement is safe for concurrent use by multiple goroutines.
 func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.StartElement) error {
+	return send(s, r, &start)
+}
+
+func send(s *Session, r xml.TokenReader, start *xml.StartElement) error {
 	s.out.Lock()
 	defer s.out.Unlock()
 
-	if start.Name.Local == "" {
+	if start == nil {
 		tok, err := r.Token()
 		if err != nil {
 			return err
 		}
 
-		var ok bool
-		start, ok = tok.(xml.StartElement)
+		el, ok := tok.(xml.StartElement)
 		if !ok {
 			return errNotStart
 		}
+		start = &el
+		r = xmlstream.Inner(r)
 	}
 
-	err := s.out.e.EncodeToken(start)
+	err := s.out.e.EncodeToken(*start)
 	if err != nil {
 		return err
 	}
-	_, err = xmlstream.Copy(s.out.e, xmlstream.Inner(r))
+	_, err = xmlstream.Copy(s.out.e, r)
 	if err != nil {
 		return err
 	}
@@ -771,38 +776,25 @@ func (s *Session) SendIQ(ctx context.Context, r xml.TokenReader) (xmlstream.Toke
 
 	// If this an IQ of type "set" or "get" we expect a response.
 	if iqNeedsResp(start.Attr) {
-		return s.sendResp(ctx, id, xmlstream.Wrap(r, start))
+		// return s.sendResp(ctx, id, xmlstream.Wrap(r, start))
+		return s.sendResp(ctx, id, xmlstream.Inner(r), start)
 	}
 
 	// If this is an IQ of type result or error, we don't expect a response so
 	// just send it normally.
-	return nil, s.SendElement(ctx, r, start)
+	return nil, s.SendElement(ctx, xmlstream.Inner(r), start)
 }
 
 // SendIQElement is like SendIQ except that it wraps the payload in an
-// Info/Query (IQ) element and blocks until a response is received.
+// Info/Query (IQ) element.
 // For more information, see SendIQ.
 //
 // SendIQElement is safe for concurrent use by multiple goroutines.
 func (s *Session) SendIQElement(ctx context.Context, payload xml.TokenReader, iq stanza.IQ) (xmlstream.TokenReadCloser, error) {
-	// We need to add an id to the IQ if one wasn't already set by the user so
-	// that we can use it to associate the response with the original query.
-	if iq.ID == "" {
-		iq.ID = attr.RandomID()
-	}
-	needsResp := iq.Type == stanza.GetIQ || iq.Type == stanza.SetIQ
-
-	// If this an IQ of type "set" or "get" we expect a response.
-	if needsResp {
-		return s.sendResp(ctx, iq.ID, iq.Wrap(payload))
-	}
-
-	// If this is an IQ of type result or error, we don't expect a response so
-	// just send it normally.
-	return nil, s.Send(ctx, iq.Wrap(payload))
+	return s.SendIQ(ctx, iq.Wrap(payload))
 }
 
-func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenReader) (xmlstream.TokenReadCloser, error) {
+func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenReader, start xml.StartElement) (xmlstream.TokenReadCloser, error) {
 	c := make(chan xmlstream.TokenReadCloser)
 
 	s.sentIQMutex.Lock()
@@ -814,7 +806,7 @@ func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenRead
 		s.sentIQMutex.Unlock()
 	}()
 
-	err := s.Send(ctx, payload)
+	err := s.SendElement(ctx, payload, start)
 	if err != nil {
 		return nil, err
 	}
