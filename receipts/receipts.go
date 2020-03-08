@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/attr"
 	"mellium.im/xmpp/internal/iter"
 	"mellium.im/xmpp/internal/ns"
@@ -101,8 +102,8 @@ func (h *Handler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder
 // SendMessage transmits the first element read from the provided token reader
 // over the session if the element is a message stanza, otherwise it returns an
 // error.
-// SendMessage adds a requst for a message receipt and a message ID if either
-// does not already exist on the message.
+// SendMessage adds a requst for a message receipt and an ID if one does not
+// already exist.
 //
 // If the context is closed before the message delivery receipt is received,
 // SendMessage immediately returns the context error.
@@ -112,7 +113,7 @@ func (h *Handler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder
 // acknowledged.
 //
 // SendMessage is safe for concurrent use by multiple goroutines.
-func (h *Handler) SendMessage(ctx context.Context, w xmlstream.TokenWriter, r xml.TokenReader) error {
+func (h *Handler) SendMessage(ctx context.Context, s *xmpp.Session, r xml.TokenReader) error {
 	tok, err := r.Token()
 	if err != nil {
 		return err
@@ -126,7 +127,7 @@ func (h *Handler) SendMessage(ctx context.Context, w xmlstream.TokenWriter, r xm
 		return err
 	}
 
-	return h.SendMessageElement(ctx, w, xmlstream.Inner(r), msg)
+	return h.SendMessageElement(ctx, s, xmlstream.Inner(r), msg)
 }
 
 // SendMessageElement is like SendMessage except that it wraps the payload in
@@ -134,7 +135,7 @@ func (h *Handler) SendMessage(ctx context.Context, w xmlstream.TokenWriter, r xm
 // For more information, see SendMessage.
 //
 // SendMessageElement is safe for concurrent use by multiple goroutines.
-func (h *Handler) SendMessageElement(ctx context.Context, w xmlstream.TokenWriter, payload xml.TokenReader, msg stanza.Message) error {
+func (h *Handler) SendMessageElement(ctx context.Context, s *xmpp.Session, payload xml.TokenReader, msg stanza.Message) error {
 	if h.sent == nil {
 		h.m.Lock()
 		h.sent = make(map[string]chan struct{})
@@ -156,9 +157,9 @@ func (h *Handler) SendMessageElement(ctx context.Context, w xmlstream.TokenWrite
 	if payload != nil {
 		r = xmlstream.MultiReader(payload, r)
 	}
-	_, err := xmlstream.Copy(w, msg.Wrap(r))
+	err := s.SendElement(ctx, r, msg.StartElement())
 	if err != nil {
-		return nil
+		return err
 	}
 
 	select {

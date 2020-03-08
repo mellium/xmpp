@@ -23,18 +23,14 @@ func TestClosedDoesNotPanic(t *testing.T) {
 	h := &receipts.Handler{}
 
 	bw := &bytes.Buffer{}
-	e := xml.NewEncoder(bw)
+	s := xmpptest.NewSession(0, bw)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err := h.SendMessageElement(ctx, e, nil, stanza.Message{
+	err := h.SendMessageElement(ctx, s, nil, stanza.Message{
 		ID: "123",
 	})
 	if err != context.Canceled {
 		t.Fatalf("unexpected error: %v", err)
-	}
-	err = e.Flush()
-	if err != nil {
-		t.Fatalf("error flushing encoder: %v", err)
 	}
 
 	msg := stanza.Message{
@@ -47,7 +43,7 @@ func TestClosedDoesNotPanic(t *testing.T) {
 	}))
 
 	bw = &bytes.Buffer{}
-	e = xml.NewEncoder(bw)
+	e := xml.NewEncoder(bw)
 	// If the has not been removed from handling when the context is canceled,
 	// this will panic (effectively failing the test).
 	err = h.HandleMessage(msg, struct {
@@ -69,20 +65,15 @@ func TestRoundTrip(t *testing.T) {
 
 	var req bytes.Buffer
 	s := xmpptest.NewSession(0, &req)
-	w := s.TokenWriter()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err := h.SendMessageElement(ctx, w, nil, stanza.Message{
+	err := h.SendMessageElement(ctx, s, nil, stanza.Message{
 		ID:   "123",
 		Type: stanza.NormalMessage,
 	})
 	if err != context.Canceled {
 		t.Fatalf("unexpected error: %v", err)
-	}
-	err = w.Flush()
-	if err != nil {
-		t.Fatalf("error flushing session: %v", err)
 	}
 
 	d := xml.NewDecoder(strings.NewReader(req.String()))
