@@ -2,7 +2,12 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-// Package mux implements an XMPP multiplexer.
+// Package mux contains a simple XMPP multiplexer.
+//
+// Aside from implementing its own muxer, this package contains handler
+// interfaces designed to be standard across multiplexers.
+// This lets you write, for example, a muxer that matches elements based on
+// xpath expressions and take advantage of existing handlers.
 package mux // import "mellium.im/xmpp/mux"
 
 import (

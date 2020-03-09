@@ -9,8 +9,10 @@
 // for establishing an XMPP session, feature negotiation (including an API for
 // defining your own stream features), and low-level connection and stream
 // manipulation.
-// The jid package provides an implementation of the XMPP address format.
-//
+// Other important packages include the jid package, which provides an
+// implementation of the XMPP address format, and the mux package which provides
+// an XMPP handler that can multiplex payloads to other handlers and
+// functionality for creating your own multiplexers.
 //
 // Session Negotiation
 //
@@ -120,6 +122,14 @@
 //             log.Println("Got message: %q", msg.Body)
 //         }
 //     }))
+//
+// It isn't always practical to put all of your logic for handling elements into
+// a single function or method, so the mux package contains an XML multiplexer
+// that can be used to match incoming payloads against a pattern and delegate
+// them to individual handlers.
+// Packages that implement extensions to the core XMPP protocol will often
+// provide handlers that are compatible with types defined in the mux package,
+// and options for registering them with the multiplexer.
 //
 //
 // Be Advised
