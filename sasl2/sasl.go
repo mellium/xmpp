@@ -155,7 +155,7 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 				return mask, nil, err
 			}
 
-			r := session.TokenReader()
+			r := session.Decoder()
 			defer r.Close()
 
 			// If we're already done after the first step, decode the <success/> or
@@ -224,8 +224,7 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 	}
 }
 
-func decodeSASLChallenge(r xml.TokenReader, start xml.StartElement, allowChallenge bool) (challenge []byte, success bool, err error) {
-	d := xml.NewTokenDecoder(r)
+func decodeSASLChallenge(d xmlstream.Decoder, start xml.StartElement, allowChallenge bool) (challenge []byte, success bool, err error) {
 	switch start.Name {
 	case xml.Name{Space: NS, Local: "challenge"}:
 		if !allowChallenge {

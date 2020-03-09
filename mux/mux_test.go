@@ -15,7 +15,6 @@ import (
 	"testing"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp/internal/marshal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/mux"
@@ -31,16 +30,16 @@ const exampleNS = "com.example"
 
 type passHandler struct{}
 
-func (passHandler) HandleXMPP(xmlstream.TokenReadEncoder, *xml.StartElement) error   { return passTest }
-func (passHandler) HandleMessage(stanza.Message, xmlstream.TokenReadEncoder) error   { return passTest }
-func (passHandler) HandlePresence(stanza.Presence, xmlstream.TokenReadEncoder) error { return passTest }
-func (passHandler) HandleIQ(stanza.IQ, xmlstream.TokenReadEncoder, *xml.StartElement) error {
+func (passHandler) HandleXMPP(xmlstream.DecodeEncoder, *xml.StartElement) error   { return passTest }
+func (passHandler) HandleMessage(stanza.Message, xmlstream.DecodeEncoder) error   { return passTest }
+func (passHandler) HandlePresence(stanza.Presence, xmlstream.DecodeEncoder) error { return passTest }
+func (passHandler) HandleIQ(stanza.IQ, xmlstream.DecodeEncoder, *xml.StartElement) error {
 	return passTest
 }
 
 type multiHandler struct{}
 
-func (multiHandler) HandlePresence(_ stanza.Presence, t xmlstream.TokenReadEncoder) error {
+func (multiHandler) HandlePresence(_ stanza.Presence, t xmlstream.DecodeEncoder) error {
 	d := xml.NewTokenDecoder(t)
 	data := struct {
 		stanza.Presence
@@ -61,7 +60,7 @@ func (multiHandler) HandlePresence(_ stanza.Presence, t xmlstream.TokenReadEncod
 	return passTest
 }
 
-func (m multiHandler) HandleMessage(_ stanza.Message, t xmlstream.TokenReadEncoder) error {
+func (m multiHandler) HandleMessage(_ stanza.Message, t xmlstream.DecodeEncoder) error {
 	d := xml.NewTokenDecoder(t)
 	data := struct {
 		stanza.Message
@@ -84,16 +83,16 @@ func (m multiHandler) HandleMessage(_ stanza.Message, t xmlstream.TokenReadEncod
 
 type failHandler struct{}
 
-func (failHandler) HandleXMPP(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func (failHandler) HandleXMPP(t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	return failTest
 }
-func (failHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
+func (failHandler) HandleMessage(msg stanza.Message, t xmlstream.DecodeEncoder) error {
 	return failTest
 }
-func (failHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEncoder) error {
+func (failHandler) HandlePresence(p stanza.Presence, t xmlstream.DecodeEncoder) error {
 	return failTest
 }
-func (failHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func (failHandler) HandleIQ(iq stanza.IQ, t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	return failTest
 }
 
@@ -101,8 +100,7 @@ type decodeHandler struct {
 	Body string
 }
 
-func (h decodeHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
-	d := xml.NewTokenDecoder(t)
+func (h decodeHandler) HandleMessage(msg stanza.Message, d xmlstream.DecodeEncoder) error {
 	data := struct {
 		stanza.Message
 
@@ -475,7 +473,7 @@ var testCases = [...]struct {
 }
 
 type nopEncoder struct {
-	xml.TokenReader
+	*xml.Decoder
 }
 
 func (nopEncoder) Encode(interface{}) error                          { return nil }
@@ -498,7 +496,7 @@ func TestMux(t *testing.T) {
 			tok, _ := d.Token()
 			start := tok.(xml.StartElement)
 
-			err := m.HandleXMPP(nopEncoder{TokenReader: d}, &start)
+			err := m.HandleXMPP(nopEncoder{Decoder: d}, &start)
 			switch {
 			case tc.err == nil && err != nil:
 				t.Fatalf("unexpected error: %v", err)
@@ -513,18 +511,6 @@ func TestMux(t *testing.T) {
 	}
 }
 
-type testEncoder struct {
-	xml.TokenReader
-	xmlstream.TokenWriter
-}
-
-func (e testEncoder) Encode(v interface{}) error {
-	return marshal.EncodeXML(e.TokenWriter, v)
-}
-func (e testEncoder) EncodeElement(v interface{}, start xml.StartElement) error {
-	return marshal.EncodeXMLElement(e.TokenWriter, v, start)
-}
-
 func TestFallback(t *testing.T) {
 	buf := &bytes.Buffer{}
 	rw := struct {
@@ -536,23 +522,26 @@ func TestFallback(t *testing.T) {
 	}
 	s := xmpptest.NewSession(0, rw)
 
-	r := s.TokenReader()
+	r := s.Decoder()
 	defer r.Close()
 	tok, err := r.Token()
 	if err != nil {
 		t.Fatalf("Bad start token read: `%v'", err)
 	}
 	start := tok.(xml.StartElement)
-	w := s.TokenWriter()
+	w := s.Encoder()
 	defer w.Close()
-	err = mux.New().HandleXMPP(testEncoder{
-		TokenReader: r,
-		TokenWriter: w,
+	err = mux.New().HandleXMPP(struct {
+		xmlstream.Decoder
+		xmlstream.Encoder
+	}{
+		Decoder: r,
+		Encoder: w,
 	}, &start)
 	if err != nil {
 		t.Errorf("Unexpected error: `%v'", err)
 	}
-	if err := w.Flush(); err != nil {
+	if err := w.(xmlstream.Flusher).Flush(); err != nil {
 		t.Errorf("Unexpected error flushing token writer: %q", err)
 	}
 

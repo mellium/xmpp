@@ -8,6 +8,7 @@ package mux // import "mellium.im/xmpp/mux"
 import (
 	"encoding/xml"
 	"fmt"
+	"io"
 	"strings"
 
 	"mellium.im/xmlstream"
@@ -16,6 +17,21 @@ import (
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stanza"
 )
+
+func newDecodeEncoder(t xml.TokenReader, e xmlstream.Encoder) xmlstream.DecodeEncoder {
+	d, ok := t.(xmlstream.Decoder)
+	if !ok {
+		d = xml.NewTokenDecoder(t)
+	}
+
+	return struct {
+		xmlstream.Decoder
+		xmlstream.Encoder
+	}{
+		Decoder: d,
+		Encoder: e,
+	}
+}
 
 const (
 	iqStanza   = "iq"
@@ -200,7 +216,7 @@ func (m *ServeMux) PresenceHandler(typ stanza.PresenceType, payload xml.Name) (h
 }
 
 // HandleXMPP dispatches the request to the handler that most closely matches.
-func (m *ServeMux) HandleXMPP(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func (m *ServeMux) HandleXMPP(t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	h, _ := m.Handler(start.Name)
 	return h.HandleXMPP(t, start)
 }
@@ -311,11 +327,11 @@ func HandleFunc(n xml.Name, h xmpp.HandlerFunc) Option {
 
 type nopHandler struct{}
 
-func (nopHandler) HandleXMPP(t xmlstream.TokenReadEncoder, start *xml.StartElement) error { return nil }
-func (nopHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error   { return nil }
-func (nopHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEncoder) error   { return nil }
+func (nopHandler) HandleXMPP(xmlstream.DecodeEncoder, *xml.StartElement) error   { return nil }
+func (nopHandler) HandleMessage(stanza.Message, xmlstream.DecodeEncoder) error   { return nil }
+func (nopHandler) HandlePresence(stanza.Presence, xmlstream.DecodeEncoder) error { return nil }
 
-func (m *ServeMux) iqRouter(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func (m *ServeMux) iqRouter(t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	iq, err := stanza.NewIQ(*start)
 	if err != nil {
 		return err
@@ -324,18 +340,17 @@ func (m *ServeMux) iqRouter(t xmlstream.TokenReadEncoder, start *xml.StartElemen
 	// Limit the stream to the inside of the IQ element, don't allow handlers to
 	// advance to the end token since they don't have access to the IQ start
 	// token.
-	t = struct {
-		xml.TokenReader
-		xmlstream.Encoder
-	}{
-		Encoder:     t,
-		TokenReader: xmlstream.Inner(t),
-	}
+	t = newDecodeEncoder(xmlstream.Inner(t), t)
 	tok, err := t.Token()
 	if err != nil {
 		return err
 	}
-	payloadStart, _ := tok.(xml.StartElement)
+	payloadStart, ok := tok.(xml.StartElement)
+	if !ok {
+		// This is an empty IQ element, which is illegal so bail out and just return
+		// io.EOF.
+		return io.EOF
+	}
 	h, _ := m.IQHandler(iq.Type, payloadStart.Name)
 	return h.HandleIQ(iq, t, &payloadStart)
 }
@@ -378,7 +393,7 @@ func (e multiErr) Error() string {
 	return buf.String()
 }
 
-func (m *ServeMux) msgRouter(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func (m *ServeMux) msgRouter(t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	msg, err := stanza.NewMessage(*start)
 	if err != nil {
 		return err
@@ -387,7 +402,7 @@ func (m *ServeMux) msgRouter(t xmlstream.TokenReadEncoder, start *xml.StartEleme
 	return forChildren(m, msg, t, start)
 }
 
-func (m *ServeMux) presenceRouter(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func (m *ServeMux) presenceRouter(t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	presence, err := stanza.NewPresence(*start)
 	if err != nil {
 		return err
@@ -396,7 +411,7 @@ func (m *ServeMux) presenceRouter(t xmlstream.TokenReadEncoder, start *xml.Start
 	return forChildren(m, presence, t, start)
 }
 
-func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	r := &bufReader{
 		r: t,
 		// TODO: figure out a good buffer size
@@ -420,24 +435,13 @@ func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncode
 		case stanza.Presence:
 			br := &bufReader{r: t, buf: r.buf}
 			h, _ := m.PresenceHandler(s.Type, start.Name)
-			err = h.HandlePresence(s, struct {
-				xml.TokenReader
-				xmlstream.Encoder
-			}{
-				TokenReader: br,
-				Encoder:     t,
-			})
+
+			err = h.HandlePresence(s, newDecodeEncoder(br, t))
 			r.buf = br.buf
 		case stanza.Message:
 			br := &bufReader{r: t, buf: r.buf}
 			h, _ := m.MessageHandler(s.Type, start.Name)
-			err = h.HandleMessage(s, struct {
-				xml.TokenReader
-				xmlstream.Encoder
-			}{
-				TokenReader: br,
-				Encoder:     t,
-			})
+			err = h.HandleMessage(s, newDecodeEncoder(br, t))
 			r.buf = br.buf
 		}
 		if err != nil {
@@ -457,28 +461,16 @@ func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncode
 		switch s := stanzaVal.(type) {
 		case stanza.Presence:
 			h, _ := m.PresenceHandler(s.Type, xml.Name{})
-			return h.HandlePresence(s, struct {
-				xml.TokenReader
-				xmlstream.Encoder
-			}{
-				TokenReader: r,
-				Encoder:     t,
-			})
+			return h.HandlePresence(s, newDecodeEncoder(r, t))
 		case stanza.Message:
 			h, _ := m.MessageHandler(s.Type, xml.Name{})
-			return h.HandleMessage(s, struct {
-				xml.TokenReader
-				xmlstream.Encoder
-			}{
-				TokenReader: r,
-				Encoder:     t,
-			})
+			return h.HandleMessage(s, newDecodeEncoder(r, t))
 		}
 	}
 	return nil
 }
 
-func iqFallback(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func iqFallback(iq stanza.IQ, t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	if iq.Type == stanza.ErrorIQ {
 		return nil
 	}

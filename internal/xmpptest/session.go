@@ -23,7 +23,7 @@ import (
 func NopNegotiator(state xmpp.SessionState) xmpp.Negotiator {
 	return func(ctx context.Context, s *xmpp.Session, data interface{}) (xmpp.SessionState, io.ReadWriter, interface{}, error) {
 		// Pop the stream start token.
-		rc := s.TokenReader()
+		rc := s.Decoder()
 		defer rc.Close()
 
 		_, err := rc.Token()

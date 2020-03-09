@@ -28,11 +28,6 @@ var (
 	_ xmlstream.WriterTo  = xtime.Time{}
 )
 
-type tokenReadEncoder struct {
-	xml.TokenReader
-	xmlstream.Encoder
-}
-
 func TestRoundTrip(t *testing.T) {
 	// TODO: this test will likely be shared between all IQ handler packages. Can
 	// we provide a helper in xmpptest to automate it?
@@ -60,9 +55,12 @@ func TestRoundTrip(t *testing.T) {
 	e := xml.NewEncoder(&b)
 
 	m := mux.New(xtime.Handle(h))
-	err = m.HandleXMPP(tokenReadEncoder{
-		TokenReader: d,
-		Encoder:     e,
+	err = m.HandleXMPP(struct {
+		xmlstream.Decoder
+		xmlstream.Encoder
+	}{
+		Decoder: d,
+		Encoder: e,
 	}, &start)
 	if err != nil {
 		t.Errorf("unexpected error in handler: %v", err)

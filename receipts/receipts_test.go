@@ -47,11 +47,11 @@ func TestClosedDoesNotPanic(t *testing.T) {
 	// If the has not been removed from handling when the context is canceled,
 	// this will panic (effectively failing the test).
 	err = h.HandleMessage(msg, struct {
-		xml.TokenReader
+		xmlstream.Decoder
 		xmlstream.Encoder
 	}{
-		TokenReader: r,
-		Encoder:     e,
+		Decoder: xml.NewTokenDecoder(r),
+		Encoder: e,
 	})
 	if err != nil {
 		t.Fatalf("error handling response: %v", err)
@@ -85,11 +85,11 @@ func TestRoundTrip(t *testing.T) {
 
 	m := mux.New(receipts.Handle(h))
 	err = m.HandleXMPP(struct {
-		xml.TokenReader
+		xmlstream.Decoder
 		xmlstream.Encoder
 	}{
-		TokenReader: d,
-		Encoder:     e,
+		Decoder: d,
+		Encoder: e,
 	}, &start)
 	if err != nil {
 		t.Errorf("unexpected error in handler: %v", err)

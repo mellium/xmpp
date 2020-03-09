@@ -133,9 +133,9 @@ func decodeClientResp(ctx context.Context, r xml.TokenReader, decode func(ctx co
 func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session, interface{}) (xmpp.SessionState, io.ReadWriter, error) {
 	return func(ctx context.Context, session *xmpp.Session, supported interface{}) (mask xmpp.SessionState, rw io.ReadWriter, err error) {
 		server := (session.State() & xmpp.Received) == xmpp.Received
-		w := session.TokenWriter()
+		w := session.Encoder()
 		defer w.Close()
-		r := session.TokenReader()
+		r := session.Decoder()
 		defer r.Close()
 
 		if !server && !supported.(bool) {
@@ -163,7 +163,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 				if err != nil {
 					return
 				}
-				err = w.Flush()
+				err = w.(xmlstream.Flusher).Flush()
 				if err != nil {
 					return
 				}

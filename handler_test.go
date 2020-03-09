@@ -11,17 +11,19 @@ import (
 
 var errHandlerFuncSentinal = errors.New("handler test")
 
-type sentinalReadWriter struct{}
+type sentinalDecodeEncoder struct{}
 
-func (sentinalReadWriter) Token() (xml.Token, error)                         { return nil, nil }
-func (sentinalReadWriter) EncodeToken(xml.Token) error                       { return nil }
-func (sentinalReadWriter) Encode(interface{}) error                          { return nil }
-func (sentinalReadWriter) EncodeElement(interface{}, xml.StartElement) error { return nil }
+func (sentinalDecodeEncoder) Token() (xml.Token, error)                          { return nil, nil }
+func (sentinalDecodeEncoder) Decode(interface{}) error                           { return nil }
+func (sentinalDecodeEncoder) DecodeElement(interface{}, *xml.StartElement) error { return nil }
+func (sentinalDecodeEncoder) EncodeToken(xml.Token) error                        { return nil }
+func (sentinalDecodeEncoder) Encode(interface{}) error                           { return nil }
+func (sentinalDecodeEncoder) EncodeElement(interface{}, xml.StartElement) error  { return nil }
 
 func TestHandlerFunc(t *testing.T) {
 	s := &xml.StartElement{}
-	var f xmpp.HandlerFunc = func(r xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-		if _, ok := r.(sentinalReadWriter); !ok {
+	var f xmpp.HandlerFunc = func(r xmlstream.DecodeEncoder, start *xml.StartElement) error {
+		if _, ok := r.(sentinalDecodeEncoder); !ok {
 			t.Errorf("HandleXMPP did not pass reader to HandlerFunc")
 		}
 		if start != s {
@@ -30,7 +32,7 @@ func TestHandlerFunc(t *testing.T) {
 		return errHandlerFuncSentinal
 	}
 
-	err := f.HandleXMPP(sentinalReadWriter{}, s)
+	err := f.HandleXMPP(sentinalDecodeEncoder{}, s)
 	if err != errHandlerFuncSentinal {
 		t.Errorf("HandleXMPP did not return handlerfunc error, got %q", err)
 	}

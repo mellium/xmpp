@@ -31,7 +31,7 @@ func TestClosedInputStream(t *testing.T) {
 			mask := xmpp.SessionState(i)
 			buf := new(bytes.Buffer)
 			s := xmpptest.NewSession(mask, buf)
-			r := s.TokenReader()
+			r := s.Decoder()
 			defer r.Close()
 
 			_, err := r.Token()
@@ -51,7 +51,7 @@ func TestClosedOutputStream(t *testing.T) {
 			mask := xmpp.SessionState(i)
 			buf := new(bytes.Buffer)
 			s := xmpptest.NewSession(mask, buf)
-			w := s.TokenWriter()
+			w := s.Encoder()
 			defer w.Close()
 
 			switch err := w.EncodeToken(xml.CharData("chartoken")); {
@@ -60,7 +60,7 @@ func TestClosedOutputStream(t *testing.T) {
 			case mask&xmpp.OutputStreamClosed == 0 && err != nil:
 				t.Errorf("Unexpected error: `%v'", err)
 			}
-			switch err := w.Flush(); {
+			switch err := w.(xmlstream.Flusher).Flush(); {
 			case mask&xmpp.OutputStreamClosed == xmpp.OutputStreamClosed && err != xmpp.ErrOutputStreamClosed:
 				t.Errorf("Unexpected error flushing: want=`%v', got=`%v'", xmpp.ErrOutputStreamClosed, err)
 			case mask&xmpp.OutputStreamClosed == 0 && err != nil:
@@ -137,7 +137,7 @@ func TestNegotiator(t *testing.T) {
 
 const invalidIQ = `<iq type="error" id="1234"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`
 
-var failHandler xmpp.HandlerFunc = func(r xmlstream.TokenReadEncoder, t *xml.StartElement) error {
+var failHandler xmpp.HandlerFunc = func(r xmlstream.DecodeEncoder, t *xml.StartElement) error {
 	return errors.New("session_test: FAILED")
 }
 
@@ -161,7 +161,7 @@ var serveTests = [...]struct {
 		out: invalidIQ + `</stream:stream>`,
 	},
 	3: {
-		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.DecodeEncoder, start *xml.StartElement) error {
 			_, err := xmlstream.Copy(rw, stanza.IQ{
 				ID:   "1234",
 				Type: stanza.ResultIQ,
@@ -172,7 +172,7 @@ var serveTests = [...]struct {
 		out: `<iq type="result" id="1234"></iq></stream:stream>`,
 	},
 	4: {
-		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.DecodeEncoder, start *xml.StartElement) error {
 			_, err := xmlstream.Copy(rw, stanza.IQ{
 				ID:   "wrongid",
 				Type: stanza.ResultIQ,
@@ -183,7 +183,7 @@ var serveTests = [...]struct {
 		out: `<iq type="result" id="wrongid"></iq>` + invalidIQ + `</stream:stream>`,
 	},
 	5: {
-		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.DecodeEncoder, start *xml.StartElement) error {
 			_, err := xmlstream.Copy(rw, stanza.IQ{
 				ID:   "1234",
 				Type: stanza.ErrorIQ,
@@ -194,7 +194,7 @@ var serveTests = [...]struct {
 		out: `<iq type="error" id="1234"></iq></stream:stream>`,
 	},
 	6: {
-		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.DecodeEncoder, start *xml.StartElement) error {
 			_, err := xmlstream.Copy(rw, stanza.IQ{
 				ID:   "1234",
 				Type: stanza.GetIQ,
@@ -205,7 +205,7 @@ var serveTests = [...]struct {
 		out: `<iq type="get" id="1234"></iq>` + invalidIQ + `</stream:stream>`,
 	},
 	7: {
-		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.DecodeEncoder, start *xml.StartElement) error {
 			for _, attr := range start.Attr {
 				if attr.Name.Local == "from" && attr.Value != "" {
 					panic("expected attr to be normalized")
@@ -217,7 +217,7 @@ var serveTests = [...]struct {
 		out: `</stream:stream>`,
 	},
 	8: {
-		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.DecodeEncoder, start *xml.StartElement) error {
 			for _, attr := range start.Attr {
 				if attr.Name.Local == "from" && attr.Value == "" {
 					panic("expected attr not to be normalized")
@@ -229,7 +229,7 @@ var serveTests = [...]struct {
 		out: `</stream:stream>`,
 	},
 	9: {
-		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.DecodeEncoder, start *xml.StartElement) error {
 			for _, attr := range start.Attr {
 				if attr.Name.Local == "from" && attr.Value == "" {
 					panic("expected attr not to be normalized")
@@ -241,7 +241,7 @@ var serveTests = [...]struct {
 		out: `</stream:stream>`,
 	},
 	10: {
-		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.DecodeEncoder, start *xml.StartElement) error {
 			for _, attr := range start.Attr {
 				if attr.Name.Local == "from" && attr.Value == "" {
 					panic("expected attr not to be normalized")
@@ -258,7 +258,7 @@ var serveTests = [...]struct {
 		out:     `</stream:stream>`,
 	},
 	12: {
-		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.DecodeEncoder, start *xml.StartElement) error {
 			if start.Name.Space == stream.NS || start.Name.Space == "stream" {
 				return fmt.Errorf("handler should never receive stream namespaced elements but got %v", start)
 			}
@@ -269,7 +269,7 @@ var serveTests = [...]struct {
 		err: stream.InternalServerError,
 	},
 	13: {
-		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.DecodeEncoder, start *xml.StartElement) error {
 			if start.Name.Space == stream.NS || start.Name.Space == "stream" {
 				return fmt.Errorf("handler should never receive stream namespaced elements but got %v", start)
 			}
@@ -282,7 +282,7 @@ var serveTests = [...]struct {
 	14: {
 		// Regression test to ensure that we can't advance beyond the end of the
 		// current element and that the close element is included in the stream.
-		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		handler: xmpp.HandlerFunc(func(rw xmlstream.DecodeEncoder, start *xml.StartElement) error {
 			if start.Name.Local == "b" {
 				return nil
 			}

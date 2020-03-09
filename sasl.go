@@ -135,9 +135,8 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 				return mask, nil, err
 			}
 
-			r := session.TokenReader()
-			defer r.Close()
-			d := xml.NewTokenDecoder(r)
+			d := session.Decoder()
+			defer d.Close()
 
 			// If we're already done after the first step, decode the <success/> or
 			// <failure/> before we exit.
@@ -205,7 +204,7 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 	}
 }
 
-func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement, allowChallenge bool) (challenge []byte, success bool, err error) {
+func decodeSASLChallenge(d xmlstream.Decoder, start xml.StartElement, allowChallenge bool) (challenge []byte, success bool, err error) {
 	switch start.Name {
 	case xml.Name{Space: ns.SASL, Local: "challenge"}, xml.Name{Space: ns.SASL, Local: "success"}:
 		if !allowChallenge && start.Name.Local == "challenge" {

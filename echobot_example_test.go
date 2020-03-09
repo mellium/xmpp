@@ -62,9 +62,7 @@ func Example_echobot() {
 		return
 	}
 
-	s.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-		d := xml.NewTokenDecoder(t)
-
+	s.Serve(xmpp.HandlerFunc(func(t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 		// Ignore anything that's not a message. In a real system we'd want to at
 		// least respond to IQs.
 		if start.Name.Local != "message" {
@@ -72,7 +70,7 @@ func Example_echobot() {
 		}
 
 		msg := MessageBody{}
-		err = d.DecodeElement(&msg, start)
+		err = t.DecodeElement(&msg, start)
 		if err != nil && err != io.EOF {
 			log.Printf("Error decoding message: %q", err)
 			return nil

@@ -252,7 +252,7 @@ func getFeature(name xml.Name, features []StreamFeature) (feature StreamFeature,
 
 func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeature) (list *streamFeaturesList, err error) {
 	start := xml.StartElement{Name: xml.Name{Space: "", Local: "stream:features"}}
-	w := s.TokenWriter()
+	w := s.Encoder()
 	defer w.Close()
 	if err = w.EncodeToken(start); err != nil {
 		return
@@ -288,7 +288,7 @@ func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeatu
 	if err = w.EncodeToken(start.End()); err != nil {
 		return list, err
 	}
-	if err = w.Flush(); err != nil {
+	if err = w.(xmlstream.Flusher).Flush(); err != nil {
 		return list, err
 	}
 	return list, err

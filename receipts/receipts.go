@@ -56,7 +56,7 @@ type Handler struct {
 
 // HandleMessage implements mux.MessageHandler and responds to requests and
 // responses for message delivery receipts.
-func (h *Handler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
+func (h *Handler) HandleMessage(msg stanza.Message, t xmlstream.DecodeEncoder) error {
 	// Pop the start message token
 	_, err := t.Token()
 	if err != nil {

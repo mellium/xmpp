@@ -63,8 +63,8 @@ func TestEncode(t *testing.T) {
 	})
 }
 
-type tokenReadEncoder struct {
-	xml.TokenReader
+type decodeEncoder struct {
+	xmlstream.Decoder
 	xmlstream.Encoder
 }
 
@@ -89,9 +89,9 @@ func TestRoundTrip(t *testing.T) {
 	e := xml.NewEncoder(&b)
 
 	m := mux.New(ping.Handle())
-	err = m.HandleXMPP(tokenReadEncoder{
-		TokenReader: d,
-		Encoder:     e,
+	err = m.HandleXMPP(decodeEncoder{
+		Decoder: d,
+		Encoder: e,
 	}, &start)
 	if err != nil {
 		t.Errorf("unexpected error handling ping: %v", err)
@@ -118,9 +118,9 @@ func TestWrongIQType(t *testing.T) {
 	start := tok.(xml.StartElement)
 
 	m := mux.New(mux.IQ(stanza.SetIQ, xml.Name{Local: "ping", Space: ping.NS}, ping.Handler{}))
-	err := m.HandleXMPP(tokenReadEncoder{
-		TokenReader: d,
-		Encoder:     e,
+	err := m.HandleXMPP(decodeEncoder{
+		Decoder: d,
+		Encoder: e,
 	}, &start)
 	if err != nil {
 		t.Errorf("unexpected error handling ping: %v", err)
@@ -144,9 +144,9 @@ func TestBadPayloadLocalname(t *testing.T) {
 	start := tok.(xml.StartElement)
 
 	m := mux.New(mux.IQ(stanza.GetIQ, xml.Name{Local: "badlocal", Space: ping.NS}, ping.Handler{}))
-	err := m.HandleXMPP(tokenReadEncoder{
-		TokenReader: d,
-		Encoder:     e,
+	err := m.HandleXMPP(decodeEncoder{
+		Decoder: d,
+		Encoder: e,
 	}, &start)
 	if err != nil {
 		t.Errorf("unexpected error handling ping: %v", err)
@@ -170,9 +170,9 @@ func TestBadPayloadNamespace(t *testing.T) {
 	start := tok.(xml.StartElement)
 
 	m := mux.New(mux.IQ(stanza.GetIQ, xml.Name{Local: "ping", Space: "badnamespace"}, ping.Handler{}))
-	err := m.HandleXMPP(tokenReadEncoder{
-		TokenReader: d,
-		Encoder:     e,
+	err := m.HandleXMPP(decodeEncoder{
+		Decoder: d,
+		Encoder: e,
 	}, &start)
 	if err != nil {
 		t.Errorf("unexpected error handling ping: %v", err)

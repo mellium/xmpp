@@ -12,16 +12,16 @@ import (
 
 // A Handler triggers events or responds to incoming elements in an XML stream.
 type Handler interface {
-	HandleXMPP(t xmlstream.TokenReadEncoder, start *xml.StartElement) error
+	HandleXMPP(t xmlstream.DecodeEncoder, start *xml.StartElement) error
 }
 
 // The HandlerFunc type is an adapter to allow the use of ordinary functions as
 // XMPP handlers.
 // If f is a function with the appropriate signature, HandlerFunc(f) is a
 // Handler that calls f.
-type HandlerFunc func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error
+type HandlerFunc func(t xmlstream.DecodeEncoder, start *xml.StartElement) error
 
 // HandleXMPP calls f(t, start).
-func (f HandlerFunc) HandleXMPP(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func (f HandlerFunc) HandleXMPP(t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	return f(t, start)
 }

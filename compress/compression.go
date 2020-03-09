@@ -86,9 +86,8 @@ func New(methods ...Method) xmpp.StreamFeature {
 		},
 		Negotiate: func(ctx context.Context, session *xmpp.Session, data interface{}) (mask xmpp.SessionState, rw io.ReadWriter, err error) {
 			conn := session.Conn()
-			r := session.TokenReader()
-			defer r.Close()
-			d := xml.NewTokenDecoder(r)
+			d := session.Decoder()
+			defer d.Close()
 
 			// If we're a server.
 			if (session.State() & xmpp.Received) == xmpp.Received {
@@ -154,7 +153,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 			}
 
 			if t, ok := tok.(xml.StartElement); ok && t.Name.Local == "compressed" && t.Name.Space == NSProtocol {
-				if err = d.Skip(); err != nil {
+				if err = xmlstream.Skip(d); err != nil {
 					return mask, nil, err
 				}
 				rw, err = selected.Wrapper(conn)

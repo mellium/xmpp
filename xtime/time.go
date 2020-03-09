@@ -123,7 +123,7 @@ type Handler struct {
 }
 
 // HandleIQ responds to entity time requests.
-func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	if iq.Type != stanza.GetIQ || start.Name.Local != "time" || start.Name.Space != NS {
 		return nil
 	}

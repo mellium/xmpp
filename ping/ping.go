@@ -28,7 +28,7 @@ func Handle() mux.Option {
 type Handler struct{}
 
 // HandleIQ implements mux.IQHandler.
-func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	if iq.Type != stanza.GetIQ || start.Name.Local != "ping" || start.Name.Space != NS {
 		return nil
 	}

@@ -73,14 +73,9 @@
 // required or may be received out of order.
 // This is accomplished with two XML streams: an input stream and an output
 // stream.
-// To receive XML on the input stream, Session implements the xml.TokenReader
-// interface defined in encoding/xml; this allows session to be wrapped with
-// xml.NewTokenDecoder.
-// To send XML on the output stream, Session has a TokenEncoder method that
-// returns a token encoder that holds a lock on the output stream until it is
-// closed.
-// The session may also buffer writes and has a Flush method which will write
-// any buffered XML to the underlying connection.
+// To receive and send XML, Session has the Decoder and Encoder methods that
+// hold a lock on the input or output streams until the returned closers are
+// called.
 //
 // Writing individual XML tokens can be tedious and error prone.
 // The stanza package contains functions and structs that aid in the
@@ -102,9 +97,7 @@
 // stream to the end of the element when the handler returns (even if the
 // handler did not consume the entire element).
 //
-//     err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-//         d := xml.NewTokenDecoder(t)
-//
+//     err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenDecodeEncoder, start *xml.StartElement) error {
 //         // Ignore anything that's not a message.
 //         if start.Name.Local != "message" {
 //             return nil
@@ -114,7 +107,7 @@
 //             stanza.Message
 //             Body string `xml:"body"`
 //         }{}
-//         err := d.DecodeElement(&msg, start)
+//         err := t.DecodeElement(&msg, start)
 //         …
 //         if msg.Body != "" {
 //             log.Println("Got message: %q", msg.Body)

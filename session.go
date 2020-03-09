@@ -299,7 +299,7 @@ func (s *Session) sendError(err error) (e error) {
 
 type nopHandler struct{}
 
-func (nopHandler) HandleXMPP(xmlstream.TokenReadEncoder, *xml.StartElement) error {
+func (nopHandler) HandleXMPP(xmlstream.DecodeEncoder, *xml.StartElement) error {
 	return nil
 }
 
@@ -319,7 +319,7 @@ func (r iqResponder) Close() error {
 
 func handleInputStream(s *Session, handler Handler) (err error) {
 	discard := xmlstream.Discard()
-	rc := s.TokenReader()
+	rc := s.Decoder()
 	defer rc.Close()
 	r := intstream.Reader(rc)
 
@@ -397,12 +397,12 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 
 noreply:
 
-	w := s.TokenWriter()
+	w := s.Encoder()
 	defer w.Close()
 	rw := &responseChecker{
-		TokenReader: xmlstream.MultiReader(xmlstream.Inner(r), xmlstream.Token(start.End())),
-		TokenWriter: w,
-		id:          id,
+		Decoder: xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Inner(r), xmlstream.Token(start.End()))),
+		Encoder: w,
+		id:      id,
 	}
 	if err := handler.HandleXMPP(rw, &start); err != nil {
 		return err
@@ -422,7 +422,7 @@ noreply:
 		}
 	}
 
-	if err := w.Flush(); err != nil {
+	if err := rw.Flush(); err != nil {
 		return err
 	}
 
@@ -433,8 +433,8 @@ noreply:
 }
 
 type responseChecker struct {
-	xml.TokenReader
-	xmlstream.TokenWriter
+	xmlstream.Decoder
+	xmlstream.Encoder
 	id        string
 	wroteResp bool
 	level     int
@@ -452,7 +452,14 @@ func (rw *responseChecker) EncodeToken(t xml.Token) error {
 		rw.level--
 	}
 
-	return rw.TokenWriter.EncodeToken(t)
+	return rw.Encoder.EncodeToken(t)
+}
+
+func (rw *responseChecker) Flush() error {
+	if f, ok := rw.Encoder.(xmlstream.Flusher); ok {
+		return f.Flush()
+	}
+	return nil
 }
 
 func (rw *responseChecker) Encode(v interface{}) error {
@@ -498,6 +505,14 @@ func (lwc *lockWriteCloser) EncodeToken(t xml.Token) error {
 	return lwc.w.out.e.EncodeToken(t)
 }
 
+func (lwc *lockWriteCloser) Encode(v interface{}) error {
+	return marshal.EncodeXML(lwc, v)
+}
+
+func (lwc *lockWriteCloser) EncodeElement(v interface{}, start xml.StartElement) error {
+	return marshal.EncodeXMLElement(lwc, v, start)
+}
+
 func (lwc *lockWriteCloser) Flush() error {
 	if lwc.err != nil {
 		return nil
@@ -535,6 +550,14 @@ func (lrc *lockReadCloser) Token() (xml.Token, error) {
 	return lrc.s.in.d.Token()
 }
 
+func (lrc *lockReadCloser) Decode(v interface{}) error {
+	return xml.NewTokenDecoder(lrc.s.in.d).Decode(v)
+}
+
+func (lrc *lockReadCloser) DecodeElement(v interface{}, start *xml.StartElement) error {
+	return xml.NewTokenDecoder(lrc.s.in.d).DecodeElement(v, start)
+}
+
 func (lrc *lockReadCloser) Close() error {
 	if lrc.err != nil {
 		return nil
@@ -544,13 +567,13 @@ func (lrc *lockReadCloser) Close() error {
 	return nil
 }
 
-// TokenWriter returns a new xmlstream.TokenWriteCloser that can be used to
-// write raw XML tokens to the session.
-// All other writes and future calls to TokenWriter will block until the Close
+// Encoder returns a new xmlstream.EncodeCloser that can be used to write XML
+// tokens and elements to the session.
+// All other writes and future calls to Encoder will block until the Close
 // method is called.
-// After the TokenWriteCloser has been closed, any future writes will return
+// After the TokenEncodeCloser has been closed, any future writes will return
 // io.EOF.
-func (s *Session) TokenWriter() xmlstream.TokenWriteFlushCloser {
+func (s *Session) Encoder() xmlstream.EncodeCloser {
 	s.out.Lock()
 
 	return &lockWriteCloser{
@@ -559,13 +582,13 @@ func (s *Session) TokenWriter() xmlstream.TokenWriteFlushCloser {
 	}
 }
 
-// TokenReader returns a new xmlstream.TokenReadCloser that can be used to read
-// raw XML tokens from the session.
-// All other reads and future calls to TokenReader will block until the Close
-// method is called.
-// After the TokenReadCloser has been closed, any future reads will return
+// Decoder returns a new xmlstream.DecodeCloser that can be used to read XML
+// tokens and elements from the session.
+// All other reads and future calls to Decoder will block until the Close method
+// is called.
+// After the TokenDecodeCloser has been closed, any future reads will return
 // io.EOF.
-func (s *Session) TokenReader() xmlstream.TokenReadCloser {
+func (s *Session) Decoder() xmlstream.DecodeCloser {
 	s.in.Lock()
 
 	return &lockReadCloser{

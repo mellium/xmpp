@@ -53,9 +53,8 @@ func StartTLS(required bool, cfg *tls.Config) StreamFeature {
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
 			conn := session.Conn()
 			state := session.State()
-			r := session.TokenReader()
-			defer r.Close()
-			d := xml.NewTokenDecoder(r)
+			d := session.Decoder()
+			defer d.Close()
 
 			// If no TLSConfig was specified, use a default config.
 			if cfg == nil {
@@ -83,13 +82,13 @@ func StartTLS(required bool, cfg *tls.Config) StreamFeature {
 						return mask, nil, stream.UnsupportedStanzaType
 					case tok.Name.Local == "proceed":
 						// Skip the </proceed> token.
-						if err = d.Skip(); err != nil {
+						if err = xmlstream.Skip(d); err != nil {
 							return mask, nil, stream.InvalidXML
 						}
 						rw = tls.Client(conn, cfg)
 					case tok.Name.Local == "failure":
 						// Skip the </failure> token.
-						if err = d.Skip(); err != nil {
+						if err = xmlstream.Skip(d); err != nil {
 							err = stream.InvalidXML
 						}
 						// Failure is not an "error", it's expected behavior. Immediately

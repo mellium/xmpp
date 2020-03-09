@@ -100,10 +100,9 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			return true, nil, xml.NewTokenDecoder(r).DecodeElement(&parsed, start)
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
-			r := session.TokenReader()
-			defer r.Close()
-			d := xml.NewTokenDecoder(r)
-			w := session.TokenWriter()
+			d := session.Decoder()
+			defer d.Close()
+			w := session.Encoder()
 			defer w.Close()
 
 			// Handle the server side of resource binding if we're on the receiving
@@ -161,7 +160,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 				if err != nil {
 					return mask, nil, err
 				}
-				return mask, nil, w.Flush()
+				return mask, nil, w.(xmlstream.Flusher).Flush()
 			}
 
 			// Client encodes an IQ requesting resource binding.
@@ -179,7 +178,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			if err != nil {
 				return mask, nil, err
 			}
-			if err = w.Flush(); err != nil {
+			if err = w.(xmlstream.Flusher).Flush(); err != nil {
 				return mask, nil, err
 			}
 

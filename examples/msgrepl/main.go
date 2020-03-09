@@ -94,8 +94,7 @@ func main() {
 
 	// Handle incoming messages.
 	go func() {
-		err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-			d := xml.NewTokenDecoder(t)
+		err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenDecodeEncoder, start *xml.StartElement) error {
 			// Ignore anything that's not a message. In a real system we'd want to at
 			// least respond to IQs.
 			if start.Name.Local != "message" {
@@ -103,7 +102,7 @@ func main() {
 			}
 
 			msg := messageBody{}
-			err = d.DecodeElement(&msg, start)
+			err = t.DecodeElement(&msg, start)
 			if err != nil && err != io.EOF {
 				logger.Printf("Error decoding message: %q", err)
 				return nil

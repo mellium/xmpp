@@ -41,7 +41,7 @@ type Handler struct {
 }
 
 // HandleIQ responds to roster push IQs.
-func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.DecodeEncoder, start *xml.StartElement) error {
 	item := Item{}
 	err := xml.NewTokenDecoder(t).Decode(&item)
 	if err != nil {

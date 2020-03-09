@@ -119,11 +119,11 @@ func TestReceivePush(t *testing.T) {
 	start := tok.(xml.StartElement)
 	m := mux.New(roster.Handle(h))
 	err = m.HandleXMPP(struct {
-		xml.TokenReader
+		xmlstream.Decoder
 		xmlstream.Encoder
 	}{
-		TokenReader: d,
-		Encoder:     e,
+		Decoder: d,
+		Encoder: e,
 	}, &start)
 	if err != nil {
 		t.Errorf("unexpected error in handler: %v", err)
