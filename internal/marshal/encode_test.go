@@ -46,4 +46,27 @@ func TestFlushes(t *testing.T) {
 			t.Errorf("Expected 1 flush call got %d", f.flushes)
 		}
 	})
+	t.Run("Encoder.Encode", func(t *testing.T) {
+		f := &testWriteFlusher{}
+		e := marshal.NewEncoder(f)
+		if err := e.Encode(1); err != nil {
+			t.Fatal(err)
+		}
+
+		if f.flushes != 1 {
+			t.Errorf("Expected 1 flush call got %d", f.flushes)
+		}
+	})
+	t.Run("Encoder.EncodeElement", func(t *testing.T) {
+		f := &testWriteFlusher{}
+		e := marshal.NewEncoder(f)
+		start := xml.StartElement{Name: xml.Name{Local: "int"}}
+		if err := e.EncodeElement(1, start); err != nil {
+			t.Fatal(err)
+		}
+
+		if f.flushes != 1 {
+			t.Errorf("Expected 1 flush call got %d", f.flushes)
+		}
+	})
 }

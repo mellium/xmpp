@@ -15,6 +15,23 @@ import (
 
 // BUG(ssw): Functions in this package are extremely inefficient.
 
+type encoder struct {
+	xmlstream.TokenWriter
+}
+
+func (e encoder) Encode(v interface{}) error {
+	return EncodeXML(e.TokenWriter, v)
+}
+
+func (e encoder) EncodeElement(v interface{}, start xml.StartElement) error {
+	return EncodeXMLElement(e.TokenWriter, v, start)
+}
+
+// NewEncoder wraps a token writer in an encoder.
+func NewEncoder(w xmlstream.TokenWriter) xmlstream.Encoder {
+	return encoder{TokenWriter: w}
+}
+
 // EncodeXML writes the XML encoding of v to the stream.
 //
 // See the documentation for xml.Marshal for details about the conversion of Go
