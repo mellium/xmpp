@@ -17,7 +17,6 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
-	"mellium.im/xmpp/internal/iter"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stanza"
 )
@@ -413,7 +412,7 @@ func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncode
 	// TODO: figure out a good buffer size
 	errs := make([]error, 0, 10)
 
-	iterator := iter.New(r)
+	iterator := xmlstream.NewIter(r)
 	/* #nosec */
 	defer iterator.Close()
 

@@ -14,7 +14,6 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/attr"
-	"mellium.im/xmpp/internal/iter"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
@@ -63,7 +62,7 @@ func (h *Handler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder
 		return err
 	}
 
-	i := iter.New(t)
+	i := xmlstream.NewIter(t)
 	/* #nosec */
 	defer i.Close()
 

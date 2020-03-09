@@ -12,7 +12,6 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
-	"mellium.im/xmpp/internal/iter"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
@@ -25,7 +24,7 @@ const (
 
 // Iter is an iterator over roster items.
 type Iter struct {
-	iter    *iter.Iter
+	iter    *xmlstream.Iter
 	current Item
 	err     error
 }
@@ -130,7 +129,7 @@ func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) *Iter {
 
 	// Return the iterator which will parse the rest of the payload incrementally.
 	return &Iter{
-		iter: iter.New(r),
+		iter: xmlstream.NewIter(r),
 	}
 }
 
