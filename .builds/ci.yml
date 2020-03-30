@@ -1,4 +1,4 @@
-image: openbsd/latest
+image: freebsd/latest
 packages:
   - go
 sources:
