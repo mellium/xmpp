@@ -13,7 +13,7 @@ import (
 	"mellium.im/xmlstream"
 )
 
-// BUG(ssw): Functions in this package are extremely inefficient.
+// BUG(ssw): This package is very inefficient, see https://mellium.im/issue/38.
 
 // TokenReader returns a reader for the XML encoding of v.
 func TokenReader(v interface{}) (xml.TokenReader, error) {

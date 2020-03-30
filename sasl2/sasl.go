@@ -26,8 +26,6 @@ import (
 	"mellium.im/xmpp/stream"
 )
 
-// BUG(ssw): feature may provide a security layer, but is not byte precise.
-
 // TODO(ssw): Support caching mechanisms on the feature and pipelining the
 // selection.
 

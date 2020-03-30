@@ -16,8 +16,6 @@ import (
 	"mellium.im/xmpp/stream"
 )
 
-// BUG(ssw): STARTTLS feature does not have security layer byte precision.
-
 // StartTLS returns a new stream feature that can be used for negotiating TLS.
 // If cfg is nil, a default configuration is used that uses the domainpart of
 // the sessions local address as the ServerName.

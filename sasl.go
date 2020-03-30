@@ -20,8 +20,6 @@ import (
 	"mellium.im/xmpp/stream"
 )
 
-// BUG(ssw): SASL feature does not have security layer byte precision.
-
 // SASL returns a stream feature for performing authentication using the Simple
 // Authentication and Security Layer (SASL) as defined in RFC 4422.
 // It panics if no mechanisms are specified.
