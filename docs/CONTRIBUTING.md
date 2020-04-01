@@ -18,9 +18,8 @@ Once you file an issue or find an existing issue, make sure to mention that
 you're working on the problem and outline your plans so that someone else
 doesn't duplicate your work.
 
-If you're not sure where to begin, grab any of the issues labeled
-[`starter`], and if you need help with any of this, don't be afraid to
-ask!
+If you're not sure where to begin, grab any of the issues labeled [`good first
+issue`], and if you need help with any of this, don't be afraid to ask!
 
 Security sensitive issues should be reported directly to the project maintainer
 by emailing [`security@mellium.im`] for more information see [SECURITY.md].
@@ -119,11 +118,11 @@ conditions.
 [issues]: https://github.com/mellium/xmpp/issues
 [including closed issues]: https://github.com/mellium/xmpp/issues?q=is%3Aissue
 [pull requests]: https://github.com/mellium/xmpp/pulls?q=is%3Apr
-[`starter`]: https://github.com/mellium/xmpp/labels/starter
+[`good first issue`]: https://github.com/mellium/xmpp/labels/good%20first%20issue
 [`security@mellium.im`]: mailto:security@mellium.im
 [benchstat]: https://godoc.org/golang.org/x/perf/cmd/benchstat
 [developercertificate.org]: https://developercertificate.org/
 [DCO]: ./DCO
-[LICENSE]: ./LICENSE
+[LICENSE]: ../LICENSE
 [SECURITY.md]: ./SECURITY.md
 [Code of Conduct]: ./CODE_OF_CONDUCT.md
