@@ -10,6 +10,15 @@ All notable changes to this project will be documented in this file.
 - roster: remove workaround for a bug in Go versions prior to 1.14 which is now
   the earliest supported version
 
+### Added
+
+- internal/integration: new package for writing integration tests
+- internal/integration/ejabberd: [Ejabberd] support for integration tests
+- internal/integration/prosody: [Prosŏdy] support for integration tests
+
+[Ejabberd]: https://www.ejabberd.im/
+[Prosŏdy]: https://prosody.im/
+
 
 ### Fixed
 
