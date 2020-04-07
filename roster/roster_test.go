@@ -7,6 +7,7 @@ package roster_test
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"io"
 	"io/ioutil"
 	"reflect"
@@ -140,5 +141,26 @@ func TestReceivePush(t *testing.T) {
 	out := b.String()
 	if out != "" {
 		t.Errorf("want=%q, got=%q", "", out)
+	}
+}
+
+type errReadWriter struct{}
+
+func (errReadWriter) Write([]byte) (int, error) {
+	return 0, errors.New("called Write on errReadWriter")
+}
+
+func (errReadWriter) Read([]byte) (int, error) {
+	return 0, errors.New("called Read on errReadWriter")
+}
+
+func TestErroredDoesNotPanic(t *testing.T) {
+	s := xmpptest.NewSession(0, errReadWriter{})
+	iter := roster.Fetch(context.Background(), s)
+	if iter.Next() {
+		t.Errorf("expected false from call to next")
+	}
+	if err := iter.Close(); err != nil {
+		t.Errorf("got unexpected error closing iter: %v", err)
 	}
 }

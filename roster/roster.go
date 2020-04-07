@@ -88,6 +88,9 @@ func (i *Iter) Item() Item {
 // the stream may continue.
 // Calling it multiple times has no effect.
 func (i *Iter) Close() error {
+	if i.iter == nil {
+		return nil
+	}
 	return i.iter.Close()
 }
 
