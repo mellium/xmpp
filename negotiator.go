@@ -6,6 +6,7 @@ package xmpp
 
 import (
 	"context"
+	"crypto/tls"
 	"io"
 	"net"
 
@@ -28,10 +29,13 @@ import (
 // (encoders, decoders, etc.) will be reset.
 type Negotiator func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, cache interface{}, err error)
 
+var _ tlsConn = (*teeConn)(nil)
+
 // teeConn is a net.Conn that also copies reads and writes to the provided
 // writers.
 type teeConn struct {
 	net.Conn
+	tlsConn     *tls.Conn
 	ctx         context.Context
 	multiWriter io.Writer
 	teeReader   io.Reader
@@ -46,6 +50,7 @@ func newTeeConn(ctx context.Context, c net.Conn, in, out io.Writer) teeConn {
 	}
 
 	tc := teeConn{Conn: c, ctx: ctx}
+	tc.tlsConn, _ = c.(*tls.Conn)
 	if in != nil {
 		tc.teeReader = io.TeeReader(c, in)
 	}
@@ -53,6 +58,13 @@ func newTeeConn(ctx context.Context, c net.Conn, in, out io.Writer) teeConn {
 		tc.multiWriter = io.MultiWriter(c, out)
 	}
 	return tc
+}
+
+func (tc teeConn) ConnectionState() tls.ConnectionState {
+	if tc.tlsConn == nil {
+		return tls.ConnectionState{}
+	}
+	return tc.tlsConn.ConnectionState()
 }
 
 func (tc teeConn) Write(p []byte) (int, error) {
