@@ -72,7 +72,8 @@ const (
 // A Session represents an XMPP session comprising an input and an output XML
 // stream.
 type Session struct {
-	conn net.Conn
+	conn      net.Conn
+	connState func() tls.ConnectionState
 
 	state SessionState
 
@@ -102,6 +103,15 @@ type Session struct {
 	}
 }
 
+// ConnectionState returns the underlying connections TLS state or the zero
+// value if TLS has not been negotiated.
+func (s *Session) ConnectionState() tls.ConnectionState {
+	if s.connState == nil {
+		return tls.ConnectionState{}
+	}
+	return s.connState()
+}
+
 // NegotiateSession creates an XMPP session using a custom negotiate function.
 // Calling NegotiateSession with a nil Negotiator panics.
 //
@@ -117,6 +127,9 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 		features:   make(map[string]interface{}),
 		negotiated: make(map[string]struct{}),
 		sentIQs:    make(map[string]chan xmlstream.TokenReadCloser),
+	}
+	if tc, ok := s.conn.(tlsConn); ok {
+		s.connState = tc.ConnectionState
 	}
 	if received {
 		s.state |= Received
@@ -151,6 +164,9 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 				delete(s.negotiated, k)
 			}
 			s.conn = newConn(rw, s.conn)
+			if tc, ok := s.conn.(tlsConn); ok {
+				s.connState = tc.ConnectionState
+			}
 			s.in.d = xml.NewDecoder(s.conn)
 			s.out.e = xml.NewEncoder(s.conn)
 		}
