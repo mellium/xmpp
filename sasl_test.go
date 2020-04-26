@@ -2,7 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-package xmpp
+package xmpp_test
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"mellium.im/sasl"
+	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/ns"
 )
 
@@ -21,14 +22,14 @@ func TestSASLPanicsNoMechanisms(t *testing.T) {
 			t.Error("Expected call to SASL() with no mechanisms to panic")
 		}
 	}()
-	_ = SASL("", "")
+	_ = xmpp.SASL("", "")
 }
 
 func TestSASLList(t *testing.T) {
 	b := &bytes.Buffer{}
 	e := xml.NewEncoder(b)
 	start := xml.StartElement{Name: xml.Name{Space: ns.SASL, Local: "mechanisms"}}
-	s := SASL("", "", sasl.Plain, sasl.ScramSha256)
+	s := xmpp.SASL("", "", sasl.Plain, sasl.ScramSha256)
 	req, err := s.List(context.Background(), e, start)
 	switch {
 	case err != nil:
@@ -85,7 +86,7 @@ func TestSASLList(t *testing.T) {
 }
 
 func TestSASLParse(t *testing.T) {
-	s := SASL("", "", sasl.Plain)
+	s := xmpp.SASL("", "", sasl.Plain)
 	for _, test := range []struct {
 		xml   string
 		items []string
