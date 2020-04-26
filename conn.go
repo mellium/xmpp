@@ -5,15 +5,23 @@
 package xmpp
 
 import (
+	"crypto/tls"
 	"io"
 	"net"
 	"time"
 )
 
+type tlsConn interface {
+	ConnectionState() tls.ConnectionState
+}
+
+var _ tlsConn = (*conn)(nil)
+
 // conn is a net.Conn created for the purpose of establishing an XMPP session.
 type conn struct {
-	c  net.Conn
-	rw io.ReadWriter
+	c         net.Conn
+	rw        io.ReadWriter
+	connState func() tls.ConnectionState
 }
 
 // newConn wraps an io.ReadWriter in a Conn.
@@ -25,8 +33,29 @@ func newConn(rw io.ReadWriter, prev net.Conn) net.Conn {
 		return c
 	}
 
-	nc := &conn{rw: rw, c: prev}
+	// Pull out a connection state function if possible.
+	tc, ok := rw.(tlsConn)
+	if !ok {
+		tc, _ = prev.(tlsConn)
+	}
+	var cs func() tls.ConnectionState
+	if tc != nil {
+		cs = tc.ConnectionState
+	}
+
+	nc := &conn{
+		rw:        rw,
+		c:         prev,
+		connState: cs,
+	}
 	return nc
+}
+
+func (c *conn) ConnectionState() tls.ConnectionState {
+	if c.connState == nil {
+		return tls.ConnectionState{}
+	}
+	return c.connState()
 }
 
 // Close closes the connection.
