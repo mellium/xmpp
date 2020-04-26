@@ -12,7 +12,6 @@ package sasl2 // import "mellium.im/xmpp/sasl2"
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
@@ -120,8 +119,8 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) xmpp.StreamFe
 				sasl.RemoteMechanisms(data.([]string)...),
 			}
 
-			if tlsConn, ok := conn.(*tls.Conn); ok {
-				opts = append(opts, sasl.TLSState(tlsConn.ConnectionState()))
+			if connState := session.ConnectionState(); connState.Version != 0 {
+				opts = append(opts, sasl.TLSState(connState))
 			}
 
 			client := sasl.NewClient(selected, opts...)

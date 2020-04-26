@@ -6,7 +6,6 @@ package xmpp
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
@@ -102,8 +101,8 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 				sasl.RemoteMechanisms(data.([]string)...),
 			}
 
-			if tlsConn, ok := c.(*tls.Conn); ok {
-				opts = append(opts, sasl.TLSState(tlsConn.ConnectionState()))
+			if connState := session.ConnectionState(); connState.Version != 0 {
+				opts = append(opts, sasl.TLSState(connState))
 			}
 			client := sasl.NewClient(selected, opts...)
 
