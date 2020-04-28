@@ -1,0 +1,15 @@
+image: freebsd/latest
+packages:
+  - go
+  - openssl
+  - prosody
+  - ejabberd
+sources:
+  - https://git.sr.ht/~samwhited/xmpp
+tasks:
+  - setup: |
+      go version
+      go env
+  - stable: |
+      cd xmpp/
+      go test -v -tags "integration" -run Integration ./...
