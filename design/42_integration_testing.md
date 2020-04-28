@@ -1,7 +1,7 @@
 # Proposal: Create integration testing package
 
 **Author(s):** Sam Whited  
-**Last updated:** 2020-04-05  
+**Last updated:** 2020-04-28  
 **Discussion:** https://mellium.im/issue/42
 
 
@@ -40,9 +40,8 @@ with various config files and other resources and then run commands such as
 
 ## Proposal
 
-The proposed API adds three new types, seven functions, and three methods that
-would have to be maintained if we reached version 1.0 and began observing the Go
-compatibility promise:
+The proposed API adds three new types, seven functions, and three methods to an
+internal package that does not have to be covered by the compatibility promise:
 
 
 ```
