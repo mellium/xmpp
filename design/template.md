@@ -2,7 +2,6 @@
 
 **Author(s):** Your name <email@example.net>  
 **Last updated:** 2020-04-06  
-**Status:** thinking|accepted|declined  
 **Discussion:** https://mellium.im/issue/{issue number}
 
 ## Abstract

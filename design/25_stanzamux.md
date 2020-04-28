@@ -2,7 +2,6 @@
 
 **Author(s):** Sam Whited  
 **Last updated:** 2020-02-26  
-**Status:** accepted  
 **Discussion:** https://mellium.im/issue/25
 
 
