@@ -19,24 +19,22 @@ import (
 // StartTLS returns a new stream feature that can be used for negotiating TLS.
 // If cfg is nil, a default configuration is used that uses the domainpart of
 // the sessions local address as the ServerName.
-func StartTLS(required bool, cfg *tls.Config) StreamFeature {
+func StartTLS(cfg *tls.Config) StreamFeature {
 	return StreamFeature{
 		Name:       xml.Name{Local: "starttls", Space: ns.StartTLS},
 		Prohibited: Secure,
 		List: func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error) {
 			if err = e.EncodeToken(start); err != nil {
-				return required, err
+				return true, err
 			}
-			if required {
-				startRequired := xml.StartElement{Name: xml.Name{Space: "", Local: "required"}}
-				if err = e.EncodeToken(startRequired); err != nil {
-					return required, err
-				}
-				if err = e.EncodeToken(startRequired.End()); err != nil {
-					return required, err
-				}
+			startRequired := xml.StartElement{Name: xml.Name{Space: "", Local: "required"}}
+			if err = e.EncodeToken(startRequired); err != nil {
+				return true, err
 			}
-			return required, e.EncodeToken(start.End())
+			if err = e.EncodeToken(startRequired.End()); err != nil {
+				return true, err
+			}
+			return true, e.EncodeToken(start.End())
 		},
 		Parse: func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {

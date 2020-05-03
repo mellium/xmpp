@@ -35,7 +35,7 @@ func Example_echobot() {
 	s, err := xmpp.DialClientSession(
 		context.TODO(), j,
 		xmpp.BindResource(),
-		xmpp.StartTLS(true, &tls.Config{
+		xmpp.StartTLS(&tls.Config{
 			ServerName: j.Domain().String(),
 		}),
 		xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),

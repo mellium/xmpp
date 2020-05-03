@@ -42,7 +42,7 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 		Lang: "en",
 		Features: []xmpp.StreamFeature{
 			xmpp.BindResource(),
-			xmpp.StartTLS(true, &tls.Config{
+			xmpp.StartTLS(&tls.Config{
 				ServerName: j.Domain().String(),
 			}),
 			xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),

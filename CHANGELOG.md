@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Breaking
+
+- xmpp: remove option to make STARTTLS feature optional
+
+
 ### Added
 
 - xmpp: `ConnectionState` method

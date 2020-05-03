@@ -22,76 +22,66 @@ import (
 // There is no room for variation on the starttls feature negotiation, so step
 // through the list process token for token.
 func TestStartTLSList(t *testing.T) {
-	for _, req := range []bool{true, false} {
-		name := "optional"
-		if req {
-			name = "required"
-		}
-		t.Run(name, func(t *testing.T) {
-			stls := xmpp.StartTLS(req, nil)
-			var b bytes.Buffer
-			e := xml.NewEncoder(&b)
-			start := xml.StartElement{Name: xml.Name{Space: ns.StartTLS, Local: "starttls"}}
-			r, err := stls.List(context.Background(), e, start)
-			switch {
-			case err != nil:
-				t.Fatal(err)
-			case r != req:
-				t.Errorf("Expected StartTLS listing required to be %v but got %v", req, r)
-			}
-			if err = e.Flush(); err != nil {
-				t.Fatal(err)
-			}
+	stls := xmpp.StartTLS(nil)
+	var b bytes.Buffer
+	e := xml.NewEncoder(&b)
+	start := xml.StartElement{Name: xml.Name{Space: ns.StartTLS, Local: "starttls"}}
+	r, err := stls.List(context.Background(), e, start)
+	switch {
+	case err != nil:
+		t.Fatal(err)
+	case !r:
+		t.Error("Expected StartTLS listing to be required")
+	}
+	if err = e.Flush(); err != nil {
+		t.Fatal(err)
+	}
 
-			d := xml.NewDecoder(&b)
-			tok, err := d.Token()
-			if err != nil {
-				t.Fatal(err)
-			}
-			se := tok.(xml.StartElement)
-			switch {
-			case se.Name != xml.Name{Space: ns.StartTLS, Local: "starttls"}:
-				t.Errorf("Expected starttls to start with %+v token but got %+v", ns.StartTLS, se.Name)
-			case len(se.Attr) != 1:
-				t.Errorf("Expected starttls start element to have 1 attribute (xmlns), but got %+v", se.Attr)
-			}
-			if req {
-				tok, err = d.Token()
-				if err != nil {
-					t.Fatal(err)
-				}
-				se := tok.(xml.StartElement)
-				switch {
-				case se.Name != xml.Name{Space: ns.StartTLS, Local: "required"}:
-					t.Errorf("Expected required start element but got %+v", se)
-				case len(se.Attr) > 0:
-					t.Errorf("Expected starttls required to have no attributes but got %d", len(se.Attr))
-				}
-				tok, err = d.Token()
-				if err != nil {
-					t.Fatal(err)
-				}
-				ee := tok.(xml.EndElement)
-				switch {
-				case se.Name != xml.Name{Space: ns.StartTLS, Local: "required"}:
-					t.Errorf("Expected required end element but got %+v", ee)
-				}
-			}
-			tok, err = d.Token()
-			if err != nil {
-				t.Fatal(err)
-			}
-			ee := tok.(xml.EndElement)
-			switch {
-			case se.Name != xml.Name{Space: ns.StartTLS, Local: "starttls"}:
-				t.Errorf("Expected starttls end element but got %+v", ee)
-			}
-		})
+	d := xml.NewDecoder(&b)
+	tok, err := d.Token()
+	if err != nil {
+		t.Fatal(err)
+	}
+	se := tok.(xml.StartElement)
+	switch {
+	case se.Name != xml.Name{Space: ns.StartTLS, Local: "starttls"}:
+		t.Errorf("Expected starttls to start with %+v token but got %+v", ns.StartTLS, se.Name)
+	case len(se.Attr) != 1:
+		t.Errorf("Expected starttls start element to have 1 attribute (xmlns), but got %+v", se.Attr)
+	}
+	tok, err = d.Token()
+	if err != nil {
+		t.Fatal(err)
+	}
+	reqStart := tok.(xml.StartElement)
+	switch {
+	case reqStart.Name != xml.Name{Space: ns.StartTLS, Local: "required"}:
+		t.Errorf("Expected required start element but got %+v", se)
+	case len(reqStart.Attr) > 0:
+		t.Errorf("Expected starttls required to have no attributes but got %d", len(reqStart.Attr))
+	}
+	tok, err = d.Token()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ee := tok.(xml.EndElement)
+	switch {
+	case reqStart.Name != xml.Name{Space: ns.StartTLS, Local: "required"}:
+		t.Errorf("Expected required end element but got %+v", ee)
+	}
+	tok, err = d.Token()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ee = tok.(xml.EndElement)
+	switch {
+	case se.Name != xml.Name{Space: ns.StartTLS, Local: "starttls"}:
+		t.Errorf("Expected starttls end element but got %+v", ee)
 	}
 }
 
 func TestStartTLSParse(t *testing.T) {
-	stls := xmpp.StartTLS(true, nil)
+	stls := xmpp.StartTLS(nil)
 	for i, test := range [...]struct {
 		msg string
 		req bool
@@ -131,7 +121,7 @@ func (nopRWC) Close() error {
 }
 
 func TestNegotiateServer(t *testing.T) {
-	stls := xmpp.StartTLS(true, &tls.Config{})
+	stls := xmpp.StartTLS(&tls.Config{})
 	var b bytes.Buffer
 	c := xmpptest.NewSession(xmpp.Received, nopRWC{&b, &b})
 	_, rw, err := stls.Negotiate(context.Background(), c, nil)
@@ -169,7 +159,7 @@ func TestNegotiateClient(t *testing.T) {
 		7: {[]string{`chardata not start element`}, true, false, 0},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			stls := xmpp.StartTLS(true, &tls.Config{})
+			stls := xmpp.StartTLS(&tls.Config{})
 			r := strings.NewReader(strings.Join(test.responses, "\n"))
 			var b bytes.Buffer
 			c := xmpptest.NewSession(0, nopRWC{r, &b})

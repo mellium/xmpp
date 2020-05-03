@@ -99,7 +99,7 @@ var negotiateTests = [...]negotiateTestCase{
 	0: {negotiator: errNegotiator, err: errTestNegotiate},
 	1: {
 		negotiator: xmpp.NewNegotiator(xmpp.StreamConfig{
-			Features: []xmpp.StreamFeature{xmpp.StartTLS(true, nil)},
+			Features: []xmpp.StreamFeature{xmpp.StartTLS(nil)},
 		}),
 		in:  `<stream:stream id='316732270768047465' version='1.0' xml:lang='en' xmlns:stream='http://etherx.jabber.org/streams' xmlns='jabber:client'><stream:features><other/></stream:features>`,
 		out: `<?xml version="1.0" encoding="UTF-8"?><stream:stream to='' from='' version='1.0' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'><starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`,

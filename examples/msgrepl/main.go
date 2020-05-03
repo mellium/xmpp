@@ -68,7 +68,7 @@ func main() {
 	session, err := xmpp.DialClientSession(
 		dialCtx, parsedAddr,
 		xmpp.BindResource(),
-		xmpp.StartTLS(true, &tls.Config{
+		xmpp.StartTLS(&tls.Config{
 			ServerName: parsedAddr.Domain().String(),
 		}),
 		xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
