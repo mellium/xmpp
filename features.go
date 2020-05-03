@@ -178,8 +178,8 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 					feature: startTLS,
 				}
 			} else {
-				// If we're the client, iterate through the cached features and select one
-				// to negotiate.
+				// If we're the client, iterate through the cached features and select
+				// one to negotiate.
 				for _, v := range list.cache {
 					if _, ok := s.negotiated[v.feature.Name.Space]; ok {
 						// If this feature has already been negotiated, skip it.
@@ -192,8 +192,8 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 						break
 					}
 
-					// If the feature is required, tentatively select it (but finish looking
-					// for optional features).
+					// If the feature is required, tentatively select it (but finish
+					// looking for optional features).
 					if v.req {
 						data = v
 					}
@@ -206,7 +206,7 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 			}
 		}
 
-		mask, rw, err = data.feature.Negotiate(ctx, s, data.data)
+		mask, rw, err = data.feature.Negotiate(ctx, s, s.features[data.feature.Name.Space])
 		if err == nil {
 			s.state |= mask
 		}
@@ -219,7 +219,8 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 		}
 	}
 
-	// If the list contains no required features, negotiation is complete.
+	// If the list contains no required features and a stream restart is not
+	// required,  negotiation is complete.
 	if !list.req {
 		mask |= Ready
 	}
@@ -229,7 +230,6 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 
 type sfData struct {
 	req     bool
-	data    interface{}
 	feature StreamFeature
 }
 
@@ -276,7 +276,6 @@ func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeatu
 			}
 			list.cache[feature.Name.Space] = sfData{
 				req:     r,
-				data:    nil,
 				feature: feature,
 			}
 			if r {
@@ -330,11 +329,8 @@ parsefeatures:
 					return nil, err
 				}
 
-				// TODO: Since we're storing the features data on s.features we can
-				// probably remove it from this temporary cache.
 				sf.cache[tok.Name.Space] = sfData{
 					req:     req,
-					data:    data,
 					feature: feature,
 				}
 
