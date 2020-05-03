@@ -8,12 +8,11 @@ read our [Code of Conduct].
 
 Bugs and feature requests can be started by opening an [issue][issues] (unless
 it is a sensitive security issue, in which case keep reading).
-Always open an issue before creating a pull request unless the PR is trivial,
-all PRs should be linked to an issue and should generally only contain a single
-logical change.
+Always open an issue before submitting a patch unless the PR is trivial, all PRs
+should be linked to an issue and should generally only contain a single logical
+change.
+Don't forget to check the issue tracker ([including closed issues]) for existing issues and changes before you start work.
 
-Don't forget to check the issue tracker ([including closed issues]) and [pull
-requests] for existing issues and changes before you start work.
 Once you file an issue or find an existing issue, make sure to mention that
 you're working on the problem and outline your plans so that someone else
 doesn't duplicate your work.
@@ -35,7 +34,7 @@ and code formatting.
   - Write tests for your code
   - Follow Go best practices
   - Write a detailed commit message
-  - Submit a pull request and wait for review
+  - Submit the patch or patch set and wait for review
 
 Commit messages should start with the name of the Go package being modified, or
 the string "all" if it affects the entire module, followed by a colon.
@@ -62,15 +61,38 @@ For example, a good full commit message might be:
     so they would fail on machines that only had IPv4 networking.
 
 
-## Pull Requests
+## Submitting Patches
 
-Once your pull request is submitted, you will hear back from a maintainer within
-5 days.
-If you haven't heard back by then, feel free to ping the PR to move it back to
-the top of peoples inboxes.
+Patches may be submitted in two ways: using the mailing list (preferred) and
+using a GitHub [pull request].
 
-To update an existing pull request you may add more commits on top of the first
-commit or amend and push the existing commit.
+To submit a patch to the mailing list, first learn to use `git send-email` by
+reading [git-send-email.io], then read the SourceHut [mailing list etiquette]
+guide.
+
+When you're ready, patches may be sent to the [`mellium-devel`] list.
+
+Please prefix the subject with `[PATCH projectname]` (where project name is the
+name of the module or repo you are contributing to).
+For example, to configure your checkout of this repo to always use the correct
+prefix and send to the correct list run:
+
+    git config sendemail.to ~samwhited/mellium-devel@lists.sr.ht
+    git config format.subjectPrefix 'PATCH xmpp'
+
+If you're configuring another repo, be sure to change the name from "xmpp" to
+whatever repo you're updating!
+
+You may also submit
+
+Once your patch set or pull request is submitted, you will hear back from a
+maintainer within 5 days.
+If you haven't heard back by then, feel free to reply to the patch or comment on
+the pull request to ping the maintainers and move it back to the top of peoples
+inboxes.
+
+To update an existing patch set or pull request you may add more commits on top
+of the first commit or amend and push the existing commit.
 Once your change is accepted your reviewer may ask you to rebase your branch
 on top of the base branch and squash it into a single commit that can be merged,
 or they may handle this for you.
@@ -117,10 +139,13 @@ conditions.
 
 [issues]: https://github.com/mellium/xmpp/issues
 [including closed issues]: https://github.com/mellium/xmpp/issues?q=is%3Aissue
-[pull requests]: https://github.com/mellium/xmpp/pulls?q=is%3Apr
+[pull request]: https://github.com/mellium/xmpp/pulls
 [`good first issue`]: https://github.com/mellium/xmpp/labels/good%20first%20issue
 [`security@mellium.im`]: mailto:security@mellium.im
 [benchstat]: https://godoc.org/golang.org/x/perf/cmd/benchstat
+[git-send-email.io]: https://git-send-email.io/
+[mailing list etiquette]: https://man.sr.ht/lists.sr.ht/etiquette.md
+[`mellium-devel`]: https://lists.sr.ht/~samwhited/mellium-devel
 [developercertificate.org]: https://developercertificate.org/
 [DCO]: ./DCO
 [LICENSE]: ../LICENSE
