@@ -1,0 +1,13 @@
+image: alpine/edge
+secrets:
+  - d66b1d1c-77da-4c7c-bd7a-afe0f83f34ed
+  - cfc0975b-ca64-48e2-ae20-43767e03ab51
+tasks:
+  - info: |
+      [ -z "$GITHUB_EVENT" ] || complete-build
+      git version
+  - sync: |
+      git clone --reference ./xmpp --mirror https://git.sr.ht/~samwhited/xmpp xmpp.git
+      cd xmpp.git/
+      cat ~/.ssh/github >> ~/.ssh/known_hosts
+      git push --mirror git@github.com:mellium/xmpp.git
