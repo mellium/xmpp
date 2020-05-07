@@ -266,7 +266,8 @@ func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeatu
 	for _, feature := range features {
 		// Check if all the necessary bits are set and none of the prohibited bits
 		// are set.
-		if (s.state&feature.Necessary) == feature.Necessary && (s.state&feature.Prohibited) == 0 {
+		if (s.state&feature.Necessary) == feature.Necessary &&
+			(s.state&feature.Prohibited) == 0 {
 			var r bool
 			r, err = feature.List(ctx, s.out.e, xml.StartElement{
 				Name: feature.Name,
@@ -322,29 +323,33 @@ parsefeatures:
 			s.features[tok.Name.Space] = nil
 
 			feature, ok := getFeature(tok.Name, features)
-
-			if ok && s.state&feature.Necessary == feature.Necessary && s.state&feature.Prohibited == 0 {
+			if ok {
 				req, data, err := feature.Parse(ctx, s.in.d, &tok)
 				if err != nil {
 					return nil, err
 				}
+				sf.req = sf.req || req
 
-				sf.cache[tok.Name.Space] = sfData{
-					req:     req,
-					feature: feature,
-				}
+				if s.state&feature.Necessary == feature.Necessary &&
+					s.state&feature.Prohibited == 0 {
 
-				// Since we do support the feature, add it to the connections list along
-				// with any data returned from Parse.
-				s.features[tok.Name.Space] = data
-				if req {
-					sf.req = true
+					// TODO: Since we're storing the features data on s.features we can
+					// probably remove it from this temporary cache.
+					sf.cache[tok.Name.Space] = sfData{
+						req:     req,
+						feature: feature,
+					}
+
+					// Since we do support the feature, add it to the connections list
+					// along with any data returned from Parse.
+					s.features[tok.Name.Space] = data
+					continue parsefeatures
 				}
-				continue parsefeatures
-			}
-			// If the feature is not one we support, skip it.
-			if err := xmlstream.Skip(s.in.d); err != nil {
-				return nil, err
+			} else {
+				// If the feature is not one we support, skip it.
+				if err := xmlstream.Skip(s.in.d); err != nil {
+					return nil, err
+				}
 			}
 		case xml.EndElement:
 			if tok.Name.Local == featuresLocal && tok.Name.Space == stream.NS {

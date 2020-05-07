@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 
 
+## Unreleased
+
+### Fixed
+
+- xmpp: stream negotiation no longer fails when the only required features
+  cannot yet be negotiated because they depend on optional features
+
+
 ## v0.16.0 — 2020-03-08
 
 ### Breaking
