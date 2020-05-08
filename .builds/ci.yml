@@ -35,6 +35,13 @@ tasks:
       cd xmpp/
       go mod tidy
       git diff --exit-code -- go.mod go.sum
+      cd examples/
+      for d in ./*/; do
+        pushd $d
+        go mod tidy
+        git diff --exit-code -- go.mod go.sum
+        popd
+      done
   - tip: |
       go get golang.org/dl/gotip
       gotip download
