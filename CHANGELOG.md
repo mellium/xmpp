@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking
 
+- sasl2: remove experimental package
 - xmpp: remove option to make STARTTLS feature optional
 
 
