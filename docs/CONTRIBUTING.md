@@ -38,14 +38,17 @@ and code formatting.
 
 Commit messages should start with the name of the Go package being modified, or
 the string "all" if it affects the entire module, followed by a colon.
-The rest of the first line should be a short description of how it modifies the
-project, for example, the following is a good first line for a commit message to
-the `dial` package:
+The rest of the first line should be a short (50 characters or less)
+description of how it modifies the project.
+Do not use punctuation at the end of the subject line.
+For example, the following is a good first line for a commit message to the
+[`dial`] package:
 
     dial: fix flaky tests
 
-After the first line should be a blank line, followed by a paragraph or so
-describing the change in more detail.
+After the subject line should be a blank line, followed by the body.
+The body should be wrapped to 72 characters and is a paragraph or two that
+explains what the change does and why it is necessary in more detail.
 This provides context for the commit and should be written in full sentences.
 Do not use Markdown, HTML, or other formatting in your commit messages.
 You may also include benchmarks and other data that provides context and shows
@@ -56,9 +59,9 @@ For example, a good full commit message might be:
 
     dial: fix flaky tests
 
-    Previously a DNS request might have been made for A or AAAA records
-    depending on what networks were available. Tests expected AAAA requests
-    so they would fail on machines that only had IPv4 networking.
+    Previously DNS requests were made for A or AAAA records depending on
+    what networks were available. Tests expected AAAA requests so they
+    would fail on machines that only had IPv4 networking.
 
 
 ## Submitting Patches
@@ -140,6 +143,7 @@ conditions.
 [pull request]: https://github.com/mellium/xmpp/pulls
 [`good first issue`]: https://github.com/mellium/xmpp/labels/good%20first%20issue
 [`security@mellium.im`]: mailto:security@mellium.im
+[`dial`]: https://pkg.go.dev/mellium.im/xmpp/dial
 [benchstat]: https://godoc.org/golang.org/x/perf/cmd/benchstat
 [git-send-email.io]: https://git-send-email.io/
 [mailing list etiquette]: https://man.sr.ht/lists.sr.ht/etiquette.md
