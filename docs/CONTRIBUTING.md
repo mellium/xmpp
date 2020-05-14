@@ -64,6 +64,34 @@ For example, a good full commit message might be:
     would fail on machines that only had IPv4 networking.
 
 
+## Sign your work
+
+All commits must be signed before they can be accepted. Your signature
+indicates that you have the right to contribute the work and that it can be
+contributed as open source. The exact rules can be viewed at
+[developercertificate.org], or in the file [DCO].
+Your signature also indicates that you have read and agree to the license
+statement at the end of this document.
+
+To add your signature, add a line like the following to the end of your commit
+message with your name and email:
+
+    Signed-off-by: Andrew Aguecheek <aaguecheek@example.net>
+
+You can add this line easily using Git by committing with `git commit -s`.
+If you forget to add a signature to a commit, quickly add it to the latest
+commit with `git commit --amend -s --no-edit`.
+
+To automatically sign new commits, add your signature to a file in a location of
+your choosing:
+
+    echo -en "\n\nSigned-off-by: Andrew Aguecheek <aaguecheek@example.net>" \
+        > ~/.config/git/gitmessage
+
+And configure your project to use it as the default commit message:
+
+    git config commit.template ~/.config/git/gitmessage
+
 ## Submitting Patches
 
 Patches may be submitted in two ways: using the mailing list (preferred) and
@@ -107,25 +135,6 @@ for simple patches.
 This is perfectly normal, and means that the maintainers are interested in your
 change and that it stands a good chance of being merged after the changes are
 complete!
-
-
-## Sign your work
-
-All commits must be signed before they can be accepted. Your signature
-indicates that you have the right to contribute the work and that it can be
-contributed as open source. The exact rules can be viewed at
-[developercertificate.org], or in the file [DCO].
-Your signature also indicates that you have read and agree to the license
-statement in the next section.
-
-To add your signature, add a line like the following to the end of your commit
-message with your name and email:
-
-    Signed-off-by: Andrew Aguecheek <aaguecheek@example.net>
-
-You can add this line easily using Git by committing with `git commit -s`.
-If you forget to add a signature to a commit, quickly add it to the latest
-commit with `git commit --amend -s --no-edit`.
 
 
 ## License
