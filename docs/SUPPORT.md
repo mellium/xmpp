@@ -10,5 +10,5 @@ For best-effort community support, you can try the following chat rooms:
 - Go chat: [![Go Chat](https://inverse.chat/badge.svg?room=golang@conference.samwhited.com)](https://conversations.im/j/golang@conference.samwhited.com)
 
 
-[SECURITY.md]: ./SECURITY.md
+[SECURITY.md]: https://mellium.im/docs/SECURITY
 [`support@mellium.im`]: mailto:support@mellium.im

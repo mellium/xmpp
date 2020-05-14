@@ -158,7 +158,7 @@ conditions.
 [mailing list etiquette]: https://man.sr.ht/lists.sr.ht/etiquette.md
 [`mellium-devel`]: https://lists.sr.ht/~samwhited/mellium-devel
 [developercertificate.org]: https://developercertificate.org/
-[DCO]: ./DCO
-[LICENSE]: ../LICENSE
-[SECURITY.md]: ./SECURITY.md
-[Code of Conduct]: ./CODE_OF_CONDUCT.md
+[DCO]: https://github.com/mellium/xmpp/blob/master/DCO
+[LICENSE]: https://github.com/mellium/xmpp/blob/master/LICENSE
+[SECURITY.md]: https://mellium.im/docs/SECURITY
+[Code of Conduct]: https://mellium.im/docs/CODE_OF_CONDUCT
