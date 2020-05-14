@@ -83,8 +83,6 @@ prefix and send to the correct list run:
 If you're configuring another repo, be sure to change the name from "xmpp" to
 whatever repo you're updating!
 
-You may also submit
-
 Once your patch set or pull request is submitted, you will hear back from a
 maintainer within 5 days.
 If you haven't heard back by then, feel free to reply to the patch or comment on
