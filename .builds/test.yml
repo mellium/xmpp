@@ -1,0 +1,26 @@
+image: freebsd/latest
+packages:
+  - go
+sources:
+  - https://git.sr.ht/~samwhited/xmpp
+tasks:
+  - setup: |
+      go version
+      go env
+
+      echo 'export PATH=$(go env GOPATH)/bin:$PATH' >> ~/.buildenv
+  - stable: |
+      cd xmpp/
+      go test -v -cover ./...
+  - examples: |
+      cd xmpp/examples/
+      for d in ./*/; do
+        pushd $d
+        go build
+        popd
+      done
+  - tip: |
+      go get golang.org/dl/gotip
+      gotip download
+      cd xmpp/
+      gotip test -v -cover ./...

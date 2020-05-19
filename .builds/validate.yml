@@ -1,8 +1,10 @@
-image: freebsd/latest
+image: alpine/edge
 packages:
   - go
 sources:
   - https://git.sr.ht/~samwhited/xmpp
+environment:
+  GO111MODULE: "on"
 tasks:
   - setup: |
       go version
@@ -14,16 +16,6 @@ tasks:
       go get -u mellium.im/checkmd
 
       echo 'export PATH=$(go env GOPATH)/bin:$PATH' >> ~/.buildenv
-  - stable: |
-      cd xmpp/
-      go test -v -cover ./...
-  - examples: |
-      cd xmpp/examples/
-      for d in ./*/; do
-        pushd $d
-        go build
-        popd
-      done
   - lint: |
       cd xmpp/
       go vet ./...
@@ -50,8 +42,3 @@ tasks:
         git diff --exit-code -- go.mod go.sum
         popd
       done
-  - tip: |
-      go get golang.org/dl/gotip
-      gotip download
-      cd xmpp/
-      gotip test -v -cover ./...
