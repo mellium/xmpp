@@ -5,17 +5,19 @@
 package xmpp
 
 import (
+	"context"
 	"crypto/tls"
 	"io"
 	"net"
 	"time"
 )
 
+var _ tlsConn = (*teeConn)(nil)
+var _ tlsConn = (*conn)(nil)
+
 type tlsConn interface {
 	ConnectionState() tls.ConnectionState
 }
-
-var _ tlsConn = (*conn)(nil)
 
 // conn is a net.Conn created for the purpose of establishing an XMPP session.
 type conn struct {
@@ -122,4 +124,66 @@ func (c *conn) SetWriteDeadline(t time.Time) error {
 // Write writes data to the connection.
 func (c *conn) Write(b []byte) (int, error) {
 	return c.rw.Write(b)
+}
+
+// teeConn is a net.Conn that also copies reads and writes to the provided
+// writers.
+type teeConn struct {
+	net.Conn
+	tlsConn     *tls.Conn
+	ctx         context.Context
+	multiWriter io.Writer
+	teeReader   io.Reader
+}
+
+// newTeeConn creates a teeConn. If the provided context is canceled, writes
+// start passing through to the underlying net.Conn and are no longer copied to
+// in and out.
+func newTeeConn(ctx context.Context, c net.Conn, in, out io.Writer) teeConn {
+	if tc, ok := c.(teeConn); ok {
+		return tc
+	}
+
+	tc := teeConn{Conn: c, ctx: ctx}
+	tc.tlsConn, _ = c.(*tls.Conn)
+	if in != nil {
+		tc.teeReader = io.TeeReader(c, in)
+	}
+	if out != nil {
+		tc.multiWriter = io.MultiWriter(c, out)
+	}
+	return tc
+}
+
+func (tc teeConn) ConnectionState() tls.ConnectionState {
+	if tc.tlsConn == nil {
+		return tls.ConnectionState{}
+	}
+	return tc.tlsConn.ConnectionState()
+}
+
+func (tc teeConn) Write(p []byte) (int, error) {
+	if tc.multiWriter == nil {
+		return tc.Conn.Write(p)
+	}
+	select {
+	case <-tc.ctx.Done():
+		tc.multiWriter = nil
+		return tc.Conn.Write(p)
+	default:
+	}
+	return tc.multiWriter.Write(p)
+}
+
+func (tc teeConn) Read(p []byte) (int, error) {
+	if tc.teeReader == nil {
+		return tc.Conn.Read(p)
+	}
+	select {
+	case <-tc.ctx.Done():
+		tc.teeReader = nil
+		return tc.Conn.Read(p)
+	default:
+	}
+	return tc.teeReader.Read(p)
 }

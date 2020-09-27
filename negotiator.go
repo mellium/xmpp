@@ -6,9 +6,7 @@ package xmpp
 
 import (
 	"context"
-	"crypto/tls"
 	"io"
-	"net"
 
 	"mellium.im/xmpp/internal/attr"
 	"mellium.im/xmpp/internal/stream"
@@ -28,70 +26,6 @@ import (
 // the session's underlying io.ReadWriter and the internal session state
 // (encoders, decoders, etc.) will be reset.
 type Negotiator func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, cache interface{}, err error)
-
-var _ tlsConn = (*teeConn)(nil)
-
-// teeConn is a net.Conn that also copies reads and writes to the provided
-// writers.
-type teeConn struct {
-	net.Conn
-	tlsConn     *tls.Conn
-	ctx         context.Context
-	multiWriter io.Writer
-	teeReader   io.Reader
-}
-
-// newTeeConn creates a teeConn. If the provided context is canceled, writes
-// start passing through to the underlying net.Conn and are no longer copied to
-// in and out.
-func newTeeConn(ctx context.Context, c net.Conn, in, out io.Writer) teeConn {
-	if tc, ok := c.(teeConn); ok {
-		return tc
-	}
-
-	tc := teeConn{Conn: c, ctx: ctx}
-	tc.tlsConn, _ = c.(*tls.Conn)
-	if in != nil {
-		tc.teeReader = io.TeeReader(c, in)
-	}
-	if out != nil {
-		tc.multiWriter = io.MultiWriter(c, out)
-	}
-	return tc
-}
-
-func (tc teeConn) ConnectionState() tls.ConnectionState {
-	if tc.tlsConn == nil {
-		return tls.ConnectionState{}
-	}
-	return tc.tlsConn.ConnectionState()
-}
-
-func (tc teeConn) Write(p []byte) (int, error) {
-	if tc.multiWriter == nil {
-		return tc.Conn.Write(p)
-	}
-	select {
-	case <-tc.ctx.Done():
-		tc.multiWriter = nil
-		return tc.Conn.Write(p)
-	default:
-	}
-	return tc.multiWriter.Write(p)
-}
-
-func (tc teeConn) Read(p []byte) (int, error) {
-	if tc.teeReader == nil {
-		return tc.Conn.Read(p)
-	}
-	select {
-	case <-tc.ctx.Done():
-		tc.teeReader = nil
-		return tc.Conn.Read(p)
-	default:
-	}
-	return tc.teeReader.Read(p)
-}
 
 // StreamConfig contains options for configuring the default Negotiator.
 type StreamConfig struct {
@@ -176,6 +110,7 @@ func negotiator(cfg StreamConfig) Negotiator {
 			} else {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
+
 				s.out.Info, err = stream.Send(s.Conn(), cfg.S2S, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
 				if err != nil {
 					nState.doRestart = false
