@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - xmpp: `ConnectionState` method
+- styling: new package implementing [XEP-0393: Message Styling]
 
 
 ### Fixed
@@ -22,6 +23,9 @@ All notable changes to this project will be documented in this file.
 - xmpp: using TeeIn/TeeOut no longer breaks SCRAM based SASL mechanisms
 - xmpp: stream negotiation no longer fails when the only required features
   cannot yet be negotiated because they depend on optional features
+
+
+[XEP-0393: Message Styling]: https://xmpp.org/extensions/xep-0393.html
 
 
 ## v0.16.0 — 2020-03-08
