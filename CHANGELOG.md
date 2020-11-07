@@ -3,22 +3,23 @@
 All notable changes to this project will be documented in this file.
 
 
-## Unreleased
+## v0.17.0 — 2020-11-11
 
 ### Breaking
 
-- sasl2: remove experimental package
-- xmpp: remove option to make STARTTLS feature optional
+- sasl2: removed experimental package
+- xmpp: removed option to make STARTTLS feature optional
 
 
 ### Added
 
-- xmpp: `ConnectionState` method
 - styling: new package implementing [XEP-0393: Message Styling]
+- xmpp: `ConnectionState` method
 
 
 ### Fixed
 
+- roster: iters that have errored no longer panic when closed
 - sasl2: using TeeIn/TeeOut no longer breaks SCRAM based SASL mechanisms
 - xmpp: using TeeIn/TeeOut no longer breaks SCRAM based SASL mechanisms
 - xmpp: stream negotiation no longer fails when the only required features
