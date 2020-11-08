@@ -127,7 +127,6 @@ type Decoder struct {
 	lastNewline   bool
 	hasRun        bool
 	spanStack     []byte
-	skipByte      bool
 	bufferedToken *Token
 }
 
@@ -401,9 +400,6 @@ func (d *Decoder) scanSpan(data []byte, atEOF bool) (advance int, token []byte, 
 		prevSpace := isSpace(prevRune)
 
 		switch {
-		case d.skipByte:
-			d.skipByte = false
-			continue
 		case len(d.spanStack) > 0 && b == d.spanStack[len(d.spanStack)-1]:
 			// If this is an end directive that matches an outer spans start
 			// directive, return the directive, or the rest of the span and clear the
@@ -437,20 +433,14 @@ func (d *Decoder) scanSpan(data []byte, atEOF bool) (advance int, token []byte, 
 			// previous styling directive) or we're immediately after a space, this
 			// is a valid start styling directive.
 			if (i == 0 || prevSpace) && !nextSpace {
+				// Special case for an immediate closing directive (ie. "**").
+				// There is almost certainly a better way to handle this that doesn't
+				// require special casing it.
+				if len(data) > i+1 && data[i+1] == b {
+					continue
+				}
 				startIDX = i
 				startDirective = b
-				// Special case for a directive between two other matching directives
-				// (ie. "***"). There is almost certainly a better way to handle this
-				// that doesn't require special casing it.
-				if len(data) > i+2 && data[i+1] == b && data[i+2] == b {
-					// Skip one byte during this loop, then skip it again during the next
-					// loop so that we find the real end token.
-					// This is dumb and needs to be fixed.
-					d.skipByte = true
-					defer func() {
-						d.skipByte = true
-					}()
-				}
 				continue
 			}
 		case b == startDirective && !prevSpace && i > startIDX+1:
@@ -481,7 +471,6 @@ func (d *Decoder) scanSpan(data []byte, atEOF bool) (advance int, token []byte, 
 				d.mask |= SpanPre | SpanPreStart
 				d.clearMask |= SpanPreStart
 			}
-			d.skipByte = false
 			return 1, data[0:1], nil
 		}
 	}

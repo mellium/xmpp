@@ -583,30 +583,23 @@ plain`,
 		},
 	},
 	{
-		name:  "multiple unmatched directives",
+		name:  "3 unmatched directives",
+		input: "***",
+		toks: []tokenAndStyle{
+			{
+				Token: styling.Token{
+					Data: []byte("***"),
+				},
+			},
+		},
+	},
+	{
+		name:  "4 unmatched directives",
 		input: "****",
 		toks: []tokenAndStyle{
 			{
 				Token: styling.Token{
-					Data: []byte("*"),
-					Mask: styling.SpanStrong | styling.SpanStrongStart,
-				},
-			},
-			{
-				Token: styling.Token{
-					Data: []byte("*"),
-					Mask: styling.SpanStrong,
-				},
-			},
-			{
-				Token: styling.Token{
-					Data: []byte("*"),
-					Mask: styling.SpanStrong | styling.SpanStrongEnd,
-				},
-			},
-			{
-				Token: styling.Token{
-					Data: []byte("*"),
+					Data: []byte("****"),
 				},
 			},
 		},
