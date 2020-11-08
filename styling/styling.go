@@ -4,7 +4,7 @@
 
 // Package styling implements XEP-0393: Message Styling, a Markdown-like styling
 // language.
-package styling
+package styling // import "mellium.im/xmpp/styling"
 
 import (
 	"bufio"
