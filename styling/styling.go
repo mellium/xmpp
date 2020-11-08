@@ -141,7 +141,7 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 // Token returns the next styling token in the input stream.
-// At the end of the input stream, token returns nil, io.EOF.
+// At the end of the input stream, it returns an empty token and io.EOF.
 // Returned tokens do not always correspond directly to the input stream.
 // For example, at the end of a block quote an empty token is returned with the
 // mask BlockQuote|BlockQuoteEnd, but there is no explicit block quote
