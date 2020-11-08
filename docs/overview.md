@@ -2,7 +2,7 @@
 
 Go is a great language if you need to get a project off the ground quickly. It
 has its confusing aspects, and its type system allows for lots of abuse thanks
-to [optional dynamic typing], but overall it's easy to read and easy to quickly
+to optional dynamic typing, but overall it's easy to read and easy to quickly
 build projects that require clear code over absolute type safety.
 Similarly, <abbr title="Extensible Messaging and Presence
 Protocol">XMPP</abbr> (1) has its warts, but overall is the best choice to get a
@@ -23,9 +23,6 @@ standard libraries [`net/http`] but for XMPP.
 This is why I created [`mellium.im/xmpp`].
 This post will be about some of the design decisions I made while building the
 library, and about some of the trade offs made along the way.
-
-
-[optional dynamic typing]: /2017/08/the-case-for-interface/
 
 (1): XMPP is sometimes referred to as "Jabber" for historical reasons. I prefer
       to refer to the federated network as Jabber and the protocol as XMPP.
@@ -302,13 +299,12 @@ advanced connection mechanisms we didn't discuss here work.
 The module does so much more than just low-level XMPP connections though, and
 more functionality can be found in the [subdirectories].
 If you want to write your own extension (or learn more about why the existing
-extensions were written the way that they have been), see my previous post on
-the matter: [_Extensions in Mellium_].
+extensions were written the way that they have been), see the file
+`extensions.md`.
 Finally, be sure to [let me know] if you build anything interesting with
 Mellium!
 
 [subdirectories]: https://pkg.go.dev/mellium.im/xmpp?tab=subdirectories
-[_Extensions in Mellium_]: /2020/02/extensions-in-mellium/
 [let me know]: xmpp:sam@samwhited.com?message
 
 [`mellium.im/xmpp`]: https://pkg.go.dev/mellium.im/xmpp
