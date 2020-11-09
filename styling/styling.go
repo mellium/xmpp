@@ -116,9 +116,12 @@ const (
 )
 
 // A Token represents a styling directive or unstyled span of text.
+// If the token is a preformatted text block start token, Info is a slice of the
+// bytes between the code fence (```) and the newline.
 type Token struct {
 	Mask Style
 	Data []byte
+	Info []byte
 }
 
 // Copy creates a new copy of the token.
@@ -126,6 +129,11 @@ func (t Token) Copy() Token {
 	data := make([]byte, len(t.Data))
 	copy(data, t.Data)
 	t.Data = data
+	if t.Info != nil {
+		info := make([]byte, len(t.Info))
+		copy(info, t.Info)
+		t.Info = info
+	}
 	return t
 }
 
@@ -198,6 +206,10 @@ func (d *Decoder) Token() (Token, error) {
 	t := Token{
 		Mask: d.Style(),
 		Data: d.s.Bytes(),
+	}
+
+	if t.Mask&BlockPreStart == BlockPreStart && len(t.Data) > len(fence)+1 {
+		t.Info = t.Data[len(fence) : len(t.Data)-1]
 	}
 
 	// If we've dropped a block quote level, insert a token to indicate that we're

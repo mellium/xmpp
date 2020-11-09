@@ -86,11 +86,12 @@ and two`,
 	},
 	{
 		name:  "pre block EOF",
-		input: "```\na\n```",
+		input: "````\na\n```",
 		toks: []tokenAndStyle{
 			{
 				Token: styling.Token{
-					Data: []byte("```\n"),
+					Data: []byte("````\n"),
+					Info: []byte("`"),
 					Mask: styling.BlockPre | styling.BlockPreStart,
 				},
 			},
@@ -133,6 +134,7 @@ and two`,
 			{
 				Token: styling.Token{
 					Data: []byte("```newtoken\n"),
+					Info: []byte("newtoken"),
 					Mask: styling.BlockPre | styling.BlockPreStart,
 				},
 			},
@@ -331,7 +333,7 @@ not quoted`,
 	},
 	{
 		name: "pre end of parent",
-		input: "> ```" + `
+		input: "> ``` " + `
 > pre
 plain`,
 		toks: []tokenAndStyle{
@@ -344,7 +346,8 @@ plain`,
 			},
 			{
 				Token: styling.Token{
-					Data: []byte("```\n"),
+					Data: []byte("``` \n"),
+					Info: []byte(" "),
 					Mask: styling.BlockQuote | styling.BlockPre | styling.BlockPreStart,
 				},
 				Quote: 1,
@@ -720,6 +723,9 @@ func TestToken(t *testing.T) {
 				}
 				if !bytes.Equal(expectedTok.Data, tok.Data) {
 					t.Errorf("Unexpected data for token %d: want=%q, got=%q", n, expectedTok.Data, tok.Data)
+				}
+				if !bytes.Equal(expectedTok.Info, tok.Info) {
+					t.Errorf("Unexpected tag for token %d: want=%q, got=%q", n, expectedTok.Info, tok.Info)
 				}
 				if d.Style() != expectedTok.Mask {
 					t.Errorf("Unexpected decoder style after token %d: want=%#b, got=%#b", n, expectedTok.Mask, d.Style())
