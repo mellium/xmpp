@@ -2,8 +2,38 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-// Package styling implements XEP-0393: Message Styling, a Markdown-like styling
+// Package styling implements XEP-0393: Message Styling, a simple styling
 // language.
+//
+// This package does not convert message styling documents into a format usable
+// by any other rendering engine (ie. HTML or LaTeX), instead it tokenizes the
+// input and provides you with a bitmask of styles that should be applied to
+// each token.
+//
+// Format
+//
+// Message Styling borrows several familiar formatting options from Markdown
+// (though it is much simpler and not compatible with Markdown parsers).
+//
+// Several inline formats exist:
+//
+// A string wrapped in _emph_ should be displayed emphasized (normally in
+// italics), and strings wrapped in *strong* will have strong emphasis (normally
+// bold). The	`pre` styling directive results in an inline pre-formatted string
+// (monospace with no child formatting allowed), and the ~strike~ style should
+// result in text with a line through the middle (strike through).
+//
+// There are also a few block formats such as a block quotation:
+//
+//     > A quotation
+//     >> Can be multi-level
+//
+// And a preformatted text block which can have no child blocks, should be
+// displayed in a monospace font, and which should not be re-wrapped:
+//
+//     ```an optional tag may go here.
+//     Lines of pre-formatted text go here.
+//     ```
 package styling // import "mellium.im/xmpp/styling"
 
 import (
