@@ -19,11 +19,16 @@ import (
 func TestCopyToken(t *testing.T) {
 	tok := &styling.Token{
 		Data: []byte("t"),
+		Info: []byte("a"),
 	}
 	tok2 := tok.Copy()
 	tok2.Data[0] = 'r'
 	if tok.Data[0] == tok2.Data[0] {
 		t.Errorf("Data was mutated, copy failed")
+	}
+	tok2.Info[0] = 'b'
+	if tok.Info[0] == tok2.Info[0] {
+		t.Errorf("Info was mutated, copy failed")
 	}
 }
 
