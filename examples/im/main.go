@@ -27,6 +27,11 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
+const (
+	envAddr = "XMPP_ADDR"
+	envPass = "XMPP_PASS"
+)
+
 // messageBody is a message stanza that contains a body. It is normally used for
 // chat messages.
 type messageBody struct {
@@ -35,11 +40,6 @@ type messageBody struct {
 	Thread  string `xml:"thread"`
 	Body    string `xml:"body"`
 }
-
-const (
-	envAddr = "XMPP_ADDR"
-	envPass = "XMPP_PASS"
-)
 
 func main() {
 	logger := log.New(os.Stderr, "", log.LstdFlags)
@@ -90,11 +90,6 @@ func main() {
 	case nil:
 	default:
 		logger.Fatalf("error parsing flags: %v", err)
-	}
-
-	// TODO: implement this.
-	if subject != "" {
-		panic("-subject is not yet implemented")
 	}
 
 	// If the help flag was set, just show the help message and exit.
@@ -206,7 +201,8 @@ func main() {
 				From: parsedAddr,
 				Type: stanza.ChatMessage,
 			},
-			Body: msg,
+			Body:    msg,
+			Subject: subject,
 		})
 		if err != nil {
 			logger.Fatalf("error sending message: %v", err)
