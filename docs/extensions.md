@@ -1,5 +1,9 @@
 # Implementing XMPP Extensions
 
+This document is about implementing extensions.
+If you are looking for a list of XEPs implemented by this library, see the file
+"docs/xeps.md"
+
 The [`mellium.im/xmpp`] module contains a number of packages that implement
 [XMPP Extension Protocols][XEP] (XEPs).
 When contributing new packages, or publishing your own proprietary extensions
