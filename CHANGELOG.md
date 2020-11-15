@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 
 
+## Unreleased
+
+### Fixed
+
+- stanza: converting stanzas with empty to/from attributes no longer fails
+
+
 ## v0.17.0 — 2020-11-11
 
 ### Breaking

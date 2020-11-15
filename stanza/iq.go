@@ -43,14 +43,18 @@ func NewIQ(start xml.StartElement) (IQ, error) {
 		case "id":
 			v.ID = attr.Value
 		case "to":
-			v.To, err = jid.Parse(attr.Value)
-			if err != nil {
-				return v, err
+			if attr.Value != "" {
+				v.To, err = jid.Parse(attr.Value)
+				if err != nil {
+					return v, err
+				}
 			}
 		case "from":
-			v.From, err = jid.Parse(attr.Value)
-			if err != nil {
-				return v, err
+			if attr.Value != "" {
+				v.From, err = jid.Parse(attr.Value)
+				if err != nil {
+					return v, err
+				}
 			}
 		case "type":
 			v.Type = IQType(attr.Value)

@@ -111,47 +111,69 @@ func TestMessageStartElement(t *testing.T) {
 }
 
 func TestMessageFromStartElement(t *testing.T) {
-	langAttr := xml.Attr{Name: xml.Name{Space: ns.XML, Local: "lang"}, Value: "lo"}
-
-	// Make sure that we're not validating the name. This is deliberate in case we
-	// want to eg. use this to generate a message in response to an IQ using the
-	// values from the IQ start element.
-	const stanzaLocal = "iq"
-	start := xml.StartElement{
-		Name: xml.Name{Local: stanzaLocal, Space: testNS},
-		Attr: []xml.Attr{
-			{Name: xml.Name{Local: "id"}, Value: "123"},
-			{Name: xml.Name{Local: "to"}, Value: "to@example.com"},
-			{Name: xml.Name{Local: "from"}, Value: "from@example.com"},
-			{Name: xml.Name{Local: "lang"}, Value: "de"},
-			langAttr,
-			{Name: xml.Name{Local: "type"}, Value: "chat"},
+	for i, tc := range [...]xml.StartElement{
+		0: {
+			// Make sure that we're not validating the name.
+			// This is deliberate in case we want to eg. use this to generate a
+			// message in response to an IQ using the values from the IQ start
+			// element.
+			Name: xml.Name{Local: "iq", Space: testNS},
+			Attr: []xml.Attr{
+				{Name: xml.Name{Local: "id"}, Value: "123"},
+				{Name: xml.Name{Local: "to"}, Value: "to@example.com"},
+				{Name: xml.Name{Local: "from"}, Value: "from@example.com"},
+				{Name: xml.Name{Local: "lang"}, Value: "de"},
+				{Name: xml.Name{Space: ns.XML, Local: "lang"}, Value: "lo"},
+				{Name: xml.Name{Local: "type"}, Value: "chat"},
+			},
 		},
-	}
-	msg, err := stanza.NewMessage(start)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+		1: {
+			Name: xml.Name{Local: "msg", Space: testNS},
+			Attr: []xml.Attr{
+				{Name: xml.Name{Local: "to"}, Value: ""},
+				{Name: xml.Name{Local: "from"}, Value: ""},
+			},
+		},
+	} {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			msg, err := stanza.NewMessage(tc)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	if msg.XMLName.Local != stanzaLocal {
-		t.Errorf("wrong localname value: want=%q, got=%q", stanzaLocal, msg.XMLName.Local)
+			if msg.XMLName.Local != tc.Name.Local {
+				t.Errorf("wrong localname value: want=%q, got=%q", tc.Name.Local, msg.XMLName.Local)
+			}
+			if msg.XMLName.Space != testNS {
+				t.Errorf("wrong namespace value: want=%q, got=%q", testNS, msg.XMLName.Space)
+			}
+			if _, v := attr.Get(tc.Attr, "id"); v != msg.ID {
+				t.Errorf("wrong value for id: want=%q, got=%q", v, msg.ID)
+			}
+			if _, v := attr.Get(tc.Attr, "to"); v != msg.To.String() {
+				t.Errorf("wrong value for to: want=%q, got=%q", v, msg.To)
+			}
+			if _, v := attr.Get(tc.Attr, "from"); v != msg.From.String() {
+				t.Errorf("wrong value for from: want=%q, got=%q", v, msg.From)
+			}
+			langAttr := getLangAttr(tc)
+			if langAttr.Value != msg.Lang {
+				t.Errorf("wrong value for xml:lang: want=%q, got=%q", langAttr.Value, msg.Lang)
+			}
+			if _, v := attr.Get(tc.Attr, "type"); v != string(msg.Type) {
+				t.Errorf("wrong value for type: want=%q, got=%q", v, msg.Type)
+			}
+		})
 	}
-	if msg.XMLName.Space != testNS {
-		t.Errorf("wrong namespace value: want=%q, got=%q", testNS, msg.XMLName.Space)
+}
+
+func getLangAttr(start xml.StartElement) xml.Attr {
+	var langAttr xml.Attr
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "lang" && attr.Name.Space == ns.XML {
+			langAttr = attr
+			break
+		}
 	}
-	if _, v := attr.Get(start.Attr, "id"); v != msg.ID {
-		t.Errorf("wrong value for id: want=%q, got=%q", v, msg.ID)
-	}
-	if _, v := attr.Get(start.Attr, "to"); v != msg.To.String() {
-		t.Errorf("wrong value for to: want=%q, got=%q", v, msg.To)
-	}
-	if _, v := attr.Get(start.Attr, "from"); v != msg.From.String() {
-		t.Errorf("wrong value for from: want=%q, got=%q", v, msg.From)
-	}
-	if langAttr.Value != msg.Lang {
-		t.Errorf("wrong value for xml:lang: want=%q, got=%q", langAttr.Value, msg.Lang)
-	}
-	if _, v := attr.Get(start.Attr, "type"); v != string(msg.Type) {
-		t.Errorf("wrong value for type: want=%q, got=%q", v, msg.Type)
-	}
+	return langAttr
 }
