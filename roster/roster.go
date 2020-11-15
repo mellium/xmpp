@@ -58,11 +58,6 @@ func (i *Iter) Next() bool {
 	d := xml.NewTokenDecoder(r)
 	item := Item{}
 	i.err = d.DecodeElement(&item, start)
-	// TODO remove this branch after Go 1.15 comes out.
-	// See https://mellium.im/issue/29
-	if i.err == io.EOF {
-		i.err = nil
-	}
 	if i.err != nil {
 		return false
 	}
