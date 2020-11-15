@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Breaking
+
+- roster: remove workaround for a bug in Go versions prior to 1.14 which is now
+  the earliest supported version
+
+
 ### Fixed
 
 - stanza: converting stanzas with empty to/from attributes no longer fails
