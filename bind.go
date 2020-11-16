@@ -72,12 +72,25 @@ type bindPayload struct {
 }
 
 func (bp bindPayload) TokenReader() xml.TokenReader {
-	return xmlstream.Wrap(
-		xmlstream.ReaderFunc(func() (xml.Token, error) {
-			return xml.CharData(bp.JID.String()), io.EOF
-		}),
-		xml.StartElement{Name: xml.Name{Local: "jid"}},
-	)
+	if bp.Resource != "" {
+		return xmlstream.Wrap(
+			xmlstream.ReaderFunc(func() (xml.Token, error) {
+				return xml.CharData(bp.JID.String()), io.EOF
+			}),
+			xml.StartElement{Name: xml.Name{Local: "resource"}},
+		)
+	}
+
+	if bp.JID.String() != "" {
+		return xmlstream.Wrap(
+			xmlstream.ReaderFunc(func() (xml.Token, error) {
+				return xml.CharData(bp.JID.String()), io.EOF
+			}),
+			xml.StartElement{Name: xml.Name{Local: "jid"}},
+		)
+	}
+
+	return nil
 }
 
 func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
@@ -153,7 +166,6 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 					// If a stanza error was returned:
 					resp.Err = &stanzaErr
 				} else {
-
 					resp.Bind = bindPayload{JID: j}
 				}
 
