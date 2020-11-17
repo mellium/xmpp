@@ -653,6 +653,26 @@ func (s *Session) SetCloseDeadline(t time.Time) error {
 	return s.Conn().SetReadDeadline(t)
 }
 
+// EncodeIQ is like Encode except that it returns an error if v does not marshal
+// to an IQ stanza and like SendIQ it blocks until a response is received.
+func (s *Session) EncodeIQ(ctx context.Context, v interface{}) (xmlstream.TokenReadCloser, error) {
+	r, err := marshal.TokenReader(v)
+	if err != nil {
+		return nil, err
+	}
+	return s.SendIQ(ctx, r)
+}
+
+// EncodeIQElement is like EncodeIQ except that it wraps the payload in an
+// Info/Query (IQ) element.
+func (s *Session) EncodeIQElement(ctx context.Context, payload interface{}, iq stanza.IQ) (xmlstream.TokenReadCloser, error) {
+	r, err := marshal.TokenReader(payload)
+	if err != nil {
+		return nil, err
+	}
+	return s.SendIQElement(ctx, r, iq)
+}
+
 // Encode writes the XML encoding of v to the stream.
 //
 // For more information see "encoding/xml".Encode.

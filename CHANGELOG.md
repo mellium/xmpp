@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - internal/integration: new package for writing integration tests
 - internal/integration/ejabberd: [Ejabberd] support for integration tests
 - internal/integration/prosody: [Prosŏdy] support for integration tests
+- xmpp: `EncodeIQ` and `EncodeIQElement` methods
 
 [Ejabberd]: https://www.ejabberd.im/
 [Prosŏdy]: https://prosody.im/

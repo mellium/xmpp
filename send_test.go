@@ -198,6 +198,129 @@ func TestSendIQ(t *testing.T) {
 	}
 }
 
+func TestEncodeIQ(t *testing.T) {
+	t.Run("EncodeIQElement", func(t *testing.T) {
+		br := &bytes.Buffer{}
+		e := xml.NewEncoder(br)
+		_, err := xmlstream.Copy(e, stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(nil))
+		if err != nil {
+			t.Logf("error responding: %q", err)
+		}
+		err = e.Flush()
+		if err != nil {
+			t.Logf("error flushing after responding: %q", err)
+		}
+		bw := &bytes.Buffer{}
+		s := xmpptest.NewSession(0, struct {
+			io.Reader
+			io.Writer
+		}{
+			Reader: strings.NewReader(br.String()),
+			Writer: bw,
+		})
+		defer func() {
+			if err := s.Close(); err != nil {
+				t.Errorf("Error closing session: %q", err)
+			}
+		}()
+
+		go func() {
+			err := s.Serve(nil)
+			if err != nil && err != io.EOF {
+				panic(err)
+			}
+		}()
+
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
+		defer cancel()
+
+		resp, err := s.EncodeIQElement(ctx, struct {
+			XMLName xml.Name `xml:"urn:xmpp:time time"`
+		}{}, stanza.IQ{
+			ID:   testIQID,
+			Type: stanza.GetIQ,
+		})
+		if err != nil {
+			t.Errorf("Unexpected error %q", err)
+		}
+		if resp != nil {
+			defer func() {
+				if err := resp.Close(); err != nil {
+					t.Errorf("Error closing response: %q", err)
+				}
+			}()
+		}
+		if bw.Len() == 0 {
+			t.Errorf("Unexpectedly empty body")
+		}
+		if resp == nil {
+			t.Errorf("Expected response, but got none")
+		}
+	})
+	t.Run("EncodeIQ", func(t *testing.T) {
+		br := &bytes.Buffer{}
+		e := xml.NewEncoder(br)
+		_, err := xmlstream.Copy(e, stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(nil))
+		if err != nil {
+			t.Logf("error responding: %q", err)
+		}
+		err = e.Flush()
+		if err != nil {
+			t.Logf("error flushing after responding: %q", err)
+		}
+		bw := &bytes.Buffer{}
+		s := xmpptest.NewSession(0, struct {
+			io.Reader
+			io.Writer
+		}{
+			Reader: strings.NewReader(br.String()),
+			Writer: bw,
+		})
+		defer func() {
+			if err := s.Close(); err != nil {
+				t.Errorf("Error closing session: %q", err)
+			}
+		}()
+
+		go func() {
+			err := s.Serve(nil)
+			if err != nil && err != io.EOF {
+				panic(err)
+			}
+		}()
+
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+		defer cancel()
+
+		resp, err := s.EncodeIQ(ctx, struct {
+			stanza.IQ
+
+			Payload struct{} `xml:"urn:xmpp:time time"`
+		}{
+			IQ: stanza.IQ{
+				ID:   testIQID,
+				Type: stanza.GetIQ,
+			},
+		})
+		if err != nil {
+			t.Errorf("Got unexpected error encoding: %v", err)
+		}
+		if resp != nil {
+			defer func() {
+				if err := resp.Close(); err != nil {
+					t.Errorf("Error closing response: %q", err)
+				}
+			}()
+		}
+		if bw.Len() == 0 {
+			t.Error("Expected EncodeIQ to write a body")
+		}
+		if resp == nil {
+			t.Errorf("Expected response, but got none")
+		}
+	})
+}
+
 var sendTests = [...]struct {
 	r          xml.TokenReader
 	err        error
