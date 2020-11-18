@@ -698,7 +698,7 @@ func (s *Session) EncodeElement(v interface{}, start xml.StartElement) error {
 //
 // Send is safe for concurrent use by multiple goroutines.
 func (s *Session) Send(ctx context.Context, r xml.TokenReader) error {
-	return send(s, r, nil)
+	return send(ctx, s, r, nil)
 }
 
 // SendElement is like Send except that it uses start as the outermost tag in
@@ -706,12 +706,21 @@ func (s *Session) Send(ctx context.Context, r xml.TokenReader) error {
 //
 // SendElement is safe for concurrent use by multiple goroutines.
 func (s *Session) SendElement(ctx context.Context, r xml.TokenReader, start xml.StartElement) error {
-	return send(s, r, &start)
+	return send(ctx, s, r, &start)
 }
 
-func send(s *Session, r xml.TokenReader, start *xml.StartElement) error {
+func send(ctx context.Context, s *Session, r xml.TokenReader, start *xml.StartElement) error {
 	s.out.Lock()
 	defer s.out.Unlock()
+
+	if deadline, ok := ctx.Deadline(); ok {
+		err := s.conn.SetDeadline(deadline)
+		if err != nil {
+			return err
+		}
+		/* #nosec */
+		defer s.conn.SetDeadline(time.Time{})
+	}
 
 	if start == nil {
 		tok, err := r.Token()

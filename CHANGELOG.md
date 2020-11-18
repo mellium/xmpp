@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - stanza: converting stanzas with empty to/from attributes no longer fails
+- xmpp: the `Send` and `SendElement` methods now respect the context deadline
 
 
 ## v0.17.0 — 2020-11-11
