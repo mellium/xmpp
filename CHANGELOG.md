@@ -26,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - stanza: converting stanzas with empty to/from attributes no longer fails
 - xmpp: fixed data race that could result in invalid session state and lead to
   writes on a closed session and other state related issues
+- xmpp: the `Send` and `SendElement` methods now respect the context deadline
 
 
 ## v0.17.0 — 2020-11-11
