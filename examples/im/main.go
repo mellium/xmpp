@@ -139,7 +139,7 @@ func main() {
 	defer func() {
 		if room {
 			debug.Printf("leaving the chat room %s…", addr)
-			err = session.Encode(stanza.Presence{
+			err = session.Encode(ctx, stanza.Presence{
 				ID:   "456def",
 				From: originJID,
 				To:   parsedToAddr,
@@ -182,7 +182,7 @@ func main() {
 				To:   parsedToAddr,
 			},
 		}
-		err = session.Encode(joinPresence)
+		err = session.Encode(ctx, joinPresence)
 		if err != nil {
 			log.Fatalf("error joining MUC %s: %v", addr, err)
 		}
@@ -195,7 +195,7 @@ func main() {
 			logger.Fatalf("error sending raw XML: %v", err)
 		}
 	} else {
-		err = session.Encode(messageBody{
+		err = session.Encode(ctx, messageBody{
 			Message: stanza.Message{
 				To:   parsedToAddr,
 				From: parsedAddr,
