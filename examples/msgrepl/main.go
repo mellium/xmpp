@@ -153,7 +153,7 @@ func main() {
 
 		msg = strings.TrimSpace(msg[idx+1:])
 
-		err = session.Encode(messageBody{
+		err = session.Encode(ctx, messageBody{
 			Message: stanza.Message{
 				To:   parsedToAddr,
 				From: parsedAddr,

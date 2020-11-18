@@ -676,9 +676,18 @@ func (s *Session) EncodeIQElement(ctx context.Context, payload interface{}, iq s
 // Encode writes the XML encoding of v to the stream.
 //
 // For more information see "encoding/xml".Encode.
-func (s *Session) Encode(v interface{}) error {
+func (s *Session) Encode(ctx context.Context, v interface{}) error {
 	s.out.Lock()
 	defer s.out.Unlock()
+
+	if deadline, ok := ctx.Deadline(); ok {
+		err := s.conn.SetDeadline(deadline)
+		if err != nil {
+			return err
+		}
+		/* #nosec */
+		defer s.conn.SetDeadline(time.Time{})
+	}
 
 	return marshal.EncodeXML(s.out.e, v)
 }
@@ -687,9 +696,18 @@ func (s *Session) Encode(v interface{}) error {
 // outermost tag in the encoding.
 //
 // For more information see "encoding/xml".EncodeElement.
-func (s *Session) EncodeElement(v interface{}, start xml.StartElement) error {
+func (s *Session) EncodeElement(ctx context.Context, v interface{}, start xml.StartElement) error {
 	s.out.Lock()
 	defer s.out.Unlock()
+
+	if deadline, ok := ctx.Deadline(); ok {
+		err := s.conn.SetDeadline(deadline)
+		if err != nil {
+			return err
+		}
+		/* #nosec */
+		defer s.conn.SetDeadline(time.Time{})
+	}
 
 	return marshal.EncodeXMLElement(s.out.e, v, start)
 }

@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 
 - roster: remove workaround for a bug in Go versions prior to 1.14 which is now
   the earliest supported version
+- xmpp: the `Encode` and `EncodeElement` methods now take a context and respect
+  its deadline
 
 ### Added
 
