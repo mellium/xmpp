@@ -75,7 +75,8 @@ type Session struct {
 	conn      net.Conn
 	connState func() tls.ConnectionState
 
-	state SessionState
+	state      SessionState
+	stateMutex sync.RWMutex
 
 	origin   jid.JID
 	location jid.JID
@@ -134,6 +135,8 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 		s.connState = tc.ConnectionState
 	}
 	if received {
+		// We don't need to lock the state mutex yet since we haven't returned
+		// session and nothing else can access it.
 		s.state |= Received
 	}
 	s.out.Locker = &sync.Mutex{}
@@ -289,9 +292,12 @@ func (s *Session) sendError(err error) (e error) {
 	s.out.Lock()
 	defer s.out.Unlock()
 
+	s.stateMutex.RLock()
 	if s.state&OutputStreamClosed == OutputStreamClosed {
+		s.stateMutex.RUnlock()
 		return err
 	}
+	s.stateMutex.RUnlock()
 
 	switch typErr := err.(type) {
 	case stream.Error:
@@ -509,9 +515,12 @@ func (lwc *lockWriteCloser) EncodeToken(t xml.Token) error {
 		return lwc.err
 	}
 
+	lwc.w.stateMutex.RLock()
 	if lwc.w.state&OutputStreamClosed == OutputStreamClosed {
+		lwc.w.stateMutex.RUnlock()
 		return ErrOutputStreamClosed
 	}
+	lwc.w.stateMutex.RUnlock()
 
 	return lwc.w.out.e.EncodeToken(t)
 }
@@ -520,9 +529,12 @@ func (lwc *lockWriteCloser) Flush() error {
 	if lwc.err != nil {
 		return nil
 	}
+	lwc.w.stateMutex.RLock()
 	if lwc.w.state&OutputStreamClosed == OutputStreamClosed {
+		lwc.w.stateMutex.RUnlock()
 		return ErrOutputStreamClosed
 	}
+	lwc.w.stateMutex.RUnlock()
 	return lwc.w.out.e.Flush()
 }
 
@@ -546,9 +558,12 @@ func (lrc *lockReadCloser) Token() (xml.Token, error) {
 		return nil, lrc.err
 	}
 
+	lrc.s.stateMutex.RLock()
 	if lrc.s.state&InputStreamClosed == InputStreamClosed {
+		lrc.s.stateMutex.RUnlock()
 		return nil, ErrInputStreamClosed
 	}
+	lrc.s.stateMutex.RUnlock()
 
 	return lrc.s.in.d.Token()
 }
@@ -604,10 +619,15 @@ func (s *Session) Close() error {
 }
 
 func (s *Session) closeSession() error {
+	s.stateMutex.RLock()
 	if s.state&OutputStreamClosed == OutputStreamClosed {
+		s.stateMutex.RUnlock()
 		return nil
 	}
+	s.stateMutex.RUnlock()
 
+	s.stateMutex.Lock()
+	defer s.stateMutex.Unlock()
 	s.state |= OutputStreamClosed
 	// We wrote the opening stream instead of encoding it, so do the same with the
 	// closing to ensure that the encoder doesn't think the tokens are mismatched.
@@ -618,12 +638,16 @@ func (s *Session) closeSession() error {
 // State returns the current state of the session. For more information, see the
 // SessionState type.
 func (s *Session) State() SessionState {
+	s.stateMutex.RLock()
+	defer s.stateMutex.RUnlock()
 	return s.state
 }
 
 // LocalAddr returns the Origin address for initiated connections, or the
 // Location for received connections.
 func (s *Session) LocalAddr() jid.JID {
+	s.stateMutex.RLock()
+	defer s.stateMutex.RUnlock()
 	if (s.state & Received) == Received {
 		return s.location
 	}
@@ -633,6 +657,8 @@ func (s *Session) LocalAddr() jid.JID {
 // RemoteAddr returns the Location address for initiated connections, or the
 // Origin address for received connections.
 func (s *Session) RemoteAddr() jid.JID {
+	s.stateMutex.RLock()
+	defer s.stateMutex.RUnlock()
 	if (s.state & Received) == Received {
 		return s.origin
 	}
@@ -863,6 +889,8 @@ func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenRead
 func (s *Session) closeInputStream() {
 	s.in.Lock()
 	defer s.in.Unlock()
+	s.stateMutex.Lock()
+	defer s.stateMutex.Unlock()
 	s.state |= InputStreamClosed
 	s.in.cancel()
 }
