@@ -11,7 +11,6 @@ import (
 	"errors"
 	"io"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -54,17 +53,17 @@ var sendIQTests = [...]struct {
 	payload    xml.TokenReader
 	err        error
 	writesBody bool
-	resp       xml.TokenReader
+	resp       *stanza.IQ
 }{
 	0: {
 		iq:         stanza.IQ{ID: testIQID, Type: stanza.GetIQ},
 		writesBody: true,
-		resp:       stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(nil),
+		resp:       &stanza.IQ{ID: testIQID, Type: stanza.ResultIQ},
 	},
 	1: {
 		iq:         stanza.IQ{ID: testIQID, Type: stanza.SetIQ},
 		writesBody: true,
-		resp:       stanza.IQ{ID: testIQID, Type: stanza.ErrorIQ}.Wrap(nil),
+		resp:       &stanza.IQ{ID: testIQID, Type: stanza.ErrorIQ},
 	},
 	2: {
 		iq:         stanza.IQ{Type: stanza.ResultIQ, ID: testIQID},
@@ -78,41 +77,16 @@ var sendIQTests = [...]struct {
 
 func TestSendIQ(t *testing.T) {
 	for i, tc := range sendIQTests {
+		tc := tc
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			br := &bytes.Buffer{}
-			if tc.resp != nil {
-				e := xml.NewEncoder(br)
-				_, err := xmlstream.Copy(e, tc.resp)
-				if err != nil {
-					t.Logf("error responding: %q", err)
-				}
-				err = e.Flush()
-				if err != nil {
-					t.Logf("error flushing after responding: %q", err)
-				}
-			}
-
 			t.Run("SendIQElement", func(t *testing.T) {
-				bw := &bytes.Buffer{}
-				s := xmpptest.NewSession(0, struct {
-					io.Reader
-					io.Writer
-				}{
-					Reader: strings.NewReader(br.String()),
-					Writer: bw,
-				})
-				defer func() {
-					if err := s.Close(); err != nil {
-						t.Errorf("Error closing session: %q", err)
+				s := xmpptest.NewClientServer(0, xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+					if tc.resp != nil {
+						_, err := xmlstream.Copy(t, tc.resp.Wrap(nil))
+						return err
 					}
-				}()
-
-				go func() {
-					err := s.Serve(nil)
-					if err != nil && err != io.EOF {
-						panic(err)
-					}
-				}()
+					return nil
+				}))
 
 				ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 				defer cancel()
@@ -121,77 +95,58 @@ func TestSendIQ(t *testing.T) {
 				if err != tc.err {
 					t.Errorf("Unexpected error, want=%q, got=%q", tc.err, err)
 				}
+				respIQ := stanza.IQ{}
 				if resp != nil {
 					defer func() {
 						if err := resp.Close(); err != nil {
 							t.Errorf("Error closing response: %q", err)
 						}
 					}()
-				}
-				if empty := bw.Len() != 0; tc.writesBody != empty {
-					t.Errorf("Unexpected body, want=%t, got=%t", tc.writesBody, empty)
+					err = xml.NewTokenDecoder(resp).Decode(&respIQ)
+					if err != nil {
+						t.Errorf("error decoding response: %v", err)
+					}
 				}
 				switch {
 				case resp == nil && tc.resp != nil:
 					t.Errorf("Expected response, but got none")
 				case resp != nil && tc.resp == nil:
-					buf := &bytes.Buffer{}
-					_, err := xmlstream.Copy(xml.NewEncoder(buf), resp)
-					if err != nil {
-						t.Errorf("Error encoding unexpected response")
-					}
-					t.Errorf("Did not expect response, but got: %s", buf.String())
+					t.Errorf("Did not expect response, but got: %+v", respIQ)
 				}
 			})
 			t.Run("SendIQ", func(t *testing.T) {
-				bw := &bytes.Buffer{}
-				s := xmpptest.NewSession(0, struct {
-					io.Reader
-					io.Writer
-				}{
-					Reader: strings.NewReader(br.String()),
-					Writer: bw,
-				})
-				defer func() {
-					if err := s.Close(); err != nil {
-						t.Errorf("Error closing session: %q", err)
+				s := xmpptest.NewClientServer(0, xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+					if tc.resp != nil {
+						_, err := xmlstream.Copy(t, tc.resp.Wrap(nil))
+						return err
 					}
-				}()
+					return nil
+				}))
 
-				go func() {
-					err := s.Serve(nil)
-					if err != nil && err != io.EOF {
-						panic(err)
-					}
-				}()
-
-				ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+				ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 				defer cancel()
 
 				resp, err := s.SendIQ(ctx, tc.iq.Wrap(tc.payload))
 				if err != tc.err {
 					t.Errorf("Unexpected error, want=%q, got=%q", tc.err, err)
 				}
+				respIQ := stanza.IQ{}
 				if resp != nil {
 					defer func() {
 						if err := resp.Close(); err != nil {
 							t.Errorf("Error closing response: %q", err)
 						}
 					}()
-				}
-				if empty := bw.Len() != 0; tc.writesBody != empty {
-					t.Errorf("Unexpected body, want=%t, got=%t", tc.writesBody, empty)
+					err = xml.NewTokenDecoder(resp).Decode(&respIQ)
+					if err != nil {
+						t.Errorf("error decoding response: %v", err)
+					}
 				}
 				switch {
 				case resp == nil && tc.resp != nil:
 					t.Errorf("Expected response, but got none")
 				case resp != nil && tc.resp == nil:
-					buf := &bytes.Buffer{}
-					_, err := xmlstream.Copy(xml.NewEncoder(buf), resp)
-					if err != nil {
-						t.Errorf("Error encoding unexpected response")
-					}
-					t.Errorf("Did not expect response, but got: %s", buf.String())
+					t.Errorf("Did not expect response, but got: %+v", respIQ)
 				}
 			})
 		})
@@ -200,36 +155,10 @@ func TestSendIQ(t *testing.T) {
 
 func TestEncodeIQ(t *testing.T) {
 	t.Run("EncodeIQElement", func(t *testing.T) {
-		br := &bytes.Buffer{}
-		e := xml.NewEncoder(br)
-		_, err := xmlstream.Copy(e, stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(nil))
-		if err != nil {
-			t.Logf("error responding: %q", err)
-		}
-		err = e.Flush()
-		if err != nil {
-			t.Logf("error flushing after responding: %q", err)
-		}
-		bw := &bytes.Buffer{}
-		s := xmpptest.NewSession(0, struct {
-			io.Reader
-			io.Writer
-		}{
-			Reader: strings.NewReader(br.String()),
-			Writer: bw,
-		})
-		defer func() {
-			if err := s.Close(); err != nil {
-				t.Errorf("Error closing session: %q", err)
-			}
-		}()
-
-		go func() {
-			err := s.Serve(nil)
-			if err != nil && err != io.EOF {
-				panic(err)
-			}
-		}()
+		s := xmpptest.NewClientServer(0, xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(t, stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(nil))
+			return err
+		}))
 
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
 		defer cancel()
@@ -250,44 +179,15 @@ func TestEncodeIQ(t *testing.T) {
 				}
 			}()
 		}
-		if bw.Len() == 0 {
-			t.Errorf("Unexpectedly empty body")
-		}
 		if resp == nil {
 			t.Errorf("Expected response, but got none")
 		}
 	})
 	t.Run("EncodeIQ", func(t *testing.T) {
-		br := &bytes.Buffer{}
-		e := xml.NewEncoder(br)
-		_, err := xmlstream.Copy(e, stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(nil))
-		if err != nil {
-			t.Logf("error responding: %q", err)
-		}
-		err = e.Flush()
-		if err != nil {
-			t.Logf("error flushing after responding: %q", err)
-		}
-		bw := &bytes.Buffer{}
-		s := xmpptest.NewSession(0, struct {
-			io.Reader
-			io.Writer
-		}{
-			Reader: strings.NewReader(br.String()),
-			Writer: bw,
-		})
-		defer func() {
-			if err := s.Close(); err != nil {
-				t.Errorf("Error closing session: %q", err)
-			}
-		}()
-
-		go func() {
-			err := s.Serve(nil)
-			if err != nil && err != io.EOF {
-				panic(err)
-			}
-		}()
+		s := xmpptest.NewClientServer(0, xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(t, stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(nil))
+			return err
+		}))
 
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
 		defer cancel()
@@ -311,9 +211,6 @@ func TestEncodeIQ(t *testing.T) {
 					t.Errorf("Error closing response: %q", err)
 				}
 			}()
-		}
-		if bw.Len() == 0 {
-			t.Error("Expected EncodeIQ to write a body")
 		}
 		if resp == nil {
 			t.Errorf("Expected response, but got none")
