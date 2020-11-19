@@ -88,7 +88,7 @@ func TestSendIQ(t *testing.T) {
 					return nil
 				}))
 
-				ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 
 				resp, err := s.SendIQElement(ctx, tc.payload, tc.iq)
@@ -123,7 +123,7 @@ func TestSendIQ(t *testing.T) {
 					return nil
 				}))
 
-				ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 
 				resp, err := s.SendIQ(ctx, tc.iq.Wrap(tc.payload))
@@ -160,7 +160,7 @@ func TestEncodeIQ(t *testing.T) {
 			return err
 		}))
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		resp, err := s.EncodeIQElement(ctx, struct {
@@ -189,7 +189,7 @@ func TestEncodeIQ(t *testing.T) {
 			return err
 		}))
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
 		resp, err := s.EncodeIQ(ctx, struct {
@@ -288,7 +288,7 @@ func TestSend(t *testing.T) {
 				}
 			}()
 
-			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 			err := s.Send(ctx, tc.r)
 			if err != tc.err {
