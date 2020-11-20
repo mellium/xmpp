@@ -291,13 +291,12 @@ func (s *Session) Serve(h Handler) (err error) {
 func (s *Session) sendError(err error) (e error) {
 	s.out.Lock()
 	defer s.out.Unlock()
+	s.stateMutex.Lock()
+	defer s.stateMutex.Unlock()
 
-	s.stateMutex.RLock()
 	if s.state&OutputStreamClosed == OutputStreamClosed {
-		s.stateMutex.RUnlock()
 		return err
 	}
-	s.stateMutex.RUnlock()
 
 	switch typErr := err.(type) {
 	case stream.Error:
@@ -614,20 +613,17 @@ func (s *Session) TokenReader() xmlstream.TokenReadCloser {
 func (s *Session) Close() error {
 	s.out.Lock()
 	defer s.out.Unlock()
+	s.stateMutex.Lock()
+	defer s.stateMutex.Unlock()
 
 	return s.closeSession()
 }
 
 func (s *Session) closeSession() error {
-	s.stateMutex.RLock()
 	if s.state&OutputStreamClosed == OutputStreamClosed {
-		s.stateMutex.RUnlock()
 		return nil
 	}
-	s.stateMutex.RUnlock()
 
-	s.stateMutex.Lock()
-	defer s.stateMutex.Unlock()
 	s.state |= OutputStreamClosed
 	// We wrote the opening stream instead of encoding it, so do the same with the
 	// closing to ensure that the encoder doesn't think the tokens are mismatched.
