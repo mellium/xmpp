@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 
-## Unreleased
+## v0.17.1 — 2020-11-21
 
 ### Breaking
 
@@ -17,7 +17,8 @@ All notable changes to this project will be documented in this file.
 - internal/integration: new package for writing integration tests
 - internal/integration/ejabberd: [Ejabberd] support for integration tests
 - internal/integration/prosody: [Prosŏdy] support for integration tests
-- xmpp: `EncodeIQ` and `EncodeIQElement` methods
+- internal/xmpptest: new `ClientServer` for testing two connected sessions
+- xmpp: new `EncodeIQ` and `EncodeIQElement` methods
 
 [Ejabberd]: https://www.ejabberd.im/
 [Prosŏdy]: https://prosody.im/
