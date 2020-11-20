@@ -31,16 +31,26 @@ func TestNewSession(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-	state := xmpp.Secure
-	s := xmpptest.NewClientServer(state, xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-		iq, err := stanza.NewIQ(*start)
-		if err != nil {
-			panic(err)
-		}
-		r := iq.Result(nil)
-		_, err = xmlstream.Copy(t, r)
-		return err
-	}))
+	clientState := xmpp.Secure
+	serverState := xmpp.Secure | xmpp.Authn
+	s := xmpptest.NewClientServer(
+		xmpptest.ClientState(clientState),
+		xmpptest.ServerState(serverState),
+		xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			iq, err := stanza.NewIQ(*start)
+			if err != nil {
+				panic(err)
+			}
+			r := iq.Result(nil)
+			_, err = xmlstream.Copy(t, r)
+			return err
+		}))
+	if st := s.Client.State(); st&clientState != clientState {
+		t.Errorf("client state was not added to the session: want %b to include %b", st, clientState)
+	}
+	if st := s.Server.State(); st&serverState != serverState {
+		t.Errorf("server state was not added to the session: want %b to include %b", st, serverState)
+	}
 	origIQ := struct {
 		stanza.IQ
 	}{
@@ -48,7 +58,7 @@ func TestNewClient(t *testing.T) {
 			ID: "123",
 		},
 	}
-	resp, err := s.EncodeIQ(context.Background(), origIQ)
+	resp, err := s.Client.EncodeIQ(context.Background(), origIQ)
 	if err != nil {
 		t.Errorf("error encoding IQ: %v", err)
 	}
@@ -57,7 +67,15 @@ func TestNewClient(t *testing.T) {
 	if err != nil {
 		t.Errorf("error decoding response: %v", err)
 	}
+	err = resp.Close()
+	if err != nil {
+		t.Errorf("error closing response: %v", err)
+	}
 	if iq.ID != origIQ.ID {
 		t.Errorf("Response IQ had wrong ID: want=%s, got=%s", origIQ.ID, iq.ID)
+	}
+	err = s.Close()
+	if err != nil {
+		t.Errorf("error closing: %v", err)
 	}
 }

@@ -80,7 +80,7 @@ func TestSendIQ(t *testing.T) {
 		tc := tc
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Run("SendIQElement", func(t *testing.T) {
-				s := xmpptest.NewClientServer(0, xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+				s := xmpptest.NewClientServer(xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 					if tc.resp != nil {
 						_, err := xmlstream.Copy(t, tc.resp.Wrap(nil))
 						return err
@@ -91,7 +91,7 @@ func TestSendIQ(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 
-				resp, err := s.SendIQElement(ctx, tc.payload, tc.iq)
+				resp, err := s.Client.SendIQElement(ctx, tc.payload, tc.iq)
 				if err != tc.err {
 					t.Errorf("Unexpected error, want=%q, got=%q", tc.err, err)
 				}
@@ -115,7 +115,7 @@ func TestSendIQ(t *testing.T) {
 				}
 			})
 			t.Run("SendIQ", func(t *testing.T) {
-				s := xmpptest.NewClientServer(0, xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+				s := xmpptest.NewClientServer(xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 					if tc.resp != nil {
 						_, err := xmlstream.Copy(t, tc.resp.Wrap(nil))
 						return err
@@ -126,7 +126,7 @@ func TestSendIQ(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 
-				resp, err := s.SendIQ(ctx, tc.iq.Wrap(tc.payload))
+				resp, err := s.Client.SendIQ(ctx, tc.iq.Wrap(tc.payload))
 				if err != tc.err {
 					t.Errorf("Unexpected error, want=%q, got=%q", tc.err, err)
 				}
@@ -155,7 +155,7 @@ func TestSendIQ(t *testing.T) {
 
 func TestEncodeIQ(t *testing.T) {
 	t.Run("EncodeIQElement", func(t *testing.T) {
-		s := xmpptest.NewClientServer(0, xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		s := xmpptest.NewClientServer(xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 			_, err := xmlstream.Copy(t, stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(nil))
 			return err
 		}))
@@ -163,7 +163,7 @@ func TestEncodeIQ(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		resp, err := s.EncodeIQElement(ctx, struct {
+		resp, err := s.Client.EncodeIQElement(ctx, struct {
 			XMLName xml.Name `xml:"urn:xmpp:time time"`
 		}{}, stanza.IQ{
 			ID:   testIQID,
@@ -184,7 +184,7 @@ func TestEncodeIQ(t *testing.T) {
 		}
 	})
 	t.Run("EncodeIQ", func(t *testing.T) {
-		s := xmpptest.NewClientServer(0, xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+		s := xmpptest.NewClientServer(xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 			_, err := xmlstream.Copy(t, stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(nil))
 			return err
 		}))
@@ -192,7 +192,7 @@ func TestEncodeIQ(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		resp, err := s.EncodeIQ(ctx, struct {
+		resp, err := s.Client.EncodeIQ(ctx, struct {
 			stanza.IQ
 
 			Payload struct{} `xml:"urn:xmpp:time time"`
@@ -219,10 +219,8 @@ func TestEncodeIQ(t *testing.T) {
 }
 
 var sendTests = [...]struct {
-	r          xml.TokenReader
-	err        error
-	resp       xml.TokenReader
-	writesBody bool
+	r   xml.TokenReader
+	err error
 }{
 	0: {
 		r:   errReader{err: errExpected},
@@ -235,67 +233,48 @@ var sendTests = [...]struct {
 		err: xmpp.ErrNotStart,
 	},
 	2: {
-		r:          stanza.Message{To: to, Type: stanza.NormalMessage}.Wrap(nil),
-		writesBody: true,
+		r: stanza.Message{To: to, Type: stanza.NormalMessage}.Wrap(nil),
 	},
 	3: {
-		r:          stanza.Presence{To: to, Type: stanza.AvailablePresence}.Wrap(nil),
-		writesBody: true,
+		r: stanza.Presence{To: to, Type: stanza.AvailablePresence}.Wrap(nil),
 	},
 	4: {
-		r:          stanza.IQ{Type: stanza.ResultIQ}.Wrap(nil),
-		writesBody: true,
+		r: stanza.IQ{Type: stanza.ResultIQ}.Wrap(nil),
 	},
 	5: {
-		r:          stanza.IQ{Type: stanza.ErrorIQ}.Wrap(nil),
-		writesBody: true,
+		r: stanza.IQ{Type: stanza.ErrorIQ}.Wrap(nil),
 	},
 }
 
 func TestSend(t *testing.T) {
 	for i, tc := range sendTests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			br := &bytes.Buffer{}
-			bw := &bytes.Buffer{}
-			s := xmpptest.NewSession(0, struct {
-				io.Reader
-				io.Writer
-			}{
-				Reader: br,
-				Writer: bw,
-			})
-			defer func() {
-				if err := s.Close(); err != nil {
-					t.Errorf("Error closing session: %q", err)
-				}
-			}()
-			if tc.resp != nil {
-				e := xml.NewEncoder(br)
-				_, err := xmlstream.Copy(e, tc.resp)
+			buf := &bytes.Buffer{}
+			s := xmpptest.NewClientServer(xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+				e := xml.NewEncoder(buf)
+				err := e.EncodeToken(*start)
 				if err != nil {
-					t.Logf("error responding: %q", err)
+					return err
 				}
-				err = e.Flush()
+				_, err = xmlstream.Copy(e, t)
 				if err != nil {
-					t.Logf("error flushing after responding: %q", err)
+					return err
 				}
-			}
-
-			go func() {
-				err := s.Serve(nil)
-				if err != nil && err != io.EOF {
-					panic(err)
-				}
-			}()
+				return e.Flush()
+			}))
 
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
-			err := s.Send(ctx, tc.r)
+			err := s.Client.Send(ctx, tc.r)
 			if err != tc.err {
 				t.Errorf("Unexpected error, want=%q, got=%q", tc.err, err)
 			}
-			if empty := bw.Len() != 0; tc.writesBody != empty {
-				t.Errorf("Unexpected body, want=%t, got=%t", tc.writesBody, empty)
+			err = s.Close()
+			if err != nil {
+				t.Errorf("unexpected error closing session: %v", err)
+			}
+			if tc.err == nil && buf.Len() == 0 {
+				t.Errorf("Send wrote no bytes")
 			}
 		})
 	}

@@ -63,31 +63,81 @@ func NewSession(state xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
 	return s
 }
 
+// Option is a type for configuring a ClientServer.
+type Option func(*ClientServer)
+
+// ClientState configures extra state bits to add to the client session.
+func ClientState(state xmpp.SessionState) Option {
+	return func(c *ClientServer) {
+		c.clientState = state
+	}
+}
+
+// ServerState configures extra state bits to add to the server session.
+func ServerState(state xmpp.SessionState) Option {
+	return func(c *ClientServer) {
+		c.serverState = state
+	}
+}
+
+// ClientHandler sets up the client side of a ClientServer.
+func ClientHandler(handler xmpp.Handler) Option {
+	return func(c *ClientServer) {
+		c.clientHandler = handler
+	}
+}
+
+// ClientHandlerFunc sets up the client side of a ClientServer using an
+// xmpp.HandlerFunc.
+func ClientHandlerFunc(handler xmpp.HandlerFunc) Option {
+	return ClientHandler(handler)
+}
+
+// ServerHandler sets up the server side of a ClientServer.
+func ServerHandler(handler xmpp.Handler) Option {
+	return func(c *ClientServer) {
+		c.serverHandler = handler
+	}
+}
+
+// ServerHandlerFunc sets up the server side of a ClientServer using an
+// xmpp.HandlerFunc.
+func ServerHandlerFunc(handler xmpp.HandlerFunc) Option {
+	return ServerHandler(handler)
+}
+
 // ClientServer is two coupled xmpp.Session's that can respond to one another in
 // tests.
-// The client session's methods are exposed to allow sending messages easily.
 type ClientServer struct {
-	*xmpp.Session
-	server *xmpp.Session
+	Client *xmpp.Session
+	Server *xmpp.Session
+
+	clientHandler xmpp.Handler
+	serverHandler xmpp.Handler
+	clientState   xmpp.SessionState
+	serverState   xmpp.SessionState
 }
 
 // NewClientServer returns a ClientServer with the client and server goroutines
 // started.
-// The server handler will be used to handle any messages sent through the
-// client (as if a server on the opposite end was responding).
 // Both serve goroutines are started when NewClient is called and shut down when
 // Client is closed.
-func NewClientServer(state xmpp.SessionState, server xmpp.Handler) ClientServer {
+func NewClientServer(opts ...Option) *ClientServer {
+	cs := &ClientServer{}
+	for _, opt := range opts {
+		opt(cs)
+	}
+
 	clientSessionReader, serverSessionWriter := io.Pipe()
 	serverSessionReader, clientSessionWriter := io.Pipe()
-	clientSession := NewSession(state, struct {
+	cs.Client = NewSession(cs.clientState, struct {
 		io.Reader
 		io.Writer
 	}{
 		Reader: clientSessionReader,
 		Writer: clientSessionWriter,
 	})
-	serverSession := NewSession(0, struct {
+	cs.Server = NewSession(cs.serverState, struct {
 		io.Reader
 		io.Writer
 	}{
@@ -96,23 +146,20 @@ func NewClientServer(state xmpp.SessionState, server xmpp.Handler) ClientServer 
 	})
 	go func() {
 		/* #nosec */
-		clientSession.Serve(nil)
+		cs.Client.Serve(cs.clientHandler)
 	}()
 	go func() {
 		/* #nosec */
-		serverSession.Serve(server)
+		cs.Server.Serve(cs.serverHandler)
 	}()
-	return ClientServer{
-		Session: clientSession,
-		server:  serverSession,
-	}
+	return cs
 }
 
-// Close calls the client and server sessions close methods.
-func (c ClientServer) Close() error {
-	err := c.Session.Close()
-	if e := c.server.Close(); e != nil {
-		err = e
+// Close calls the client and server sessions' close methods.
+func (cs *ClientServer) Close() error {
+	err := cs.Client.Close()
+	if err != nil {
+		return err
 	}
-	return err
+	return cs.Server.Close()
 }
