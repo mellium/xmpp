@@ -4,6 +4,8 @@ packages:
   - git
 sources:
   - https://git.sr.ht/~samwhited/xmpp
+environment:
+  GO111MODULE: "on"
 tasks:
   - dco: |
       git version

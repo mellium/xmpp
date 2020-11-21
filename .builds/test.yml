@@ -3,6 +3,8 @@ packages:
   - go
 sources:
   - https://git.sr.ht/~samwhited/xmpp
+environment:
+  GO111MODULE: "on"
 tasks:
   - setup: |
       go version
