@@ -9,7 +9,6 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
-	"io"
 	"strconv"
 	"testing"
 	"time"
@@ -29,18 +28,6 @@ type errReader struct{ err error }
 
 func (r errReader) Token() (xml.Token, error) {
 	return nil, r.err
-}
-
-type toksReader []xml.Token
-
-func (r *toksReader) Token() (xml.Token, error) {
-	if len(*r) == 0 {
-		return nil, io.EOF
-	}
-
-	var t xml.Token
-	t, *r = (*r)[0], (*r)[1:]
-	return t, nil
 }
 
 var (
@@ -227,7 +214,7 @@ var sendTests = [...]struct {
 		err: errExpected,
 	},
 	1: {
-		r: &toksReader{
+		r: &xmpptest.Tokens{
 			xml.EndElement{Name: xml.Name{Local: "iq"}},
 		},
 		err: xmpp.ErrNotStart,
