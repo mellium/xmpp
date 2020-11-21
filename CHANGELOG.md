@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- internal/xmpptest: new `Tokens` type for testing invalid XML
+
 
 ## v0.17.1 — 2020-11-21
 
