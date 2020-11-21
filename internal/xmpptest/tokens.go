@@ -17,6 +17,7 @@ import (
 // decoder.
 type Tokens []xml.Token
 
+// Token satisfies the xml.TokenReader interface for Tokens.
 func (r *Tokens) Token() (xml.Token, error) {
 	if len(*r) == 0 {
 		return nil, io.EOF
