@@ -266,7 +266,7 @@ var serveTests = [...]struct {
 		}),
 		in:  `<stream:error xmlns:stream="` + stream.NS + `"><not-well-formed xmlns='urn:ietf:params:xml:ns:xmpp-streams'/></stream:error>`,
 		out: `</stream:stream>`,
-		err: stream.InternalServerError,
+		err: stream.NotWellFormed,
 	},
 	13: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {

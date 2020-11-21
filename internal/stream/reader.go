@@ -38,8 +38,12 @@ func (r reader) Token() (xml.Token, error) {
 		// delegating to the normal handler.
 		switch t.Name.Local {
 		case "error":
-			// TODO: Unmarshal the error and return it.
-			return nil, stream.InternalServerError
+			e := stream.Error{}
+			err = xml.NewTokenDecoder(r.r).DecodeElement(&e, &t)
+			if err != nil {
+				return nil, err
+			}
+			return nil, e
 		case "stream":
 			// Special case returning a nice error here.
 			return nil, ErrUnexpectedRestart
