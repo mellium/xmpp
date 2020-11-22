@@ -14,6 +14,7 @@ import (
 	"mellium.im/sasl"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/integration"
+	"mellium.im/xmpp/internal/integration/ejabberd"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/ping"
 )
@@ -24,6 +25,12 @@ func TestIntegrationSendPing(t *testing.T) {
 		prosody.ListenC2S(),
 	)
 	prosodyRun(integrationSendPing)
+
+	ejabberdRun := ejabberd.Test(context.TODO(), t,
+		integration.Log(),
+		ejabberd.ListenC2S(),
+	)
+	ejabberdRun(integrationSendPing)
 }
 
 func integrationSendPing(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
