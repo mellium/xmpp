@@ -50,6 +50,12 @@ type Cmd struct {
 	c2sNetwork  string
 	s2sNetwork  string
 	shutdown    func(*Cmd) error
+	user        jid.JID
+	pass        string
+
+	// Config is meant to be used by internal packages like prosody and ejabberd
+	// to store their internal representation of the config before writing it out.
+	Config interface{}
 }
 
 // New creates a new, unstarted, command.
@@ -64,16 +70,21 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 		name: name,
 		kill: cancel,
 	}
+	var err error
+	cmd.cfgDir, err = ioutil.TempDir("", cmd.name)
+	if err != nil {
+		return nil, err
+	}
 	for _, opt := range opts {
-		err := opt(cmd)
+		err = opt(cmd)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error applying option: %v", err)
 		}
 	}
 	for _, f := range cmd.cfgF {
-		err := f()
+		err = f()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error running config func: %w", err)
 		}
 	}
 
@@ -122,13 +133,17 @@ func (cmd *Cmd) Close() error {
 	if cmd.shutdown != nil {
 		e = cmd.shutdown(cmd)
 	}
-	if cmd.cfgDir != "" {
-		err := os.RemoveAll(cmd.cfgDir)
-		if err != nil {
-			return err
-		}
+	err := os.RemoveAll(cmd.cfgDir)
+	if err != nil {
+		return err
 	}
 	return e
+}
+
+// User returns the address and password of a user created on the server (if
+// any).
+func (cmd *Cmd) User() (jid.JID, string) {
+	return cmd.user, cmd.pass
 }
 
 // DialClient attempts to connect to the server with a client-to-server (c2s)
@@ -149,9 +164,9 @@ func (cmd *Cmd) DialServer(ctx context.Context, location, origin jid.JID, t *tes
 func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t *testing.T, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
 	switch {
 	case s2s && cmd.s2sListener == nil:
-		return nil, errors.New("s2s not configured, please call S2SListen first")
+		return nil, errors.New("s2s not configured, please configure an s2s listener")
 	case !s2s && cmd.c2sListener == nil:
-		return nil, errors.New("c2s not configured, please call C2SListen first")
+		return nil, errors.New("c2s not configured, please configure a c2s listener")
 	}
 
 	addr := cmd.c2sListener.Addr().String()
@@ -186,6 +201,16 @@ func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t 
 
 // Option is used to configure a Cmd.
 type Option func(cmd *Cmd) error
+
+// User sets the values that will be returned by a call to cmd.User later. It
+// does not actually create a user.
+func User(user jid.JID, pass string) Option {
+	return func(cmd *Cmd) error {
+		cmd.user = user
+		cmd.pass = pass
+		return nil
+	}
+}
 
 // Shutdown is run before the configuration is removed and is meant to
 // gracefully shutdown the application in case it does not handle the kill
@@ -245,12 +270,6 @@ func Cert(name string) Option {
 // files.
 func TempFile(cfgFileName string, f func(*Cmd, io.Writer) error) Option {
 	return func(cmd *Cmd) (err error) {
-		if cmd.cfgDir == "" {
-			cmd.cfgDir, err = ioutil.TempDir("", cmd.name)
-			if err != nil {
-				return err
-			}
-		}
 		dir := filepath.Dir(cfgFileName)
 		if dir != "" && dir != "." && dir != "/" && dir != ".." {
 			err = os.MkdirAll(filepath.Join(cmd.cfgDir, dir), 0700)
@@ -326,7 +345,7 @@ func LogXML() Option {
 	}
 }
 
-// Defer is an option that calls f the command is started.
+// Defer is an option that calls f after the command is started.
 func Defer(f func(*Cmd) error) Option {
 	return func(cmd *Cmd) error {
 		cmd.deferF = append(cmd.deferF, f)

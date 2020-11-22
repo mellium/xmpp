@@ -41,8 +41,13 @@ func New(ctx context.Context, opts ...integration.Option) (*integration.Cmd, err
 
 // ConfigFile is an option that can be used to write a temporary Ejabberd config
 // file.
+// This will overwrite the existing config file and make most of the other
+// options in this package noops.
+// This option only exists for the rare occasion that you need complete control
+// over the config file.
 func ConfigFile(cfg Config) integration.Option {
 	return func(cmd *integration.Cmd) error {
+		cmd.Config = cfg
 		err := integration.TempFile(cfgFileName, func(cmd *integration.Cmd, w io.Writer) error {
 			return cfgTmpl.Execute(w, struct {
 				Config
@@ -67,6 +72,64 @@ func ConfigFile(cfg Config) integration.Option {
 	}
 }
 
+func getConfig(cmd *integration.Cmd) Config {
+	if cmd.Config == nil {
+		cmd.Config = Config{}
+	}
+	return cmd.Config.(Config)
+}
+
+// ListenC2S listens for client-to-server (c2s) connections on a Unix domain
+// socket.
+func ListenC2S() integration.Option {
+	return func(cmd *integration.Cmd) error {
+		c2sListener, err := cmd.C2SListen("unix", filepath.Join(cmd.ConfigDir(), "c2s.socket"))
+		if err != nil {
+			return err
+		}
+		c2sSocket := c2sListener.Addr().(*net.UnixAddr).Name
+		err = c2sListener.Close()
+		if err != nil {
+			return err
+		}
+
+		cfg := getConfig(cmd)
+		cfg.C2SSocket = c2sSocket
+		cmd.Config = cfg
+		return nil
+	}
+}
+
+// ListenS2S listens for server-to-server (s2s) connections on a Unix domain
+// socket.
+func ListenS2S() integration.Option {
+	return func(cmd *integration.Cmd) error {
+		s2sListener, err := cmd.S2SListen("unix", filepath.Join(cmd.ConfigDir(), "s2s.socket"))
+		if err != nil {
+			return err
+		}
+		s2sSocket := s2sListener.Addr().(*net.UnixAddr).Name
+
+		cfg := getConfig(cmd)
+		cfg.S2SSocket = s2sSocket
+		cmd.Config = cfg
+		return nil
+	}
+}
+
+// VHost configures one or more virtual hosts.
+// The default if this option is not provided is to create a single vhost called
+// "localhost" and create a self-signed cert for it (if VHost is specified certs
+// must be manually created).
+func VHost(hosts ...string) integration.Option {
+	return func(cmd *integration.Cmd) error {
+		cfg := getConfig(cmd)
+		cfg.VHosts = append(cfg.VHosts, hosts...)
+		cmd.Config = cfg
+		return nil
+	}
+}
+
 func defaultConfig(cmd *integration.Cmd) error {
 	for _, arg := range cmd.Cmd.Args {
 		if arg == configFlag {
@@ -74,24 +137,24 @@ func defaultConfig(cmd *integration.Cmd) error {
 		}
 	}
 
-	c2sListener, err := cmd.C2SListen("unix", filepath.Join(cmd.ConfigDir(), "c2s.socket"))
-	if err != nil {
-		return err
+	cfg := getConfig(cmd)
+	if len(cfg.VHosts) == 0 {
+		const vhost = "localhost"
+		cfg.VHosts = append(cfg.VHosts, vhost)
+		err := integration.Cert(vhost)(cmd)
+		if err != nil {
+			return err
+		}
 	}
-	c2sSocket := c2sListener.Addr().(*net.UnixAddr).Name
-
-	s2sListener, err := cmd.S2SListen("unix", filepath.Join(cmd.ConfigDir(), "s2s.socket"))
-	if err != nil {
-		return err
+	cmd.Config = cfg
+	if j, _ := cmd.User(); j.Equal(jid.JID{}) {
+		err := CreateUser(context.TODO(), "me@"+cfg.VHosts[0], "password")(cmd)
+		if err != nil {
+			return err
+		}
 	}
-	s2sSocket := s2sListener.Addr().(*net.UnixAddr).Name
 
-	// The config file didn't exist, so create a default config.
-	return ConfigFile(Config{
-		VHosts:    []string{"localhost"},
-		C2SSocket: c2sSocket,
-		S2SSocket: s2sSocket,
-	})(cmd)
+	return ConfigFile(cfg)(cmd)
 }
 
 func inetrcFile(cmd *integration.Cmd) error {
@@ -125,14 +188,19 @@ func ctlFunc(ctx context.Context, args ...string) func(*integration.Cmd) error {
 
 // CreateUser returns an option that calls ejabberdctl to create a user.
 // It is equivalent to calling:
-// Ctl(ctx, "register", "localpart", "domainpart", "password").
+// Ctl(ctx, "register", "localpart", "domainpart", "password") except that it
+// also configures the underlying Cmd to know about the user.
 func CreateUser(ctx context.Context, addr, pass string) integration.Option {
 	return func(cmd *integration.Cmd) error {
 		j, err := jid.Parse(addr)
 		if err != nil {
 			return err
 		}
-		return Ctl(ctx, "register", j.Localpart(), j.Domainpart(), pass)(cmd)
+		err = Ctl(ctx, "register", j.Localpart(), j.Domainpart(), pass)(cmd)
+		if err != nil {
+			return err
+		}
+		return integration.User(j, pass)(cmd)
 	}
 }
 
