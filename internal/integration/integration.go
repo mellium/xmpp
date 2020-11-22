@@ -169,11 +169,13 @@ func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t 
 		return nil, errors.New("c2s not configured, please configure a c2s listener")
 	}
 
-	addr := cmd.c2sListener.Addr().String()
-	network := cmd.c2sNetwork
+	var addr, network string
 	if s2s {
 		addr = cmd.s2sListener.Addr().String()
 		network = cmd.s2sNetwork
+	} else {
+		addr = cmd.c2sListener.Addr().String()
+		network = cmd.c2sNetwork
 	}
 
 	conn, err := net.Dial(network, addr)
