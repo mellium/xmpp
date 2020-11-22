@@ -80,10 +80,17 @@ func defaultConfig(cmd *integration.Cmd) error {
 	}
 	c2sSocket := c2sListener.Addr().(*net.UnixAddr).Name
 
+	s2sListener, err := cmd.S2SListen("unix", filepath.Join(cmd.ConfigDir(), "s2s.socket"))
+	if err != nil {
+		return err
+	}
+	s2sSocket := s2sListener.Addr().(*net.UnixAddr).Name
+
 	// The config file didn't exist, so create a default config.
 	return ConfigFile(Config{
 		VHosts:    []string{"localhost"},
 		C2SSocket: c2sSocket,
+		S2SSocket: s2sSocket,
 	})(cmd)
 }
 

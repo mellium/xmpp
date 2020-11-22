@@ -28,7 +28,7 @@ func TestIntegrationSendPing(t *testing.T) {
 		prosody.CreateUser(context.TODO(), j.String(), pass),
 	)
 	run(func(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
-		session, err := cmd.Dial(ctx, j, t,
+		session, err := cmd.DialClient(ctx, j, t,
 			xmpp.StartTLS(&tls.Config{
 				InsecureSkipVerify: true,
 			}),

@@ -15,6 +15,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -45,7 +46,9 @@ type Cmd struct {
 	deferF      []func(*Cmd) error
 	in, out     *testWriter
 	c2sListener net.Listener
+	s2sListener net.Listener
 	c2sNetwork  string
+	s2sNetwork  string
 	shutdown    func(*Cmd) error
 }
 
@@ -91,6 +94,20 @@ func (cmd *Cmd) C2SListen(network, addr string) (net.Listener, error) {
 	return cmd.c2sListener, err
 }
 
+// S2SListen returns a listener with a random port.
+// The listener is created on the first call to S2SListener.
+// Subsequent calls ignore the arguments and return the existing listener.
+func (cmd *Cmd) S2SListen(network, addr string) (net.Listener, error) {
+	if cmd.s2sListener != nil {
+		return cmd.s2sListener, nil
+	}
+
+	var err error
+	cmd.s2sListener, err = net.Listen(network, addr)
+	cmd.s2sNetwork = network
+	return cmd.s2sListener, err
+}
+
 // ConfigDir returns the temporary directory used to store config files.
 func (cmd *Cmd) ConfigDir() string {
 	return cmd.cfgDir
@@ -114,12 +131,37 @@ func (cmd *Cmd) Close() error {
 	return e
 }
 
-// Dial attempts to connect to the server by dialing localhost and then
-// negotiating a stream with the location set to the domainpart of j and the
-// origin set to j.
-func (cmd *Cmd) Dial(ctx context.Context, j jid.JID, t *testing.T, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
+// DialClient attempts to connect to the server with a client-to-server (c2s)
+// connection by dialing the address reserved by C2SListen and then negotiating
+// a stream with the location set to the domainpart of j and the origin set to
+// j.
+func (cmd *Cmd) DialClient(ctx context.Context, j jid.JID, t *testing.T, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
+	return cmd.dial(ctx, false, j.Domain(), j, t, features...)
+}
+
+// DialServer attempts to connect to the server with a server-to-server (s2s)
+// connection by dialing the address reserved by S2SListen and then negotiating
+// a stream.
+func (cmd *Cmd) DialServer(ctx context.Context, location, origin jid.JID, t *testing.T, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
+	return cmd.dial(ctx, true, location, origin, t, features...)
+}
+
+func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t *testing.T, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
+	switch {
+	case s2s && cmd.s2sListener == nil:
+		return nil, errors.New("s2s not configured, please call S2SListen first")
+	case !s2s && cmd.c2sListener == nil:
+		return nil, errors.New("c2s not configured, please call C2SListen first")
+	}
+
 	addr := cmd.c2sListener.Addr().String()
-	conn, err := net.Dial(cmd.c2sNetwork, addr)
+	network := cmd.c2sNetwork
+	if s2s {
+		addr = cmd.s2sListener.Addr().String()
+		network = cmd.s2sNetwork
+	}
+
+	conn, err := net.Dial(network, addr)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing %s: %w", addr, err)
 	}
@@ -130,8 +172,8 @@ func (cmd *Cmd) Dial(ctx context.Context, j jid.JID, t *testing.T, features ...x
 	})
 	session, err := xmpp.NegotiateSession(
 		ctx,
-		j.Domain(),
-		j,
+		location,
+		origin,
 		conn,
 		false,
 		negotiator,
@@ -322,9 +364,17 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = waitSocket(cmd.c2sNetwork, cmd.c2sListener.Addr().String())
-	if err != nil {
-		t.Fatal(err)
+	if cmd.c2sListener != nil {
+		err = waitSocket(cmd.c2sNetwork, cmd.c2sListener.Addr().String())
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if cmd.s2sListener != nil {
+		err = waitSocket(cmd.s2sNetwork, cmd.s2sListener.Addr().String())
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 	for _, f := range cmd.deferF {
 		err := f(cmd)

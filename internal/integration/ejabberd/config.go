@@ -13,6 +13,7 @@ import (
 type Config struct {
 	VHosts    []string
 	C2SSocket string
+	S2SSocket string
 }
 
 const inetrc = `{lookup,["file","native"]}.
@@ -35,6 +36,7 @@ certfiles:
 loglevel: info
 
 listen:
+{{- if .C2SSocket }}
   -
     port: "unix:{{ .C2SSocket }}"
     ip: "::1"
@@ -43,6 +45,14 @@ listen:
     shaper: c2s_shaper
     access: c2s
     starttls_required: true
+{{- end }}
+{{- if .S2SSocket }}
+  -
+    port: "unix:{{ .S2SSocket }}"
+    ip: "::1"
+    module: ejabberd_s2s_in
+    max_stanza_size: 524288
+{{- end }}
 
 s2s_use_starttls: optional
 

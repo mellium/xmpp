@@ -92,12 +92,25 @@ func defaultConfig(cmd *integration.Cmd) error {
 	if err != nil {
 		return err
 	}
+	// Prosody creates its own sockets and doesn't provide us with a way of
+	// pointing it at an existing Unix domain socket or handing the filehandle for
+	// the TCP connection to it on start, so we're effectively just listening to
+	// get a random port that we'll use to configure Prosody, then we need to
+	// close the connection and let Prosody listen on that port.
+	// Technically this is racey, but it's not likely to be a problem in practice.
 	defer c2sListener.Close()
+
+	s2sListener, err := cmd.S2SListen("tcp", "[::1]:0")
+	if err != nil {
+		return err
+	}
+	defer s2sListener.Close()
 
 	// The config file didn't exist, so create a default config.
 	return ConfigFile(Config{
 		VHosts:  []string{"localhost"},
 		C2SPort: c2sListener.Addr().(*net.TCPAddr).Port,
+		S2SPort: s2sListener.Addr().(*net.TCPAddr).Port,
 	})(cmd)
 }
 

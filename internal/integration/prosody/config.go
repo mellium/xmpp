@@ -16,6 +16,7 @@ type Config struct {
 	Admins  []string
 	VHosts  []string
 	C2SPort int
+	S2SPort int
 }
 
 const cfgBase = `daemonize = false
@@ -23,7 +24,8 @@ pidfile = "{{ filepathJoin .ConfigDir "prosody.pid" }}"
 admins = { {{ joinQuote .Admins }} }
 data_path = "{{ .ConfigDir }}"
 interfaces = { "::1" }
-c2s_ports = { {{ .C2SPort }} }
+{{ if .C2SPort }}c2s_ports = { {{ .C2SPort }} }{{ end }}
+{{ if .S2SPort }}s2s_ports = { {{ .S2SPort }} }{{ end }}
 
 modules_enabled = {
 
@@ -53,18 +55,21 @@ modules_enabled = {
 		"admin_adhoc"; -- Allows administration via an XMPP client that supports ad-hoc commands
 }
 
-modules_disabled = { "s2s" }
+modules_disabled = {
+  {{ if not .C2SPort }}"c2s";{{ end }}
+  {{ if not .S2SPort }}"s2s";{{ end }}
+}
 
 allow_registration = false
 c2s_require_encryption = true
--- s2s_require_encryption = true
--- s2s_secure_auth = false
--- s2s_insecure_domains = { {{ joinQuote .VHosts }} }
+s2s_require_encryption = true
+s2s_secure_auth = false
+s2s_insecure_domains = { {{ joinQuote .VHosts }} }
 authentication = "internal_plain"
 storage = "internal"
 
 log = {
-  { levels = { min = "info" }, to = "console" };
+	{ levels = { min = "info" }, to = "console" };
 	{ levels = { min = "debug" }, to = "file", filename = "{{ filepathJoin .ConfigDir "prosody.log" }}" };
 }
 
