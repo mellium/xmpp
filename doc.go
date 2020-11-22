@@ -52,7 +52,7 @@
 // NewNegotiator function.
 //
 //     session, err := xmpp.NegotiateSession(
-//         context.TODO(), addr.Domain(), addr, conn,
+//         context.TODO(), addr.Domain(), addr, conn, false,
 //         xmpp.NewNegotiator(xmpp.StreamConfig{
 //             Lang: "en",
 //             …
