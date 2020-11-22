@@ -24,6 +24,7 @@ import (
 var (
 	_ xmlstream.WriterTo  = ping.IQ{}
 	_ xmlstream.Marshaler = ping.IQ{}
+	_ mux.IQHandler       = ping.Handler{}
 )
 
 func TestEncode(t *testing.T) {
