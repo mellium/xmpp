@@ -186,6 +186,7 @@ func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t 
 		Features: features,
 		TeeIn:    cmd.in,
 		TeeOut:   cmd.out,
+		S2S:      s2s,
 	})
 	session, err := xmpp.NegotiateSession(
 		ctx,
