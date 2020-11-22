@@ -11,21 +11,18 @@ import (
 )
 
 func waitSocket(network, socket string) error {
-	connAttempts := 10
 	timeout := time.Second
-	for {
-		if connAttempts--; connAttempts == 0 {
-			return fmt.Errorf("failed to bind to %s", socket)
-		}
+	for connAttempts := 10; connAttempts > 0; connAttempts-- {
 		time.Sleep(timeout)
+		timeout += 500 * time.Millisecond
 		conn, err := net.DialTimeout(network, socket, timeout)
 		if err != nil {
 			continue
 		}
-		timeout += 500 * time.Millisecond
 		if err = conn.Close(); err != nil {
 			return fmt.Errorf("failed to close probe connection: %w", err)
 		}
 		return nil
 	}
+	return fmt.Errorf("failed to bind to %s", socket)
 }
