@@ -40,19 +40,21 @@ import (
 type Cmd struct {
 	*exec.Cmd
 
-	name        string
-	cfgDir      string
-	kill        context.CancelFunc
-	cfgF        []func() error
-	deferF      []func(*Cmd) error
-	in, out     *testWriter
-	c2sListener net.Listener
-	s2sListener net.Listener
-	c2sNetwork  string
-	s2sNetwork  string
-	shutdown    func(*Cmd) error
-	user        jid.JID
-	pass        string
+	name         string
+	cfgDir       string
+	kill         context.CancelFunc
+	cfgF         []func() error
+	deferF       []func(*Cmd) error
+	in, out      *testWriter
+	c2sListener  net.Listener
+	s2sListener  net.Listener
+	c2sNetwork   string
+	s2sNetwork   string
+	shutdown     func(*Cmd) error
+	user         jid.JID
+	pass         string
+	clientCrt    []byte
+	clientCrtKey interface{}
 
 	// Config is meant to be used by internal packages like prosody and ejabberd
 	// to store their internal representation of the config before writing it out.
@@ -92,28 +94,14 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 	return cmd, nil
 }
 
-// ClientCert generates and returns a client certificate.
-func (cmd *Cmd) ClientCert(name string) (cert tls.Certificate, err error) {
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return cert, err
-	}
-	crt := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
-		DNSNames:     []string{name},
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
-	}
-	crtBytes, err := x509.CreateCertificate(rand.Reader, crt, crt, key.Public(), key)
-	if err != nil {
-		return cert, err
-	}
-	return tls.Certificate{
-		Certificate: [][]byte{
-			crtBytes,
-		},
-		PrivateKey: key,
+// ClientCert returns the last configured client certificate.
+// The certificate request info is currently ignored and is only there to make
+// promoting this method to a function and using it as
+// tls.Config.GetClientCertificate possible.
+func (cmd *Cmd) ClientCert(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+	return &tls.Certificate{
+		Certificate: [][]byte{cmd.clientCrt},
+		PrivateKey:  cmd.clientCrtKey,
 	}, nil
 }
 
@@ -261,6 +249,27 @@ func Args(f ...string) Option {
 
 // Cert creates a private key and certificate with the given name.
 func Cert(name string) Option {
+	return cert(name, &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
+		DNSNames:     []string{filepath.Base(name)},
+	})
+}
+
+// ClientCert creates a private key and certificate with the given name that
+// can be used for TLS authentication.
+func ClientCert(name string) Option {
+	return cert(name, &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
+		DNSNames:     []string{filepath.Base(name)},
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	})
+}
+
+func cert(name string, crt *x509.Certificate) Option {
 	return func(cmd *Cmd) error {
 		key, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
@@ -276,15 +285,13 @@ func Cert(name string) Option {
 			return err
 		}
 		return TempFile(name+".crt", func(_ *Cmd, w io.Writer) error {
-			crt := &x509.Certificate{
-				SerialNumber: big.NewInt(1),
-				NotBefore:    time.Now(),
-				NotAfter:     time.Now().Add(365 * 24 * time.Hour),
-				DNSNames:     []string{filepath.Base(name)},
-			}
 			cert, err := x509.CreateCertificate(rand.Reader, crt, crt, key.Public(), key)
 			if err != nil {
 				return err
+			}
+			if len(crt.ExtKeyUsage) > 0 && crt.ExtKeyUsage[0] == x509.ExtKeyUsageClientAuth {
+				cmd.clientCrt = cert
+				cmd.clientCrtKey = key
 			}
 			return pem.Encode(w, &pem.Block{
 				Type:  "CERTIFICATE",
