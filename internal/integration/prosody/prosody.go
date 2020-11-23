@@ -164,6 +164,18 @@ func CreateUser(ctx context.Context, addr, pass string) integration.Option {
 	}
 }
 
+// Modules adds custom modules to the enabled modules list.
+func Modules(mod ...string) integration.Option {
+	return func(cmd *integration.Cmd) error {
+		cfg := getConfig(cmd)
+		for _, m := range mod {
+			cfg.Modules = append(cfg.Modules, m)
+		}
+		cmd.Config = cfg
+		return nil
+	}
+}
+
 func defaultConfig(cmd *integration.Cmd) error {
 	for _, arg := range cmd.Cmd.Args {
 		if arg == configFlag {

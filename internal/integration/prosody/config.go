@@ -15,6 +15,7 @@ import (
 type Config struct {
 	Admins  []string
 	VHosts  []string
+	Modules []string
 	C2SPort int
 	S2SPort int
 }
@@ -28,6 +29,7 @@ interfaces = { "::1" }
 {{ if .S2SPort }}s2s_ports = { {{ .S2SPort }} }{{ end }}
 
 modules_enabled = {
+		{{ luaList .Modules }}
 
 	-- Generally required
 		"roster"; -- Allow users to have a roster. Recommended ;)
@@ -60,6 +62,7 @@ modules_disabled = {
   {{ if not .S2SPort }}"s2s";{{ end }}
 }
 
+plugin_paths = { "{{ .ConfigDir }}" }
 allow_registration = false
 c2s_require_encryption = true
 s2s_require_encryption = true
@@ -88,5 +91,16 @@ var cfgTmpl = template.Must(template.New("cfg").Funcs(template.FuncMap{
 			s[i] = fmt.Sprintf("%q", ss)
 		}
 		return strings.Join(s, ",")
+	},
+	"luaList": func(s []string) string {
+		s = append(s[:0:0], s...)
+		for i, ss := range s {
+			s[i] = fmt.Sprintf("%q", ss)
+		}
+		var end string
+		if len(s) > 0 {
+			end = ";\n"
+		}
+		return strings.Join(s, ";\n") + end
 	},
 }).Parse(cfgBase))
