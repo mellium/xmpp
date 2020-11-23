@@ -176,6 +176,31 @@ func Modules(mod ...string) integration.Option {
 	}
 }
 
+// TrustAll configures prosody to trust all certificates presented to it without
+// any verification.
+func TrustAll() integration.Option {
+	const modName = "trustall"
+	return func(cmd *integration.Cmd) error {
+		err := Modules(modName)(cmd)
+		if err != nil {
+			return err
+		}
+		return integration.TempFile("mod_"+modName+".lua", func(_ *integration.Cmd, w io.Writer) error {
+			_, err := io.WriteString(w, `
+module:set_global();
+
+module:hook("s2s-check-certificate", function(event)
+	local session = event.session;
+	module:log("info", "implicitly trusting presented certificate");
+	session.cert_chain_status = "valid";
+	session.cert_identity_status = "valid";
+	return true;
+end);`)
+			return err
+		})(cmd)
+	}
+}
+
 func defaultConfig(cmd *integration.Cmd) error {
 	for _, arg := range cmd.Cmd.Args {
 		if arg == configFlag {
