@@ -13,6 +13,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -89,6 +90,31 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 	}
 
 	return cmd, nil
+}
+
+// ClientCert generates and returns a client certificate.
+func (cmd *Cmd) ClientCert(name string) (cert tls.Certificate, err error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return cert, err
+	}
+	crt := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
+		DNSNames:     []string{name},
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+	}
+	crtBytes, err := x509.CreateCertificate(rand.Reader, crt, crt, key.Public(), key)
+	if err != nil {
+		return cert, err
+	}
+	return tls.Certificate{
+		Certificate: [][]byte{
+			crtBytes,
+		},
+		PrivateKey: key,
+	}, nil
 }
 
 // C2SListen returns a listener with a random port.
