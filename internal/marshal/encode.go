@@ -17,6 +17,10 @@ import (
 
 // TokenReader returns a reader for the XML encoding of v.
 func TokenReader(v interface{}) (xml.TokenReader, error) {
+	if r, ok := v.(xml.TokenReader); ok {
+		return r, nil
+	}
+
 	var b bytes.Buffer
 	err := xml.NewEncoder(&b).Encode(v)
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"mellium.im/xmpp/internal/marshal"
+	"mellium.im/xmpp/stanza"
 )
 
 type testWriteFlusher struct {
@@ -46,4 +47,16 @@ func TestFlushes(t *testing.T) {
 			t.Errorf("Expected 1 flush call got %d", f.flushes)
 		}
 	})
+}
+
+func TestMarshalTokenReader(t *testing.T) {
+	// If the payload to marshal is already a TokenReader, just return it.
+	r := stanza.IQ{}.Wrap(nil)
+	rr, err := marshal.TokenReader(r)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if r != rr {
+		t.Errorf("got different xml.TokenReader out: want=%v, got=%v", r, rr)
+	}
 }
