@@ -122,3 +122,24 @@ func TestMarshalTokenReader(t *testing.T) {
 		t.Errorf("got different xml.TokenReader out: want=%v, got=%v", r, rr)
 	}
 }
+
+func TestTokenDecoder(t *testing.T) {
+	r := stanza.IQ{}
+	_, err := marshal.TokenReader(r)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestEncodeXMLNS(t *testing.T) {
+	var buf bytes.Buffer
+	e := xml.NewEncoder(&buf)
+	err := marshal.EncodeXML(e, simpleIn)
+	if err != nil {
+		t.Errorf("unexpected error encoding: %v", err)
+	}
+	const expected = `<local xmlns="space"></local>`
+	if s := buf.String(); s != expected {
+		t.Errorf("wrong output: want=%s, got=%s", expected, s)
+	}
+}

@@ -22,12 +22,25 @@ func TokenReader(v interface{}) (xml.TokenReader, error) {
 		return r, nil
 	}
 
+	return tokenDecoder(v)
+}
+
+func tokenDecoder(v interface{}) (*xml.Decoder, error) {
 	var b bytes.Buffer
 	err := xml.NewEncoder(&b).Encode(v)
 	if err != nil {
 		return nil, err
 	}
 	return xml.NewDecoder(&b), nil
+}
+
+// rawTokenReader maps a decoders RawToken method onto its Token method.
+type rawTokenReader struct {
+	*xml.Decoder
+}
+
+func (r rawTokenReader) Token() (xml.Token, error) {
+	return r.RawToken()
 }
 
 // EncodeXML writes the XML encoding of v to the stream.
@@ -38,11 +51,11 @@ func TokenReader(v interface{}) (xml.TokenReader, error) {
 // If the stream is an xmlstream.Flusher, EncodeXML calls Flush before
 // returning.
 func EncodeXML(w xmlstream.TokenWriter, v interface{}) error {
-	r, err := TokenReader(v)
+	d, err := tokenDecoder(v)
 	if err != nil {
 		return err
 	}
-	_, err = xmlstream.Copy(w, r)
+	_, err = xmlstream.Copy(w, rawTokenReader{Decoder: d})
 	if err != nil {
 		return err
 	}
@@ -62,11 +75,11 @@ func EncodeXML(w xmlstream.TokenWriter, v interface{}) error {
 // If the stream is an xmlstream.Flusher, EncodeXMLElement calls Flush before
 // returning.
 func EncodeXMLElement(w xmlstream.TokenWriter, v interface{}, start xml.StartElement) error {
-	r, err := TokenReader(v)
+	d, err := tokenDecoder(v)
 	if err != nil {
 		return err
 	}
-	_, err = xmlstream.Copy(w, xmlstream.Wrap(r, start))
+	_, err = xmlstream.Copy(w, rawTokenReader{Decoder: d})
 	if err != nil {
 		return err
 	}
