@@ -99,7 +99,10 @@ type Session struct {
 	}
 	out struct {
 		intstream.Info
-		e tokenWriteFlusher
+		e interface {
+			xmlstream.TokenWriter
+			xmlstream.Flusher
+		}
 		sync.Locker
 	}
 }
@@ -179,7 +182,7 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	}
 
 	s.in.d = intstream.Reader(s.in.d)
-	s.out.e = stanzaAddID(s.out.e)
+	s.out.e = &stanzaEncoder{TokenWriteFlusher: s.out.e}
 
 	return s, nil
 }
@@ -918,45 +921,31 @@ func (s *Session) closeInputStream() {
 	s.in.cancel()
 }
 
-type wrapWriter struct {
-	encode func(t xml.Token) error
-	flush  func() error
+type stanzaEncoder struct {
+	xmlstream.TokenWriteFlusher
+	depth int
 }
 
-func (w wrapWriter) EncodeToken(t xml.Token) error { return w.encode(t) }
-func (w wrapWriter) Flush() error                  { return w.flush() }
-
-type tokenWriteFlusher interface {
-	xmlstream.TokenWriter
-	xmlstream.Flusher
-}
-
-func stanzaAddID(w tokenWriteFlusher) tokenWriteFlusher {
-	depth := 0
-	return wrapWriter{
-		encode: func(t xml.Token) error {
-		tokswitch:
-			switch tok := t.(type) {
-			case xml.StartElement:
-				depth++
-				if depth == 1 && tok.Name.Local == "iq" {
-					for _, attr := range tok.Attr {
-						if attr.Name.Local == "id" {
-							break tokswitch
-						}
-					}
-					tok.Attr = append(tok.Attr, xml.Attr{
-						Name:  xml.Name{Local: "id"},
-						Value: attr.RandomID(),
-					})
-					t = tok
+func (se *stanzaEncoder) EncodeToken(t xml.Token) error {
+tokswitch:
+	switch tok := t.(type) {
+	case xml.StartElement:
+		se.depth++
+		if se.depth == 1 && tok.Name.Local == "iq" {
+			for _, attr := range tok.Attr {
+				if attr.Name.Local == "id" {
+					break tokswitch
 				}
-			case xml.EndElement:
-				depth--
 			}
-
-			return w.EncodeToken(t)
-		},
-		flush: w.Flush,
+			tok.Attr = append(tok.Attr, xml.Attr{
+				Name:  xml.Name{Local: "id"},
+				Value: attr.RandomID(),
+			})
+			t = tok
+		}
+	case xml.EndElement:
+		se.depth--
 	}
+
+	return se.TokenWriteFlusher.EncodeToken(t)
 }
