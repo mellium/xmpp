@@ -4,9 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### Added
+### Fixed
 
-- internal/xmpptest: new `Tokens` type for testing invalid XML
+- xmpp: the Encode methods no longer sometimes duplicate the xmlns attribute
+- xmpp: stream errors are now unmarshaled and returned from `Serve`
 
 
 ## v0.17.1 — 2020-11-21
