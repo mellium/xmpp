@@ -47,11 +47,12 @@
 //
 //    // PingIQ returns an xml.TokenReader that outputs a new IQ stanza with a
 //    // ping payload.
-//    func PingIQ(to jid.JID) xml.TokenReader {
+//    func PingIQ(id string, to jid.JID) xml.TokenReader {
 //        start := xml.StartElement{Name: xml.Name{Space: "urn:xmpp:ping", Local: "ping"}}
-//        return stanza.WrapIQ(
-//            stanza.IQ{To: to, Type: stanza.GetIQ},
-//            xmlstream.Wrap(nil, start)
-//        )
+//        return stanza.IQ{
+//            ID: id,
+//            To: to,
+//            Type: stanza.GetIQ,
+//        }.Wrap(start)
 //    }
 package stanza // import "mellium.im/xmpp/stanza"
