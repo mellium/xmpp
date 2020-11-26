@@ -23,6 +23,7 @@ Others may be implemented in third party libraries.
 | [XEP-0199: XMPP Ping]                                       | [ping]      |
 | [XEP-0202: Entity Time]                                     | [xtime]     |
 | [XEP-0229: Stream Compression with LZW]                     | [compress]  |
+| [XEP-0288: Bidirectional Server-to-Server Connections]      | [stream]    |
 | [XEP-0392: Consistent Color Generation]                     | [color]     |
 | [XEP-0393: Message Styling]                                 | [styling]   |
 
@@ -46,6 +47,7 @@ Others may be implemented in third party libraries.
 [XEP-0199: XMPP Ping]: https://xmpp.org/extensions/xep-0199.html
 [XEP-0202: Entity Time]: https://xmpp.org/extensions/xep-0202.html
 [XEP-0229: Stream Compression with LZW]: https://xmpp.org/extensions/xep-0229.html
+[XEP-0288: Bidirectional Server-to-Server Connections]: https://xmpp.org/extensions/xep-0288.html
 [XEP-0392: Consistent Color Generation]: https://xmpp.org/extensions/xep-0392.html
 [XEP-0393: Message Styling]: https://xmpp.org/extensions/xep-0393.html
 
