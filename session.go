@@ -544,8 +544,12 @@ func (lwc *lockWriteCloser) Close() error {
 	if lwc.err != nil {
 		return nil
 	}
+	defer lwc.m.Unlock()
+	if err := lwc.Flush(); err != nil {
+		lwc.err = err
+		return err
+	}
 	lwc.err = io.EOF
-	lwc.m.Unlock()
 	return nil
 }
 
