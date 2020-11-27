@@ -7,6 +7,7 @@ package xmpp_test
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/xml"
 	"errors"
 	"strconv"
@@ -205,9 +206,15 @@ func TestEncodeIQ(t *testing.T) {
 	})
 }
 
+// zeroID will be the ID of stanzas that have an empty ID in the send tests.
+// Normally a random ID is generated, but for the purposes of the tests the
+// source of randomness has been replaced with a reader that only reads zeros.
+const zeroID = "0000000000000000"
+
 var sendTests = [...]struct {
 	r   xml.TokenReader
 	err error
+	out string
 }{
 	0: {
 		r:   errReader{err: errExpected},
@@ -220,20 +227,44 @@ var sendTests = [...]struct {
 		err: xmpp.ErrNotStart,
 	},
 	2: {
-		r: stanza.Message{To: to, Type: stanza.NormalMessage}.Wrap(nil),
+		r:   stanza.Message{To: to, Type: stanza.NormalMessage}.Wrap(nil),
+		out: `<message xmlns="jabber:client" type="normal" to="test@example.net" id="` + zeroID + `"></message>`,
 	},
 	3: {
-		r: stanza.Presence{To: to, Type: stanza.AvailablePresence}.Wrap(nil),
+		r:   stanza.Presence{To: to, Type: stanza.AvailablePresence}.Wrap(nil),
+		out: `<presence xmlns="jabber:client" to="test@example.net" id="` + zeroID + `"></presence>`,
 	},
 	4: {
-		r: stanza.IQ{Type: stanza.ResultIQ}.Wrap(nil),
+		r:   stanza.Presence{To: to, Type: stanza.SubscribePresence, ID: "123"}.Wrap(nil),
+		out: `<presence xmlns="jabber:client" id="123" to="test@example.net" type="subscribe"></presence>`,
 	},
 	5: {
+		r: stanza.IQ{Type: stanza.ResultIQ}.Wrap(nil),
+	},
+	6: {
 		r: stanza.IQ{Type: stanza.ErrorIQ}.Wrap(nil),
 	},
 }
 
+type zeroReader struct{}
+
+func (zeroReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = 0
+	}
+	return len(p), nil
+}
+
 func TestSend(t *testing.T) {
+	// For this test (and this test only) override the global source of randomness
+	// so that we can deterministically test the output of stanzas even if a
+	// random ID would be generated.
+	origRand := rand.Reader
+	rand.Reader = zeroReader{}
+	defer func() {
+		rand.Reader = origRand
+	}()
+
 	for i, tc := range sendTests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			buf := &bytes.Buffer{}
@@ -254,14 +285,17 @@ func TestSend(t *testing.T) {
 			defer cancel()
 			err := s.Client.Send(ctx, tc.r)
 			if err != tc.err {
-				t.Errorf("Unexpected error, want=%q, got=%q", tc.err, err)
+				t.Errorf("unexpected error, want=%q, got=%q", tc.err, err)
 			}
 			err = s.Close()
 			if err != nil {
 				t.Errorf("unexpected error closing session: %v", err)
 			}
 			if tc.err == nil && buf.Len() == 0 {
-				t.Errorf("Send wrote no bytes")
+				t.Errorf("send wrote no bytes")
+			}
+			if s := buf.String(); tc.out != "" && tc.out != s {
+				t.Errorf("got wrong output:\nwant=%s, \ngot=%s", tc.out, s)
 			}
 		})
 	}

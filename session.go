@@ -823,6 +823,11 @@ func isStanza(name xml.Name) bool {
 		(name.Space == ns.Client || name.Space == ns.Server)
 }
 
+func isStanzaEmptySpace(name xml.Name) bool {
+	return (name.Local == "iq" || name.Local == "message" || name.Local == "presence") &&
+		(name.Space == ns.Client || name.Space == ns.Server || name.Space == "")
+}
+
 // SendIQ is like Send except that it returns an error if the first token read
 // from the stream is not an Info/Query (IQ) start element and blocks until a
 // response is received.
@@ -935,7 +940,11 @@ tokswitch:
 	switch tok := t.(type) {
 	case xml.StartElement:
 		se.depth++
-		if se.depth == 1 && tok.Name.Local == "iq" {
+		// RFC6120 §8.1.3
+		// For <message/> and <presence/> stanzas, it is RECOMMENDED for the
+		// originating entity to include an 'id' attribute; for <iq/> stanzas, it is
+		// REQUIRED.
+		if se.depth == 1 && isStanzaEmptySpace(tok.Name) {
 			for _, attr := range tok.Attr {
 				if attr.Name.Local == "id" {
 					break tokswitch
