@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- internal/integration/prosody: add option for enabling bidirectional s2s
+  connections
+- xmpp: `SetReadDeadline` and `SetWriteDeadline` are now proxied even if the
+  underlying connection is not a `net.Conn`
+- xmpp: all sent stanzas are now given randomly generated IDs if no ID was
+  provided (not just IQs)
+
+
 ### Fixed
 
 - xmpp: the Encode methods no longer sometimes duplicate the xmlns attribute
