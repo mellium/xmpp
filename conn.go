@@ -23,6 +23,8 @@ type tlsConn interface {
 type conn struct {
 	c         net.Conn
 	rw        io.ReadWriter
+	rd        func(time.Time) error
+	wd        func(time.Time) error
 	connState func() tls.ConnectionState
 }
 
@@ -45,9 +47,23 @@ func newConn(rw io.ReadWriter, prev net.Conn) net.Conn {
 		cs = tc.ConnectionState
 	}
 
+	var rd, wd func(time.Time) error
+	if rdPrev, ok := prev.(interface {
+		SetReadDeadline(time.Time) error
+	}); ok {
+		rd = rdPrev.SetReadDeadline
+	}
+	if wdPrev, ok := prev.(interface {
+		SetWriteDeadline(time.Time) error
+	}); ok {
+		wd = wdPrev.SetWriteDeadline
+	}
+
 	nc := &conn{
 		rw:        rw,
 		c:         prev,
+		rd:        rd,
+		wd:        wd,
 		connState: cs,
 	}
 	return nc
@@ -104,10 +120,10 @@ func (c *conn) SetDeadline(t time.Time) error {
 // SetReadDeadline sets the read deadline on the underlying connection.
 // A zero value for t means Read will not time out.
 func (c *conn) SetReadDeadline(t time.Time) error {
-	if c.c == nil {
+	if c.rd == nil {
 		return nil
 	}
-	return c.c.SetReadDeadline(t)
+	return c.rd(t)
 }
 
 // SetWriteDeadline sets the write deadline on the underlying connection.
@@ -115,10 +131,10 @@ func (c *conn) SetReadDeadline(t time.Time) error {
 // After a Write has timed out, the TLS state is corrupt and all future writes
 // will return the same error.
 func (c *conn) SetWriteDeadline(t time.Time) error {
-	if c.c == nil {
+	if c.wd == nil {
 		return nil
 	}
-	return c.c.SetWriteDeadline(t)
+	return c.wd(t)
 }
 
 // Write writes data to the connection.
