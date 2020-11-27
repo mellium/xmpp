@@ -194,9 +194,7 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 
 					// If the feature is required, tentatively select it (but finish
 					// looking for optional features).
-					if v.req {
-						data = v
-					}
+					data = v
 				}
 			}
 
@@ -251,7 +249,7 @@ func getFeature(name xml.Name, features []StreamFeature) (feature StreamFeature,
 }
 
 func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeature) (list *streamFeaturesList, err error) {
-	start := xml.StartElement{Name: xml.Name{Space: "", Local: "stream:features"}}
+	start := xml.StartElement{Name: xml.Name{Local: "stream:features"}}
 	w := s.TokenWriter()
 	defer w.Close()
 	if err = w.EncodeToken(start); err != nil {
