@@ -36,7 +36,8 @@ const (
 // chat messages.
 type messageBody struct {
 	stanza.Message
-	Body string `xml:"body"`
+	Subject string `xml:"subject,omitempty"`
+	Body    string `xml:"body"`
 }
 
 func main() {
@@ -96,8 +97,7 @@ func main() {
 	go func() {
 		err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 			d := xml.NewTokenDecoder(t)
-			// Ignore anything that's not a message. In a real system we'd want to at
-			// least respond to IQs.
+			// Ignore anything that's not a message.
 			if start.Name.Local != "message" {
 				return nil
 			}
@@ -110,7 +110,11 @@ func main() {
 			}
 
 			if msg.Body != "" {
-				fmt.Printf("\nFrom %s: %q\n"+prompt, msg.From.Bare(), msg.Body)
+				if msg.Subject != "" {
+					fmt.Printf("\nFrom %s: [%s] %s\n"+prompt, msg.From.Bare(), msg.Subject, msg.Body)
+				} else {
+					fmt.Printf("\nFrom %s: %q\n"+prompt, msg.From.Bare(), msg.Body)
+				}
 			}
 			return nil
 		}))
