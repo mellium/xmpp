@@ -8,8 +8,10 @@ package dial // import "mellium.im/xmpp/dial"
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"strconv"
+	"sync"
 
 	"mellium.im/xmpp/internal/discover"
 	"mellium.im/xmpp/jid"
@@ -66,9 +68,8 @@ type Dialer struct {
 
 // Dial discovers and connects to the address on the named network.
 // It will attempt to look up SRV records for the JIDs domainpart or
-// connect to the domainpart directly if dialing the SRV records fails.
-// If Dial returns a net.DNSError, setting NoTLS and then NoLookup and trying
-// again may be a good fallback order.
+// connect to the domainpart directly if dialing the SRV records fails or is
+// disabled.
 //
 // If the context expires before the connection is complete, an error is
 // returned. Once successfully connected, any expiration of the context will not
@@ -98,55 +99,67 @@ func getHostPort(domain, network, service string) (host string, port uint16, err
 }
 
 func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
-	domain := addr.Domainpart()
-	service := connType(!d.NoTLS, d.S2S)
-	var addrs []*net.SRV
-	var err error
-
 	// If we're not looking up SRV records, make up some fake ones.
+	var addrs []*net.SRV
+
+	domain := addr.Domainpart()
+	// If we're not looking up SRV records just do the domain fallback by making
+	// up a few fake records.
 	if d.NoLookup {
-		host, p, err := getHostPort(domain, network, service)
-		if err != nil {
-			return nil, err
-		}
-		addrs = append(addrs, &net.SRV{
-			Target:   host,
-			Port:     p,
-			Priority: 1,
-			Weight:   1,
-		})
-	} else {
-		addrs, err = discover.LookupService(ctx, d.Resolver, service, network, addr)
-		if err != nil && err != discover.ErrNoServiceAtAddress {
-			return nil, err
-		}
-
-		// If we're using TLS also try connecting on the plain records.
+		addrs = discover.FallbackRecords(connType(false, d.S2S), domain)
 		if !d.NoTLS {
-			aa, err := discover.LookupService(ctx, d.Resolver, connType(d.NoTLS, d.S2S), network, addr)
-			if err != nil && err != discover.ErrNoServiceAtAddress {
-				return nil, err
-			}
-			addrs = append(addrs, aa...)
+			addrs = append(addrs, discover.FallbackRecords(connType(true, d.S2S), domain)...)
 		}
-
-		// If there aren't any records, try connecting on the main domain.
-		if len(addrs) == 0 {
-			// If there are no SRV records, use domain and default port.
-			host, p, err := getHostPort(domain, network, service)
+	} else {
+		var xmppAddrs, xmppsAddrs []*net.SRV
+		var xmppErr, xmppsErr error
+		var wg sync.WaitGroup
+		wg.Add(1)
+		if !d.NoTLS {
+			wg.Add(1)
+			go func() {
+				// Lookup xmpps-(client|server)
+				defer wg.Done()
+				xmppsService := connType(true, d.S2S)
+				addrs, err := discover.LookupService(ctx, d.Resolver, xmppsService, addr)
+				if err != nil {
+					xmppsErr = err
+				}
+				xmppsAddrs = addrs
+			}()
+		}
+		go func() {
+			// Lookup xmpp-(client|server)
+			defer wg.Done()
+			xmppService := connType(false, d.S2S)
+			addrs, err := discover.LookupService(ctx, d.Resolver, xmppService, addr)
 			if err != nil {
-				return nil, err
+				xmppErr = err
 			}
+			xmppAddrs = addrs
+		}()
+		wg.Wait()
 
-			addrs = []*net.SRV{{
-				Target: host,
-				Port:   uint16(p),
-			}}
+		// If either lookup (or both) errored and we don't have any records for the
+		// other type of connection to try, return the error.
+		switch {
+		case xmppsErr != nil && xmppErr != nil:
+			return nil, xmppsErr
+		case xmppsErr != nil && len(xmppAddrs) == 0:
+			return nil, xmppsErr
+		case xmppErr != nil && len(xmppsAddrs) == 0:
+			return nil, xmppErr
 		}
+		addrs = append(xmppsAddrs, xmppAddrs...)
+	}
+
+	if len(addrs) == 0 {
+		return nil, fmt.Errorf("no xmpp service found at address %s", domain)
 	}
 
 	// Try dialing all of the SRV records we know about, breaking as soon as the
 	// connection is established.
+	var err error
 	for _, addr := range addrs {
 		var c net.Conn
 		var e error

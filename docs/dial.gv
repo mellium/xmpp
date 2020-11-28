@@ -1,0 +1,60 @@
+digraph {
+		label="Discovery and Connection"
+
+		dial[shape="oval", label="DialClient()"];
+
+		xmppssrv[shape="box", style=rounded, label="_xmpps SRV Lookup"];
+		xmppsifdot[shape="diamond", label="response = '.'?"];
+		xmppsdroprecord[shape="box", style=rounded, label="Drop '.' record"];
+		xmppsifempty[shape="diamond", label="len(response) = 0?"];
+		xmppsappenddomain[shape="box", style=rounded, label="Use domainpart:port"];
+
+		xmppsrv[shape="box", style=rounded, label="_xmpp SRV Lookup"];
+		xmppifdot[shape="diamond", label="response = '.'?"];
+		xmppdroprecord[shape="box", style=rounded, label="Drop '.' record"];
+		xmppifempty[shape="diamond", label="len(response) = 0?"];
+		xmppappenddomain[shape="box", style=rounded, label="Use domainpart:5222"];
+
+		append[shape="box", style=rounded, label="append(xmpps, xmpp)"];
+		range[shape="diamond", label="loop records"];
+		dialsession[shape="box", style=rounded, label="Connect"];
+
+		end[shape="oval", label="End"];
+
+
+		dial -> xmppssrv;
+		xmppssrv -> xmppsifempty;
+		xmppsifempty -> xmppsappenddomain[label="Yes"];
+		xmppsappenddomain -> append;
+		xmppsifempty -> xmppsifdot[label="No"];
+		xmppsifdot:se -> xmppsdroprecord[label="Yes"];
+		xmppsdroprecord -> append;
+		xmppsifdot:sw -> append:w[label="No"];
+
+		dial -> xmppsrv;
+		xmppsrv -> xmppifempty[ordering="in"];
+		xmppifempty -> xmppappenddomain[label="Yes"];
+		xmppappenddomain -> append;
+		xmppifempty -> xmppifdot[label="No"];
+		xmppifdot:sw -> xmppdroprecord[label="Yes"];
+		xmppdroprecord -> append;
+		xmppifdot:se -> append:e[label="No"];
+
+		append -> range;
+
+		range -> dialsession;
+		range:se -> end[label="No records left (connect err)"];
+		dialsession -> range:sw[label="Failed"];
+		dialsession -> end[label="Connected"];
+
+		{rank=same; xmppssrv xmppsrv}
+		{rank=same; xmppsifdot xmppsappenddomain xmppappenddomain xmppifdot}
+		{
+			// Force the response='.' and add domain on both sides to be symetrical
+			// using an invisible edge.
+			rank = same;
+			edge[ style=invis ];
+			xmppappenddomain -> xmppifdot;
+			rankdir = LR;
+		}
+}

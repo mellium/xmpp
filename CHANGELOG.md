@@ -14,12 +14,22 @@ All notable changes to this project will be documented in this file.
   provided (not just IQs)
 
 
+### Changed
+
+- dial: resolving SRV records for XMPP over implicit or opportunistic TLS is
+  now done concurrently to make the initial connection faster
+- dial: the fallback for dialing an XMPP connection when no SRV records exist is
+  now more robust
+
+
 ### Fixed
 
+- dial: dialing an XMPP connection where no xmpps SRV records exist no longer
+  results in an error (fallback works correctly)
 - xmpp: the Encode methods no longer sometimes duplicate the xmlns attribute
 - xmpp: stream errors are now unmarshaled and returned from `Serve`
 - xmpp: XML tokens written directly to the session are now always flushed to the
-  underlying connection when the token writer is closed.
+  underlying connection when the token writer is closed
 
 
 ## v0.17.1 — 2020-11-21
