@@ -36,8 +36,8 @@ const (
 // chat messages.
 type messageBody struct {
 	stanza.Message
-	Subject string `xml:"subject"`
-	Thread  string `xml:"thread"`
+	Subject string `xml:"subject,omitempty"`
+	Thread  string `xml:"thread,omitempty"`
 	Body    string `xml:"body"`
 }
 
@@ -140,7 +140,6 @@ func main() {
 		if room {
 			debug.Printf("leaving the chat room %s…", addr)
 			err = session.Encode(ctx, stanza.Presence{
-				ID:   "456def",
 				From: originJID,
 				To:   parsedToAddr,
 				Type: stanza.UnavailablePresence,
@@ -168,16 +167,13 @@ func main() {
 		// Join the MUC.
 		joinPresence := struct {
 			stanza.Presence
-			// TODO: why is the xmlns double encoded, resulting in a broken stanza?
-			//
-			//X struct {
-			//	History struct {
-			//		MaxStanzas int `xml:"maxstanzas,attr"`
-			//	} `xml:"history"`
-			//} `xml:"http://jabber.org/protocol/muc x"`
+			X struct {
+				History struct {
+					MaxStanzas int `xml:"maxstanzas,attr"`
+				} `xml:"history"`
+			} `xml:"http://jabber.org/protocol/muc x"`
 		}{
 			Presence: stanza.Presence{
-				ID:   "123abc",
 				From: originJID,
 				To:   parsedToAddr,
 			},
