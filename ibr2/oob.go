@@ -16,7 +16,8 @@ import (
 // XEP-0066: Out of Band Data.
 // If you are a client, f will be called and passed the parsed OOB data.
 // If f returns an error, the client considers the negotiation a failure.
-// For servers, the provided data is encoded and sent as part of the challenge.
+// For servers, the provided data is encoded and sent as part of the challenge
+// (f is not used).
 func OOB(data *oob.Data, f func(*oob.Data) error) Challenge {
 	return Challenge{
 		Type: oob.NS,

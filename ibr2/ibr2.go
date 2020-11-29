@@ -2,12 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-// Package ibr2 implements the Extensible In-Band Registration ProtoXEP.
-//
-// BE ADVISED: This API is incomplete and is subject to change.
-// Core functionality of this package is missing, and the entire package may be
-// removed at any time.
-package ibr2 // import "mellium.im/xmpp/ibr2"
+package ibr2
 
 import (
 	"context"
@@ -26,7 +21,7 @@ const (
 )
 
 var (
-	errNoChallenge = errors.New("No supported challenges were found")
+	errNoChallenge = errors.New("no supported challenges were found")
 )
 
 func challengeStart(typ string) xml.StartElement {
@@ -130,7 +125,7 @@ func decodeClientResp(ctx context.Context, r xml.TokenReader, decode func(ctx co
 }
 
 func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session, interface{}) (xmpp.SessionState, io.ReadWriter, error) {
-	return func(ctx context.Context, session *xmpp.Session, supported interface{}) (mask xmpp.SessionState, rw io.ReadWriter, err error) {
+	return func(ctx context.Context, session *xmpp.Session, supported interface{}) (xmpp.SessionState, io.ReadWriter, error) {
 		server := (session.State() & xmpp.Received) == xmpp.Received
 		w := session.TokenWriter()
 		defer w.Close()
@@ -141,7 +136,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 			// We don't support some of the challenge types advertised by the server.
 			// This is not an error, so don't return one; it just means we shouldn't
 			// be negotiating this feature.
-			return
+			return 0, nil, nil
 		}
 
 		var tok xml.Token
@@ -150,46 +145,44 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 			for _, c := range challenges {
 				// Send the challenge.
 				start := challengeStart(c.Type)
-				err = w.EncodeToken(start)
+				err := w.EncodeToken(start)
 				if err != nil {
-					return
+					return 0, nil, err
 				}
 				err = c.Send(ctx, w)
 				if err != nil {
-					return
+					return 0, nil, err
 				}
 				err = w.EncodeToken(start.End())
 				if err != nil {
-					return
+					return 0, nil, err
 				}
 				err = w.Flush()
 				if err != nil {
-					return
+					return 0, nil, err
 				}
 
 				// Decode the clients response
 				var cancel bool
 				cancel, err = decodeClientResp(ctx, r, c.Receive)
 				if err != nil || cancel {
-					return
+					return 0, nil, err
 				}
 			}
-			return
+			return 0, nil, nil
 		}
 
 		// If we're the client, decode the challenge.
-		tok, err = r.Token()
+		tok, err := r.Token()
 		if err != nil {
-			return
+			return 0, nil, err
 		}
 		start, ok := tok.(xml.StartElement)
 		switch {
 		case !ok:
-			err = stream.RestrictedXML
-			return
+			return 0, nil, stream.RestrictedXML
 		case start.Name.Local != "challenge" || start.Name.Space != NS:
-			err = stream.BadFormat
-			return
+			return 0, nil, stream.BadFormat
 		}
 		var typ string
 		for _, attr := range start.Attr {
@@ -200,8 +193,7 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 		}
 		// If there was no type attr, an illegal challenge was sent.
 		if typ == "" {
-			err = stream.BadFormat
-			return
+			return 0, nil, stream.BadFormat
 		}
 
 		for _, c := range challenges {
@@ -211,28 +203,28 @@ func negotiateFunc(challenges ...Challenge) func(context.Context, *xmpp.Session,
 
 			err = c.Receive(ctx, false, r, &start)
 			if err != nil {
-				return
+				return 0, nil, err
 			}
 
 			respStart := xml.StartElement{
 				Name: xml.Name{Local: "response"},
 			}
 			if err = w.EncodeToken(respStart); err != nil {
-				return
+				return 0, nil, err
 			}
 			if c.Respond != nil {
 				err = c.Respond(ctx, w)
 				if err != nil {
-					return
+					return 0, nil, err
 				}
 			}
 			if err = w.EncodeToken(respStart.End()); err != nil {
-				return
+				return 0, nil, err
 			}
 
 			break
 		}
-		return
+		return 0, nil, nil
 	}
 }
 
