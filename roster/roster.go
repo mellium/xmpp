@@ -259,3 +259,32 @@ func (item Item) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 	}
 	return e.Flush()
 }
+
+// Set creates a new roster item or updates an existing item.
+func Set(ctx context.Context, s *xmpp.Session, item Item) error {
+	q := IQ{
+		IQ: stanza.IQ{Type: stanza.SetIQ},
+	}
+	q.Query.Item = append(q.Query.Item, item)
+	resp, err := s.SendIQ(ctx, q.TokenReader())
+	if err != nil {
+		return err
+	}
+	return resp.Close()
+}
+
+// Delete removes a roster item from the users roster.
+func Delete(ctx context.Context, s *xmpp.Session, j jid.JID) error {
+	q := IQ{
+		IQ: stanza.IQ{Type: stanza.SetIQ},
+	}
+	q.Query.Item = append(q.Query.Item, Item{
+		JID:          j,
+		Subscription: "remove",
+	})
+	resp, err := s.SendIQ(ctx, q.TokenReader())
+	if err != nil {
+		return err
+	}
+	return resp.Close()
+}
