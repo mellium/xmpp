@@ -317,7 +317,7 @@ parsefeatures:
 			sf.total++
 
 			// Always add the feature to the list of features, even if we don't
-			// support it.
+			// support it, it just won't contain any parse output.
 			s.features[tok.Name.Space] = nil
 
 			feature, ok := getFeature(tok.Name, features)
@@ -331,8 +331,6 @@ parsefeatures:
 				if s.state&feature.Necessary == feature.Necessary &&
 					s.state&feature.Prohibited == 0 {
 
-					// TODO: Since we're storing the features data on s.features we can
-					// probably remove it from this temporary cache.
 					sf.cache[tok.Name.Space] = sfData{
 						req:     req,
 						feature: feature,
