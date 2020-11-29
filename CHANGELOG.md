@@ -16,6 +16,8 @@ All notable changes to this project will be documented in this file.
 
 - internal/integration/prosody: add option for enabling bidirectional s2s
   connections
+- oob: implementations of `xmlstream.Marshaler` and `xmlstream.WriterTo` for the
+  types `IQ`, `Query`, and Data
 - roster: add `Set` and `Delete` functions for roster management
 - stream: new `InnerXML` and `ApplicationError` methods on `Error` provide a way
   to easily construct customized stream errors
