@@ -77,7 +77,7 @@ type IQ struct {
 
 // WriteXML satisfies the xmlstream.WriterTo interface. It is like MarshalXML
 // except it writes tokens to w.
-func (iq IQ) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
+func (iq IQ) WriteXML(w xmlstream.TokenWriter) (int, error) {
 	return xmlstream.Copy(w, iq.TokenReader())
 }
 
