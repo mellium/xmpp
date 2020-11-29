@@ -147,8 +147,8 @@ type itemMarshaler struct {
 	cur   xml.TokenReader
 }
 
-func (m itemMarshaler) Token() (xml.Token, error) {
-	if len(m.items) == 0 {
+func (m *itemMarshaler) Token() (xml.Token, error) {
+	if len(m.items) == 0 && m.cur == nil {
 		return nil, io.EOF
 	}
 
@@ -173,10 +173,6 @@ func (m itemMarshaler) Token() (xml.Token, error) {
 
 // TokenReader returns a stream of XML tokens that match the IQ.
 func (iq IQ) TokenReader() xml.TokenReader {
-	if iq.IQ.Type != stanza.GetIQ {
-		iq.IQ.Type = stanza.GetIQ
-	}
-
 	return iq.IQ.Wrap(iq.payload())
 }
 
@@ -189,7 +185,7 @@ func (iq IQ) payload() xml.TokenReader {
 	}
 
 	return xmlstream.Wrap(
-		itemMarshaler{items: iq.Query.Item},
+		&itemMarshaler{items: iq.Query.Item[:]},
 		xml.StartElement{Name: xml.Name{Local: "query", Space: NS}, Attr: attrs},
 	)
 }
