@@ -146,37 +146,33 @@ var (
 )
 
 // SeeOtherHostError returns a new see-other-host error with the given network
-// address as the host. If the address appears to be a raw IPv6 address (eg.
-// "::1"), the error wraps it in brackets ("[::1]").
-func SeeOtherHostError(addr net.Addr, payload xml.TokenReader) Error {
-	// If the address looks like an IPv6 literal, wrap it in []
+// address as the host.
+func SeeOtherHostError(addr net.Addr) Error {
 	cdata := addr.String()
+
+	// If the address looks like a raw IPv6 literal, wrap it in []
 	if ip := net.ParseIP(cdata); ip != nil && ip.To4() == nil && ip.To16() != nil {
 		cdata = "[" + cdata + "]"
 	}
 
-	if payload != nil {
-		payload = xmlstream.MultiReader(
-			xmlstream.ReaderFunc(func() (xml.Token, error) {
-				return xml.CharData(cdata), io.EOF
-			}),
-			payload,
-		)
-	} else {
-		payload = xmlstream.ReaderFunc(func() (xml.Token, error) {
+	return Error{
+		Err: "see-other-host",
+		// This needs to return the CharData every time in case we use this error
+		// multiple times, so use a custom ReaderFunc and not the stateful
+		// xmlstream.Token.
+		innerXML: xmlstream.ReaderFunc(func() (xml.Token, error) {
 			return xml.CharData(cdata), io.EOF
-		})
+		}),
 	}
-
-	return Error{Err: "see-other-host", innerXML: payload}
 }
 
-// A Error represents an unrecoverable stream-level error that may include
+// Error represents an unrecoverable stream-level error that may include
 // character data or arbitrary inner XML.
 type Error struct {
 	Err string
 
 	innerXML xml.TokenReader
+	payload  xml.TokenReader
 }
 
 // Error satisfies the builtin error interface and returns the name of the
@@ -220,17 +216,17 @@ func (s Error) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 // WriteXML satisfies the xmlstream.WriterTo interface.
 // It is like MarshalXML except it writes tokens to w.
 func (s Error) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
-	return xmlstream.Copy(w, s.TokenReader(nil))
+	return xmlstream.Copy(w, s.TokenReader())
 }
 
 // TokenReader returns a new xml.TokenReader that returns an encoding of
 // the error.
-func (s Error) TokenReader(payload xml.TokenReader) xml.TokenReader {
+func (s Error) TokenReader() xml.TokenReader {
 	inner := xmlstream.Wrap(s.innerXML, xml.StartElement{Name: xml.Name{Local: s.Err, Space: ErrorNS}})
-	if payload != nil {
+	if s.payload != nil {
 		inner = xmlstream.MultiReader(
 			inner,
-			payload,
+			s.payload,
 		)
 	}
 	return xmlstream.Wrap(
@@ -239,4 +235,28 @@ func (s Error) TokenReader(payload xml.TokenReader) xml.TokenReader {
 			Name: xml.Name{Local: "error", Space: NS},
 		},
 	)
+}
+
+// ApplicationError returns a copy of the Error with the provided application
+// level error included alongside the error condition.
+// Multiple, chained, calls to ApplicationError will  replace the payload each
+// time and only the final call will have any effect.
+//
+// Because the TokenReader will be consumed during marshalling errors created
+// with this method may only be marshaled once.
+func (s Error) ApplicationError(r xml.TokenReader) Error {
+	s.payload = r
+	return s
+}
+
+// InnerXML returns a copy of the Error that marshals the provided reader after
+// the error condition start token.
+// Multiple, chained, calls to InnerXML will  replace the inner XML each time
+// and only the final call will have any effect.
+//
+// Because the TokenReader will be consumed during marshalling errors created
+// with this method may only be marshaled once.
+func (s Error) InnerXML(r xml.TokenReader) Error {
+	s.innerXML = r
+	return s
 }

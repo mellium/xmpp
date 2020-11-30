@@ -10,43 +10,72 @@ import (
 	"net"
 	"testing"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/stream"
 )
 
 var (
-	_ error           = (*stream.Error)(nil)
-	_ error           = stream.Error{}
-	_ xml.Marshaler   = (*stream.Error)(nil)
-	_ xml.Marshaler   = stream.Error{}
-	_ xml.Unmarshaler = (*stream.Error)(nil)
+	_ error               = (*stream.Error)(nil)
+	_ error               = stream.Error{}
+	_ xml.Marshaler       = (*stream.Error)(nil)
+	_ xml.Marshaler       = stream.Error{}
+	_ xml.Unmarshaler     = (*stream.Error)(nil)
+	_ xmlstream.Marshaler = (*stream.Error)(nil)
+	_ xmlstream.WriterTo  = (*stream.Error)(nil)
 )
 
-var marshalSeeOtherHostTests = [...]struct {
-	ipaddr net.Addr
-	xml    string
-	err    bool
+var marshalTests = [...]struct {
+	se  stream.Error
+	xml string
+	err bool
 }{
-	// see-other-host errors should wrap IPv6 addresses in brackets.
-	0: {&net.IPAddr{IP: net.ParseIP("::1")}, `<error xmlns="http://etherx.jabber.org/streams"><see-other-host xmlns="urn:ietf:params:xml:ns:xmpp-streams">[::1]</see-other-host></error>`, false},
-	1: {&net.IPAddr{IP: net.ParseIP("127.0.0.1")}, `<error xmlns="http://etherx.jabber.org/streams"><see-other-host xmlns="urn:ietf:params:xml:ns:xmpp-streams">127.0.0.1</see-other-host></error>`, false},
+	0: {
+		// see-other-host errors should wrap IPv6 addresses in brackets.
+		se:  stream.SeeOtherHostError(&net.IPAddr{IP: net.ParseIP("::1")}),
+		xml: `<error xmlns="http://etherx.jabber.org/streams"><see-other-host xmlns="urn:ietf:params:xml:ns:xmpp-streams">[::1]</see-other-host></error>`,
+		err: false,
+	},
+	1: {
+		// see-other-host should not wrap IPv6 addresses in brackets if they are already wrapped.
+		se:  stream.SeeOtherHostError(&net.TCPAddr{IP: net.ParseIP("::1"), Port: 5222}),
+		xml: `<error xmlns="http://etherx.jabber.org/streams"><see-other-host xmlns="urn:ietf:params:xml:ns:xmpp-streams">[::1]:5222</see-other-host></error>`,
+		err: false,
+	},
+	2: {
+		// see-other-host should not mess with IPv4 addresses.
+		se:  stream.SeeOtherHostError(&net.IPAddr{IP: net.ParseIP("127.0.0.1")}),
+		xml: `<error xmlns="http://etherx.jabber.org/streams"><see-other-host xmlns="urn:ietf:params:xml:ns:xmpp-streams">127.0.0.1</see-other-host></error>`,
+		err: false,
+	},
+	3: {
+		se:  stream.UnsupportedEncoding.InnerXML(xmlstream.Token(xml.CharData("test"))),
+		xml: `<error xmlns="http://etherx.jabber.org/streams"><unsupported-encoding xmlns="urn:ietf:params:xml:ns:xmpp-streams">test</unsupported-encoding></error>`,
+	},
+	4: {
+		se:  stream.UnsupportedEncoding.ApplicationError(xmlstream.Token(xml.CharData("test"))),
+		xml: `<error xmlns="http://etherx.jabber.org/streams"><unsupported-encoding xmlns="urn:ietf:params:xml:ns:xmpp-streams"></unsupported-encoding>test</error>`,
+	},
+	5: {
+		se:  stream.UnsupportedEncoding.ApplicationError(xmlstream.Token(xml.CharData("test"))).InnerXML(xmlstream.Token(xml.CharData("foo"))),
+		xml: `<error xmlns="http://etherx.jabber.org/streams"><unsupported-encoding xmlns="urn:ietf:params:xml:ns:xmpp-streams">foo</unsupported-encoding>test</error>`,
+	},
 }
 
-func TestMarshalSeeOtherHost(t *testing.T) {
-	for i, test := range marshalSeeOtherHostTests {
+func TestMarshal(t *testing.T) {
+	for i, tc := range marshalTests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			soh := stream.SeeOtherHostError(test.ipaddr, nil)
-			xb, err := xml.Marshal(soh)
+			xb, err := xml.Marshal(tc.se)
 			switch xbs := string(xb); {
-			case test.err && err == nil:
-				t.Errorf("Expected marshaling SeeOtherHost error for address `%v` to fail", test.ipaddr)
+			case tc.err && err == nil:
+				t.Errorf("expected marshaling to fail")
 				return
-			case !test.err && err != nil:
-				t.Error(err)
+			case !tc.err && err != nil:
+				t.Errorf("did not expect error, got=%v", err)
 				return
 			case err != nil:
 				return
-			case xbs != test.xml:
-				t.Errorf("Bad output:\nwant=`%s`,\ngot=`%s`", test.xml, xbs)
+			case xbs != tc.xml:
+				t.Errorf("bad output:\nwant=`%s`,\n got=`%s`", tc.xml, xbs)
 			}
 		})
 	}
@@ -58,12 +87,14 @@ var unmarshalTests = [...]struct {
 	err bool
 }{
 	0: {
-		`<stream:error><restricted-xml xmlns="urn:ietf:params:xml:ns:xmpp-streams"></restricted-xml></stream:error>`,
-		stream.RestrictedXML, false,
+		xml: `<stream:error><restricted-xml xmlns="urn:ietf:params:xml:ns:xmpp-streams"></restricted-xml></stream:error>`,
+		se:  stream.RestrictedXML,
+		err: false,
 	},
 	1: {
-		`<stream:error></a>`,
-		stream.RestrictedXML, true,
+		xml: `<stream:error></a>`,
+		se:  stream.RestrictedXML,
+		err: true,
 	},
 }
 
@@ -74,7 +105,7 @@ func TestUnmarshal(t *testing.T) {
 			err := xml.Unmarshal([]byte(test.xml), &s)
 			switch {
 			case test.err && err == nil:
-				t.Errorf("Expected unmarshaling error for `%v` to fail", test.xml)
+				t.Errorf("expected unmarshaling error for `%v` to fail", test.xml)
 				return
 			case !test.err && err != nil:
 				t.Error(err)
@@ -82,16 +113,14 @@ func TestUnmarshal(t *testing.T) {
 			case err != nil:
 				return
 			case s.Err != test.se.Err:
-				t.Errorf("Expected Err `%#v` but got `%#v`", test.se, s)
-				//case string(s.InnerXML) != string(test.se.InnerXML):
-				//	t.Errorf("Expected `%#v` but got `%#v`", test.se, s)
+				t.Errorf("expected Err `%#v` but got `%#v`", test.se, s)
 			}
 		})
 	}
 }
 
-func TestErrorReturnsErr(t *testing.T) {
+func TestErrorReturnsCondition(t *testing.T) {
 	if stream.RestrictedXML.Error() != "restricted-xml" {
-		t.Error("Error should return the name of the err")
+		t.Error("error should return the error condition")
 	}
 }

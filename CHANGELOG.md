@@ -4,11 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Breaking
+
+- stream: the `SeeOtherHost` function signature has changed now that payload is
+  available for all stream errors
+- stream: the `TokenReader` method signature has changed to make it match the
+  `xmlstream.Marshaler` interface
+
+
 ### Added
 
 - internal/integration/prosody: add option for enabling bidirectional s2s
   connections
 - roster: add `Set` and `Delete` functions for roster management
+- stream: new `InnerXML` and `ApplicationError` methods on `Error` provide a way
+  to easily construct customized stream errors
 - xmpp: `SetReadDeadline` and `SetWriteDeadline` are now proxied even if the
   underlying connection is not a `net.Conn`
 - xmpp: all sent stanzas are now given randomly generated IDs if no ID was
