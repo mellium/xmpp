@@ -140,19 +140,12 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 		}()
 		wg.Wait()
 
-		// If either lookup (or both) errored and we don't have any records for the
-		// other type of connection to try, return the error.
-		switch {
-		case xmppsErr != nil && xmppErr != nil:
+		// If both lookups failed, return one of the errors.
+		if xmppsErr != nil && xmppErr != nil {
 			return nil, xmppsErr
-		case xmppsErr != nil && len(xmppAddrs) == 0:
-			return nil, xmppsErr
-		case xmppErr != nil && len(xmppsAddrs) == 0:
-			return nil, xmppErr
 		}
 		addrs = append(xmppsAddrs, xmppAddrs...)
 	}
-
 	if len(addrs) == 0 {
 		return nil, fmt.Errorf("no xmpp service found at address %s", domain)
 	}
