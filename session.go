@@ -109,7 +109,7 @@ type Session struct {
 
 var _ tlsConn = (*Session)(nil)
 
-// ConnectionState returns the underlying connections TLS state or the zero
+// ConnectionState returns the underlying connection's TLS state or the zero
 // value if TLS has not been negotiated.
 func (s *Session) ConnectionState() tls.ConnectionState {
 	if s.connState == nil {
