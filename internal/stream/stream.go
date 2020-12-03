@@ -22,7 +22,7 @@ import (
 type Info struct {
 	to      *jid.JID
 	from    *jid.JID
-	id      string
+	ID      string
 	version Version
 	xmlns   string
 	lang    string
@@ -45,7 +45,7 @@ func streamFromStartElement(s xml.StartElement) (Info, error) {
 				return streamData, stream.ImproperAddressing
 			}
 		case xml.Name{Space: "", Local: "id"}:
-			streamData.id = attr.Value
+			streamData.ID = attr.Value
 		case xml.Name{Space: "", Local: "version"}:
 			err := (&streamData.version).UnmarshalXMLAttr(attr)
 			if err != nil {
@@ -84,7 +84,7 @@ func Send(rw io.ReadWriter, s2s bool, version Version, lang string, location, or
 		streamData.xmlns = ns.Client
 	}
 
-	streamData.id = id
+	streamData.ID = id
 	if id == "" {
 		id = " "
 	} else {
@@ -170,7 +170,7 @@ func Expect(ctx context.Context, d xml.TokenReader, recv bool) (streamData Info,
 				return streamData, stream.UnsupportedVersion
 			}
 
-			if !recv && streamData.id == "" {
+			if !recv && streamData.ID == "" {
 				// if we are the initiating entity and there is no stream ID…
 				return streamData, stream.BadFormat
 			}

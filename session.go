@@ -646,6 +646,16 @@ func (s *Session) State() SessionState {
 	return s.state
 }
 
+// InSID returns the stream ID for the input stream.
+func (s *Session) InSID() string {
+	return s.in.ID
+}
+
+// OutSID returns the stream ID for the output stream.
+func (s *Session) OutSID() string {
+	return s.out.ID
+}
+
 // LocalAddr returns the Origin address for initiated connections, or the
 // Location for received connections.
 func (s *Session) LocalAddr() jid.JID {
