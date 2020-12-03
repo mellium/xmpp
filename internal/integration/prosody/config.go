@@ -13,11 +13,12 @@ import (
 
 // Config contains options that can be written to a Prosody config file.
 type Config struct {
-	Admins  []string
-	VHosts  []string
-	Modules []string
 	C2SPort int
 	S2SPort int
+	Admins  []string
+	Modules []string
+	VHosts  []string
+	Options map[string]interface{}
 }
 
 const cfgBase = `daemonize = false
@@ -28,14 +29,21 @@ interfaces = { "::1" }
 {{ if .C2SPort }}c2s_ports = { {{ .C2SPort }} }{{ end }}
 {{ if .S2SPort }}s2s_ports = { {{ .S2SPort }} }{{ end }}
 
+-- Settings added with prosody.Set:
+{{ range $k, $opt := .Options }}
+{{ $k }}{{ if $opt }} = {{ quoteOrPrint $opt }}{{ end }}
+{{ else }}
+-- Set not called.
+{{ end }}
+
 modules_enabled = {
+	-- Extra modules added with prosody.Modules:
 		{{ luaList .Modules }}
 
 	-- Generally required
 		"roster"; -- Allow users to have a roster. Recommended ;)
 		"saslauth"; -- Authentication for clients and servers. Recommended if you want to log in.
 		"tls"; -- Add support for secure TLS on c2s/s2s connections
-		-- "dialback"; -- s2s dialback support
 		"disco"; -- Service discovery
 
 	-- Not essential, but recommended
@@ -102,5 +110,13 @@ var cfgTmpl = template.Must(template.New("cfg").Funcs(template.FuncMap{
 			end = ";\n"
 		}
 		return strings.Join(s, ";\n") + end
+	},
+	"quoteOrPrint": func(v interface{}) string {
+		switch vv := v.(type) {
+		case string:
+			return fmt.Sprintf("%q", vv)
+		default:
+			return fmt.Sprintf("%v", vv)
+		}
 	},
 }).Parse(cfgBase))

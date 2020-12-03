@@ -176,6 +176,32 @@ func Modules(mod ...string) integration.Option {
 	}
 }
 
+// Set adds an extra key/value pair to the global section of the config file.
+// If v is a string it will be quoted, otherwise it is marshaled using the %v
+// formatting directive (see the fmt package for details).
+// As a special case, if v is nil the key is written to the file directly with
+// no equals sign.
+//
+//     -- Set("foo", "bar")
+//     foo = "bar"
+//
+//     -- Set("foo", 123)
+//     foo = 123
+//
+//     -- Set(`Component "conference.example.org" "muc"`, nil)
+//     Component "conference.example.org" "muc"
+func Set(key string, v interface{}) integration.Option {
+	return func(cmd *integration.Cmd) error {
+		cfg := getConfig(cmd)
+		if cfg.Options == nil {
+			cfg.Options = make(map[string]interface{})
+		}
+		cfg.Options[key] = v
+		cmd.Config = cfg
+		return nil
+	}
+}
+
 // Bidi enables bidirectional S2S connections.
 func Bidi() integration.Option {
 	// TODO: Once Prosody 0.12 is out this module can be replaced with the builtin
