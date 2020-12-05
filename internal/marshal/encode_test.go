@@ -37,6 +37,24 @@ type errTokenWriter struct{}
 
 func (errTokenWriter) EncodeToken(xml.Token) error { return bytes.ErrTooLarge }
 
+var errRead = fmt.Errorf("sentinal error")
+
+type errTokenReader struct{}
+
+func (errTokenReader) Token() (xml.Token, error) {
+	return nil, errRead
+}
+
+type errWriterTo struct{}
+
+func (errWriterTo) WriteXML(xmlstream.TokenWriter) (int, error) {
+	return 23, errRead
+}
+
+type errMarshaler struct{}
+
+func (errMarshaler) TokenReader() xml.TokenReader { return errTokenReader{} }
+
 var simpleIn = struct {
 	XMLName xml.Name `xml:"space local"`
 }{}
@@ -48,7 +66,6 @@ var encodeTestCases = [...]struct {
 	errType error
 }{
 	0: {
-		w:       nil,
 		v:       struct{}{},
 		errType: &xml.UnsupportedTypeError{},
 	},
@@ -60,6 +77,22 @@ var encodeTestCases = [...]struct {
 		w:   errTokenWriter{},
 		v:   simpleIn,
 		err: bytes.ErrTooLarge,
+	},
+	3: {
+		// If the type is a marshaler it should be used (not encoded itself).
+		v:   errMarshaler{},
+		err: errRead,
+	},
+	4: {
+		// If the type is a TokenReader it should be used (not encoded itself).
+		v:   errTokenReader{},
+		err: errRead,
+	},
+	5: {
+		// If the type is a WriterTo call its WriteXML method instead of creating a
+		// decoder.
+		v:   errWriterTo{},
+		err: errRead,
 	},
 }
 
@@ -120,6 +153,19 @@ func TestMarshalTokenReader(t *testing.T) {
 	}
 	if r != rr {
 		t.Errorf("got different xml.TokenReader out: want=%v, got=%v", r, rr)
+	}
+}
+
+func TestTokenReaderMarshaler(t *testing.T) {
+	// When passing a marshaler to TokenReader we should use the marshaler instead
+	// of encoding the value itself.
+	rr, err := marshal.TokenReader(errMarshaler{})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	_, err = rr.Token()
+	if err != errRead {
+		t.Errorf("unexpected error from marshaler: %v", err)
 	}
 }
 
