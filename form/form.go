@@ -6,14 +6,12 @@ package form
 
 import (
 	"encoding/xml"
+
+	"mellium.im/xmlstream"
 )
 
 // NS is the data forms namespace.
 const NS = "jabber:x:data"
-
-var (
-	formName = xml.Name{Space: "jabber:x:data", Local: "x"}
-)
 
 // Data represents a data form.
 type Data struct {
@@ -22,36 +20,45 @@ type Data struct {
 		Text    string   `xml:",chardata"`
 	}
 	typ      string
-	children []interface{}
+	children []xmlstream.Marshaler
 }
 
-// MarshalXML satisfies the xml.Marshaler interface for *Data.
-func (d *Data) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
-	start = xml.StartElement{Name: formName}
+// WriteXML implements xmlstream.WriterTo for Data.
+func (d *Data) WriteXML(w xmlstream.TokenWriter) error {
+	_, err := xmlstream.Copy(w, d.TokenReader())
+	return err
+}
+
+// TokenReader implements xmlstream.Marshaler for Data.
+func (d *Data) TokenReader() xml.TokenReader {
+	start := xml.StartElement{Name: xml.Name{Space: NS, Local: "x"}}
 	start.Attr = append(start.Attr, xml.Attr{
 		Name:  xml.Name{Local: "type"},
 		Value: d.typ,
 	})
-	if err = e.EncodeToken(start); err != nil {
-		return
-	}
-
-	// Encode the title.
+	var child []xml.TokenReader
+	// TODO: an "omit empty" Marshaler?
 	if d.title.Text != "" {
-		if err = e.Encode(d.title); err != nil {
-			return
-		}
+		child = append(child, xmlstream.Wrap(
+			xmlstream.Token(xml.CharData(d.title.Text)),
+			xml.StartElement{Name: xml.Name{Local: "title"}},
+		))
 	}
-
 	for _, c := range d.children {
-		if err = e.Encode(c); err != nil {
-			return
-		}
+		child = append(child, c.TokenReader())
 	}
 
-	// Encode the end element of the form.
-	if err = e.EncodeToken(start.End()); err != nil {
-		return
+	return xmlstream.Wrap(
+		xmlstream.MultiReader(child...),
+		start,
+	)
+}
+
+// MarshalXML satisfies the xml.Marshaler interface for *Data.
+func (d *Data) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	err := d.WriteXML(e)
+	if err != nil {
+		return err
 	}
 	return e.Flush()
 }
@@ -59,6 +66,13 @@ func (d *Data) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
 type instructions struct {
 	XMLName xml.Name `xml:"instructions"`
 	Text    string   `xml:",chardata"`
+}
+
+func (i instructions) TokenReader() xml.TokenReader {
+	return xmlstream.Wrap(
+		xmlstream.Token(xml.CharData(i.Text)),
+		xml.StartElement{Name: xml.Name{Local: "instructions"}},
+	)
 }
 
 // New builds a new data form from the provided options.

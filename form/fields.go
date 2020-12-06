@@ -6,6 +6,8 @@ package form
 
 import (
 	"encoding/xml"
+
+	"mellium.im/xmlstream"
 )
 
 // A field represents a data field that may be added to a form.
@@ -20,6 +22,61 @@ type field struct {
 	Field    []fieldopt `xml:"option,omitempty"`
 }
 
+func (f *field) TokenReader() xml.TokenReader {
+	attr := []xml.Attr{{
+		Name:  xml.Name{Local: "type"},
+		Value: f.Typ,
+	}}
+	if f.Var != "" {
+		attr = append(attr, xml.Attr{
+			Name:  xml.Name{Local: "var"},
+			Value: f.Var,
+		})
+	}
+	if f.Label != "" {
+		attr = append(attr, xml.Attr{
+			Name:  xml.Name{Local: "label"},
+			Value: f.Label,
+		})
+	}
+	if f.Desc != "" {
+		attr = append(attr, xml.Attr{
+			Name:  xml.Name{Local: "desc"},
+			Value: f.Desc,
+		})
+	}
+	var child []xml.TokenReader
+	for _, val := range f.Value {
+		if val == "" {
+			continue
+		}
+		child = append(child, xmlstream.Wrap(
+			xmlstream.Token(xml.CharData(val)),
+			xml.StartElement{Name: xml.Name{Local: "value"}},
+		))
+	}
+	if f.Required != nil {
+		child = append(child, xmlstream.Wrap(
+			nil,
+			xml.StartElement{Name: xml.Name{Local: "required"}},
+		))
+	}
+	for _, opt := range f.Field {
+		child = append(child, xmlstream.Wrap(
+			xmlstream.Token(xml.CharData(opt.Value)),
+			xml.StartElement{Name: xml.Name{Space: NS, Local: "option"}},
+		))
+	}
+
+	return xmlstream.Wrap(
+		xmlstream.MultiReader(child...),
+		xml.StartElement{
+			Name: xml.Name{Local: "field"},
+			Attr: attr,
+		},
+	)
+}
+
 type fieldopt struct {
 	XMLName xml.Name `xml:"jabber:x:data option"`
 	Value   string   `xml:"value,omitempty"`
@@ -32,7 +89,7 @@ func newField(typ, id string, o ...Option) func(data *Data) {
 			Var: id,
 		}
 		getFieldOpts(&f, o...)
-		data.children = append(data.children, f)
+		data.children = append(data.children, &f)
 	}
 }
 
