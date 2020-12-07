@@ -14,7 +14,6 @@ var (
 	_ form.Field = form.Hidden{}
 	_ form.Field = form.JIDMulti{}
 	_ form.Field = form.JID{}
-	_ form.Field = form.ListMulti{}
 	_ form.Field = form.List{}
 	_ form.Field = form.TextMulti{}
 	_ form.Field = form.Text{}
