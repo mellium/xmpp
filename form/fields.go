@@ -221,47 +221,47 @@ func (j JID) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 	return e.Flush()
 }
 
-// ListItem is an option for the List and ListMulti types.
-type ListItem struct {
-	XMLName xml.Name `xml:"option"`
-	Label   string   `xml:"label,attr"`
-	Value   string   `xml:"value"`
+// ListMulti enables an entity to gather or provide one or more entries from a
+// list.
+type ListMulti struct {
+	Common
+	Value []string
 }
 
 // TokenReader satisfies the xmlstream.Marshaler interface.
-func (l ListItem) TokenReader() xml.TokenReader {
-	return xmlstream.Wrap(
-		xmlstream.Wrap(
-			xmlstream.Token(xml.CharData(l.Value)),
-			xml.StartElement{Name: xml.Name{Local: "value"}},
-		),
-		xml.StartElement{
-			Name: xml.Name{Local: "option"},
-			Attr: []xml.Attr{{Name: xml.Name{Local: "label"}, Value: l.Label}},
-		},
-	)
+func (l ListMulti) TokenReader() xml.TokenReader {
+	var values []xml.TokenReader
+	for _, v := range l.Value {
+		values = append(values, xmlstream.Token(xml.CharData(v)))
+	}
+	return l.tokenReader("list-multi", values...)
 }
 
 // WriteXML satisfies the xmlstream.WriterTo interface.
-func (l ListItem) WriteXML(w xmlstream.TokenWriter) (int, error) {
+func (l ListMulti) WriteXML(w xmlstream.TokenWriter) (int, error) {
 	return xmlstream.Copy(w, l.TokenReader())
 }
 
-// List enables an entity to gather or provide one or more entries from a list.
+// MarshalXML satisfies the xml.Marshaler interface.
+func (l ListMulti) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
+	_, err := l.WriteXML(e)
+	if err != nil {
+		return err
+	}
+	return e.Flush()
+}
+
+// List enables an entity to gather or provide a single entry from a list.
 type List struct {
 	Common
-	Multi bool
-	Value []ListItem
+	Value []string
 }
 
 // TokenReader satisfies the xmlstream.Marshaler interface.
 func (l List) TokenReader() xml.TokenReader {
 	var values []xml.TokenReader
-	for _, item := range l.Value {
-		values = append(values, item.TokenReader())
-	}
-	if l.Multi {
-		return l.tokenReader("list-multi", values...)
+	for _, v := range l.Value {
+		values = append(values, xmlstream.Token(xml.CharData(v)))
 	}
 	return l.tokenReader("list-single", values...)
 }
