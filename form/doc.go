@@ -3,6 +3,4 @@
 // license that can be found in the LICENSE file.
 
 // Package form implements sending and submitting data forms.
-//
-// BE ADVISED: This API is unstable and subject to change.
 package form // import "mellium.im/xmpp/form"

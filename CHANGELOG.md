@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking
 
+- form: the entire package has been rewritten to use a more Go-like API
 - stream: the `SeeOtherHost` function signature has changed now that payload is
   available for all stream errors
 - stream: the `TokenReader` method signature has changed to make it match the
