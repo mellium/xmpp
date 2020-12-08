@@ -10,24 +10,28 @@ type Field func(*Data)
 // Title sets a form's title.
 func Title(s string) Field {
 	return func(data *Data) {
-		data.title.Text = s
+		data.title = s
 	}
 }
 
 // Instructions adds new textual instructions to the form.
-// Multiple uses of the option result in multiple sets of instructions.
 func Instructions(s string) Field {
 	return func(data *Data) {
-		data.children = append(data.children, instructions{Text: s})
+		data.instructions = s
 	}
 }
 
-func getOpts(data *Data, o ...Field) {
-	for _, f := range o {
-		f(data)
+var (
+	// Result marks a form as the result type.
+	// For more information see TypeResult.
+	Result Field = result
+)
+
+var (
+	result Field = func(data *Data) {
+		data.typ = TypeResult
 	}
-	return
-}
+)
 
 // A Option is used to define the behavior and appearance of a form field.
 type Option func(*field)
@@ -40,7 +44,7 @@ var (
 
 var (
 	required Option = func(f *field) {
-		f.Required = &struct{}{}
+		f.required = true
 	}
 )
 
@@ -52,28 +56,33 @@ var (
 // However, it does nothing to prevent them from being added.
 func Desc(s string) Option {
 	return func(f *field) {
-		f.Desc = s
+		f.desc = s
 	}
 }
 
-// Value defines the default value for the field (according to the
-// form-processing entity) in a data form of type "form", the data provided by a
-// form-submitting entity in a data form of type "submit", or a data result in a
-// data form of type "result".
+// Value defines the default value for the field.
 // Fields of type ListMulti, JidMulti, TextMulti, and Hidden may contain more
 // than one Value; all other field types will only use the first Value.
 func Value(s string) Option {
 	return func(f *field) {
-		f.Value = append(f.Value, s)
+		f.value = append(f.value, s)
 	}
 }
 
-// ListField is one of the values in a list.
-// It has no effect on any non-list field type.
-func ListField(s string) Option {
+// Label defines a human-readable name for the field.
+func Label(s string) Option {
 	return func(f *field) {
-		f.Field = append(f.Field, fieldopt{
-			Value: s,
+		f.label = s
+	}
+}
+
+// ListItem adds a list item with the provided label and value.
+// It has no effect on any non-list field type.
+func ListItem(label, value string) Option {
+	return func(f *field) {
+		f.option = append(f.option, fieldOpt{
+			Label: label,
+			Value: value,
 		})
 	}
 }
