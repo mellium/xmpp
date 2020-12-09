@@ -15,6 +15,13 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
+var (
+	_ xml.Marshaler       = (*form.Data)(nil)
+	_ xmlstream.Marshaler = (*form.Data)(nil)
+	_ xmlstream.WriterTo  = (*form.Data)(nil)
+	_ xml.Unmarshaler     = (*form.Data)(nil)
+)
+
 var submissionTestCases = [...]struct {
 	Data     *form.Data
 	Ok       bool

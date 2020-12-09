@@ -455,14 +455,13 @@ func (d *Data) TokenReader() xml.TokenReader {
 }
 
 // WriteXML implements xmlstream.WriterTo for Data.
-func (d *Data) WriteXML(w xmlstream.TokenWriter) error {
-	_, err := xmlstream.Copy(w, d.TokenReader())
-	return err
+func (d *Data) WriteXML(w xmlstream.TokenWriter) (int, error) {
+	return xmlstream.Copy(w, d.TokenReader())
 }
 
 // MarshalXML satisfies the xml.Marshaler interface for *Data.
 func (d *Data) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	err := d.WriteXML(e)
+	_, err := d.WriteXML(e)
 	if err != nil {
 		return err
 	}
