@@ -101,7 +101,7 @@ func (h *Handler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder
 // SendMessage transmits the first element read from the provided token reader
 // over the session if the element is a message stanza, otherwise it returns an
 // error.
-// SendMessage adds a requst for a message receipt and an ID if one does not
+// SendMessage adds a request for a message receipt and an ID if one does not
 // already exist.
 //
 // If the context is closed before the message delivery receipt is received,

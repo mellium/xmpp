@@ -195,7 +195,7 @@ var marshalTestCases = [...]struct {
 		Expected: `<x xmlns="jabber:x:data" type="form"><field type="list-single" var="l"><value>one</value><option label="label"><value>item</value></option><option label=""><value>2</value></option></field></x>`,
 	},
 	10: {
-		// TODO: should multiline values be split into multipe <value/> elements?
+		// TODO: should multiline values be split into multiple <value/> elements?
 		Data: form.New(
 			form.TextMulti("t", form.Value("one"), form.Value("two"), form.ListItem("label", "item")),
 		),
