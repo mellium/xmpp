@@ -51,7 +51,7 @@ func main() {
 
 	parsedAddr, err := jid.Parse(addr)
 	if err != nil {
-		logger.Fatalf("Error parsing address %q: %w", addr, err)
+		logger.Fatalf("Error parsing address %q: %v", addr, err)
 	}
 
 	// Get the password to use when logging in.
@@ -76,21 +76,21 @@ func main() {
 	)
 	dialCtxCancel()
 	if err != nil {
-		logger.Fatalf("Error loging in: %w", err)
+		logger.Fatalf("Error loging in: %v", err)
 	}
 	defer func() {
 		if err := session.Close(); err != nil {
-			logger.Fatalf("Error ending session: %w", err)
+			logger.Fatalf("Error ending session: %v", err)
 		}
 		if err := session.Conn().Close(); err != nil {
-			logger.Fatalf("Error closing connection: %w", err)
+			logger.Fatalf("Error closing connection: %v", err)
 		}
 	}()
 
 	// Send initial presence to let the server know we want to receive messages.
 	err = session.Send(ctx, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
 	if err != nil {
-		logger.Fatalf("Error sending initial presence: %w", err)
+		logger.Fatalf("Error sending initial presence: %v", err)
 	}
 
 	// Handle incoming messages.
@@ -119,7 +119,7 @@ func main() {
 			return nil
 		}))
 		if err != nil {
-			logger.Fatalf("Error handling incoming messages: %w", err)
+			logger.Fatalf("Error handling incoming messages: %v", err)
 		}
 	}()
 
@@ -151,7 +151,7 @@ func main() {
 
 		parsedToAddr, err := jid.Parse(msg[:idx])
 		if err != nil {
-			logger.Printf("Error parsing address: %w", err)
+			logger.Printf("Error parsing address: %v", err)
 			continue
 		}
 
@@ -166,11 +166,11 @@ func main() {
 			Body: msg,
 		})
 		if err != nil {
-			logger.Fatalf("Error sending message: %w", err)
+			logger.Fatalf("Error sending message: %v", err)
 		}
 	}
 	if err := userInput.Err(); err != nil {
-		logger.Fatalf("Error reading user input: %w", err)
+		logger.Fatalf("Error reading user input: %v", err)
 	}
 }
 
