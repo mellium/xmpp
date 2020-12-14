@@ -21,6 +21,8 @@ All notable changes to this project will be documented in this file.
 - roster: add `Set` and `Delete` functions for roster management
 - stream: new `InnerXML` and `ApplicationError` methods on `Error` provide a way
   to easily construct customized stream errors
+- styling: add `Disable` and `Unstyled` to support disabling styling on some
+  messages
 - xmpp: `SetReadDeadline` and `SetWriteDeadline` are now proxied even if the
   underlying connection is not a `net.Conn`
 - xmpp: all sent stanzas are now given randomly generated IDs if no ID was
