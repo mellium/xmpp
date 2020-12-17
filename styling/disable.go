@@ -6,7 +6,6 @@ package styling
 
 import (
 	"encoding/xml"
-	"io"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
@@ -17,10 +16,10 @@ const (
 	NS = "urn:xmpp:styling:0"
 )
 
-// Unstyled is a type that can be embedded in messages to add a hint that will
+// Unstyled is a type that can be added to messages to add a hint that will
 // disable styling.
-// When unmarshaled its value indicates whether the unstyled hint was present in
-// the message.
+// When unmarshaled or marshaled its value indicates whether the unstyled hint
+// was or will be present in the message.
 type Unstyled struct {
 	XMLName xml.Name `xml:"urn:xmpp:styling:0 unstyled"`
 	Value   bool
@@ -54,44 +53,13 @@ func (u *Unstyled) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return d.Skip()
 }
 
-// Disable inserts a hint into any message read through r that disables styling
-// for the body of the message.
+var (
+	clientInserter = xmlstream.Insert(xml.Name{Space: ns.Client, Local: "message"}, Unstyled{Value: true})
+	serverInserter = xmlstream.Insert(xml.Name{Space: ns.Server, Local: "message"}, Unstyled{Value: true})
+)
+
+// Disable is an xmlstream.Transformer that inserts a hint into any message read
+// through r that disables styling for the body of the message.
 func Disable(r xml.TokenReader) xml.TokenReader {
-	var inner xml.TokenReader
-	return xmlstream.ReaderFunc(func() (xml.Token, error) {
-		if inner != nil {
-			tok, err := inner.Token()
-			switch {
-			case tok != nil && err == io.EOF:
-				inner = nil
-				return tok, nil
-				// We don't need this case here because the Wrap/Token calls in the
-				// multireader are optimized for early EOF and the multireader respects
-				// that.
-				// case tok == nil && err == io.EOF:
-				//	inner = nil
-			default:
-				return tok, err
-			}
-		}
-
-		tok, err := r.Token()
-		if err != nil {
-			return tok, err
-		}
-
-		if end, ok := tok.(xml.EndElement); ok && end.Name.Local == "message" && (end.Name.Space == ns.Client || end.Name.Space == ns.Server) {
-			inner = xmlstream.MultiReader(
-				xmlstream.Wrap(nil,
-					xml.StartElement{
-						Name: xml.Name{Space: NS, Local: "unstyled"},
-					},
-				),
-				xmlstream.Token(end),
-			)
-			return inner.Token()
-		}
-
-		return tok, err
-	})
+	return serverInserter(clientInserter(r))
 }

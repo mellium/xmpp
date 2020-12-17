@@ -48,7 +48,7 @@ func TestDisable(t *testing.T) {
 			r := styling.Disable(xml.NewDecoder(strings.NewReader(tc.in)))
 			// Prevent duplicate xmlns attributes. See https://mellium.im/issue/75
 			r = xmlstream.RemoveAttr(func(start xml.StartElement, attr xml.Attr) bool {
-				return start.Name.Local == "message" && attr.Name.Local == "xmlns"
+				return (start.Name.Local == "message" || start.Name.Local == "iq") && attr.Name.Local == "xmlns"
 			})(r)
 			var buf strings.Builder
 			e := xml.NewEncoder(&buf)
