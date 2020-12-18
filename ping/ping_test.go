@@ -5,15 +5,12 @@
 package ping_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/xml"
-	"regexp"
 	"strings"
 	"testing"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
@@ -70,44 +67,14 @@ type tokenReadEncoder struct {
 }
 
 func TestRoundTrip(t *testing.T) {
-	// TODO: this test will likely be shared between all IQ handler packages. Can
-	// we provide a helper in xmpptest to automate it?
-	var req bytes.Buffer
-	s := xmpptest.NewSession(0, &req)
-	to := jid.MustParse("to@example.net")
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	err := ping.Send(ctx, s, to)
-	if err != context.Canceled && err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	d := xml.NewDecoder(strings.NewReader(req.String()))
-	d.DefaultSpace = ns.Client
-	tok, _ := d.Token()
-	start := tok.(xml.StartElement)
-	var b strings.Builder
-	e := xml.NewEncoder(&b)
-
 	m := mux.New(ping.Handle())
-	err = m.HandleXMPP(tokenReadEncoder{
-		TokenReader: d,
-		Encoder:     e,
-	}, &start)
-	if err != nil {
-		t.Errorf("unexpected error handling ping: %v", err)
-	}
-	err = e.Flush()
-	if err != nil {
-		t.Errorf("unexpected error flushing encoder: %v", err)
-	}
+	cs := xmpptest.NewClientServer(
+		xmpptest.ServerHandler(m),
+	)
 
-	out := b.String()
-	// TODO: figure out a better way to ignore randomly generated IDs.
-	out = regexp.MustCompile(`id=".*?"`).ReplaceAllString(out, `id="123"`)
-	const expected = `<iq xmlns="jabber:client" type="result" from="to@example.net" id="123"></iq>`
-	if out != expected {
-		t.Errorf("got=%s, want=%s", out, expected)
+	err := ping.Send(context.Background(), cs.Client, cs.Server.LocalAddr())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
