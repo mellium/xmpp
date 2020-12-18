@@ -19,6 +19,8 @@ All notable changes to this project will be documented in this file.
   connections
 - oob: implementations of `xmlstream.Marshaler` and `xmlstream.WriterTo` for the
   types `IQ`, `Query`, and Data
+- receipts: add `Request` and `Requested` to add receipt requests to messages
+  without waiting on a response
 - roster: add `Set` and `Delete` functions for roster management
 - stream: new `InnerXML` and `ApplicationError` methods on `Error` provide a way
   to easily construct customized stream errors

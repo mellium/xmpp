@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -18,6 +19,117 @@ import (
 	"mellium.im/xmpp/receipts"
 	"mellium.im/xmpp/stanza"
 )
+
+var (
+	_ xml.Marshaler         = receipts.Requested{}
+	_ xmlstream.Marshaler   = receipts.Requested{}
+	_ xmlstream.WriterTo    = receipts.Requested{}
+	_ xml.Unmarshaler       = (*receipts.Requested)(nil)
+	_ xmlstream.Transformer = receipts.Request
+)
+
+var requestTestCases = [...]struct {
+	in  string
+	out string
+}{
+	0: {},
+	1: {
+		in:  `<message xmlns="jabber:client"/>`,
+		out: `<message xmlns="jabber:client"><request xmlns="urn:xmpp:receipts"></request></message>`,
+	},
+	2: {
+		in:  `<message xmlns="jabber:server"/><message xmlns="jabber:client"><body>test</body></message>`,
+		out: `<message xmlns="jabber:server"><request xmlns="urn:xmpp:receipts"></request></message><message xmlns="jabber:client"><request xmlns="urn:xmpp:receipts"></request><body xmlns="jabber:client">test</body></message>`,
+	},
+	3: {
+		in:  `<message xmlns="jabber:badns"/>`,
+		out: `<message xmlns="jabber:badns"></message>`,
+	},
+	4: {
+		in:  `<message xmlns="jabber:client" type="error"/>`,
+		out: `<message xmlns="jabber:client" type="error"></message>`,
+	},
+	5: {
+		in:  `<message xmlns="jabber:server" type="error"/>`,
+		out: `<message xmlns="jabber:server" type="error"></message>`,
+	},
+}
+
+func TestRequest(t *testing.T) {
+	for i, tc := range requestTestCases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			r := receipts.Request(xml.NewDecoder(strings.NewReader(tc.in)))
+			// Prevent duplicate xmlns attributes. See https://mellium.im/issue/75
+			r = xmlstream.RemoveAttr(func(start xml.StartElement, attr xml.Attr) bool {
+				return (start.Name.Local == "message" || start.Name.Local == "iq") && attr.Name.Local == "xmlns"
+			})(r)
+			var buf strings.Builder
+			e := xml.NewEncoder(&buf)
+			_, err := xmlstream.Copy(e, r)
+			if err != nil {
+				t.Fatalf("error encoding: %v", err)
+			}
+			if err = e.Flush(); err != nil {
+				t.Fatalf("error flushing: %v", err)
+			}
+
+			if out := buf.String(); tc.out != out {
+				t.Errorf("wrong output:\nwant=%s,\n got=%s", tc.out, out)
+			}
+		})
+	}
+}
+
+func TestMarshal(t *testing.T) {
+	var buf strings.Builder
+	e := xml.NewEncoder(&buf)
+	err := e.Encode(struct {
+		stanza.Message
+
+		Requested receipts.Requested
+	}{})
+	if err != nil {
+		t.Fatalf("error encoding: %v", err)
+	}
+	if err = e.Flush(); err != nil {
+		t.Fatalf("error flushing: %v", err)
+	}
+
+	const expected = `<message to="" from=""><request xmlns="urn:xmpp:receipts"></request></message>`
+	if out := buf.String(); expected != out {
+		t.Errorf("wrong output:\nwant=%s,\n got=%s", expected, out)
+	}
+}
+
+var unmarshalTestCases = [...]struct {
+	in  string
+	out bool
+}{
+	0: {
+		in:  `<message><request xmlns="urn:xmpp:receipts"/></message>`,
+		out: true,
+	},
+	1: {in: `<message><wrong xmlns="urn:xmpp:receipts"/></message>`},
+	2: {in: `<message><request xmlns="urn:xmpp:wrongns"/></message>`},
+}
+
+func TestUnmarshal(t *testing.T) {
+	for i, tc := range unmarshalTestCases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			m := struct {
+				stanza.Message
+				Requested receipts.Requested
+			}{}
+			err := xml.NewDecoder(strings.NewReader(tc.in)).Decode(&m)
+			if err != nil {
+				t.Errorf("error decoding: %v", err)
+			}
+			if m.Requested.Value != tc.out {
+				t.Errorf("bad decode: want=%t, got=%t", tc.out, m.Requested.Value)
+			}
+		})
+	}
+}
 
 func TestClosedDoesNotPanic(t *testing.T) {
 	h := &receipts.Handler{}

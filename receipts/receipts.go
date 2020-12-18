@@ -25,6 +25,68 @@ const (
 	NS = "urn:xmpp:receipts"
 )
 
+// Requested is a type that can be added to messages to request a read receipt.
+// When unmarshaled or marshaled its value indicates whether it was or will be
+// present in the message.
+//
+// This type is used to manually include a request in a message struct.
+// To send a message and wait for the receipt see the methods on Handler.
+type Requested struct {
+	XMLName xml.Name `xml:"urn:xmpp:receipts request"`
+	Value   bool
+}
+
+// TokenReader implements xmlstream.Marshaler.
+func (r Requested) TokenReader() xml.TokenReader {
+	return xmlstream.Wrap(
+		nil,
+		xml.StartElement{Name: xml.Name{Space: NS, Local: "request"}},
+	)
+}
+
+// WriteXML implements xmlstream.WriterTo.
+func (r Requested) WriteXML(w xmlstream.TokenWriter) (int, error) {
+	return xmlstream.Copy(w, r.TokenReader())
+}
+
+// MarshalXML implements xml.Marshaler.
+func (r Requested) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
+	_, err := r.WriteXML(e)
+	if err != nil {
+		return err
+	}
+	return e.Flush()
+}
+
+// UnmarshalXML implements xml.Unmarshaler.
+func (r *Requested) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	r.Value = start.Name.Space == NS && start.Name.Local == "request"
+	return d.Skip()
+}
+
+var receiptInserter = xmlstream.InsertFunc(func(start xml.StartElement, w xmlstream.TokenWriter) error {
+	if start.Name.Local != "message" || (start.Name.Space != ns.Client && start.Name.Space != ns.Server) {
+		return nil
+	}
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "type" && attr.Value == "error" {
+			return nil
+		}
+	}
+
+	_, err := xmlstream.Copy(w, Requested{Value: true}.TokenReader())
+	return err
+})
+
+// Request is an xmlstream.Transformer that inserts a request for a read receipt
+// into any message read through r.
+// It is provided to allow easily requesting read receipts asynchronously.
+// To send a message and block waiting on a read receipt, see the methods on
+// Handler.
+func Request(r xml.TokenReader) xml.TokenReader {
+	return receiptInserter(r)
+}
+
 // Handle returns an option that registers a Handler for message receipts.
 func Handle(h *Handler) mux.Option {
 	return func(m *mux.ServeMux) {
@@ -150,9 +212,7 @@ func (h *Handler) SendMessageElement(ctx context.Context, s *xmpp.Session, paylo
 	h.sent[msg.ID] = c
 	h.m.Unlock()
 
-	r := xmlstream.Wrap(nil, xml.StartElement{
-		Name: xml.Name{Space: NS, Local: "request"},
-	})
+	r := Requested{Value: true}.TokenReader()
 	if payload != nil {
 		r = xmlstream.MultiReader(payload, r)
 	}
