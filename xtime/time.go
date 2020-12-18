@@ -35,7 +35,10 @@ const (
 const tzd = "Z07:00"
 
 // Time is like a time.Time but it can be marshaled as an XEP-0202 time payload.
-type Time time.Time
+type Time struct {
+	XMLName xml.Name `xml:"urn:xmpp:time time"`
+	time.Time
+}
 
 // WriteXML satisfies the xmlstream.WriterTo interface.
 // It is like MarshalXML except it writes tokens to w.
@@ -45,9 +48,9 @@ func (t Time) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
 
 // TokenReader satisfies the xmlstream.Marshaler interface.
 func (t Time) TokenReader() xml.TokenReader {
-	tt := time.Time(t)
+	tt := time.Time(t.Time)
 	tzo := tt.Format(tzd)
-	utcTime := tt.UTC().Format(time.RFC3339)
+	utcTime := tt.UTC().Format(time.RFC3339Nano)
 
 	return xmlstream.Wrap(
 		xmlstream.MultiReader(
@@ -85,7 +88,7 @@ func (t *Time) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	if err != nil {
 		return err
 	}
-	*t = Time(utcTime.In(zone.Location()))
+	t.Time = utcTime.In(zone.Location())
 	return nil
 }
 
@@ -108,7 +111,7 @@ func Get(ctx context.Context, s *xmpp.Session, to jid.JID) (time.Time, error) {
 	if err != nil {
 		return t, err
 	}
-	return time.Time(data.Time), nil
+	return time.Time(data.Time.Time), nil
 }
 
 // Handle returns an option that registers a Handler for entity time requests.
@@ -130,9 +133,9 @@ func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml
 
 	var tt Time
 	if h.TimeFunc == nil {
-		tt = Time(time.Now())
+		tt = Time{Time: time.Now()}
 	} else {
-		tt = Time(h.TimeFunc())
+		tt = Time{Time: h.TimeFunc()}
 	}
 
 	_, err := xmlstream.Copy(t, iq.Result(tt.TokenReader()))

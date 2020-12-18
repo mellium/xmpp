@@ -14,7 +14,7 @@ import (
 
 func ExampleTime() {
 	t, _ := time.Parse(time.RFC3339, "2020-02-19T06:46:00-05:00")
-	xt := xtime.Time(t)
+	xt := xtime.Time{Time: t}
 
 	o, _ := xml.Marshal(xt)
 	fmt.Printf("%s\n", o)

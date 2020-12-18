@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
   available for all stream errors
 - stream: the `TokenReader` method signature has changed to make it match the
   `xmlstream.Marshaler` interface
+- xtime: change the `Time` type to fix unmarshaling
 
 
 ### Added
