@@ -18,51 +18,6 @@ import (
 	streamerr "mellium.im/xmpp/stream"
 )
 
-var (
-	_ xmlstream.Transformer = stream.Reader
-	_ xmlstream.Transformer = stream.ErrorReader
-)
-
-var errorReaderTestCases = [...]struct {
-	in      string
-	err     error
-	errType error
-}{
-	0: {},
-	1: {
-		in: `<stream:stream
-					version='1.0'
-					xmlns='jabber:client'
-					xmlns:stream='http://etherx.jabber.org/streams'/>`,
-	},
-	2: {
-		in:  `<stream:error xmlns:stream='http://etherx.jabber.org/streams'><not-well-formed xmlns='urn:ietf:params:xml:ns:xmpp-streams'/></stream:error>`,
-		err: streamerr.NotWellFormed,
-	},
-	3: {
-		in:      `<stream:error xmlns:stream='http://etherx.jabber.org/streams'>`,
-		errType: &xml.SyntaxError{},
-	},
-}
-
-func TestErrorReader(t *testing.T) {
-	for i, tc := range errorReaderTestCases {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			d := xml.NewDecoder(strings.NewReader(tc.in))
-			r := stream.ErrorReader(d)
-			_, err := xmlstream.Copy(xmlstream.Discard(), r)
-			switch {
-			case tc.errType != nil:
-				if reflect.TypeOf(tc.errType) != reflect.TypeOf(err) {
-					t.Errorf("wrong type of error returned: want=%T, got=%T (%[2]v)", tc.errType, err)
-				}
-			case err != tc.err:
-				t.Errorf("unexpected error: want=%v, got=%v", tc.err, err)
-			}
-		})
-	}
-}
-
 var readerTestCases = [...]struct {
 	in      string
 	skip    int
