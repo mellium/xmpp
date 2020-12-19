@@ -12,7 +12,7 @@ import (
 	"mellium.im/xmpp/stream"
 )
 
-// Erorrs related to stream handling
+// Errors related to stream handling
 var (
 	ErrUnknownStreamElement = errors.New("xmpp: unknown stream level element")
 	ErrUnexpectedRestart    = errors.New("xmpp: unexpected stream restart")
