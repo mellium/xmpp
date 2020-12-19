@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"strconv"
 	"strings"
 	"testing"
@@ -323,5 +324,32 @@ func TestServe(t *testing.T) {
 				t.Errorf("Did not finish read, %d bytes left", l)
 			}
 		})
+	}
+}
+
+func errorStartTLS(err error) xmpp.StreamFeature {
+	startTLS := xmpp.StartTLS(nil)
+	startTLS.Negotiate = func(ctx context.Context, session *xmpp.Session, data interface{}) (xmpp.SessionState, io.ReadWriter, error) {
+		session.Encode(ctx, err)
+		return 0, nil, nil
+	}
+	return startTLS
+}
+
+func TestNegotiateStreamError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	clientConn, serverConn := net.Pipe()
+	clientJID := jid.MustParse("me@example.net")
+	go func() {
+		xmpp.NegotiateSession(ctx, clientJID.Bare(), clientJID, serverConn, true, xmpp.NewNegotiator(xmpp.StreamConfig{
+			Features: []xmpp.StreamFeature{errorStartTLS(stream.Conflict)},
+		}))
+	}()
+	_, err := xmpp.NegotiateSession(ctx, clientJID, clientJID.Bare(), clientConn, false, xmpp.NewNegotiator(xmpp.StreamConfig{
+		Features: []xmpp.StreamFeature{xmpp.StartTLS(nil)},
+	}))
+	if err != stream.Conflict {
+		t.Errorf("unexpected client err: want=%v, got=%v", stream.Conflict, err)
 	}
 }

@@ -46,7 +46,8 @@ All notable changes to this project will be documented in this file.
   results in an error (fallback works correctly)
 - roster: fix infinite loop marshaling lists of items
 - xmpp: the Encode methods no longer sometimes duplicate the xmlns attribute
-- xmpp: stream errors are now unmarshaled and returned from `Serve`
+- xmpp: stream errors are now unmarshaled and returned from `Serve` and during
+  session negotiation
 - xmpp: XML tokens written directly to the session are now always flushed to the
   underlying connection when the token writer is closed
 

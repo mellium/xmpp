@@ -12,6 +12,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
+	intstream "mellium.im/xmpp/internal/stream"
 	"mellium.im/xmpp/stream"
 )
 
@@ -81,6 +82,18 @@ func containsStartTLS(features []StreamFeature) (startTLS StreamFeature, ok bool
 	return startTLS, ok
 }
 
+func decodeStreamErr(start xml.StartElement, r xml.TokenReader) error {
+	if start.Name.Local != "error" || start.Name.Space != stream.NS {
+		return nil
+	}
+	e := stream.Error{}
+	err := xml.NewTokenDecoder(r).DecodeElement(&e, &start)
+	if err != nil {
+		return err
+	}
+	return e
+}
+
 func negotiateFeatures(ctx context.Context, s *Session, first bool, features []StreamFeature) (mask SessionState, rw io.ReadWriter, err error) {
 	server := (s.state & Received) == Received
 
@@ -108,6 +121,11 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 		start, ok = t.(xml.StartElement)
 		if !ok {
 			return mask, nil, stream.BadFormat
+		}
+		// Unmarshal any stream errors and return them.
+		err = decodeStreamErr(start, s.in.d)
+		if err != nil {
+			return mask, nil, err
 		}
 
 		// If we're the client read the rest of the stream features list.
@@ -202,7 +220,10 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 			}
 		}
 
+		oldDecoder := s.in.d
+		s.in.d = intstream.Reader(oldDecoder)
 		mask, rw, err = data.feature.Negotiate(ctx, s, s.features[data.feature.Name.Space])
+		s.in.d = oldDecoder
 		if err == nil {
 			s.state |= mask
 		}
