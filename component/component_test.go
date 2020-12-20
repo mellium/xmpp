@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"net"
 	"reflect"
 	"strings"
 	"sync"
@@ -94,33 +95,24 @@ func TestComponent(t *testing.T) {
 			var outLock sync.Mutex
 			out := new(bytes.Buffer)
 
-			cpr, spw := io.Pipe()
-			spr, cpw := io.Pipe()
-
-			rw := struct {
-				io.Reader
-				io.Writer
-			}{
-				Reader: cpr,
-				Writer: cpw,
-			}
+			clientConn, serverConn := net.Pipe()
 
 			go func() {
-				io.Copy(spw, strings.NewReader(tc.server))
-				spw.Close()
+				io.Copy(serverConn, strings.NewReader(tc.server))
+				serverConn.Close()
 			}()
 
 			outLock.Lock()
 			go func() {
 				defer outLock.Unlock()
-				io.Copy(out, spr)
+				io.Copy(out, serverConn)
 			}()
 
-			_, err := component.NewClientSession(ctx, addr, []byte("secret"), rw, false)
+			_, err := component.NewClientSession(ctx, addr, []byte("secret"), clientConn, false)
 			if _, ok := tc.err.(some); (ok && err == nil) || (!ok && !reflect.DeepEqual(err, tc.err)) {
 				t.Fatalf("Unexpected error, got='%v' want='%v'", err, tc.err)
 			}
-			cpw.Close()
+			clientConn.Close()
 			if err != nil {
 				return
 			}
