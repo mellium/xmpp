@@ -8,8 +8,6 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
-	"io"
-	"io/ioutil"
 	"reflect"
 	"strconv"
 	"strings"
@@ -24,15 +22,11 @@ import (
 )
 
 var testCases = [...]struct {
-	reply string
 	items []roster.Item
 	err   error
 }{
-	0: {
-		reply: `<query xmlns='jabber:iq:roster'/>`,
-	},
+	0: {},
 	1: {
-		reply: `<query xmlns='jabber:iq:roster'><item jid='juliet@example.com' name='Juliet' subscription='both'><group>Friends</group></item><item jid='benvolio@example.org' name='Benvolio' subscription='to'/></query><foo/>`,
 		items: []roster.Item{{
 			JID:          jid.MustParse("juliet@example.com"),
 			Name:         "Juliet",
@@ -47,32 +41,19 @@ var testCases = [...]struct {
 }
 
 func TestFetch(t *testing.T) {
+	var IQ = stanza.IQ{ID: "123"}
 	for i, tc := range testCases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			pr, pw := io.Pipe()
-			rw := struct {
-				io.Reader
-				io.Writer
-			}{
-				Reader: pr,
-				// TODO: verify that we write a valid request.
-				Writer: ioutil.Discard,
-			}
-			s := xmpptest.NewSession(0, rw)
-			// Start serving the session.
-			go func() {
-				if err := s.Serve(nil); err != nil {
-					panic(err)
-				}
-			}()
-			// The remote server sends a reply.
-			go func() {
-				_, err := io.Copy(pw, strings.NewReader(`<iq id="123">`+tc.reply+`</iq>`))
-				if err != nil {
-					panic(err)
-				}
-			}()
-			iter := roster.FetchIQ(context.Background(), stanza.IQ{ID: "123"}, s)
+			cs := xmpptest.NewClientServer(
+				xmpptest.ServerHandlerFunc(func(e xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+					sendIQ := roster.IQ{
+						IQ: IQ,
+					}
+					sendIQ.Query.Item = tc.items
+					return e.Encode(sendIQ)
+				}),
+			)
+			iter := roster.FetchIQ(context.Background(), IQ, cs.Client)
 			items := make([]roster.Item, 0, len(tc.items))
 			for iter.Next() {
 				items = append(items, iter.Item())
