@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - receipts: add `Request` and `Requested` to add receipt requests to messages
   without waiting on a response
 - roster: add `Set` and `Delete` functions for roster management
+- stanza: add `Error` method on the `IQ` type
 - stream: new `InnerXML` and `ApplicationError` methods on `Error` provide a way
   to easily construct customized stream errors
 - styling: add `Disable` and `Unstyled` to support disabling styling on some
