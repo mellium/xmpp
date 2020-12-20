@@ -10,7 +10,7 @@
 // or any places where the output of a token does not exactly match the input
 // (due to an off-by-one error causing the output to be truncated, for example).
 // No care has been taken to try and make this fast, so it is very slow and does
-// not get with the normal tests.
+// not get run with the normal tests.
 
 package styling_test
 
