@@ -36,14 +36,14 @@ func StartTLS(cfg *tls.Config) StreamFeature {
 			}
 			return true, e.EncodeToken(start.End())
 		},
-		Parse: func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName  xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls starttls"`
 				Required struct {
 					XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-tls required"`
 				}
 			}{}
-			err := xml.NewTokenDecoder(r).DecodeElement(&parsed, start)
+			err := d.DecodeElement(&parsed, start)
 			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == ns.StartTLS, nil, err
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {

@@ -69,12 +69,12 @@ func New(methods ...Method) xmpp.StreamFeature {
 
 			return req, e.EncodeToken(start.End())
 		},
-		Parse: func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			listed := struct {
 				XMLName xml.Name `xml:"http://jabber.org/features/compress compression"`
 				Methods []string `xml:"http://jabber.org/features/compress method"`
 			}{}
-			if err := xml.NewTokenDecoder(r).DecodeElement(&listed, start); err != nil {
+			if err := d.DecodeElement(&listed, start); err != nil {
 				return false, nil, err
 			}
 

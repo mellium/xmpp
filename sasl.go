@@ -63,12 +63,12 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 			}
 			return req, e.EncodeToken(start.End())
 		},
-		Parse: func(ctx context.Context, r xml.TokenReader, start *xml.StartElement) (bool, interface{}, error) {
+		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
 				XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-sasl mechanisms"`
 				List    []string `xml:"urn:ietf:params:xml:ns:xmpp-sasl mechanism"`
 			}{}
-			err := xml.NewTokenDecoder(r).DecodeElement(&parsed, start)
+			err := d.DecodeElement(&parsed, start)
 			return true, parsed.List, err
 		},
 		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {

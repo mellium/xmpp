@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
   available for all stream errors
 - stream: the `TokenReader` method signature has changed to make it match the
   `xmlstream.Marshaler` interface
+- xmpp: the `StreamFeature` type's `Parse` function now takes an xml.Decoder
+  instead of an `xml.TokenReader`
 - xtime: change the `Time` type to fix unmarshaling
 
 
