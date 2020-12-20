@@ -8,6 +8,7 @@ package xmpptest // import "mellium.im/xmpp/internal/xmpptest"
 import (
 	"context"
 	"io"
+	"net"
 	"strings"
 
 	"mellium.im/xmpp"
@@ -120,38 +121,21 @@ type ClientServer struct {
 
 // NewClientServer returns a ClientServer with the client and server goroutines
 // started.
-// Both serve goroutines are started when NewClient is called and shut down when
-// Client is closed.
+// Both serve goroutines are started when NewClientServer is called and shut
+// down when the ClientServer is closed.
 func NewClientServer(opts ...Option) *ClientServer {
 	cs := &ClientServer{}
 	for _, opt := range opts {
 		opt(cs)
 	}
 
-	clientSessionReader, serverSessionWriter := io.Pipe()
-	serverSessionReader, clientSessionWriter := io.Pipe()
-	cs.Client = NewSession(cs.clientState, struct {
-		io.Reader
-		io.Writer
-	}{
-		Reader: clientSessionReader,
-		Writer: clientSessionWriter,
-	})
-	cs.Server = NewSession(cs.serverState, struct {
-		io.Reader
-		io.Writer
-	}{
-		Reader: serverSessionReader,
-		Writer: serverSessionWriter,
-	})
-	go func() {
-		/* #nosec */
-		cs.Client.Serve(cs.clientHandler)
-	}()
-	go func() {
-		/* #nosec */
-		cs.Server.Serve(cs.serverHandler)
-	}()
+	clientConn, serverConn := net.Pipe()
+	cs.Client = NewSession(cs.clientState, clientConn)
+	cs.Server = NewSession(cs.serverState, serverConn)
+	/* #nosec */
+	go cs.Client.Serve(cs.clientHandler)
+	/* #nosec */
+	go cs.Server.Serve(cs.serverHandler)
 	return cs
 }
 
