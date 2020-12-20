@@ -50,6 +50,8 @@ All notable changes to this project will be documented in this file.
   session negotiation
 - xmpp: XML tokens written directly to the session are now always flushed to the
   underlying connection when the token writer is closed
+- xmpp: stream feature parse functions can no longer read beyond the end of the
+  feature element
 
 
 ## v0.17.1 — 2020-11-21

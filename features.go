@@ -311,6 +311,21 @@ func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeatu
 	return list, err
 }
 
+func nextElementDecoder(r xml.TokenReader, start xml.StartElement) *xml.Decoder {
+	d := xml.NewTokenDecoder(xmlstream.MultiReader(
+		xmlstream.Token(start),
+		xmlstream.InnerElement(r),
+	))
+	// This isn't ideal, but we have to provide the start element to the decoder
+	// and then pop it and ignore it (since it had already been read fro mthe
+	// underlying reader) to setup the internal state of the new decoder.
+	// This was the only way I could contrive to provide Parse calls with a
+	// Decoder that won't error when it reaches the end token.
+	/* #nosec */
+	d.Token()
+	return d
+}
+
 func readStreamFeatures(ctx context.Context, s *Session, start xml.StartElement, features []StreamFeature) (*streamFeaturesList, error) {
 	switch {
 	case start.Name.Local != featuresLocal:
@@ -331,6 +346,8 @@ parsefeatures:
 		}
 		switch tok := t.(type) {
 		case xml.StartElement:
+			limitDecoder := nextElementDecoder(s.in.d, tok)
+
 			// If the token is a new feature, see if it's one we handle. If so, parse
 			// it. Increment the total features count regardless.
 			sf.total++
@@ -341,7 +358,7 @@ parsefeatures:
 
 			feature, ok := getFeature(tok.Name, features)
 			if ok {
-				req, data, err := feature.Parse(ctx, s.in.d, &tok)
+				req, data, err := feature.Parse(ctx, limitDecoder, &tok)
 				if err != nil {
 					return nil, err
 				}
@@ -360,11 +377,13 @@ parsefeatures:
 					s.features[tok.Name.Space] = data
 					continue parsefeatures
 				}
-			} else {
-				// If the feature is not one we support, skip it.
-				if err := xmlstream.Skip(s.in.d); err != nil {
-					return nil, err
-				}
+			}
+			// Advance to the end of the feature element (in case the parse function
+			// didn't consume the entire feature or we did not support the feature and
+			// need to skip it).
+			_, err := xmlstream.Copy(xmlstream.Discard(), limitDecoder)
+			if err != nil {
+				return nil, err
 			}
 		case xml.EndElement:
 			if tok.Name.Local == featuresLocal && tok.Name.Space == stream.NS {
