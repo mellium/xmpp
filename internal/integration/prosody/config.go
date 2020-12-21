@@ -13,12 +13,14 @@ import (
 
 // Config contains options that can be written to a Prosody config file.
 type Config struct {
-	C2SPort int
-	S2SPort int
-	Admins  []string
-	Modules []string
-	VHosts  []string
-	Options map[string]interface{}
+	C2SPort   int
+	S2SPort   int
+	CompPort  int
+	Admins    []string
+	Modules   []string
+	VHosts    []string
+	Options   map[string]interface{}
+	Component map[string]string
 }
 
 const cfgBase = `daemonize = false
@@ -28,6 +30,7 @@ data_path = "{{ .ConfigDir }}"
 interfaces = { "::1" }
 {{ if .C2SPort }}c2s_ports = { {{ .C2SPort }} }{{ end }}
 {{ if .S2SPort }}s2s_ports = { {{ .S2SPort }} }{{ end }}
+{{ if .CompPort }}component_ports = { {{.CompPort}} }{{ end }}
 
 -- Settings added with prosody.Set:
 {{ range $k, $opt := .Options }}
@@ -89,7 +92,12 @@ certificates = "{{ .ConfigDir }}"
 
 {{- range .VHosts }}
 VirtualHost "{{ . }}"
-{{- end }}`
+{{- end }}
+
+{{ range $domain, $secret := .Component }}
+Component "{{$domain}}"
+         component_secret = "{{$secret}}"
+{{ end }}`
 
 var cfgTmpl = template.Must(template.New("cfg").Funcs(template.FuncMap{
 	"filepathJoin": filepath.Join,

@@ -146,6 +146,37 @@ func VHost(hosts ...string) integration.Option {
 	}
 }
 
+// Component adds an external component with the given domain and secret to the
+// config file.
+func Component(domain, secret string) integration.Option {
+	return func(cmd *integration.Cmd) error {
+		compListener, err := cmd.ComponentListen("tcp", "[::1]:0")
+		if err != nil {
+			return err
+		}
+		// Prosody creates its own sockets and doesn't provide us with a way of
+		// pointing it at an existing Unix domain socket or handing the filehandle for
+		// the TCP connection to it on start, so we're effectively just listening to
+		// get a random port that we'll use to configure Prosody, then we need to
+		// close the connection and let Prosody listen on that port.
+		// Technically this is racey, but it's not likely to be a problem in practice.
+		compPort := compListener.Addr().(*net.TCPAddr).Port
+		err = compListener.Close()
+		if err != nil {
+			return err
+		}
+
+		cfg := getConfig(cmd)
+		cfg.CompPort = compPort
+		if cfg.Component == nil {
+			cfg.Component = make(map[string]string)
+		}
+		cfg.Component[domain] = secret
+		cmd.Config = cfg
+		return nil
+	}
+}
+
 // CreateUser returns an option that calls prosodyctl to create a user.
 // It is equivalent to calling:
 // Ctl(ctx, "register", "localpart", "domainpart", "password") except that it
