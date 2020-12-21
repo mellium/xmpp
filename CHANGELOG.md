@@ -47,6 +47,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- component: the wrong error is no longer returned if Prosody sends an error
+  immediately after the start of a stream with no ID
 - dial: dialing an XMPP connection where no xmpps SRV records exist no longer
   results in an error (fallback works correctly)
 - roster: fix infinite loop marshaling lists of items

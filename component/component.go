@@ -98,10 +98,6 @@ func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 			}
 		}
 
-		if id == "" {
-			return mask, nil, nil, errors.New("Expected server stream to contain stream ID")
-		}
-
 		/* #nosec */
 		h := sha1.New()
 
@@ -132,6 +128,9 @@ func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 		case "error":
 			return mask, nil, nil, stream.NotAuthorized
 		case "handshake":
+			if id == "" {
+				return mask, nil, nil, errors.New("component: expected server stream to contain stream ID")
+			}
 			err = d.Skip()
 			return xmpp.Ready | xmpp.Authn, nil, nil, err
 		}
