@@ -190,20 +190,32 @@ func (s Error) Error() string {
 // UnmarshalXML satisfies the xml package's Unmarshaler interface and allows
 // StreamError's to be correctly unmarshaled from XML.
 func (s *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	se := struct {
-		XMLName xml.Name
-		Err     struct {
-			XMLName  xml.Name
-			InnerXML []byte `xml:",innerxml"`
-		} `xml:",any"`
-	}{}
-	err := d.DecodeElement(&se, &start)
-	if err != nil {
-		return err
+	for {
+		tok, err := d.Token()
+		if err != nil {
+			return err
+		}
+
+		var start xml.StartElement
+		switch tt := tok.(type) {
+		case xml.StartElement:
+			start = tt
+		case xml.EndElement:
+			// This is the end element, everything else has been unmarshaled or skipped.
+			return nil
+		default:
+			continue
+		}
+
+		switch {
+		case start.Name.Local == "text" && start.Name.Space == ErrorNS:
+		case start.Name.Space == ErrorNS:
+			s.Err = start.Name.Local
+		}
+		if err = d.Skip(); err != nil {
+			return err
+		}
 	}
-	s.Err = se.Err.XMLName.Local
-	// TODO: s.InnerXML = se.Err.InnerXML
-	return nil
 }
 
 // MarshalXML satisfies the xml package's Marshaler interface and allows

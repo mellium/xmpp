@@ -48,6 +48,7 @@ All notable changes to this project will be documented in this file.
 - dial: dialing an XMPP connection where no xmpps SRV records exist no longer
   results in an error (fallback works correctly)
 - roster: fix infinite loop marshaling lists of items
+- stream: errors are now unmarshaled correctly
 - xmpp: the Encode methods no longer sometimes duplicate the xmlns attribute
 - xmpp: stream errors are now unmarshaled and returned from `Serve` and during
   session negotiation
