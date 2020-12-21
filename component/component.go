@@ -77,17 +77,17 @@ func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 					foundProc = true
 					continue
 				}
-				return mask, nil, nil, errors.New("Received unexpected proc inst from server")
+				return mask, nil, nil, errors.New("component: received unexpected proc inst from server")
 			case xml.StartElement:
 				start = t
 				break procloop
 			default:
-				return mask, nil, nil, errors.New("Received unexpected token from server")
+				return mask, nil, nil, errors.New("component: received unexpected token from server")
 			}
 		}
 
 		if start.Name.Local != "stream" || start.Name.Space != stream.NS {
-			return mask, nil, nil, errors.New("Expected stream:stream from server")
+			return mask, nil, nil, errors.New("component: expected stream:stream from server")
 		}
 
 		var id string
@@ -124,7 +124,7 @@ func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 		}
 		start, ok := tok.(xml.StartElement)
 		if !ok {
-			return mask, nil, nil, errors.New("Expected acknowledgement or error start token from server")
+			return mask, nil, nil, errors.New("component: expected acknowledgement or error start token from server")
 		}
 
 		// TODO: Actually unmarshal the stream error.
@@ -136,6 +136,6 @@ func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 			return xmpp.Ready | xmpp.Authn, nil, nil, err
 		}
 
-		return mask, nil, nil, fmt.Errorf("Unknown start element: %v", start)
+		return mask, nil, nil, fmt.Errorf("component: unknown start element: %v", start)
 	}
 }

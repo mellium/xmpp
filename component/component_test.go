@@ -101,10 +101,11 @@ func TestComponent(t *testing.T) {
 				Writer: out,
 			}, false)
 			if _, ok := tc.err.(some); (ok && err == nil) || (!ok && !reflect.DeepEqual(err, tc.err)) {
-				t.Fatalf("Unexpected error, got='%v' want='%v'", err, tc.err)
+				t.Fatalf("unexpected error: want=%v, got=%v", tc.err, err)
 			}
+
 			if o := out.String(); len(o) < len(tc.client) || o[:len(tc.client)] != tc.client {
-				t.Errorf("Unexpected output:\nGot:\n`%s`\nWant:\n`%s`\n", o, tc.client)
+				t.Errorf("unexpected output:\nwant=%s\n got=%s", tc.client, o)
 			}
 		})
 	}
