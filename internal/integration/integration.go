@@ -48,8 +48,10 @@ type Cmd struct {
 	in, out      *testWriter
 	c2sListener  net.Listener
 	s2sListener  net.Listener
+	compListener net.Listener
 	c2sNetwork   string
 	s2sNetwork   string
+	compNetwork  string
 	shutdown     func(*Cmd) error
 	user         jid.JID
 	pass         string
@@ -133,6 +135,20 @@ func (cmd *Cmd) S2SListen(network, addr string) (net.Listener, error) {
 	return cmd.s2sListener, err
 }
 
+// ComponentListen returns a listener with a random port.
+// The listener is created on the first call to ComponentListener.
+// Subsequent calls ignore the arguments and return the existing listener.
+func (cmd *Cmd) ComponentListen(network, addr string) (net.Listener, error) {
+	if cmd.compListener != nil {
+		return cmd.compListener, nil
+	}
+
+	var err error
+	cmd.compListener, err = net.Listen(network, addr)
+	cmd.compNetwork = network
+	return cmd.compListener, err
+}
+
 // ConfigDir returns the temporary directory used to store config files.
 func (cmd *Cmd) ConfigDir() string {
 	return cmd.cfgDir
@@ -175,7 +191,39 @@ func (cmd *Cmd) DialServer(ctx context.Context, location, origin jid.JID, t *tes
 	return cmd.dial(ctx, true, location, origin, t, features...)
 }
 
-func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t *testing.T, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
+// C2SAddr returns the client-to-server address and network.
+func (cmd *Cmd) C2SAddr() (net.Addr, string) {
+	return cmd.c2sListener.Addr(), cmd.c2sNetwork
+}
+
+// S2SAddr returns the server-to-server address and network.
+func (cmd *Cmd) S2SAddr() (net.Addr, string) {
+	return cmd.s2sListener.Addr(), cmd.s2sNetwork
+}
+
+// ComponentAddr returns the component address and network.
+func (cmd *Cmd) ComponentAddr() (net.Addr, string) {
+	return cmd.compListener.Addr(), cmd.compNetwork
+}
+
+// ComponentConn dials a connection to the component socket and returns it
+// without negotiating a session.
+func (cmd *Cmd) ComponentConn(ctx context.Context) (net.Conn, error) {
+	if cmd.compListener == nil {
+		return nil, errors.New("component not configured, please configure a component listener")
+	}
+	addr := cmd.compListener.Addr().String()
+	network := cmd.compNetwork
+
+	conn, err := net.Dial(network, addr)
+	if err != nil {
+		return nil, fmt.Errorf("error dialing %s: %w", addr, err)
+	}
+	return conn, nil
+}
+
+// Conn dials a connection and returns it without negotiating a session.
+func (cmd *Cmd) Conn(ctx context.Context, s2s bool) (net.Conn, error) {
 	switch {
 	case s2s && cmd.s2sListener == nil:
 		return nil, errors.New("s2s not configured, please configure an s2s listener")
@@ -195,6 +243,14 @@ func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t 
 	conn, err := net.Dial(network, addr)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing %s: %w", addr, err)
+	}
+	return conn, nil
+}
+
+func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t *testing.T, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
+	conn, err := cmd.Conn(ctx, s2s)
+	if err != nil {
+		return nil, err
 	}
 	negotiator := xmpp.NewNegotiator(xmpp.StreamConfig{
 		Features: features,
