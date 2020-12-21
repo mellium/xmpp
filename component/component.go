@@ -123,10 +123,14 @@ func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 			return mask, nil, nil, errors.New("component: expected acknowledgement or error start token from server")
 		}
 
-		// TODO: Actually unmarshal the stream error.
 		switch start.Name.Local {
 		case "error":
-			return mask, nil, nil, stream.NotAuthorized
+			e := stream.Error{}
+			err := d.DecodeElement(&e, &start)
+			if err != nil {
+				return mask, nil, nil, err
+			}
+			return mask, nil, nil, e
 		case "handshake":
 			if id == "" {
 				return mask, nil, nil, errors.New("component: expected server stream to contain stream ID")
