@@ -6,6 +6,7 @@ package stream_test
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"net"
 	"testing"
@@ -23,6 +24,19 @@ var (
 	_ xmlstream.Marshaler = (*stream.Error)(nil)
 	_ xmlstream.WriterTo  = (*stream.Error)(nil)
 )
+
+func TestCompare(t *testing.T) {
+	hostGoneApp := stream.HostGone.ApplicationError(xmlstream.Wrap(nil, xml.StartElement{}))
+	if !errors.Is(stream.HostGone, hostGoneApp) {
+		t.Errorf("did not expect adding application error to affect comparison")
+	}
+	if errors.Is(stream.HostGone, stream.BadNamespacePrefix) {
+		t.Errorf("did not expect two errors with different names to be equivalent")
+	}
+	if !errors.Is(stream.HostGone, stream.Error{}) {
+		t.Errorf("expected empty stream error to compare to any other stream error")
+	}
+}
 
 var marshalTests = [...]struct {
 	se  stream.Error

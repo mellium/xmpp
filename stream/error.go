@@ -175,6 +175,20 @@ type Error struct {
 	payload  xml.TokenReader
 }
 
+// Is will be used by errors.Is when comparing errors.
+// For more information see the errors package.
+func (s Error) Is(err error) bool {
+	se, ok := err.(Error)
+	if !ok {
+		return false
+	}
+
+	if se.Err == "" {
+		return true
+	}
+	return se.Err == s.Err
+}
+
 // Error satisfies the builtin error interface and returns the name of the
 // StreamError. For instance, given the error:
 //

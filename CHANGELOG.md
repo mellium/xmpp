@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - stanza: add `Error` method on the `IQ` type
 - stream: new `InnerXML` and `ApplicationError` methods on `Error` provide a way
   to easily construct customized stream errors
+- stream: ability to compare errors with `errors.Is`
 - styling: add `Disable` and `Unstyled` to support disabling styling on some
   messages
 - xmpp: `SetReadDeadline` and `SetWriteDeadline` are now proxied even if the
