@@ -10,10 +10,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"net"
 	"reflect"
 	"strings"
-	"sync"
 	"testing"
 
 	"mellium.im/xmpp/component"
@@ -45,17 +43,17 @@ var componentClientTests = [...]componentClientTest{
 	},
 	2: {
 		server: xml.Header + `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net' id='1234'><handshake></handshake>`,
-		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
+		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'>`,
 		err:    some{}, // don't allow whitespace
 	},
 	3: {
 		server: header + header + `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net' id='1234'><handshake></handshake>`,
-		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
+		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'>`,
 		err:    some{}, // allow only a single XML header
 	},
 	4: {
 		server: `<stream xmlns='jabber:component:accept' from='example.net' id='1234'><handshake></handshake>`,
-		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'><handshake>32532c0f7dbf1253c095b18b18e36d38d94c1256</handshake>`,
+		client: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='example.net'>`,
 		err:    some{}, // must start with stream:stream
 	},
 	5: {
@@ -92,33 +90,20 @@ func TestComponent(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			var outLock sync.Mutex
 			out := new(bytes.Buffer)
+			in := strings.NewReader(tc.server)
 
-			clientConn, serverConn := net.Pipe()
-
-			go func() {
-				io.Copy(serverConn, strings.NewReader(tc.server))
-				serverConn.Close()
-			}()
-
-			outLock.Lock()
-			go func() {
-				defer outLock.Unlock()
-				io.Copy(out, serverConn)
-			}()
-
-			_, err := component.NewClientSession(ctx, addr, []byte("secret"), clientConn, false)
+			_, err := component.NewClientSession(ctx, addr, []byte("secret"), struct {
+				io.Reader
+				io.Writer
+			}{
+				Reader: in,
+				Writer: out,
+			}, false)
 			if _, ok := tc.err.(some); (ok && err == nil) || (!ok && !reflect.DeepEqual(err, tc.err)) {
 				t.Fatalf("Unexpected error, got='%v' want='%v'", err, tc.err)
 			}
-			clientConn.Close()
-			if err != nil {
-				return
-			}
-
-			outLock.Lock()
-			if o := out.String(); o[:len(tc.client)] != tc.client {
+			if o := out.String(); len(o) < len(tc.client) || o[:len(tc.client)] != tc.client {
 				t.Errorf("Unexpected output:\nGot:\n`%s`\nWant:\n`%s`\n", o, tc.client)
 			}
 		})
