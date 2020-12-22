@@ -314,14 +314,14 @@ func TestServe(t *testing.T) {
 			})
 
 			err := s.Serve(tc.handler)
-			if err != tc.err {
-				t.Errorf("Unexpected error: want=%q, got=%q", tc.err, err)
+			if !errors.Is(err, tc.err) {
+				t.Errorf("unexpected error: want=%v, got=%v", tc.err, err)
 			}
 			if s := out.String(); s != tc.out {
-				t.Errorf("Unexpected output:\nwant=%q,\n got=%q", tc.out, s)
+				t.Errorf("unexpected output:\nwant=%s,\n got=%s", tc.out, s)
 			}
 			if l := in.Len(); l != 0 {
-				t.Errorf("Did not finish read, %d bytes left", l)
+				t.Errorf("did not finish read, %d bytes left", l)
 			}
 		})
 	}
@@ -349,7 +349,7 @@ func TestNegotiateStreamError(t *testing.T) {
 	_, err := xmpp.NegotiateSession(ctx, clientJID, clientJID.Bare(), clientConn, false, xmpp.NewNegotiator(xmpp.StreamConfig{
 		Features: []xmpp.StreamFeature{xmpp.StartTLS(nil)},
 	}))
-	if err != stream.Conflict {
+	if !errors.Is(err, stream.Conflict) {
 		t.Errorf("unexpected client err: want=%v, got=%v", stream.Conflict, err)
 	}
 }

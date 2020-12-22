@@ -7,6 +7,7 @@ package stream_test
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -109,7 +110,7 @@ func TestReader(t *testing.T) {
 				if reflect.TypeOf(tc.errType) != reflect.TypeOf(err) {
 					t.Errorf("unexpected error type: want=%T, got=%T", tc.err, err)
 				}
-			case err != tc.err:
+			case !errors.Is(err, tc.err):
 				t.Errorf("unexpected error: want=%v, got=%#v", tc.err, err)
 			}
 			if err = e.Flush(); err != nil {
@@ -128,7 +129,7 @@ func TestBadFormat(t *testing.T) {
 	var out strings.Builder
 	e := xml.NewEncoder(&out)
 	_, err := xmlstream.Copy(e, r)
-	if err != streamerr.BadFormat {
+	if !errors.Is(err, streamerr.BadFormat) {
 		t.Errorf("unexpected error: want=%v, got=%v", streamerr.BadFormat, err)
 	}
 	err = e.Flush()
