@@ -10,6 +10,7 @@ import (
 	"net"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal/ns"
 )
 
 // A list of stream errors defined in RFC 6120 §4.9.3
@@ -169,7 +170,11 @@ func SeeOtherHostError(addr net.Addr) Error {
 // Error represents an unrecoverable stream-level error that may include
 // character data or arbitrary inner XML.
 type Error struct {
-	Err string
+	Err  string
+	Text []struct {
+		Lang  string
+		Value string
+	}
 
 	innerXML xml.TokenReader
 	payload  xml.TokenReader
@@ -206,6 +211,12 @@ func (s Error) Error() string {
 func (s *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	for {
 		tok, err := d.Token()
+		if err == io.EOF {
+			err = nil
+			if tok == nil {
+				return nil
+			}
+		}
 		if err != nil {
 			return err
 		}
@@ -223,6 +234,28 @@ func (s *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 		switch {
 		case start.Name.Local == "text" && start.Name.Space == ErrorNS:
+			var lang string
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "lang" && attr.Name.Space == ns.XML {
+					lang = attr.Value
+					break
+				}
+			}
+			t := struct {
+				XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-streams text"`
+				Text    string   `xml:",chardata"`
+			}{}
+			err = d.DecodeElement(&t, &start)
+			if err != nil {
+				return err
+			}
+			s.Text = append(s.Text, struct {
+				Lang  string
+				Value string
+			}{
+				Lang:  lang,
+				Value: t.Text,
+			})
 		case start.Name.Space == ErrorNS:
 			s.Err = start.Name.Local
 		}
@@ -253,6 +286,22 @@ func (s Error) TokenReader() xml.TokenReader {
 		inner = xmlstream.MultiReader(
 			inner,
 			s.payload,
+		)
+	}
+	for _, txt := range s.Text {
+		start := xml.StartElement{Name: xml.Name{Space: ErrorNS, Local: "text"}}
+		if txt.Lang != "" {
+			start.Attr = append(start.Attr, xml.Attr{
+				Name:  xml.Name{Space: ns.XML, Local: "lang"},
+				Value: txt.Lang,
+			})
+		}
+		inner = xmlstream.MultiReader(
+			inner,
+			xmlstream.Wrap(
+				xmlstream.Token(xml.CharData(txt.Value)),
+				start,
+			),
 		)
 	}
 	return xmlstream.Wrap(

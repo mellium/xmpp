@@ -73,6 +73,22 @@ var marshalTests = [...]struct {
 		se:  stream.UnsupportedEncoding.ApplicationError(xmlstream.Token(xml.CharData("test"))).InnerXML(xmlstream.Token(xml.CharData("foo"))),
 		xml: `<error xmlns="http://etherx.jabber.org/streams"><unsupported-encoding xmlns="urn:ietf:params:xml:ns:xmpp-streams">foo</unsupported-encoding>test</error>`,
 	},
+	6: {
+		se:  stream.UnsupportedEncoding.ApplicationError(xmlstream.Token(xml.CharData("test"))).InnerXML(xmlstream.Token(xml.CharData("foo"))),
+		xml: `<error xmlns="http://etherx.jabber.org/streams"><unsupported-encoding xmlns="urn:ietf:params:xml:ns:xmpp-streams">foo</unsupported-encoding>test</error>`,
+	},
+	7: {
+		se: stream.Error{Err: "undefined-condition", Text: []struct {
+			Lang  string
+			Value string
+		}{{
+			Lang:  "en",
+			Value: "some value",
+		}, {
+			Value: "some error",
+		}}},
+		xml: `<error xmlns="http://etherx.jabber.org/streams"><undefined-condition xmlns="urn:ietf:params:xml:ns:xmpp-streams"></undefined-condition><text xmlns="urn:ietf:params:xml:ns:xmpp-streams" xml:lang="en">some value</text><text xmlns="urn:ietf:params:xml:ns:xmpp-streams">some error</text></error>`,
+	},
 }
 
 func TestMarshal(t *testing.T) {
@@ -110,6 +126,18 @@ var unmarshalTests = [...]struct {
 		se:  stream.RestrictedXML,
 		err: true,
 	},
+	2: {
+		xml: `<error xmlns="http://etherx.jabber.org/streams"><undefined-condition xmlns="urn:ietf:params:xml:ns:xmpp-streams"></undefined-condition><text xmlns="urn:ietf:params:xml:ns:xmpp-streams" xml:lang="en">some value</text><text xmlns="urn:ietf:params:xml:ns:xmpp-streams">some error</text></error>`,
+		se: stream.Error{Err: "undefined-condition", Text: []struct {
+			Lang  string
+			Value string
+		}{{
+			Lang:  "en",
+			Value: "some value",
+		}, {
+			Value: "some error",
+		}}},
+	},
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -122,7 +150,7 @@ func TestUnmarshal(t *testing.T) {
 				t.Errorf("expected unmarshaling error for `%v` to fail", test.xml)
 				return
 			case !test.err && err != nil:
-				t.Error(err)
+				t.Errorf("unexpected error: %v", err)
 				return
 			case err != nil:
 				return
