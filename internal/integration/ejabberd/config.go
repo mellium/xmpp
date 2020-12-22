@@ -11,9 +11,11 @@ import (
 
 // Config contains options that can be written to a Prosody config file.
 type Config struct {
-	VHosts    []string
-	C2SSocket string
-	S2SSocket string
+	VHosts     []string
+	C2SSocket  string
+	S2SSocket  string
+	CompSocket string
+	Component  map[string]string
 }
 
 const inetrc = `{lookup,["file","native"]}.
@@ -52,6 +54,19 @@ listen:
     ip: "::1"
     module: ejabberd_s2s_in
     max_stanza_size: 524288
+{{- end }}
+{{- if .CompSocket }}
+  -
+    port: "unix:{{ $.CompSocket }}"
+    ip: "::1"
+    access: "all"
+    module: ejabberd_service
+    max_stanza_size: 524288
+    hosts:
+{{- range $domain, $secret := .Component }}
+      '{{$domain}}':
+        password: '{{ $secret }}'
+{{- end }}
 {{- end }}
 
 s2s_use_starttls: optional

@@ -186,6 +186,26 @@ func ctlFunc(ctx context.Context, args ...string) func(*integration.Cmd) error {
 	}
 }
 
+// Component adds an external component with the given domain and secret to the
+// config file.
+func Component(domain, secret string) integration.Option {
+	return func(cmd *integration.Cmd) error {
+		compListener, err := cmd.ComponentListen("unix", filepath.Join(cmd.ConfigDir(), "comp.socket"))
+		if err != nil {
+			return err
+		}
+
+		cfg := getConfig(cmd)
+		cfg.CompSocket = compListener.Addr().(*net.UnixAddr).Name
+		if cfg.Component == nil {
+			cfg.Component = make(map[string]string)
+		}
+		cfg.Component[domain] = secret
+		cmd.Config = cfg
+		return nil
+	}
+}
+
 // CreateUser returns an option that calls ejabberdctl to create a user.
 // It is equivalent to calling:
 // Ctl(ctx, "register", "localpart", "domainpart", "password") except that it
