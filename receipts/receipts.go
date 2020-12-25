@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"sync"
 
 	"mellium.im/xmlstream"
@@ -79,12 +80,66 @@ var receiptInserter = xmlstream.InsertFunc(func(start xml.StartElement, w xmlstr
 })
 
 // Request is an xmlstream.Transformer that inserts a request for a read receipt
-// into any message read through r.
+// into any message read through r that is not itself a receipt.
 // It is provided to allow easily requesting read receipts asynchronously.
 // To send a message and block waiting on a read receipt, see the methods on
 // Handler.
 func Request(r xml.TokenReader) xml.TokenReader {
-	return receiptInserter(r)
+	var (
+		noWrite bool
+		inner   xml.TokenReader
+	)
+	return xmlstream.ReaderFunc(func() (xml.Token, error) {
+	start:
+		if inner != nil {
+			tok, err := inner.Token()
+			if err == io.EOF {
+				inner = nil
+				err = nil
+			}
+			return tok, err
+		}
+
+		tok, err := r.Token()
+		switch err {
+		case io.EOF:
+			if tok == nil {
+				return nil, err
+			}
+			err = nil
+		case nil:
+		default:
+			return tok, err
+		}
+
+		switch t := tok.(type) {
+		case xml.StartElement:
+			switch {
+			case t.Name.Local == "receipt" && t.Name.Space == NS:
+				noWrite = true
+			case t.Name.Local == "message" && (t.Name.Space == ns.Client || t.Name.Space == ns.Server):
+				noWrite = false
+				for _, attr := range t.Attr {
+					if attr.Name.Local == "type" {
+						noWrite = attr.Value == "error"
+						break
+					}
+				}
+			}
+		case xml.EndElement:
+			if t.Name.Local == "message" && (t.Name.Space == ns.Client || t.Name.Space == ns.Server) {
+				if !noWrite {
+					inner = xmlstream.MultiReader(xmlstream.Wrap(nil, xml.StartElement{
+						Name: xml.Name{Space: NS, Local: "request"},
+					}), xmlstream.Token(t))
+					goto start
+				}
+				noWrite = false
+			}
+		}
+
+		return tok, err
+	})
 }
 
 // Handle returns an option that registers a Handler for message receipts.

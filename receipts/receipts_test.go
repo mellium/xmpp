@@ -39,7 +39,7 @@ var requestTestCases = [...]struct {
 	},
 	2: {
 		in:  `<message xmlns="jabber:server"/><message xmlns="jabber:client"><body>test</body></message>`,
-		out: `<message xmlns="jabber:server"><request xmlns="urn:xmpp:receipts"></request></message><message xmlns="jabber:client"><request xmlns="urn:xmpp:receipts"></request><body xmlns="jabber:client">test</body></message>`,
+		out: `<message xmlns="jabber:server"><request xmlns="urn:xmpp:receipts"></request></message><message xmlns="jabber:client"><body xmlns="jabber:client">test</body><request xmlns="urn:xmpp:receipts"></request></message>`,
 	},
 	3: {
 		in:  `<message xmlns="jabber:badns"/>`,
@@ -53,6 +53,18 @@ var requestTestCases = [...]struct {
 		in:  `<message xmlns="jabber:server" type="error"/>`,
 		out: `<message xmlns="jabber:server" type="error"></message>`,
 	},
+	6: {
+		in:  `<message xmlns="jabber:server" type="chat"><receipt xmlns="urn:xmpp:receipts"></receipt></message>`,
+		out: `<message xmlns="jabber:server" type="chat"><receipt xmlns="urn:xmpp:receipts"></receipt></message>`,
+	},
+	7: {
+		in:  `<message xmlns="jabber:server" type="chat"><body>Test</body><receipt xmlns="urn:xmpp:receipts"></receipt></message>`,
+		out: `<message xmlns="jabber:server" type="chat"><body xmlns="jabber:server">Test</body><receipt xmlns="urn:xmpp:receipts"></receipt></message>`,
+	},
+	8: {
+		in:  `<message xmlns="jabber:server" type="chat"><receipt xmlns="urn:xmpp:receipts"></receipt></message><message xmlns="jabber:client" type="chat"></message>`,
+		out: `<message xmlns="jabber:server" type="chat"><receipt xmlns="urn:xmpp:receipts"></receipt></message><message xmlns="jabber:client" type="chat"><request xmlns="urn:xmpp:receipts"></request></message>`,
+	},
 }
 
 func TestRequest(t *testing.T) {
@@ -61,7 +73,7 @@ func TestRequest(t *testing.T) {
 			r := receipts.Request(xml.NewDecoder(strings.NewReader(tc.in)))
 			// Prevent duplicate xmlns attributes. See https://mellium.im/issue/75
 			r = xmlstream.RemoveAttr(func(start xml.StartElement, attr xml.Attr) bool {
-				return (start.Name.Local == "message" || start.Name.Local == "iq") && attr.Name.Local == "xmlns"
+				return (start.Name.Local == "message" || start.Name.Local == "iq" || start.Name.Local == "receipt") && attr.Name.Local == "xmlns"
 			})(r)
 			var buf strings.Builder
 			e := xml.NewEncoder(&buf)
