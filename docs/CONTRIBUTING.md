@@ -11,7 +11,8 @@ it is a sensitive security issue, in which case keep reading).
 Always open an issue before submitting a patch unless the PR is trivial, all PRs
 should be linked to an issue and should generally only contain a single logical
 change.
-Don't forget to check the issue tracker ([including closed issues]) for existing issues and changes before you start work.
+Don't forget to check the issue tracker ([including closed issues]) for existing
+issues and changes before you start work.
 
 Once you file an issue or find an existing issue, make sure to mention that
 you're working on the problem and outline your plans so that someone else
