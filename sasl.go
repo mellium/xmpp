@@ -36,10 +36,10 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 		Name:       xml.Name{Space: ns.SASL, Local: "mechanisms"},
 		Necessary:  Secure,
 		Prohibited: Authn,
-		List: func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error) {
-			req = true
-			if err = e.EncodeToken(start); err != nil {
-				return
+		List: func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (bool, error) {
+			err := e.EncodeToken(start)
+			if err != nil {
+				return true, err
 			}
 
 			startMechanism := xml.StartElement{Name: xml.Name{Space: "", Local: "mechanism"}}
@@ -51,16 +51,16 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 				}
 
 				if err = e.EncodeToken(startMechanism); err != nil {
-					return
+					return true, err
 				}
 				if err = e.EncodeToken(xml.CharData(m.Name)); err != nil {
-					return
+					return true, err
 				}
 				if err = e.EncodeToken(startMechanism.End()); err != nil {
-					return
+					return true, err
 				}
 			}
-			return req, e.EncodeToken(start.End())
+			return true, e.EncodeToken(start.End())
 		},
 		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
