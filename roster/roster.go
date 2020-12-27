@@ -207,22 +207,22 @@ func (iq IQ) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 
 // Item represents a contact in the roster.
 type Item struct {
-	JID          jid.JID `xml:"jid,attr,omitempty"`
-	Name         string  `xml:"name,attr,omitempty"`
-	Subscription string  `xml:"subscription,attr,omitempty"`
-	Group        string  `xml:"group,omitempty"`
+	JID          jid.JID  `xml:"jid,attr,omitempty"`
+	Name         string   `xml:"name,attr,omitempty"`
+	Subscription string   `xml:"subscription,attr,omitempty"`
+	Group        []string `xml:"group,omitempty"`
 }
 
 // TokenReader satisfies the xmlstream.Marshaler interface.
 func (item Item) TokenReader() xml.TokenReader {
-	var group xml.TokenReader
-	if item.Group != "" {
-		group = xmlstream.Wrap(
-			xmlstream.Token(xml.CharData(item.Group)),
+	var group []xml.TokenReader
+	for _, g := range item.Group {
+		group = append(group, xmlstream.Wrap(
+			xmlstream.Token(xml.CharData(g)),
 			xml.StartElement{
 				Name: xml.Name{Local: "group"},
 			},
-		)
+		))
 	}
 
 	attrs := []xml.Attr{}
@@ -237,7 +237,7 @@ func (item Item) TokenReader() xml.TokenReader {
 	}
 
 	return xmlstream.Wrap(
-		group,
+		xmlstream.MultiReader(group...),
 		xml.StartElement{
 			Name: xml.Name{Local: "item"},
 			Attr: attrs,

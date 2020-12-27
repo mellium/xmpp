@@ -21,6 +21,12 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
+var (
+	_ xml.Marshaler       = (*roster.Item)(nil)
+	_ xmlstream.Marshaler = (*roster.Item)(nil)
+	_ xmlstream.WriterTo  = (*roster.Item)(nil)
+)
+
 var testCases = [...]struct {
 	items []roster.Item
 	err   error
@@ -31,7 +37,7 @@ var testCases = [...]struct {
 			JID:          jid.MustParse("juliet@example.com"),
 			Name:         "Juliet",
 			Subscription: "both",
-			Group:        "Friends",
+			Group:        []string{"Friends", "Other"},
 		}, {
 			JID:          jid.MustParse("benvolio@example.org"),
 			Name:         "Benvolio",
@@ -143,5 +149,75 @@ func TestErroredDoesNotPanic(t *testing.T) {
 	}
 	if err := iter.Close(); err != nil {
 		t.Errorf("got unexpected error closing iter: %v", err)
+	}
+}
+
+var marshalTests = [...]struct {
+	in  interface{}
+	out string
+}{
+	0: {
+		in:  roster.IQ{},
+		out: `<iq type=""><query xmlns="jabber:iq:roster"></query></iq>`,
+	},
+	1: {
+		in: roster.IQ{
+			Query: struct {
+				Ver  string        `xml:"version,attr,omitempty"`
+				Item []roster.Item `xml:"item"`
+			}{
+				Ver: "123",
+				Item: []roster.Item{
+					{},
+					{Name: "foo"},
+				},
+			},
+		},
+		out: `<iq type=""><query xmlns="jabber:iq:roster" version="123"><item></item><item name="foo"></item></query></iq>`,
+	},
+	2: {
+		in:  roster.Item{},
+		out: `<item></item>`,
+	},
+	3: {
+		in: roster.Item{
+			JID:          jid.MustParse("example.net"),
+			Name:         "foo",
+			Subscription: "sub",
+			Group:        []string{"one", "two"},
+		},
+		out: `<item jid="example.net" name="foo" subscription="sub"><group>one</group><group>two</group></item>`,
+	},
+}
+
+func TestMarshal(t *testing.T) {
+	for i, tc := range marshalTests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			b, err := xml.Marshal(tc.in)
+			if err != nil {
+				t.Fatalf("error marshaling IQ: %v", err)
+			}
+			if string(b) != tc.out {
+				t.Errorf("wrong output:\nwant=%s,\n got=%s", tc.out, b)
+			}
+		})
+	}
+}
+
+func TestUnmarshalItem(t *testing.T) {
+	const itemXML = `<item jid="example.net" name="foo" subscription="sub"><group>one</group><group>two</group></item>`
+	item := roster.Item{}
+	err := xml.Unmarshal([]byte(itemXML), &item)
+	if err != nil {
+		t.Fatalf("unexpected error unmarshaling: %v", err)
+	}
+	want := roster.Item{
+		JID:          jid.MustParse("example.net"),
+		Name:         "foo",
+		Subscription: "sub",
+		Group:        []string{"one", "two"},
+	}
+	if !reflect.DeepEqual(want, item) {
+		t.Errorf("wrong output: want=%+v, got=%+v", want, item)
 	}
 }
