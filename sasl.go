@@ -9,7 +9,6 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 
 	"mellium.im/sasl"
@@ -76,7 +75,9 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 				panic("SASL server not yet implemented")
 			}
 
-			c := session.Conn()
+			w := session.TokenWriter()
+			/* #nosec */
+			defer w.Close()
 
 			var selected sasl.Mechanism
 			// Select a mechanism, preferring the client order.
@@ -125,10 +126,21 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 			}
 
 			// Send <auth/> and the initial payload to start SASL auth.
-			if _, err = fmt.Fprintf(c,
-				`<auth xmlns='urn:ietf:params:xml:ns:xmpp-sasl' mechanism='%s'>%s</auth>`,
-				selected.Name, encodedResp,
-			); err != nil {
+			_, err = xmlstream.Copy(w, xmlstream.Wrap(
+				xmlstream.Token(xml.CharData(encodedResp)),
+				xml.StartElement{
+					Name: xml.Name{Space: ns.SASL, Local: "auth"},
+					Attr: []xml.Attr{{
+						Name:  xml.Name{Local: "mechanism"},
+						Value: selected.Name,
+					}},
+				},
+			))
+			if err != nil {
+				return mask, nil, err
+			}
+			err = w.Flush()
+			if err != nil {
 				return mask, nil, err
 			}
 
@@ -192,12 +204,21 @@ func SASL(identity, password string, mechanisms ...sasl.Mechanism) StreamFeature
 				}
 
 				// TODO: What happens if there's more and success (broken server)?
-				_, err = fmt.Fprintf(c, `<response xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>%s</response>`, encodedResp)
+				_, err = xmlstream.Copy(w, xmlstream.Wrap(
+					xmlstream.Token(xml.CharData(encodedResp)),
+					xml.StartElement{
+						Name: xml.Name{Space: ns.SASL, Local: "response"},
+					},
+				))
+				if err != nil {
+					return mask, nil, err
+				}
+				err = w.Flush()
 				if err != nil {
 					return mask, nil, err
 				}
 			}
-			return Authn, c, nil
+			return Authn, session.Conn(), nil
 		},
 	}
 }
