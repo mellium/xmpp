@@ -9,15 +9,19 @@ import (
 	"testing"
 
 	"golang.org/x/text/language"
+
+	"mellium.im/xmlstream"
 )
 
 // Compile time tests that interfaces are satisfied
 var (
-	_ error           = Failure{}
-	_ error           = (*Failure)(nil)
-	_ xml.Marshaler   = Failure{}
-	_ xml.Marshaler   = (*Failure)(nil)
-	_ xml.Unmarshaler = (*Failure)(nil)
+	_ error               = Failure{}
+	_ error               = (*Failure)(nil)
+	_ xml.Marshaler       = Failure{}
+	_ xml.Marshaler       = (*Failure)(nil)
+	_ xml.Unmarshaler     = (*Failure)(nil)
+	_ xmlstream.Marshaler = (*Failure)(nil)
+	_ xmlstream.WriterTo  = (*Failure)(nil)
 )
 
 func TestErrorTextOrCondition(t *testing.T) {

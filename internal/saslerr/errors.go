@@ -10,6 +10,8 @@ import (
 	"encoding/xml"
 
 	"golang.org/x/text/language"
+
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
 )
 
@@ -48,44 +50,51 @@ func (f Failure) Error() string {
 	return string(f.Condition)
 }
 
-// MarshalXML satisfies the xml.Marshaler interface for a Failure.
-func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) (err error) {
-	failure := xml.StartElement{
-		Name: xml.Name{Space: ns.SASL, Local: "failure"},
-	}
-	if err = e.EncodeToken(failure); err != nil {
-		return
-	}
-	condition := xml.StartElement{
-		Name: xml.Name{Space: "", Local: string(f.Condition)},
-	}
-	if err = e.EncodeToken(condition); err != nil {
-		return
-	}
-	if err = e.EncodeToken(condition.End()); err != nil {
-		return
+// TokenReader implements the xmlstream.Marshaler interface.
+func (f Failure) TokenReader() xml.TokenReader {
+	inner := []xml.TokenReader{
+		xmlstream.Wrap(
+			nil,
+			xml.StartElement{
+				Name: xml.Name{Local: string(f.Condition)},
+			},
+		),
 	}
 	if f.Text != "" {
-		text := xml.StartElement{
-			Name: xml.Name{Space: "", Local: "text"},
-			Attr: []xml.Attr{
-				{
-					Name:  xml.Name{Space: ns.XML, Local: "lang"},
-					Value: f.Lang.String(),
+		inner = append(inner, xmlstream.Wrap(
+			xmlstream.Token(xml.CharData(f.Text)),
+			xml.StartElement{
+				Name: xml.Name{Space: "", Local: "text"},
+				Attr: []xml.Attr{
+					{
+						Name:  xml.Name{Space: ns.XML, Local: "lang"},
+						Value: f.Lang.String(),
+					},
 				},
 			},
-		}
-		if err = e.EncodeToken(text); err != nil {
-			return
-		}
-		if err = e.EncodeToken(xml.CharData(f.Text)); err != nil {
-			return
-		}
-		if err = e.EncodeToken(text.End()); err != nil {
-			return
-		}
+		))
 	}
-	return e.EncodeToken(failure.End())
+
+	return xmlstream.Wrap(
+		xmlstream.MultiReader(inner...),
+		xml.StartElement{
+			Name: xml.Name{Space: ns.SASL, Local: "failure"},
+		},
+	)
+}
+
+// WriteXML implements the xmlstream.WriterTo interface.
+func (f Failure) WriteXML(w xmlstream.TokenWriter) (int, error) {
+	return xmlstream.Copy(w, f.TokenReader())
+}
+
+// MarshalXML satisfies the xml.Marshaler interface for a Failure.
+func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	_, err := f.WriteXML(e)
+	if err != nil {
+		return err
+	}
+	return e.Flush()
 }
 
 // UnmarshalXML satisfies the xml.Unmarshaler interface for a Failure. If
