@@ -70,14 +70,14 @@ type Option func(*ClientServer)
 // ClientState configures extra state bits to add to the client session.
 func ClientState(state xmpp.SessionState) Option {
 	return func(c *ClientServer) {
-		c.clientState = state
+		c.clientState |= state
 	}
 }
 
 // ServerState configures extra state bits to add to the server session.
 func ServerState(state xmpp.SessionState) Option {
 	return func(c *ClientServer) {
-		c.serverState = state
+		c.serverState |= state
 	}
 }
 
@@ -124,7 +124,9 @@ type ClientServer struct {
 // Both serve goroutines are started when NewClientServer is called and shut
 // down when the ClientServer is closed.
 func NewClientServer(opts ...Option) *ClientServer {
-	cs := &ClientServer{}
+	cs := &ClientServer{
+		serverState: xmpp.Received,
+	}
 	for _, opt := range opts {
 		opt(cs)
 	}

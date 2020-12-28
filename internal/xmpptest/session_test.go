@@ -51,6 +51,9 @@ func TestNewClient(t *testing.T) {
 	if st := s.Server.State(); st&serverState != serverState {
 		t.Errorf("server state was not added to the session: want %b to include %b", st, serverState)
 	}
+	if st := s.Server.State(); st&xmpp.Received != xmpp.Received {
+		t.Errorf("expected server state to always include Received")
+	}
 	origIQ := struct {
 		stanza.IQ
 	}{
