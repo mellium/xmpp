@@ -14,6 +14,8 @@ import (
 	"mellium.im/sasl"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/ns"
+	"mellium.im/xmpp/internal/saslerr"
+	"mellium.im/xmpp/stream"
 )
 
 func TestSASLPanicsNoMechanisms(t *testing.T) {
@@ -128,7 +130,36 @@ func TestSASLParse(t *testing.T) {
 			if !matched {
 				t.Fatalf("Expected data to contain %v", m)
 			}
-
 		}
 	}
+}
+
+var saslTestCases = [...]featureTestCase{
+	// Simple client tests with plain.
+	0: {
+		sf:  xmpp.SASL("", "", sasl.Plain),
+		in:  `<abb/>`,
+		err: stream.UnsupportedStanzaType,
+	},
+	1: {
+		sf:  xmpp.SASL("", "", sasl.Plain),
+		in:  `<!-- not a start element -->`,
+		err: stream.BadFormat,
+	},
+	2: {
+		sf:  xmpp.SASL("", "", sasl.Plain),
+		in:  `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><not-authorized/></failure>`,
+		err: saslerr.Failure{Condition: saslerr.NotAuthorized},
+	},
+	3: {
+		sf:         xmpp.SASL("", "", sasl.Plain),
+		in:         `<success xmlns="urn:ietf:params:xml:ns:xmpp-sasl"/>`,
+		out:        `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
+		finalState: xmpp.Authn,
+		err:        saslerr.Failure{Condition: saslerr.NotAuthorized},
+	},
+}
+
+func TestSASL(t *testing.T) {
+	runFeatureTests(t, saslTestCases[:])
 }
