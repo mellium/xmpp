@@ -15,7 +15,6 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/saslerr"
-	"mellium.im/xmpp/stream"
 )
 
 func TestSASLPanicsNoMechanisms(t *testing.T) {
@@ -139,12 +138,12 @@ var saslTestCases = [...]featureTestCase{
 	0: {
 		sf:  xmpp.SASL("", "", sasl.Plain),
 		in:  `<abb/>`,
-		err: stream.UnsupportedStanzaType,
+		err: xmpp.ErrUnexpectedPayload,
 	},
 	1: {
 		sf:  xmpp.SASL("", "", sasl.Plain),
 		in:  `<!-- not a start element -->`,
-		err: stream.BadFormat,
+		err: xmpp.ErrUnexpectedPayload,
 	},
 	2: {
 		sf:  xmpp.SASL("", "", sasl.Plain),

@@ -15,7 +15,11 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/saslerr"
-	"mellium.im/xmpp/stream"
+)
+
+var (
+	errNoMechanisms      = errors.New(`xmpp: no matching SASL mechanisms found`)
+	errUnexpectedPayload = errors.New(`xmpp: unexpected payload encountered during auth`)
 )
 
 // SASL returns a stream feature for performing authentication using the Simple
@@ -103,7 +107,7 @@ selectmechanism:
 	}
 	// No matching mechanism found…
 	if selected.Name == "" {
-		return mask, nil, errors.New(`No matching SASL mechanisms found`)
+		return mask, nil, errNoMechanisms
 	}
 
 	opts := []sasl.Option{
@@ -174,7 +178,7 @@ selectmechanism:
 				return mask, nil, err
 			}
 		} else {
-			return mask, nil, stream.BadFormat
+			return mask, nil, errUnexpectedPayload
 		}
 	}
 
@@ -196,7 +200,7 @@ selectmechanism:
 				return mask, nil, err
 			}
 		} else {
-			return mask, nil, stream.BadFormat
+			return mask, nil, errUnexpectedPayload
 		}
 		if more, resp, err = client.Step(challenge); err != nil {
 			return mask, nil, err
@@ -236,7 +240,7 @@ func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement, allowChallenge 
 	switch start.Name {
 	case xml.Name{Space: ns.SASL, Local: "challenge"}, xml.Name{Space: ns.SASL, Local: "success"}:
 		if !allowChallenge && start.Name.Local == "challenge" {
-			return nil, false, stream.UnsupportedStanzaType
+			return nil, false, errUnexpectedPayload
 		}
 		challenge := struct {
 			Data []byte `xml:",chardata"`
@@ -260,6 +264,6 @@ func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement, allowChallenge 
 		}
 		return nil, false, fail
 	default:
-		return nil, false, stream.UnsupportedStanzaType
+		return nil, false, errUnexpectedPayload
 	}
 }
