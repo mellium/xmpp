@@ -163,7 +163,11 @@ func (cmd *Cmd) Close() error {
 	if cmd.shutdown != nil {
 		e = cmd.shutdown(cmd)
 	}
-	err := os.RemoveAll(cmd.cfgDir)
+	err := cmd.Cmd.Wait()
+	if err != nil {
+		return err
+	}
+	err = os.RemoveAll(cmd.cfgDir)
 	if err != nil {
 		return err
 	}
