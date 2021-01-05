@@ -64,14 +64,17 @@ func ConfigFile(cfg Config) integration.Option {
 // It automatically points prosodyctl at the config file so there is no need to
 // pass the --config option.
 func Ctl(ctx context.Context, args ...string) integration.Option {
-	return integration.Defer(func(cmd *integration.Cmd) error {
+	return integration.Defer(ctlFunc(ctx, args...))
+}
+
+func ctlFunc(ctx context.Context, args ...string) func(*integration.Cmd) error {
+	return func(cmd *integration.Cmd) error {
 		cfgFilePath := filepath.Join(cmd.ConfigDir(), cfgFileName)
 		/* #nosec */
 		prosodyCtl := exec.CommandContext(ctx, "prosodyctl", configFlag, cfgFilePath)
 		prosodyCtl.Args = append(prosodyCtl.Args, args...)
-		err := prosodyCtl.Run()
-		return err
-	})
+		return prosodyCtl.Run()
+	}
 }
 
 func getConfig(cmd *integration.Cmd) Config {
@@ -443,6 +446,7 @@ func defaultConfig(cmd *integration.Cmd) error {
 // subtests.
 // When all subtests have completed, the daemon is stopped.
 func Test(ctx context.Context, t *testing.T, opts ...integration.Option) integration.SubtestRunner {
-	opts = append(opts, defaultConfig)
+	opts = append(opts, defaultConfig,
+		integration.Shutdown(ctlFunc(ctx, "stop")))
 	return integration.Test(ctx, cmdName, t, opts...)
 }
