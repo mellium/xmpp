@@ -70,7 +70,7 @@ func integrationRoster(ctx context.Context, t *testing.T, cmd *integration.Cmd) 
 	firstItem := roster.Item{
 		JID:   rosterItem,
 		Name:  "name",
-		Group: "group",
+		Group: []string{"group"},
 	}
 	err = roster.Set(ctx, session, firstItem)
 	if err != nil {
