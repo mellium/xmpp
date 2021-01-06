@@ -45,6 +45,7 @@ type Cmd struct {
 	kill         context.CancelFunc
 	cfgF         func() error
 	deferF       func(*Cmd) error
+	stdoutWriter *testWriter
 	in, out      *testWriter
 	c2sListener  net.Listener
 	s2sListener  net.Listener
@@ -94,6 +95,14 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 	}
 
 	return cmd, nil
+}
+
+// Start runs the command.
+func (cmd *Cmd) Start() error {
+	if cmd.stdoutWriter != nil && cmd.stdoutWriter.t != nil {
+		cmd.stdoutWriter.t.Logf("starting command: %s", cmd)
+	}
+	return cmd.Cmd.Start()
 }
 
 // ClientCert returns the last configured client certificate.
@@ -450,6 +459,7 @@ func (w *testWriter) Update(t *testing.T) {
 func Log() Option {
 	return func(cmd *Cmd) error {
 		w := &testWriter{}
+		cmd.stdoutWriter = w
 		cmd.Cmd.Stdout = w
 		cmd.Cmd.Stderr = w
 		return nil
