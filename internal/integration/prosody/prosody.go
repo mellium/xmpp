@@ -87,7 +87,7 @@ func getConfig(cmd *integration.Cmd) Config {
 // ListenC2S listens for client-to-server (c2s) connections on a random port.
 func ListenC2S() integration.Option {
 	return func(cmd *integration.Cmd) error {
-		c2sListener, err := cmd.C2SListen("tcp", "[::1]:0")
+		c2sListener, err := cmd.C2SListen("tcp", ":0")
 		if err != nil {
 			return err
 		}
