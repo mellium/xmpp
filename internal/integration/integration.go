@@ -225,6 +225,14 @@ func (cmd *Cmd) C2SAddr() (net.Addr, string) {
 	return cmd.c2sListener.Addr(), cmd.c2sNetwork
 }
 
+// C2SPort returns the port on which the C2S listener is running (if any).
+func (cmd *Cmd) C2SPort() string {
+	addr, _ := cmd.C2SAddr()
+	/* #nosec */
+	_, port, _ := net.SplitHostPort(addr.String())
+	return port
+}
+
 // S2SAddr returns the server-to-server address and network.
 func (cmd *Cmd) S2SAddr() (net.Addr, string) {
 	return cmd.s2sListener.Addr(), cmd.s2sNetwork
