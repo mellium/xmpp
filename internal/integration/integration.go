@@ -58,6 +58,7 @@ type Cmd struct {
 	pass         string
 	clientCrt    []byte
 	clientCrtKey interface{}
+	stdinPipe    io.WriteCloser
 
 	// Config is meant to be used by internal packages like prosody and ejabberd
 	// to store their internal representation of the config before writing it out.
@@ -77,6 +78,10 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 		kill: cancel,
 	}
 	var err error
+	cmd.stdinPipe, err = cmd.Cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
 	cmd.cfgDir, err = ioutil.TempDir("", cmd.name)
 	if err != nil {
 		return nil, err
@@ -103,6 +108,11 @@ func (cmd *Cmd) Start() error {
 		cmd.stdoutWriter.t.Logf("starting command: %s", cmd)
 	}
 	return cmd.Cmd.Start()
+}
+
+// Stdin returns a pipe to the commands standard input.
+func (cmd *Cmd) Stdin() io.WriteCloser {
+	return cmd.stdinPipe
 }
 
 // ClientCert returns the last configured client certificate.
@@ -168,11 +178,16 @@ func (cmd *Cmd) ConfigDir() string {
 func (cmd *Cmd) Close() error {
 	defer cmd.kill()
 
+	err := cmd.stdinPipe.Close()
+	if err != nil {
+		return nil
+	}
+
 	var e error
 	if cmd.shutdown != nil {
 		e = cmd.shutdown(cmd)
 	}
-	err := cmd.Cmd.Wait()
+	err = cmd.Cmd.Wait()
 	if err != nil {
 		return err
 	}
