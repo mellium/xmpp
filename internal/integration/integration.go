@@ -422,7 +422,7 @@ func TempFile(cfgFileName string, f func(*Cmd, io.Writer) error) Option {
 
 		newF := func() error {
 			cfgFilePath := filepath.Join(cmd.cfgDir, cfgFileName)
-			cfgFile, err := os.Create(cfgFilePath)
+			cfgFile, err := os.OpenFile(cfgFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 			if err != nil {
 				return err
 			}
