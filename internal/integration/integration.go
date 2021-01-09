@@ -524,7 +524,7 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 
 	cmd, err := New(ctx, name, opts...)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("error creating command: %v", err)
 	}
 
 	t.Cleanup(func() {
