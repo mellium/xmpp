@@ -19,8 +19,6 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- internal/integration/prosody: add option for enabling bidirectional s2s
-  connections
 - oob: implementations of `xmlstream.Marshaler` and `xmlstream.WriterTo` for the
   types `IQ`, `Query`, and Data
 - receipts: add `Request` and `Requested` to add receipt requests to messages
