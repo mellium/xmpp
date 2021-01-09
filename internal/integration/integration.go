@@ -82,7 +82,7 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
-	cmd.cfgDir, err = ioutil.TempDir("", cmd.name)
+	cmd.cfgDir, err = ioutil.TempDir("", filepath.Base(cmd.name))
 	if err != nil {
 		return nil, err
 	}
@@ -564,7 +564,7 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 	i := -1
 	return func(f func(context.Context, *testing.T, *Cmd)) bool {
 		i++
-		return t.Run(fmt.Sprintf("%s/%d", name, i), func(t *testing.T) {
+		return t.Run(fmt.Sprintf("%s/%d", filepath.Base(name), i), func(t *testing.T) {
 			if tw, ok := cmd.Cmd.Stdout.(*testWriter); ok {
 				tw.Update(t)
 			}
