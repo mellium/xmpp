@@ -137,7 +137,7 @@ var testCases = [...]struct {
 	1: {
 		// Basic muxing isn't affected by the server namespace.
 		m: []mux.Option{
-			mux.IQFunc(stanza.SetIQ, xml.Name{}, passHandler{}),
+			mux.IQFunc(stanza.SetIQ, xml.Name{}, passHandler{}.HandleIQ),
 			mux.IQ(stanza.GetIQ, xml.Name{}, failHandler{}),
 			mux.Presence(stanza.AvailablePresence, xml.Name{}, failHandler{}),
 		},

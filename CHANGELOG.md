@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking
 
+- mux: fixed the signature of the `IQFunc` option to differentiate it from the
+  normal `IQ` option
 - stream: the `SeeOtherHost` function signature has changed now that payload is
   available for all stream errors
 - stream: the `TokenReader` method signature has changed to make it match the

@@ -35,7 +35,7 @@ func IQ(typ stanza.IQType, payload xml.Name, h IQHandler) Option {
 
 // IQFunc returns an option that matches IQ stanzas.
 // For more information see IQ.
-func IQFunc(typ stanza.IQType, payload xml.Name, h IQHandler) Option {
+func IQFunc(typ stanza.IQType, payload xml.Name, h IQHandlerFunc) Option {
 	return IQ(typ, payload, h)
 }
 
