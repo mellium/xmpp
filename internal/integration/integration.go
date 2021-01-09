@@ -86,6 +86,7 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
+	cmd.Cmd.Dir = cmd.cfgDir
 	for _, opt := range opts {
 		err = opt(cmd)
 		if err != nil {
