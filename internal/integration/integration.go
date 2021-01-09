@@ -43,8 +43,8 @@ type Cmd struct {
 	name         string
 	cfgDir       string
 	kill         context.CancelFunc
-	cfgF         []func() error
-	deferF       []func(*Cmd) error
+	cfgF         func() error
+	deferF       func(*Cmd) error
 	in, out      *testWriter
 	c2sListener  net.Listener
 	s2sListener  net.Listener
@@ -86,8 +86,8 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 			return nil, fmt.Errorf("error applying option: %v", err)
 		}
 	}
-	for _, f := range cmd.cfgF {
-		err = f()
+	if cmd.cfgF != nil {
+		err = cmd.cfgF()
 		if err != nil {
 			return nil, fmt.Errorf("error running config func: %w", err)
 		}
@@ -374,7 +374,7 @@ func TempFile(cfgFileName string, f func(*Cmd, io.Writer) error) Option {
 			}
 		}
 
-		cmd.cfgF = append(cmd.cfgF, func() error {
+		newF := func() error {
 			cfgFilePath := filepath.Join(cmd.cfgDir, cfgFileName)
 			cfgFile, err := os.Create(cfgFilePath)
 			if err != nil {
@@ -388,7 +388,19 @@ func TempFile(cfgFileName string, f func(*Cmd, io.Writer) error) Option {
 				return err
 			}
 			return cfgFile.Close()
-		})
+		}
+		if cmd.cfgF != nil {
+			prev := cmd.cfgF
+			cmd.cfgF = func() error {
+				err := prev()
+				if err != nil {
+					return err
+				}
+				return newF()
+			}
+			return nil
+		}
+		cmd.cfgF = newF
 		return nil
 	}
 }
@@ -442,9 +454,22 @@ func LogXML() Option {
 }
 
 // Defer is an option that calls f after the command is started.
+// If multiple Defer options are passed they are called in order until an error
+// is encountered.
 func Defer(f func(*Cmd) error) Option {
 	return func(cmd *Cmd) error {
-		cmd.deferF = append(cmd.deferF, f)
+		if cmd.deferF != nil {
+			prev := cmd.deferF
+			cmd.deferF = func(cmd *Cmd) error {
+				err := prev(cmd)
+				if err != nil {
+					return err
+				}
+				return f(cmd)
+			}
+			return nil
+		}
+		cmd.deferF = f
 		return nil
 	}
 }
@@ -491,8 +516,8 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 			t.Fatal(err)
 		}
 	}
-	for _, f := range cmd.deferF {
-		err := f(cmd)
+	if cmd.deferF != nil {
+		err = cmd.deferF(cmd)
 		if err != nil {
 			t.Fatal(err)
 		}
