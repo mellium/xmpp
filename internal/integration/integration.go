@@ -522,6 +522,10 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
 
+	_, err := exec.LookPath(name)
+	if err != nil {
+		t.Skip(err.Error())
+	}
 	cmd, err := New(ctx, name, opts...)
 	if err != nil {
 		t.Fatalf("error creating command: %v", err)
