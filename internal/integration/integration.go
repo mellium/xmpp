@@ -292,8 +292,21 @@ func User(user jid.JID, pass string) Option {
 // Shutdown is run before the configuration is removed and is meant to
 // gracefully shutdown the application in case it does not handle the kill
 // signal correctly.
+// If multiple shutdown options are used the functions will be run in the order
+// in which they are passed until an error is encountered.
 func Shutdown(f func(*Cmd) error) Option {
 	return func(cmd *Cmd) error {
+		if cmd.shutdown != nil {
+			prev := cmd.shutdown
+			cmd.shutdown = func(cmd *Cmd) error {
+				err := prev(cmd)
+				if err != nil {
+					return err
+				}
+				return f(cmd)
+			}
+			return nil
+		}
 		cmd.shutdown = f
 		return nil
 	}
