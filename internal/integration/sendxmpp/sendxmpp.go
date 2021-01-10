@@ -7,11 +7,13 @@ package sendxmpp // import "mellium.im/xmpp/internal/integration/sendxmpp"
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"path/filepath"
 	"testing"
 
 	"mellium.im/xmpp/internal/integration"
+	"mellium.im/xmpp/jid"
 )
 
 const (
@@ -30,6 +32,13 @@ func Send(cmd *integration.Cmd, s string) error {
 	}
 	_, err = io.WriteString(stdin, "\n")
 	return err
+}
+
+// Ping sends an XMPP ping.
+func Ping(cmd *integration.Cmd, to jid.JID) error {
+	return Send(cmd, fmt.Sprintf(
+		`<iq to="%s" id="123" type="get"><ping xmlns='urn:xmpp:ping'/></iq>`, to,
+	))
 }
 
 // New creates a new, unstarted, sendxmpp running as a daemon using interactive
