@@ -548,8 +548,15 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 
 	_, err := exec.LookPath(name)
 	if err != nil {
-		t.Skip(err.Error())
+		i := -1
+		return func(f func(context.Context, *testing.T, *Cmd)) bool {
+			i++
+			return t.Run(fmt.Sprintf("%s/%d", filepath.Base(name), i), func(t *testing.T) {
+				t.Skip(err.Error())
+			})
+		}
 	}
+
 	cmd, err := New(ctx, name, opts...)
 	if err != nil {
 		t.Fatalf("error creating command: %v", err)
