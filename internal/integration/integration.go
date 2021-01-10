@@ -42,6 +42,7 @@ type Cmd struct {
 
 	name         string
 	cfgDir       string
+	killCtx      context.Context
 	kill         context.CancelFunc
 	cfgF         func() error
 	deferF       func(*Cmd) error
@@ -73,9 +74,10 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	cmd := &Cmd{
 		/* #nosec */
-		Cmd:  exec.CommandContext(ctx, name),
-		name: name,
-		kill: cancel,
+		Cmd:     exec.CommandContext(ctx, name),
+		name:    name,
+		killCtx: ctx,
+		kill:    cancel,
 	}
 	var err error
 	cmd.stdinPipe, err = cmd.Cmd.StdinPipe()
@@ -188,9 +190,22 @@ func (cmd *Cmd) Close() error {
 	if cmd.shutdown != nil {
 		e = cmd.shutdown(cmd)
 	}
-	err = cmd.Cmd.Wait()
+	closed := make(chan error)
+	go func() {
+		closed <- cmd.Cmd.Wait()
+	}()
+	ctx, cancel := context.WithTimeout(cmd.killCtx, 5*time.Second)
+	defer cancel()
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("command did not exit in time: %v", ctx.Err())
+	case err = <-closed:
+		if err != nil {
+			return fmt.Errorf("error waiting on command to exit: %v", err)
+		}
+	}
 	if err != nil {
-		return err
+		return fmt.Errorf("error waiting on command to exit: %v", err)
 	}
 	err = os.RemoveAll(cmd.cfgDir)
 	if err != nil {
@@ -479,7 +494,8 @@ func (w *testWriter) Update(t *testing.T) {
 	w.Unlock()
 }
 
-// Log configures the command to log output to the current testing.T.
+// Log configures the command to copy stdout to the current testing.T.
+// This should not be used for CLI or TUI clients.
 func Log() Option {
 	return func(cmd *Cmd) error {
 		w := &testWriter{}
