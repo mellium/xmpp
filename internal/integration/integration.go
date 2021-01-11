@@ -59,6 +59,8 @@ type Cmd struct {
 	pass         string
 	clientCrt    []byte
 	clientCrtKey interface{}
+	crt          []byte
+	crtKey       interface{}
 	stdinPipe    io.WriteCloser
 
 	// Config is meant to be used by internal packages like prosody and ejabberd
@@ -130,6 +132,18 @@ func (cmd *Cmd) ClientCert(*tls.CertificateRequestInfo) (*tls.Certificate, error
 	return &tls.Certificate{
 		Certificate: [][]byte{cmd.clientCrt},
 		PrivateKey:  cmd.clientCrtKey,
+	}, nil
+}
+
+// Cert returns the last configured TLS certificate.
+// The client hello info is currently ignored and the returned error is always
+// nil.
+// They are there to make promoting this method to a function and using it as
+// tls.Config.GetCertificate possible.
+func (cmd *Cmd) Cert(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+	return &tls.Certificate{
+		Certificate: [][]byte{cmd.crt},
+		PrivateKey:  cmd.crtKey,
 	}, nil
 }
 
@@ -417,6 +431,9 @@ func cert(name string, crt *x509.Certificate) Option {
 			if len(crt.ExtKeyUsage) > 0 && crt.ExtKeyUsage[0] == x509.ExtKeyUsageClientAuth {
 				cmd.clientCrt = cert
 				cmd.clientCrtKey = key
+			} else {
+				cmd.crt = cert
+				cmd.crtKey = key
 			}
 			return pem.Encode(w, &pem.Block{
 				Type:  "CERTIFICATE",
