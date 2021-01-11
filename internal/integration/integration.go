@@ -88,6 +88,10 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
+	cmd.Env = []string{
+		"XDG_CONFIG_HOME=" + cmd.cfgDir,
+		"XDG_DATA_HOME=" + cmd.cfgDir,
+	}
 	cmd.Cmd.Dir = cmd.cfgDir
 	for _, opt := range opts {
 		err = opt(cmd)
