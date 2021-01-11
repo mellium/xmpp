@@ -506,12 +506,51 @@ func (w *testWriter) Update(t *testing.T) {
 // This should not be used for CLI or TUI clients.
 func Log() Option {
 	return func(cmd *Cmd) error {
-		w := &testWriter{}
-		cmd.stdoutWriter = w
-		cmd.Cmd.Stdout = w
-		cmd.Cmd.Stderr = w
+		if cmd.stdoutWriter == nil {
+			w := &testWriter{}
+			cmd.stdoutWriter = w
+		}
+		cmd.Cmd.Stdout = cmd.stdoutWriter
+		cmd.Cmd.Stderr = cmd.stdoutWriter
 		return nil
 	}
+}
+
+// LogFile reads the provided file into the log in the same way that the Log
+// option reads a commands standard output.
+// It can optionally copy the command to the provided io.Writer (if non-nil) as
+// well similar to the tee(1) command.
+// Normally this should be used by the various server and client packages to
+// read a FIFO which has been configured to be the log by the actual client
+// process so that it functions similar to the tail(1) command.
+func LogFile(f string, tee io.Writer) Option {
+	return Defer(func(cmd *Cmd) error {
+		if cmd.stdoutWriter == nil {
+			w := &testWriter{}
+			cmd.stdoutWriter = w
+		}
+
+		var r io.Reader
+		fd, err := os.OpenFile(f, os.O_RDONLY, os.ModeNamedPipe)
+		if err != nil {
+			return err
+		}
+		if tee != nil {
+			r = io.TeeReader(fd, tee)
+		} else {
+			r = fd
+		}
+		go func() {
+			for {
+				_, err := io.Copy(cmd.stdoutWriter, r)
+				if err != nil {
+					fmt.Fprintf(cmd.stdoutWriter, "error copying log file to stdout: %v", err)
+					return
+				}
+			}
+		}()
+		return nil
+	})
 }
 
 // LogXML configures the command to log sent and received XML to the current
