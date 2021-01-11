@@ -18,6 +18,7 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/ejabberd"
+	"mellium.im/xmpp/internal/integration/profanity"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/internal/integration/sendxmpp"
 	"mellium.im/xmpp/mux"
@@ -90,6 +91,34 @@ func integrationRecvPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 		case <-gotPing:
 		}
 	})
+
+	port := cmd.C2SPort()
+	crt, err := cmd.Cert(nil)
+	if err != nil {
+		t.Fatalf("impossible error getting returned cert: %v", err)
+	}
+	profanityRun := profanity.Test(context.TODO(), t,
+		integration.Log(),
+		profanity.ConfigFile(profanity.Config{
+			JID:      j,
+			Password: pass,
+			Port:     port,
+		}),
+		profanity.TrustTLS(crt),
+	)
+	profanityRun(func(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
+		err := profanity.Ping(cmd, j)
+		if err != nil {
+			t.Fatalf("error sending ping: %v", err)
+		}
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+		defer cancel()
+		select {
+		case <-ctx.Done():
+			t.Fatal(ctx.Err())
+		case <-gotPing:
+		}
+	})
 }
 
 func integrationSendPing(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
@@ -105,7 +134,8 @@ func integrationSendPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 		t.Fatalf("error connecting: %v", err)
 	}
 	go func() {
-		err := session.Serve(nil)
+		m := mux.New(ping.Handle())
+		err := session.Serve(m)
 		if err != nil {
 			t.Logf("error from serve: %v", err)
 		}
