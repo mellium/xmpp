@@ -60,6 +60,7 @@ type Cmd struct {
 	clientCrt    []byte
 	clientCrtKey interface{}
 	stdinPipe    io.WriteCloser
+	closed       chan error
 
 	// Config is meant to be used by internal packages like prosody and ejabberd
 	// to store their internal representation of the config before writing it out.
@@ -78,6 +79,7 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 		name:    name,
 		killCtx: ctx,
 		kill:    cancel,
+		closed:  make(chan error),
 	}
 	var err error
 	cmd.stdinPipe, err = cmd.Cmd.StdinPipe()
@@ -110,7 +112,17 @@ func (cmd *Cmd) Start() error {
 	if cmd.stdoutWriter != nil && cmd.stdoutWriter.t != nil {
 		cmd.stdoutWriter.t.Logf("starting command: %s", cmd)
 	}
-	return cmd.Cmd.Start()
+	err := cmd.Cmd.Start()
+	go func() {
+		cmd.closed <- cmd.Cmd.Wait()
+		close(cmd.closed)
+	}()
+	return err
+}
+
+// Done returns a channel that's closed when the commands process terminates.
+func (cmd *Cmd) Done() <-chan error {
+	return cmd.closed
 }
 
 // Stdin returns a pipe to the commands standard input.
@@ -190,16 +202,12 @@ func (cmd *Cmd) Close() error {
 	if cmd.shutdown != nil {
 		e = cmd.shutdown(cmd)
 	}
-	closed := make(chan error)
-	go func() {
-		closed <- cmd.Cmd.Wait()
-	}()
 	ctx, cancel := context.WithTimeout(cmd.killCtx, 5*time.Second)
 	defer cancel()
 	select {
 	case <-ctx.Done():
 		return fmt.Errorf("command did not exit in time: %v", ctx.Err())
-	case err = <-closed:
+	case err = <-cmd.closed:
 		if err != nil {
 			return fmt.Errorf("error waiting on command to exit: %v", err)
 		}
