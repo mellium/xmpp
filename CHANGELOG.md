@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- internal/integration/mcabber: [Mcabber] support for integration tests
 - oob: implementations of `xmlstream.Marshaler` and `xmlstream.WriterTo` for the
   types `IQ`, `Query`, and Data
 - receipts: add `Request` and `Requested` to add receipt requests to messages
@@ -36,6 +37,8 @@ All notable changes to this project will be documented in this file.
   underlying connection is not a `net.Conn`
 - xmpp: all sent stanzas are now given randomly generated IDs if no ID was
   provided (not just IQs)
+
+[Mcabber]: https://mcabber.com/
 
 
 ### Changed
