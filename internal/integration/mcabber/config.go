@@ -82,8 +82,8 @@ module load fifo
 #  lvl 3: debug logging (XML, etc.)
 #  lvl 4: noisy debug logging (Loudmouth parser...)
 # Default is level 0, no trace logging
-set tracelog_level = 4
-set tracelog_file = {{ filepathJoin .ConfigDir "trace.log" }}
+set tracelog_level = 1
+set tracelog_file = {{ filepathJoin .ConfigDir "trace.fifo" }}
 set autoaway = 0
 set muc_print_status = 3
 set muc_print_jid = 2

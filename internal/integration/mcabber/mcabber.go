@@ -6,11 +6,14 @@
 package mcabber // import "mellium.im/xmpp/internal/integration/mcabber"
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"golang.org/x/sys/unix"
@@ -24,6 +27,8 @@ const (
 	cmdName     = "mcabber"
 	configFlag  = "-f"
 	controlFIFO = "command.socket"
+	logFIFO     = "trace.fifo"
+	logFile     = "trace.log"
 )
 
 // Send transmits the given command over the control pipe.
@@ -47,7 +52,7 @@ func ConfigFile(cfg Config) integration.Option {
 	return func(cmd *integration.Cmd) error {
 		if cfg.FIFO == nil {
 			fifoPath := filepath.Join(cmd.ConfigDir(), controlFIFO)
-			err := unix.Mkfifo(fifoPath, 0660)
+			err := unix.Mkfifo(fifoPath, 0600)
 			if err != nil {
 				return err
 			}
@@ -83,8 +88,49 @@ func getConfig(cmd *integration.Cmd) Config {
 }
 
 func defaultConfig(cmd *integration.Cmd) error {
-	return integration.Shutdown(func(cmd *integration.Cmd) error {
+	err := integration.Shutdown(func(cmd *integration.Cmd) error {
 		return Send(cmd, "quit")
+	})(cmd)
+	if err != nil {
+		return err
+	}
+	logFIFOPath := filepath.Join(cmd.ConfigDir(), logFIFO)
+	logFilePath := filepath.Join(cmd.ConfigDir(), logFile)
+	err = unix.Mkfifo(logFIFOPath, 0600)
+	if err != nil {
+		return err
+	}
+	fd, err := os.Create(logFilePath)
+	if err != nil {
+		return err
+	}
+	pipeRead, pipeWrite := io.Pipe()
+	err = integration.LogFile(logFIFOPath, pipeWrite)(cmd)
+	if err != nil {
+		return err
+	}
+	return integration.Defer(func(cmd *integration.Cmd) error {
+		tr := io.TeeReader(pipeRead, fd)
+		scanner := bufio.NewScanner(tr)
+		connected := make(chan struct{})
+		go func() {
+			for scanner.Scan() {
+				if strings.Contains(scanner.Text(), "] Connection established.") {
+					close(connected)
+					break
+				}
+			}
+			for {
+				// Continue copying the rest of the stream directly into the output
+				// file.
+				_, err := io.Copy(ioutil.Discard, tr)
+				if err != nil {
+					return
+				}
+			}
+		}()
+		<-connected
+		return nil
 	})(cmd)
 }
 
