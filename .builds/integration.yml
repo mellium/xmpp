@@ -1,8 +1,10 @@
 image: freebsd/latest
 packages:
   - go
+  - mcabber
   - openssl
   - prosody
+  - sendxmpp
 # TODO: there is an issue where ejabberd does not shut down properly between
 # tests on the build VMs. Disable ejabberd tests until we can figure it out.
 # - ejabberd
