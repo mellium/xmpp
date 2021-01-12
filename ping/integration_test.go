@@ -18,6 +18,7 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/ejabberd"
+	"mellium.im/xmpp/internal/integration/mcabber"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/internal/integration/sendxmpp"
 	"mellium.im/xmpp/mux"
@@ -57,9 +58,9 @@ func integrationRecvPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 	go func() {
 		m := mux.New(mux.IQFunc(stanza.GetIQ, xml.Name{Local: "ping", Space: ping.NS},
 			func(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-				close(gotPing)
-				ping.Handler{}.HandleIQ(iq, t, start)
-				return nil
+				err := ping.Handler{}.HandleIQ(iq, t, start)
+				gotPing <- struct{}{}
+				return err
 			},
 		))
 		err := session.Serve(m)
@@ -87,6 +88,30 @@ func integrationRecvPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 		select {
 		case <-ctx.Done():
 			t.Fatal(ctx.Err())
+		case <-gotPing:
+		}
+	})
+	mcabberRun := mcabber.Test(ctx, t,
+		mcabber.ConfigFile(mcabber.Config{
+			JID:      j,
+			Password: pass,
+			Port:     p,
+		}),
+	)
+	mcabberRun(func(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
+		err := mcabber.Ping(cmd, session.LocalAddr())
+		if err != nil {
+			t.Fatalf("error sending ping: %v", err)
+		}
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		select {
+		case <-ctx.Done():
+			t.Fatal(ctx.Err())
+		case err := <-cmd.Done():
+			if err != nil {
+				t.Errorf("command errored: %v", err)
+			}
 		case <-gotPing:
 		}
 	})
