@@ -10,7 +10,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/xml"
-	"fmt"
 	"testing"
 	"time"
 
@@ -79,7 +78,10 @@ func integrationRecvPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 		sendxmpp.TLS(),
 	)
 	sendxmppRun(func(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
-		sendxmpp.Send(cmd, fmt.Sprintf(`<iq to="%s" id="123" type="get"><ping xmlns='urn:xmpp:ping'/></iq>`, session.LocalAddr()))
+		err := sendxmpp.Ping(cmd, session.LocalAddr())
+		if err != nil {
+			t.Fatalf("error sending ping: %v", err)
+		}
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 		select {
