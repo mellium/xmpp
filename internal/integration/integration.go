@@ -75,11 +75,12 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	cmd := &Cmd{
 		/* #nosec */
-		Cmd:     exec.CommandContext(ctx, name),
-		name:    name,
-		killCtx: ctx,
-		kill:    cancel,
-		closed:  make(chan error),
+		Cmd:          exec.CommandContext(ctx, name),
+		name:         name,
+		killCtx:      ctx,
+		kill:         cancel,
+		closed:       make(chan error),
+		stdoutWriter: &testWriter{},
 	}
 	var err error
 	cmd.stdinPipe, err = cmd.Cmd.StdinPipe()
@@ -109,10 +110,11 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 
 // Start runs the command.
 func (cmd *Cmd) Start() error {
-	if cmd.stdoutWriter != nil && cmd.stdoutWriter.t != nil {
-		cmd.stdoutWriter.t.Logf("starting command: %s", cmd)
+	_, err := fmt.Fprintf(cmd.stdoutWriter, "starting command: %s", cmd)
+	if err != nil {
+		return err
 	}
-	err := cmd.Cmd.Start()
+	err = cmd.Cmd.Start()
 	go func() {
 		cmd.closed <- cmd.Cmd.Wait()
 		close(cmd.closed)
@@ -506,10 +508,6 @@ func (w *testWriter) Update(t *testing.T) {
 // This should not be used for CLI or TUI clients.
 func Log() Option {
 	return func(cmd *Cmd) error {
-		if cmd.stdoutWriter == nil {
-			w := &testWriter{}
-			cmd.stdoutWriter = w
-		}
 		cmd.Cmd.Stdout = cmd.stdoutWriter
 		cmd.Cmd.Stderr = cmd.stdoutWriter
 		return nil
@@ -525,11 +523,6 @@ func Log() Option {
 // process so that it functions similar to the tail(1) command.
 func LogFile(f string, tee io.Writer) Option {
 	return Defer(func(cmd *Cmd) error {
-		if cmd.stdoutWriter == nil {
-			w := &testWriter{}
-			cmd.stdoutWriter = w
-		}
-
 		var r io.Reader
 		fd, err := os.OpenFile(f, os.O_RDONLY, os.ModeNamedPipe)
 		if err != nil {
@@ -615,10 +608,7 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 			t.Logf("error cleaning up test: %v", err)
 		}
 	})
-
-	if tw, ok := cmd.Cmd.Stdout.(*testWriter); ok {
-		tw.Update(t)
-	}
+	cmd.stdoutWriter.Update(t)
 	cmd.in.Update(t)
 	cmd.out.Update(t)
 	err = cmd.Start()
