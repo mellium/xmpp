@@ -37,6 +37,8 @@ All notable changes to this project will be documented in this file.
   underlying connection is not a `net.Conn`
 - xmpp: all sent stanzas are now given randomly generated IDs if no ID was
   provided (not just IQs)
+- xmpp: the `Negotiate` function of server side stream features now takes the
+  `xml.StartElement` that triggered the negotiate call as its `data` parameter.
 
 [Mcabber]: https://mcabber.com/
 

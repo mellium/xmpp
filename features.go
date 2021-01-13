@@ -68,7 +68,9 @@ type StreamFeature struct {
 	// call returned a value, that value is passed to the data parameter when
 	// Negotiate is called. For instance, in the case of compression this data
 	// parameter might be the list of supported algorithms as a slice of strings
-	// (or in whatever format the feature implementation has decided upon).
+	// (or in whatever format the feature implementation has decided upon). If
+	// this is a received session then data will be the xml.StartElement that
+	// triggered the call to Negotiate.
 	Negotiate func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error)
 }
 
@@ -222,7 +224,11 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 
 		oldDecoder := s.in.d
 		s.in.d = intstream.Reader(oldDecoder)
-		mask, rw, err = data.feature.Negotiate(ctx, s, s.features[data.feature.Name.Space])
+		if server {
+			mask, rw, err = data.feature.Negotiate(ctx, s, start)
+		} else {
+			mask, rw, err = data.feature.Negotiate(ctx, s, s.features[data.feature.Name.Space])
+		}
 		s.in.d = oldDecoder
 		if err == nil {
 			s.state |= mask
