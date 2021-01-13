@@ -1,6 +1,7 @@
-image: freebsd/latest
+image: archlinux
 packages:
   - go
+  - lua52-sec
   - mcabber
   - openssl
   - prosody
