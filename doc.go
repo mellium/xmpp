@@ -25,7 +25,7 @@
 //     session, err := xmpp.DialClientSession(
 //         context.TODO(), addr,
 //         xmpp.BindResource(),
-//         xmpp.StartTLS(true, nil),
+//         xmpp.StartTLS(nil),
 //         xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
 //     )
 //
@@ -41,7 +41,7 @@
 //     session, err := xmpp.NewClientSession(
 //         context.TODO(), addr, conn, false,
 //         xmpp.BindResource(),
-//         xmpp.StartTLS(true, nil),
+//         xmpp.StartTLS(nil),
 //         xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
 //     )
 //
