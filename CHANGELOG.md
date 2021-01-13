@@ -66,6 +66,7 @@ All notable changes to this project will be documented in this file.
   underlying connection when the token writer is closed
 - xmpp: stream feature parse functions can no longer read beyond the end of the
   feature element
+- xmpp: the resource binding feature was previously broken for server sessions.
 
 
 ## v0.17.1 — 2020-11-21
