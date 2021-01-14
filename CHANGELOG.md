@@ -39,6 +39,7 @@ All notable changes to this project will be documented in this file.
   provided (not just IQs)
 - xmpp: the `Negotiate` function of server side stream features now takes the
   `xml.StartElement` that triggered the negotiate call as its `data` parameter.
+- xmpp: a `SASLServer` stream feature for authenticating users.
 
 [Mcabber]: https://mcabber.com/
 

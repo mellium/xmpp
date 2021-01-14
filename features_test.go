@@ -73,13 +73,11 @@ func runFeatureTests(t *testing.T, tcs []featureTestCase) {
 				Writer: io.MultiWriter(testWriter{t: t, prefix: "Sent"}, &buf),
 			})
 			mask, _, err := tc.sf.Negotiate(context.Background(), s, data)
-			if ok := checkFeatureErr("negotiate", t, tc, err); ok {
-				return
-			}
+			checkFeatureErr("negotiate", t, tc, err)
 			if out := buf.String(); out != tc.out {
 				t.Errorf("wrong output:\nwant=%s,\n got=%s", tc.out, out)
 			}
-			if tc.finalState != mask|tc.state {
+			if tc.finalState != mask {
 				t.Errorf("wrong output state: want=%v, got=%v", tc.finalState, mask|tc.state)
 			}
 		})
@@ -91,10 +89,10 @@ func checkFeatureErr(step string, t *testing.T, tc featureTestCase, err error) b
 		return false
 	}
 	if tc.err == nil {
-		t.Fatalf("unexpected error during %s: %v", step, err)
+		t.Errorf("unexpected error during %s: %v", step, err)
 	}
 	if !errors.Is(err, tc.err) {
-		t.Fatalf("wrong error during %s: want=%v, got=%v", step, tc.err, err)
+		t.Errorf("wrong error during %s: want=%v, got=%v", step, tc.err, err)
 	}
-	return true
+	return false
 }

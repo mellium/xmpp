@@ -4,7 +4,10 @@
 
 package xmpp
 
+// Errors used in the SASL package that are needed in tests (but should not be
+// exported outside of testing).
 var (
 	ErrNoMechanisms      = errNoMechanisms
 	ErrUnexpectedPayload = errUnexpectedPayload
+	ErrTerminated        = errTerminated
 )
