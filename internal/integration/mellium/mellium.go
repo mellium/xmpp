@@ -29,6 +29,7 @@ import (
 	"crypto/tls"
 	"encoding/gob"
 	"flag"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -40,6 +41,15 @@ import (
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/jid"
 )
+
+type logWriter struct {
+	logger *log.Logger
+}
+
+func (w logWriter) Write(p []byte) (int, error) {
+	w.logger.Printf("%s", p)
+	return len(p), nil
+}
 
 const (
 	serveFlag = "mel.serve"
@@ -72,31 +82,29 @@ func TestMain(m *testing.M) {
 	}
 	logger.Printf("decoded config: %+v", cfg)
 
-	if len(cfg.C2SFeatures) == 0 {
-		cfg.C2SFeatures = append(cfg.C2SFeatures,
-			/* #nosec */
-			xmpp.StartTLS(&tls.Config{
-				InsecureSkipVerify: true,
-				GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
-					if info.ServerName == "" {
-						info.ServerName = "localhost"
-					}
-					crt, err := tls.LoadX509KeyPair(info.ServerName+".crt", info.ServerName+".key")
-					if err == nil {
-						logger.Printf("loaded TLS certificate for %s", info.ServerName)
-					}
-					return &crt, err
-				},
-			}),
-			xmpp.SASL("", "password", sasl.Plain,
-				sasl.ScramSha256Plus, sasl.ScramSha1Plus,
-				sasl.ScramSha256, sasl.ScramSha1),
-			xmpp.BindResource(),
-		)
+	cfg.C2SFeatures = []xmpp.StreamFeature{
+		/* #nosec */
+		xmpp.StartTLS(&tls.Config{
+			InsecureSkipVerify: true,
+			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
+				if info.ServerName == "" {
+					info.ServerName = "localhost"
+				}
+				crt, err := tls.LoadX509KeyPair(info.ServerName+".crt", info.ServerName+".key")
+				if err == nil {
+					logger.Printf("loaded TLS certificate for %s", info.ServerName)
+				}
+				return &crt, err
+			},
+		}),
+		xmpp.SASLServer(func(*sasl.Negotiator) bool {
+			return true
+		}, sasl.Plain,
+			sasl.ScramSha256Plus, sasl.ScramSha1Plus,
+			sasl.ScramSha256, sasl.ScramSha1),
+		xmpp.BindResource(),
 	}
-	if len(cfg.S2SFeatures) == 0 {
-		cfg.S2SFeatures = cfg.C2SFeatures
-	}
+	cfg.S2SFeatures = cfg.C2SFeatures
 
 	var c2sListener, s2sListener net.Listener
 	var wg sync.WaitGroup
@@ -115,7 +123,7 @@ func TestMain(m *testing.M) {
 		fdNum++
 		wg.Add(1)
 		go func() {
-			listen(false, c2sListener, logger, cfg.C2SFeatures...)
+			listen(false, c2sListener, logger, cfg)
 			wg.Done()
 		}()
 	}
@@ -133,14 +141,14 @@ func TestMain(m *testing.M) {
 		fdNum++
 		wg.Add(1)
 		go func() {
-			listen(true, s2sListener, logger, cfg.S2SFeatures...)
+			listen(true, s2sListener, logger, cfg)
 			wg.Done()
 		}()
 	}
 	go func() {
 		s := struct{}{}
 		err = dec.Decode(&s)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			logger.Fatalf("error receiving shutdown signal: %v", err)
 		}
 		if c2sListener != nil {
@@ -159,7 +167,7 @@ func TestMain(m *testing.M) {
 	wg.Wait()
 }
 
-func listen(s2s bool, l net.Listener, logger *log.Logger, features ...xmpp.StreamFeature) {
+func listen(s2s bool, l net.Listener, logger *log.Logger, cfg Config) {
 	connType := "c2s"
 	if s2s {
 		connType = "s2s"
@@ -172,12 +180,21 @@ func listen(s2s bool, l net.Listener, logger *log.Logger, features ...xmpp.Strea
 			return
 		}
 		go func() {
+			streamCfg := xmpp.StreamConfig{
+				S2S: s2s,
+			}
+			if s2s {
+				streamCfg.Features = cfg.S2SFeatures
+			} else {
+				streamCfg.Features = cfg.C2SFeatures
+			}
+			if cfg.LogXML {
+				streamCfg.TeeIn = logWriter{logger: log.New(logger.Writer(), "RECV ", log.LstdFlags)}
+				streamCfg.TeeOut = logWriter{logger: log.New(logger.Writer(), "SEND ", log.LstdFlags)}
+			}
 			session, err := xmpp.NegotiateSession(
 				context.TODO(), addr.Domain(), addr, conn, true,
-				xmpp.NewNegotiator(xmpp.StreamConfig{
-					S2S:      s2s,
-					Features: features,
-				}),
+				xmpp.NewNegotiator(streamCfg),
 			)
 			if err != nil {
 				logger.Printf("error negotiating %s session: %v", connType, err)
@@ -255,6 +272,7 @@ func Test(ctx context.Context, t *testing.T, opts ...integration.Option) integra
 		t.Fatalf("could not find testing binary: %v", err)
 	}
 	opts = append(opts,
+		integration.Log(),
 		integration.Args("-"+serveFlag),
 		integration.Defer(func(cmd *integration.Cmd) error {
 			// After the command starts, send its configuration straight to the
@@ -263,8 +281,7 @@ func Test(ctx context.Context, t *testing.T, opts ...integration.Option) integra
 			return enc.Encode(getConfig(cmd))
 		}),
 		integration.Shutdown(func(cmd *integration.Cmd) error {
-			enc := gob.NewEncoder(cmd.Stdin())
-			return enc.Encode(struct{}{})
+			return cmd.Stdin().Close()
 		}),
 	)
 	return integration.Test(ctx, cmdName, t, opts...)

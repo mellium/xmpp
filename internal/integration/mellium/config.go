@@ -15,4 +15,5 @@ type Config struct {
 	ListenS2S   bool
 	C2SFeatures []xmpp.StreamFeature
 	S2SFeatures []xmpp.StreamFeature
+	LogXML      bool
 }
