@@ -362,13 +362,13 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 		if len(bytes.TrimLeft(t, " \t\r\n")) != 0 {
 			// Whitespace is allowed, but anything else at the top of the stream is
 			// disallowed.
-			return stream.BadFormat
+			return errors.New("xmpp: unexpected stream-level chardata")
 		}
 		return nil
 	default:
 		// If this isn't a start element or a whitespace keepalive, the stream is in
 		// a bad state.
-		return stream.BadFormat
+		return fmt.Errorf("xmpp: stream in a bad state, expected start element or whitespace but got %T", tok)
 	}
 
 	// If this is a stanza, normalize the "from" attribute.

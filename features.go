@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 
 	"mellium.im/xmlstream"
@@ -122,7 +123,7 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 		}
 		start, ok = t.(xml.StartElement)
 		if !ok {
-			return mask, nil, stream.BadFormat
+			return mask, nil, fmt.Errorf("xmpp: received invalid feature list of type %T", t)
 		}
 		// Unmarshal any stream errors and return them.
 		err = decodeStreamErr(start, s.in.d)
@@ -176,11 +177,10 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 			}
 			start, ok = t.(xml.StartElement)
 			if !ok {
-				return mask, nil, stream.BadFormat
+				return mask, nil, fmt.Errorf("xmpp: received invalid start to feature of type %T", t)
 			}
 
 			// If the feature was not sent or was already negotiated, error.
-
 			_, negotiated := s.negotiated[start.Name.Space]
 			data, sent = list.cache[start.Name.Space]
 			if !sent || negotiated {

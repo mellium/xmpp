@@ -7,6 +7,7 @@ package xmpp
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 	"io"
 
 	"mellium.im/xmlstream"
@@ -129,7 +130,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 				}
 				start, ok := tok.(xml.StartElement)
 				if !ok {
-					return mask, nil, stream.BadFormat
+					return mask, nil, fmt.Errorf("xmpp: bind expected IQ start but got %T", tok)
 				}
 				resReq := bindIQ{}
 				switch start.Name {
@@ -138,7 +139,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 						return mask, nil, err
 					}
 				default:
-					return mask, nil, stream.BadFormat
+					return mask, nil, fmt.Errorf("xmpp: bind expected IQ start but got %v", start.Name)
 				}
 
 				_, iqid := attr.Get(start.Attr, "id")
