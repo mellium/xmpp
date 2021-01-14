@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
   `xmlstream.Marshaler` interface
 - xmpp: the `StreamFeature` type's `Parse` function now takes an xml.Decoder
   instead of an `xml.TokenReader`
+- xmpp: IQs sent during stream negotiation are now matched against registered
+  stream features based on the namespace of their payload
 - xtime: change the `Time` type to fix unmarshaling
 
 
@@ -37,8 +39,9 @@ All notable changes to this project will be documented in this file.
   underlying connection is not a `net.Conn`
 - xmpp: all sent stanzas are now given randomly generated IDs if no ID was
   provided (not just IQs)
-- xmpp: the `Negotiate` function of server side stream features now takes the
-  `xml.StartElement` that triggered the negotiate call as its `data` parameter.
+- xmpp: the start token that triggers a call to `Negotiate` is now no longer
+  popped from the stream before the actual call to `Negotiate` for server side
+  stream features.
 - xmpp: a `SASLServer` stream feature for authenticating users.
 
 [Mcabber]: https://mcabber.com/

@@ -123,7 +123,6 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			// Handle the server side of resource binding if we're on the receiving
 			// end of the connection.
 			if (session.State() & Received) == Received {
-				d = xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(data.(xml.StartElement)), r))
 				tok, err := d.Token()
 				if err != nil {
 					return mask, nil, err

@@ -31,6 +31,8 @@ type StreamFeature struct {
 	// The XML name of the feature in the <stream:feature/> list. If a start
 	// element with this name is seen while the connection is reading the features
 	// list, it will trigger this StreamFeature's Parse function as a callback.
+	// If the stream feature is a legacy feature like resource binding that uses
+	// an IQ for negotiation, this should be the name of the IQ payload.
 	Name xml.Name
 
 	// Bits that are required before this feature is advertised. For instance, if
@@ -69,9 +71,7 @@ type StreamFeature struct {
 	// call returned a value, that value is passed to the data parameter when
 	// Negotiate is called. For instance, in the case of compression this data
 	// parameter might be the list of supported algorithms as a slice of strings
-	// (or in whatever format the feature implementation has decided upon). If
-	// this is a received session then data will be the xml.StartElement that
-	// triggered the call to Negotiate.
+	// (or in whatever format the feature implementation has decided upon).
 	Negotiate func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error)
 }
 
@@ -169,6 +169,7 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 	for {
 		var data sfData
 
+		oldDecoder := s.in.d
 		if server {
 			// Read a new feature to negotiate.
 			t, err = s.in.d.Token()
@@ -179,6 +180,23 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 			if !ok {
 				return mask, nil, fmt.Errorf("xmpp: received invalid start to feature of type %T", t)
 			}
+			// If this is an IQ (used by legacy features such as resource binding),
+			// unwrap it and use the payload's namespace to determine which feature to
+			// select.
+			// It will be up to the stream feature to actually respond to the IQ
+			// correctly.
+			var iqStart xml.StartElement
+			if isIQ(start.Name) {
+				iqStart = start
+				t, err = s.in.d.Token()
+				if err != nil {
+					return mask, nil, err
+				}
+				start, ok = t.(xml.StartElement)
+				if !ok {
+					return mask, nil, fmt.Errorf("xmpp: received IQ with invalid payload of type %T", t)
+				}
+			}
 
 			// If the feature was not sent or was already negotiated, error.
 			_, negotiated := s.negotiated[start.Name.Space]
@@ -186,6 +204,22 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 			if !sent || negotiated {
 				// TODO: What should we return here?
 				return mask, rw, stream.PolicyViolation
+			}
+
+			// Add the start element(s) that we popped back so that the negotiate
+			// function can create a token decoder and have tokens match up and decode
+			// things properly.
+			if iqStart.Name.Local == "" {
+				s.in.d = xmlstream.MultiReader(
+					xmlstream.Token(start),
+					intstream.Reader(oldDecoder),
+				)
+			} else {
+				s.in.d = xmlstream.MultiReader(
+					xmlstream.Token(iqStart),
+					xmlstream.Token(start),
+					intstream.Reader(oldDecoder),
+				)
 			}
 		} else {
 			// If we need to try and negotiate StartTLS even though it wasn't
@@ -220,15 +254,10 @@ func negotiateFeatures(ctx context.Context, s *Session, first bool, features []S
 			if data.feature.Name.Local == "" {
 				return Ready, nil, nil
 			}
+			s.in.d = intstream.Reader(oldDecoder)
 		}
 
-		oldDecoder := s.in.d
-		s.in.d = intstream.Reader(oldDecoder)
-		if server {
-			mask, rw, err = data.feature.Negotiate(ctx, s, start)
-		} else {
-			mask, rw, err = data.feature.Negotiate(ctx, s, s.features[data.feature.Name.Space])
-		}
+		mask, rw, err = data.feature.Negotiate(ctx, s, s.features[data.feature.Name.Space])
 		s.in.d = oldDecoder
 		if err == nil {
 			s.state |= mask

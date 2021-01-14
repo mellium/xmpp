@@ -102,7 +102,7 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 	r := session.TokenReader()
 	/* #nosec */
 	defer r.Close()
-	d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(data.(xml.StartElement)), r))
+	d := xml.NewTokenDecoder(r)
 
 	var (
 		selected sasl.Mechanism
