@@ -46,7 +46,7 @@ func StartTLS(cfg *tls.Config) StreamFeature {
 			err := d.DecodeElement(&parsed, start)
 			return parsed.Required.XMLName.Local == "required" && parsed.Required.XMLName.Space == ns.StartTLS, nil, err
 		},
-		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
+		Negotiate: func(ctx context.Context, session *Session, data interface{}) (SessionState, io.ReadWriter, error) {
 			conn := session.Conn()
 			state := session.State()
 			r := session.TokenReader()
@@ -60,6 +60,7 @@ func StartTLS(cfg *tls.Config) StreamFeature {
 				}
 			}
 
+			var rw io.ReadWriter
 			if (state & Received) == Received {
 				fmt.Fprint(conn, `<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`)
 				rw = tls.Server(conn, cfg)
@@ -70,17 +71,17 @@ func StartTLS(cfg *tls.Config) StreamFeature {
 				// Receive a <proceed/> or <failure/> response from the server.
 				t, err := d.Token()
 				if err != nil {
-					return mask, nil, err
+					return 0, nil, err
 				}
 				switch tok := t.(type) {
 				case xml.StartElement:
 					switch {
 					case tok.Name.Space != ns.StartTLS:
-						return mask, nil, stream.UnsupportedStanzaType
+						return 0, nil, stream.UnsupportedStanzaType
 					case tok.Name.Local == "proceed":
 						// Skip the </proceed> token.
 						if err = d.Skip(); err != nil {
-							return mask, nil, stream.InvalidXML
+							return 0, nil, stream.InvalidXML
 						}
 						rw = tls.Client(conn, cfg)
 					case tok.Name.Local == "failure":
@@ -92,16 +93,15 @@ func StartTLS(cfg *tls.Config) StreamFeature {
 						// afterwards the server will end the stream. However, if we
 						// encounter bad XML while skipping the </failure> token, return
 						// that error.
-						return mask, nil, err
+						return 0, nil, err
 					default:
-						return mask, nil, stream.UnsupportedStanzaType
+						return 0, nil, stream.UnsupportedStanzaType
 					}
 				default:
-					return mask, nil, stream.RestrictedXML
+					return 0, nil, stream.RestrictedXML
 				}
 			}
-			mask = Secure
-			return
+			return Secure, rw, nil
 		},
 	}
 }
