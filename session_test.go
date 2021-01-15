@@ -143,19 +143,21 @@ var failHandler xmpp.HandlerFunc = func(r xmlstream.TokenReadEncoder, t *xml.Sta
 }
 
 var serveTests = [...]struct {
-	handler xmpp.Handler
-	out     string
-	in      string
-	err     error
+	handler      xmpp.Handler
+	out          string
+	in           string
+	err          error
+	errStringCmp bool
 }{
 	0: {
 		in:  `<test></test>`,
 		out: `</stream:stream>`,
 	},
 	1: {
-		in:  `a`,
-		out: `</stream:stream>`,
-		err: stream.BadFormat,
+		in:           `a`,
+		out:          `</stream:stream>`,
+		err:          errors.New("xmpp: unexpected stream-level chardata"),
+		errStringCmp: true,
 	},
 	2: {
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
@@ -314,7 +316,10 @@ func TestServe(t *testing.T) {
 			})
 
 			err := s.Serve(tc.handler)
-			if !errors.Is(err, tc.err) {
+			switch {
+			case tc.errStringCmp && err.Error() != tc.err.Error():
+				t.Errorf("unexpected error: want=%v, got=%v", tc.err, err)
+			case !tc.errStringCmp && !errors.Is(err, tc.err):
 				t.Errorf("unexpected error: want=%v, got=%v", tc.err, err)
 			}
 			if s := out.String(); s != tc.out {
