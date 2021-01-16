@@ -41,8 +41,9 @@ All notable changes to this project will be documented in this file.
   provided (not just IQs)
 - xmpp: the start token that triggers a call to `Negotiate` is now no longer
   popped from the stream before the actual call to `Negotiate` for server side
-  stream features.
-- xmpp: a `SASLServer` stream feature for authenticating users.
+  stream features
+- xmpp: a `SASLServer` stream feature for authenticating users
+- xmpp: two methods for getting the stream IDs, `InSID` and `OutSID`
 
 [Mcabber]: https://mcabber.com/
 
