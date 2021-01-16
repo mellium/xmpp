@@ -5,8 +5,11 @@ Others may be implemented in third party libraries.
 
 | RFC       | Package     |
 | ----------| ----------- |
-| [RFC7622] | [jid]       |
 | [RFC5122] | [uri]       |
+| [RFC6120] | [xmpp]¹     |
+| [RFC6121] | [xmpp]¹     |
+| [RFC7590] | [xmpp]¹     |
+| [RFC7622] | [jid]       |
 
 | XEP                                                         | Package     |
 | ----------------------------------------------------------- | ----------- |
@@ -23,8 +26,16 @@ Others may be implemented in third party libraries.
 | [XEP-0392: Consistent Color Generation]                     | [color]     |
 | [XEP-0393: Message Styling]                                 | [styling]   |
 
+---
+
+1. Functionality may be spread over several packages.
+
 [RFC5122]: https://tools.ietf.org/html/rfc5122
+[RFC6120]: https://tools.ietf.org/html/rfc6120
+[RFC6121]: https://tools.ietf.org/html/rfc6121
+[RFC7590]: https://tools.ietf.org/html/rfc7590
 [RFC7622]: https://tools.ietf.org/html/rfc7622
+
 [XEP-0066: Out of Band Data]: https://xmpp.org/extensions/xep-0066.html
 [XEP-0082: XMPP Date and Time Profiles]: https://xmpp.org/extensions/xep-0030.html
 [XEP-0106: JID Escaping]: https://xmpp.org/extensions/xep-0106.html
@@ -38,14 +49,16 @@ Others may be implemented in third party libraries.
 [XEP-0392: Consistent Color Generation]: https://xmpp.org/extensions/xep-0392.html
 [XEP-0393: Message Styling]: https://xmpp.org/extensions/xep-0393.html
 
-[jid]: https://pkg.go.dev/mellium.im/xmpp/jid
-[xtime]: https://pkg.go.dev/mellium.im/xmpp/xtime
-[uri]: https://pkg.go.dev/mellium.im/xmpp/uri
-[oob]: https://pkg.go.dev/mellium.im/xmpp/oob
+[color]: https://pkg.go.dev/mellium.im/xmpp/color
 [component]: https://pkg.go.dev/mellium.im/xmpp/component
 [compress]: https://pkg.go.dev/mellium.im/xmpp/compress
 [dial]: https://pkg.go.dev/mellium.im/xmpp/dial
-[receipts]: https://pkg.go.dev/mellium.im/xmpp/receipts
+[jid]: https://pkg.go.dev/mellium.im/xmpp/jid
+[oob]: https://pkg.go.dev/mellium.im/xmpp/oob
 [ping]: https://pkg.go.dev/mellium.im/xmpp/ping
-[color]: https://pkg.go.dev/mellium.im/xmpp/color
+[receipts]: https://pkg.go.dev/mellium.im/xmpp/receipts
+[stream]: https://pkg.go.dev/mellium.im/xmpp/stream
 [styling]: https://pkg.go.dev/mellium.im/xmpp/styling
+[uri]: https://pkg.go.dev/mellium.im/xmpp/uri
+[xmpp]: https://pkg.go.dev/mellium.im/xmpp/xmpp
+[xtime]: https://pkg.go.dev/mellium.im/xmpp/xtime
