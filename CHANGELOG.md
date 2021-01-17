@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
   without waiting on a response
 - roster: add `Set` and `Delete` functions for roster management
 - roster: support multiple groups
+- s2s: added a new package implementing Bidi
 - stanza: add `Error` method on the `IQ` type
 - stream: new `InnerXML` and `ApplicationError` methods on `Error` provide a way
   to easily construct customized stream errors
