@@ -94,6 +94,18 @@ type negotiateTestCase struct {
 	location   jid.JID
 	origin     jid.JID
 	err        error
+	finalState xmpp.SessionState
+}
+
+var readyFeature = xmpp.StreamFeature{
+	Name: xml.Name{Space: "urn:example", Local: "ready"},
+	Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
+		_, err := d.Token()
+		return false, nil, err
+	},
+	Negotiate: func(ctx context.Context, session *xmpp.Session, data interface{}) (xmpp.SessionState, io.ReadWriter, error) {
+		return xmpp.Ready, nil, nil
+	},
 }
 
 var negotiateTests = [...]negotiateTestCase{
@@ -112,6 +124,15 @@ var negotiateTests = [...]negotiateTestCase{
 		out:        `<?xml version="1.0" encoding="UTF-8"?><stream:stream to='' from='' version='1.0' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'>`,
 		err:        errors.New("xmpp: features advertised out of order"),
 	},
+	3: {
+		negotiator: xmpp.NewNegotiator(xmpp.StreamConfig{
+			S2S:      true,
+			Features: []xmpp.StreamFeature{readyFeature},
+		}),
+		in:         `<stream:stream id='316732270768047465' version='1.0' xml:lang='en' xmlns:stream='http://etherx.jabber.org/streams' xmlns='jabber:server'><stream:features><ready xmlns='urn:example'/></stream:features>`,
+		out:        `<?xml version="1.0" encoding="UTF-8"?><stream:stream to='' from='' version='1.0' xmlns='jabber:server' xmlns:stream='http://etherx.jabber.org/streams'>`,
+		finalState: xmpp.Ready | xmpp.S2S,
+	},
 }
 
 func TestNegotiator(t *testing.T) {
@@ -125,12 +146,15 @@ func TestNegotiator(t *testing.T) {
 				Reader: strings.NewReader(tc.in),
 				Writer: buf,
 			}
-			_, err := xmpp.NegotiateSession(context.Background(), tc.location, tc.origin, rw, false, tc.negotiator)
-			if ((err == nil || tc.err == nil) && (err != nil || tc.err != nil)) || err.Error() != tc.err.Error() {
-				t.Errorf("Unexpected error: want=%q, got=%q", tc.err, err)
+			session, err := xmpp.NegotiateSession(context.Background(), tc.location, tc.origin, rw, false, tc.negotiator)
+			if ((err == nil || tc.err == nil) && (err != nil || tc.err != nil)) && err.Error() != tc.err.Error() {
+				t.Errorf("unexpected error: want=%q, got=%q", tc.err, err)
 			}
 			if out := buf.String(); out != tc.out {
-				t.Errorf("Unexpected output:\nwant=%q,\n got=%q", tc.out, out)
+				t.Errorf("unexpected output:\nwant=%q,\n got=%q", tc.out, out)
+			}
+			if s := session.State(); s != tc.finalState {
+				t.Errorf("unexpected state: want=%v, got=%v", tc.finalState, s)
 			}
 		})
 	}

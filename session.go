@@ -67,6 +67,9 @@ const (
 	// InputStreamClosed indicates that the input stream has been closed with a
 	// stream end tag. When set all read operations will return an error.
 	InputStreamClosed
+
+	// S2S indicates that this is a server-to-server connection.
+	S2S
 )
 
 // A Session represents an XMPP session comprising an input and an output XML

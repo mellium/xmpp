@@ -45,6 +45,8 @@ All notable changes to this project will be documented in this file.
   stream features
 - xmpp: a `SASLServer` stream feature for authenticating users
 - xmpp: two methods for getting the stream IDs, `InSID` and `OutSID`
+- xmpp: a new state bit, `s2s` to indicate whether the session is a
+  server-to-server connection
 
 [Mcabber]: https://mcabber.com/
 

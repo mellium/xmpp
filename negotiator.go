@@ -126,6 +126,9 @@ func negotiator(cfg StreamConfig) Negotiator {
 
 		mask, rw, err = negotiateFeatures(ctx, s, data == nil, cfg.Features)
 		nState.doRestart = rw != nil
+		if cfg.S2S {
+			mask |= S2S
+		}
 		return mask, rw, nState, err
 	}
 }
