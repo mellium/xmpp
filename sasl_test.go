@@ -15,6 +15,7 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/saslerr"
+	"mellium.im/xmpp/internal/xmpptest"
 )
 
 func TestSASLPanicsNoMechanisms(t *testing.T) {
@@ -137,82 +138,82 @@ func panicPerms(*sasl.Negotiator) bool {
 	panic("permissions function should not be called")
 }
 
-var saslTestCases = [...]featureTestCase{
+var saslTestCases = [...]xmpptest.FeatureTestCase{
 	// Simple client tests with plain.
 	0: {
-		sf:  xmpp.SASL("", "", sasl.Plain),
-		in:  `<abb/>`,
-		out: `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
-		err: xmpp.ErrUnexpectedPayload,
+		Feature: xmpp.SASL("", "", sasl.Plain),
+		In:      `<abb/>`,
+		Out:     `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
+		Err:     xmpp.ErrUnexpectedPayload,
 	},
 	1: {
-		sf:  xmpp.SASL("", "", sasl.Plain),
-		in:  `<!-- not a start element -->`,
-		out: `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
-		err: xmpp.ErrUnexpectedPayload,
+		Feature: xmpp.SASL("", "", sasl.Plain),
+		In:      `<!-- not a start element -->`,
+		Out:     `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
+		Err:     xmpp.ErrUnexpectedPayload,
 	},
 	2: {
-		sf:  xmpp.SASL("", "", sasl.Plain),
-		in:  `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><not-authorized/></failure>`,
-		out: `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
-		err: saslerr.Failure{Condition: saslerr.NotAuthorized},
+		Feature: xmpp.SASL("", "", sasl.Plain),
+		In:      `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><not-authorized/></failure>`,
+		Out:     `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
+		Err:     saslerr.Failure{Condition: saslerr.NotAuthorized},
 	},
 	3: {
-		sf:         xmpp.SASL("", "", sasl.Plain),
-		in:         `<success xmlns="urn:ietf:params:xml:ns:xmpp-sasl"/>`,
-		out:        `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
-		finalState: xmpp.Authn,
-		err:        saslerr.Failure{Condition: saslerr.NotAuthorized},
+		Feature:    xmpp.SASL("", "", sasl.Plain),
+		In:         `<success xmlns="urn:ietf:params:xml:ns:xmpp-sasl"/>`,
+		Out:        `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
+		FinalState: xmpp.Authn,
+		Err:        saslerr.Failure{Condition: saslerr.NotAuthorized},
 	},
 
 	// Simple server tests with plain.
 	4: {
-		state: xmpp.Received,
-		sf:    xmpp.SASLServer(panicPerms, sasl.Plain),
-		in:    `<abb/>`,
-		out:   `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><malformed-request></malformed-request></failure>`,
-		err:   xmpp.ErrUnexpectedPayload,
+		State:   xmpp.Received,
+		Feature: xmpp.SASLServer(panicPerms, sasl.Plain),
+		In:      `<abb/>`,
+		Out:     `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><malformed-request></malformed-request></failure>`,
+		Err:     xmpp.ErrUnexpectedPayload,
 	},
 	5: {
-		state: xmpp.Received,
-		sf:    xmpp.SASLServer(panicPerms, sasl.Plain),
-		in:    `<!-- not a start element -->`,
-		err:   xmpp.ErrUnexpectedPayload,
+		State:   xmpp.Received,
+		Feature: xmpp.SASLServer(panicPerms, sasl.Plain),
+		In:      `<!-- not a start element -->`,
+		Err:     xmpp.ErrUnexpectedPayload,
 	},
 	6: {
 		// TODO: can the client send failure?
-		state: xmpp.Received,
-		sf:    xmpp.SASLServer(panicPerms, sasl.Plain),
-		in:    `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><not-authorized/></failure>`,
-		err:   saslerr.Failure{Condition: saslerr.NotAuthorized},
+		State:   xmpp.Received,
+		Feature: xmpp.SASLServer(panicPerms, sasl.Plain),
+		In:      `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><not-authorized/></failure>`,
+		Err:     saslerr.Failure{Condition: saslerr.NotAuthorized},
 	},
 	7: {
-		state: xmpp.Received,
-		sf:    xmpp.SASLServer(panicPerms, sasl.Plain),
-		in:    `<abort xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><not-authorized/></abort>`,
-		out:   `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted></failure>`,
-		err:   xmpp.ErrTerminated,
+		State:   xmpp.Received,
+		Feature: xmpp.SASLServer(panicPerms, sasl.Plain),
+		In:      `<abort xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><not-authorized/></abort>`,
+		Out:     `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted></failure>`,
+		Err:     xmpp.ErrTerminated,
 	},
 	8: {
-		state: xmpp.Received,
-		sf: xmpp.SASLServer(func(*sasl.Negotiator) bool {
+		State: xmpp.Received,
+		Feature: xmpp.SASLServer(func(*sasl.Negotiator) bool {
 			return false
 		}, sasl.Plain),
-		in:  `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
-		out: `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><not-authorized></not-authorized></failure>`,
-		err: sasl.ErrAuthn,
+		In:  `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
+		Out: `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><not-authorized></not-authorized></failure>`,
+		Err: sasl.ErrAuthn,
 	},
 	9: {
-		state: xmpp.Received,
-		sf: xmpp.SASLServer(func(*sasl.Negotiator) bool {
+		State: xmpp.Received,
+		Feature: xmpp.SASLServer(func(*sasl.Negotiator) bool {
 			return true
 		}, sasl.Plain),
-		in:         `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
-		out:        `<success xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></success>`,
-		finalState: xmpp.Authn,
+		In:         `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
+		Out:        `<success xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></success>`,
+		FinalState: xmpp.Authn,
 	},
 }
 
 func TestSASL(t *testing.T) {
-	runFeatureTests(t, saslTestCases[:])
+	xmpptest.RunFeatureTests(t, saslTestCases[:])
 }

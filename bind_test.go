@@ -14,6 +14,7 @@ import (
 
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/ns"
+	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 )
 
@@ -84,45 +85,45 @@ func bindFunc(j jid.JID, s string) (jid.JID, error) {
 	return j.WithResource(s)
 }
 
-var bindTestCases = [...]featureTestCase{
+var bindTestCases = [...]xmpptest.FeatureTestCase{
 	// BindCustom server tests
 	0: {
-		state:      xmpp.Received,
-		sf:         xmpp.BindCustom(bindFunc),
-		in:         `<iq type="set" id="123" to="example.net" from="test@example.net"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><resource>test</resource></bind></iq>`,
-		out:        `<iq type="result" to="test@example.net" from="example.net" id="123"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>test@example.net/test</jid></bind></iq>`,
-		finalState: xmpp.Ready,
+		State:      xmpp.Received,
+		Feature:    xmpp.BindCustom(bindFunc),
+		In:         `<iq type="set" id="123" to="example.net" from="test@example.net"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><resource>test</resource></bind></iq>`,
+		Out:        `<iq type="result" to="test@example.net" from="example.net" id="123"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>test@example.net/test</jid></bind></iq>`,
+		FinalState: xmpp.Ready,
 	},
 	1: {
-		state:      xmpp.Received,
-		sf:         xmpp.BindCustom(bindFunc),
-		in:         `<iq type="set" id="1" to="example.net"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><resource>test</resource></bind></iq>`,
-		out:        `<iq type="result" from="example.net" id="1"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>test@example.net/test</jid></bind></iq>`,
-		finalState: xmpp.Ready,
+		State:      xmpp.Received,
+		Feature:    xmpp.BindCustom(bindFunc),
+		In:         `<iq type="set" id="1" to="example.net"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><resource>test</resource></bind></iq>`,
+		Out:        `<iq type="result" from="example.net" id="1"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>test@example.net/test</jid></bind></iq>`,
+		FinalState: xmpp.Ready,
 	},
 	2: {
-		state:      xmpp.Received,
-		sf:         xmpp.BindCustom(bindFunc),
-		in:         `<iq type="set" id="2" from="me@example.net"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><resource>test</resource></bind></iq>`,
-		out:        `<iq type="result" to="me@example.net" id="2"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>test@example.net/test</jid></bind></iq>`,
-		finalState: xmpp.Ready,
+		State:      xmpp.Received,
+		Feature:    xmpp.BindCustom(bindFunc),
+		In:         `<iq type="set" id="2" from="me@example.net"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><resource>test</resource></bind></iq>`,
+		Out:        `<iq type="result" to="me@example.net" id="2"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>test@example.net/test</jid></bind></iq>`,
+		FinalState: xmpp.Ready,
 	},
 	3: {
-		state:      xmpp.Received,
-		sf:         xmpp.BindCustom(bindFunc),
-		in:         `<iq type="set" id="123"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><resource></resource></bind></iq>`,
-		out:        `<iq type="result" id="123"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>test@example.net/empty</jid></bind></iq>`,
-		finalState: xmpp.Ready,
+		State:      xmpp.Received,
+		Feature:    xmpp.BindCustom(bindFunc),
+		In:         `<iq type="set" id="123"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><resource></resource></bind></iq>`,
+		Out:        `<iq type="result" id="123"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>test@example.net/empty</jid></bind></iq>`,
+		FinalState: xmpp.Ready,
 	},
 	4: {
-		state:      xmpp.Received,
-		sf:         xmpp.BindCustom(bindFunc),
-		in:         `<iq type="set" id="123"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"/></iq>`,
-		out:        `<iq type="result" id="123"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>test@example.net/empty</jid></bind></iq>`,
-		finalState: xmpp.Ready,
+		State:      xmpp.Received,
+		Feature:    xmpp.BindCustom(bindFunc),
+		In:         `<iq type="set" id="123"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"/></iq>`,
+		Out:        `<iq type="result" id="123"><bind xmlns="urn:ietf:params:xml:ns:xmpp-bind"><jid>test@example.net/empty</jid></bind></iq>`,
+		FinalState: xmpp.Ready,
 	},
 }
 
 func TestBind(t *testing.T) {
-	runFeatureTests(t, bindTestCases[:])
+	xmpptest.RunFeatureTests(t, bindTestCases[:])
 }
