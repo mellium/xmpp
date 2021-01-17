@@ -25,6 +25,7 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
+	"mellium.im/xmpp/uri"
 )
 
 const (
@@ -66,7 +67,7 @@ func main() {
 		help    bool
 		rawXML  bool
 		room    bool
-		uri     bool
+		isURI   bool
 		verbose bool
 		subject string
 	)
@@ -75,7 +76,7 @@ func main() {
 	flags.BoolVar(&help, "h", help, "")
 	flags.BoolVar(&rawXML, "xml", rawXML, "Treat the input as raw XML to be sent on the stream.")
 	flags.BoolVar(&room, "room", room, "The provided JID is a multi-user chat (MUC) room.")
-	flags.BoolVar(&uri, "uri", uri, "Parse the recipient as an XMPP URI instead of a JID.")
+	flags.BoolVar(&isURI, "uri", isURI, "Parse the recipient as an XMPP URI instead of a JID.")
 	flags.BoolVar(&verbose, "v", verbose, "Show verbose logging.")
 	flags.StringVar(&addr, "addr", addr, "The XMPP address to connect to, overrides $XMPP_ADDR")
 	flags.StringVar(&subject, "subject", subject, "Set the subject of the message or chat room.")
@@ -104,9 +105,37 @@ func main() {
 		os.Exit(1)
 	}
 
-	var parsedToAddr jid.JID
-	if uri {
-		logger.Fatalf("parsing as a URI is not yet implemented")
+	var parsedToAddr, parsedAuthAddr jid.JID
+	var rawMsg, thread, msgID, msgType, msgFrom string
+	if isURI {
+		parsedURI, err := uri.Parse(args[0])
+		if err != nil {
+			logger.Fatalf("error parsing %q as a URI: %v", args[0], err)
+		}
+		parsedToAddr = parsedURI.ToAddr
+		parsedAuthAddr = parsedURI.AuthAddr
+		switch parsedURI.Action {
+		case "":
+		case "join":
+			room = true
+		case "message":
+			rawXML = false
+			query := parsedURI.URL.Query()
+			rawMsg = query.Get("body")
+			subject = query.Get("subject")
+			thread = query.Get("thread")
+			msgID = query.Get("id")
+			msgType = query.Get("type")
+			msgFrom = query.Get("from")
+			if msgFrom != "" {
+				parsedAddr, err = jid.Parse(msgFrom)
+				if err != nil {
+					logger.Fatalf("error parsing %q as JID: %v", msgFrom, err)
+				}
+			}
+		default:
+			logger.Fatalf("unknown or unsupported URI action %v", parsedURI.Action)
+		}
 	} else {
 		// Parse the recipient address as a JID.
 		parsedToAddr, err = jid.Parse(args[0])
@@ -127,7 +156,7 @@ func main() {
 		xmpp.StartTLS(&tls.Config{
 			ServerName: parsedAddr.Domain().String(),
 		}),
-		xmpp.SASL("", pass, sasl.ScramSha256Plus, sasl.ScramSha1Plus, sasl.ScramSha256, sasl.ScramSha1, sasl.Plain),
+		xmpp.SASL(parsedAuthAddr.String(), pass, sasl.ScramSha256Plus, sasl.ScramSha1Plus, sasl.ScramSha256, sasl.ScramSha1, sasl.Plain),
 	)
 	dialCtxCancel()
 	if err != nil {
@@ -156,9 +185,12 @@ func main() {
 		}
 	}()
 
-	rawMsg, err := ioutil.ReadAll(os.Stdin)
-	if err != nil {
-		logger.Fatalf("error reading message from stdin: %v", err)
+	if rawMsg == "" {
+		rawMsgBuf, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			logger.Fatalf("error reading message from stdin: %v", err)
+		}
+		rawMsg = string(rawMsgBuf)
 	}
 	msg := strings.ToValidUTF8(string(rawMsg), "")
 
@@ -191,14 +223,20 @@ func main() {
 			logger.Fatalf("error sending raw XML: %v", err)
 		}
 	} else {
+		typ := stanza.ChatMessage
+		if msgType != "" {
+			typ = stanza.MessageType(msgType)
+		}
 		err = session.Encode(ctx, messageBody{
 			Message: stanza.Message{
+				ID:   msgID,
 				To:   parsedToAddr,
 				From: parsedAddr,
-				Type: stanza.ChatMessage,
+				Type: typ,
 			},
 			Body:    msg,
 			Subject: subject,
+			Thread:  thread,
 		})
 		if err != nil {
 			logger.Fatalf("error sending message: %v", err)
