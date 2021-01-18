@@ -57,6 +57,8 @@ All notable changes to this project will be documented in this file.
   now done concurrently to make the initial connection faster
 - dial: the fallback for dialing an XMPP connection when no SRV records exist is
   now more robust
+- xmpp: stanzas sent over S2S connections now always have the "from" attribute
+  set
 
 
 ### Fixed

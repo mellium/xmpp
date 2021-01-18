@@ -172,6 +172,7 @@ var serveTests = [...]struct {
 	in           string
 	err          error
 	errStringCmp bool
+	state        xmpp.SessionState
 }{
 	0: {
 		in:  `<test></test>`,
@@ -324,6 +325,33 @@ var serveTests = [...]struct {
 		in:  `<a>test</a><b></b>`,
 		out: `<a xmlns="jabber:client">test</a></stream:stream>`,
 	},
+	15: {
+		// S2S stanzas always have "from" set if not already set.
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(rw, stanza.IQ{
+				ID:   "1234",
+				Type: stanza.ResultIQ,
+			}.Wrap(nil))
+			return err
+		}),
+		in:    `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
+		out:   `<iq type="result" id="1234" from="test@example.net"></iq></stream:stream>`,
+		state: xmpp.S2S,
+	},
+	16: {
+		// S2S stanzas always have "from" set, unless it was already set.
+		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(rw, stanza.IQ{
+				ID:   "1234",
+				From: jid.MustParse("from@example.net"),
+				Type: stanza.ResultIQ,
+			}.Wrap(nil))
+			return err
+		}),
+		in:    `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
+		out:   `<iq type="result" from="from@example.net" id="1234"></iq></stream:stream>`,
+		state: xmpp.S2S,
+	},
 }
 
 func TestServe(t *testing.T) {
@@ -331,7 +359,7 @@ func TestServe(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			out := &bytes.Buffer{}
 			in := strings.NewReader(tc.in)
-			s := xmpptest.NewSession(0, struct {
+			s := xmpptest.NewSession(tc.state, struct {
 				io.Reader
 				io.Writer
 			}{
