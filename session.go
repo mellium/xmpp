@@ -185,7 +185,11 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	}
 
 	s.in.d = intstream.Reader(s.in.d)
-	s.out.e = &stanzaEncoder{TokenWriteFlusher: s.out.e}
+	se := &stanzaEncoder{TokenWriteFlusher: s.out.e}
+	if s.state&S2S == S2S {
+		se.from = s.LocalAddr()
+	}
+	s.out.e = se
 
 	return s, nil
 }
@@ -946,27 +950,48 @@ func (s *Session) closeInputStream() {
 type stanzaEncoder struct {
 	xmlstream.TokenWriteFlusher
 	depth int
+	from  jid.JID
 }
 
 func (se *stanzaEncoder) EncodeToken(t xml.Token) error {
-tokswitch:
 	switch tok := t.(type) {
 	case xml.StartElement:
 		se.depth++
-		// RFC6120 §8.1.3
-		// For <message/> and <presence/> stanzas, it is RECOMMENDED for the
-		// originating entity to include an 'id' attribute; for <iq/> stanzas, it is
-		// REQUIRED.
+		// Add required attributes if missing:
 		if se.depth == 1 && isStanzaEmptySpace(tok.Name) {
+			var foundID, foundFrom bool
 			for _, attr := range tok.Attr {
-				if attr.Name.Local == "id" {
-					break tokswitch
+				switch attr.Name.Local {
+				case "id":
+					// RFC6120 § 8.1.3
+					// For <message/> and <presence/> stanzas, it is RECOMMENDED for the
+					// originating entity to include an 'id' attribute; for <iq/> stanzas,
+					// it is REQUIRED.
+					foundID = true
+				case "from":
+					// RFC6120 § 4.7.1
+					// the 'to' and 'from' attributes are OPTIONAL on stanzas sent over
+					// XML streams qualified by the 'jabber:client' namespace, whereas
+					// they are REQUIRED on stanzas sent over XML streams qualified by the
+					// 'jabber: server' namespace
+					foundFrom = true
+				}
+				if foundID && foundFrom {
+					break
 				}
 			}
-			tok.Attr = append(tok.Attr, xml.Attr{
-				Name:  xml.Name{Local: "id"},
-				Value: attr.RandomID(),
-			})
+			if f := se.from.String(); f != "" && !foundFrom {
+				tok.Attr = append(tok.Attr, xml.Attr{
+					Name:  xml.Name{Local: "from"},
+					Value: se.from.String(),
+				})
+			}
+			if !foundID {
+				tok.Attr = append(tok.Attr, xml.Attr{
+					Name:  xml.Name{Local: "id"},
+					Value: attr.RandomID(),
+				})
+			}
 			t = tok
 		}
 	case xml.EndElement:
