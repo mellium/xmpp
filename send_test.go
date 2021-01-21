@@ -270,6 +270,16 @@ func TestSend(t *testing.T) {
 			buf := &bytes.Buffer{}
 			s := xmpptest.NewClientServer(xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 				e := xml.NewEncoder(buf)
+				// Filter out xmlns before re-encoding to avoid the buggy Go XLM encoder
+				// which will gladly duplicate xmlns attributes if namespace is set in
+				// the Name field and in the attributes.
+				filtered := start.Attr[:0]
+				for _, attr := range start.Attr {
+					if attr.Name.Local != "xmlns" {
+						filtered = append(filtered, attr)
+					}
+				}
+				start.Attr = filtered
 				err := e.EncodeToken(*start)
 				if err != nil {
 					return err

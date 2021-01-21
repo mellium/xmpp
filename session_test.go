@@ -160,7 +160,7 @@ func TestNegotiator(t *testing.T) {
 	}
 }
 
-const invalidIQ = `<iq type="error" id="1234"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`
+const invalidIQ = `<iq xmlns="jabber:client" type="error" id="1234"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`
 
 var failHandler xmpp.HandlerFunc = func(r xmlstream.TokenReadEncoder, t *xml.StartElement) error {
 	return errors.New("session_test: FAILED")
@@ -197,7 +197,7 @@ var serveTests = [...]struct {
 			return err
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
-		out: `<iq type="result" id="1234"></iq></stream:stream>`,
+		out: `<iq xmlns="jabber:client" type="result" id="1234"></iq></stream:stream>`,
 	},
 	4: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
@@ -208,7 +208,7 @@ var serveTests = [...]struct {
 			return err
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
-		out: `<iq type="result" id="wrongid"></iq>` + invalidIQ + `</stream:stream>`,
+		out: `<iq xmlns="jabber:client" type="result" id="wrongid"></iq>` + invalidIQ + `</stream:stream>`,
 	},
 	5: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
@@ -219,7 +219,7 @@ var serveTests = [...]struct {
 			return err
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
-		out: `<iq type="error" id="1234"></iq></stream:stream>`,
+		out: `<iq xmlns="jabber:client" type="error" id="1234"></iq></stream:stream>`,
 	},
 	6: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
@@ -230,7 +230,7 @@ var serveTests = [...]struct {
 			return err
 		}),
 		in:  `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
-		out: `<iq type="get" id="1234"></iq>` + invalidIQ + `</stream:stream>`,
+		out: `<iq xmlns="jabber:client" type="get" id="1234"></iq>` + invalidIQ + `</stream:stream>`,
 	},
 	7: {
 		handler: xmpp.HandlerFunc(func(rw xmlstream.TokenReadEncoder, start *xml.StartElement) error {
@@ -335,7 +335,7 @@ var serveTests = [...]struct {
 			return err
 		}),
 		in:    `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
-		out:   `<iq type="result" id="1234" from="test@example.net"></iq></stream:stream>`,
+		out:   `<iq xmlns="jabber:server" type="result" id="1234" from="test@example.net"></iq></stream:stream>`,
 		state: xmpp.S2S,
 	},
 	16: {
@@ -349,7 +349,7 @@ var serveTests = [...]struct {
 			return err
 		}),
 		in:    `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
-		out:   `<iq type="result" from="from@example.net" id="1234"></iq></stream:stream>`,
+		out:   `<iq xmlns="jabber:server" type="result" from="from@example.net" id="1234"></iq></stream:stream>`,
 		state: xmpp.S2S,
 	},
 }

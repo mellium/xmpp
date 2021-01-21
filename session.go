@@ -185,7 +185,11 @@ func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	}
 
 	s.in.d = intstream.Reader(s.in.d)
-	se := &stanzaEncoder{TokenWriteFlusher: s.out.e}
+	streamNS := ns.Client
+	if s.state&S2S == S2S {
+		streamNS = ns.Server
+	}
+	se := &stanzaEncoder{TokenWriteFlusher: s.out.e, ns: streamNS}
 	if s.state&S2S == S2S {
 		se.from = s.LocalAddr()
 	}
@@ -951,6 +955,7 @@ type stanzaEncoder struct {
 	xmlstream.TokenWriteFlusher
 	depth int
 	from  jid.JID
+	ns    string
 }
 
 func (se *stanzaEncoder) EncodeToken(t xml.Token) error {
@@ -959,6 +964,9 @@ func (se *stanzaEncoder) EncodeToken(t xml.Token) error {
 		se.depth++
 		// Add required attributes if missing:
 		if se.depth == 1 && isStanzaEmptySpace(tok.Name) {
+			if tok.Name.Space == "" {
+				tok.Name.Space = se.ns
+			}
 			var foundID, foundFrom bool
 			for _, attr := range tok.Attr {
 				switch attr.Name.Local {
@@ -995,6 +1003,10 @@ func (se *stanzaEncoder) EncodeToken(t xml.Token) error {
 			t = tok
 		}
 	case xml.EndElement:
+		if se.depth == 1 && tok.Name.Space == "" && isStanzaEmptySpace(tok.Name) {
+			tok.Name.Space = se.ns
+			t = tok
+		}
 		se.depth--
 	}
 

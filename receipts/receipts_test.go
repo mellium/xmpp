@@ -201,7 +201,6 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	d := xml.NewDecoder(strings.NewReader(req.String()))
-	d.DefaultSpace = ns.Server
 	tok, _ := d.Token()
 	start := tok.(xml.StartElement)
 	var b strings.Builder
@@ -224,8 +223,8 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	out := b.String()
-	const expected = `<message xmlns="jabber:server" type="normal"><received xmlns="urn:xmpp:receipts" id="123"></received></message>`
+	const expected = `<message xmlns="jabber:client" type="normal"><received xmlns="urn:xmpp:receipts" id="123"></received></message>`
 	if out != expected {
-		t.Errorf("got=%s, want=%s", out, expected)
+		t.Errorf("wrong output:\nwant=%s,\n got=%s", expected, out)
 	}
 }
