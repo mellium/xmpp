@@ -36,6 +36,7 @@ All notable changes to this project will be documented in this file.
 - stream: support adding human-readable text to errors
 - styling: add `Disable` and `Unstyled` to support disabling styling on some
   messages
+- websocket: added a new package for dialing WebSocket connections
 - xmpp: `SetReadDeadline` and `SetWriteDeadline` are now proxied even if the
   underlying connection is not a `net.Conn`
 - xmpp: all sent stanzas are now given randomly generated IDs if no ID was
