@@ -45,13 +45,13 @@ const (
 // as defined by RFC 6415 and OASIS.XRD-1.0.
 type XRD struct {
 	XMLName xml.Name `xml:"http://docs.oasis-open.org/ns/xri/xrd-1.0 XRD"`
-	Links   []Link   `xml:"Link"`
+	Links   []Link   `xml:"Link" json:"links"`
 }
 
 // Link is an individual hyperlink in an XRD document.
 type Link struct {
-	Rel  string `xml:"rel,attr"`
-	Href string `xml:"href,attr"`
+	Rel  string `xml:"rel,attr" json:"rel"`
+	Href string `xml:"href,attr" json:"href"`
 }
 
 var (
@@ -178,21 +178,21 @@ func LookupService(ctx context.Context, resolver *net.Resolver, service string, 
 	return addrs, nil
 }
 
-// LookupWebsocket discovers websocket endpoints that are valid for the given
+// LookupWebSocket discovers websocket endpoints that are valid for the given
 // address using DNS TXT records and Web Host Metadata as described in XEP-0156.
 // If client is nil, only DNS is queried.
-func LookupWebsocket(ctx context.Context, resolver *net.Resolver, client *http.Client, addr *jid.JID) (urls []string, err error) {
+func LookupWebSocket(ctx context.Context, resolver *net.Resolver, client *http.Client, addr jid.JID) (urls []string, err error) {
 	return lookupEndpoint(ctx, resolver, client, addr, wsConnType)
 }
 
 // LookupBOSH discovers BOSH endpoints that are valid for the given address
-// using DNS TXT records and Web Host Metadata as described in XEP-0156. If
-// client is nil, only DNS is queried.
-func LookupBOSH(ctx context.Context, resolver *net.Resolver, client *http.Client, addr *jid.JID) (urls []string, err error) {
+// using DNS TXT records and Web Host Metadata as described in XEP-0156.
+// If client is nil, only DNS is queried.
+func LookupBOSH(ctx context.Context, resolver *net.Resolver, client *http.Client, addr jid.JID) (urls []string, err error) {
 	return lookupEndpoint(ctx, resolver, client, addr, boshConnType)
 }
 
-func lookupEndpoint(ctx context.Context, resolver *net.Resolver, client *http.Client, addr *jid.JID, conntype string) (urls []string, err error) {
+func lookupEndpoint(ctx context.Context, resolver *net.Resolver, client *http.Client, addr jid.JID, conntype string) (urls []string, err error) {
 	if conntype != wsConnType && conntype != boshConnType {
 		panic("xmpp.lookupEndpoint: Invalid conntype specified")
 	}

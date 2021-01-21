@@ -8,6 +8,8 @@ import (
 	"context"
 	"encoding/xml"
 	"testing"
+
+	"mellium.im/xmpp/jid"
 )
 
 var (
@@ -43,7 +45,7 @@ func TestLookupEndpointPanicsOnInvalidType(t *testing.T) {
 			t.Error("lookupEndpoint should panic if an invalid conntype is specified.")
 		}
 	}()
-	lookupEndpoint(context.Background(), nil, nil, nil, "wssorbashorsomething")
+	lookupEndpoint(context.Background(), nil, nil, jid.JID{}, "wssorbashorsomething")
 }
 
 // If an invalid connection type is looked up, we should panic.
