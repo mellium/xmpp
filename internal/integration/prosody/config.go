@@ -39,9 +39,14 @@ interfaces = { "::1", "127.0.0.1" }
 -- Set not called.
 {{ end }}
 
+cross_domain_websocket = true
+consider_websocket_secure = true
+
 modules_enabled = {
 	-- Extra modules added with prosody.Modules:
 		{{ luaList .Modules }}
+
+		"websocket";
 
 	-- Generally required
 		"roster"; -- Allow users to have a roster. Recommended ;)
