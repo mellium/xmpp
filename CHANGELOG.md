@@ -59,6 +59,8 @@ All notable changes to this project will be documented in this file.
   now more robust
 - xmpp: stanzas sent over S2S connections now always have the "from" attribute
   set
+- xmpp: the default negotiator now supports negotiating the WebSocket
+  subprotocol when the `WebSocket` option is set
 
 
 ### Fixed

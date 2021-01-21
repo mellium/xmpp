@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/decl"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
@@ -20,6 +21,7 @@ import (
 
 // Info contains metadata extracted from a stream start token.
 type Info struct {
+	Name    xml.Name
 	to      *jid.JID
 	from    *jid.JID
 	ID      string
@@ -30,8 +32,10 @@ type Info struct {
 
 // This MUST only return stream errors.
 // TODO: Is the above true? Just make it return a StreamError?
-func streamFromStartElement(s xml.StartElement) (Info, error) {
-	streamData := Info{}
+func streamFromStartElement(s xml.StartElement, ws bool) (Info, error) {
+	streamData := Info{
+		Name: s.Name,
+	}
 	for _, attr := range s.Attr {
 		switch attr.Name {
 		case xml.Name{Space: "", Local: "to"}:
@@ -52,12 +56,16 @@ func streamFromStartElement(s xml.StartElement) (Info, error) {
 				return streamData, stream.BadFormat
 			}
 		case xml.Name{Space: "", Local: "xmlns"}:
-			if attr.Value != "jabber:client" && attr.Value != "jabber:server" {
-				return streamData, stream.InvalidNamespace
+			// TODO:  why did we do this in the case block? Shouldn't we check s.Name?
+			if (ws && attr.Value != ns.WS) || (!ws && attr.Value != "jabber:client" && attr.Value != "jabber:server") {
+				return streamData, fmt.Errorf("xmpp: invalid xmlns attribute: %s", attr.Value)
 			}
 			streamData.xmlns = attr.Value
 		case xml.Name{Space: "xmlns", Local: "stream"}:
-			if attr.Value != stream.NS {
+			// If we're using the websocket subprotocol this will never show up (but
+			// if it does, we don't care at all, it's just extra stuff that we won't
+			// end up using).
+			if !ws && attr.Value != stream.NS {
 				return streamData, stream.InvalidNamespace
 			}
 		case xml.Name{Space: "xml", Local: "lang"}:
@@ -75,7 +83,7 @@ func streamFromStartElement(s xml.StartElement) (Info, error) {
 // is much faster than encoding.
 // Afterwards, clear the StreamRestartRequired bit and set the output stream
 // information.
-func Send(rw io.ReadWriter, s2s bool, version Version, lang string, location, origin, id string) (Info, error) {
+func Send(rw io.ReadWriter, s2s, ws bool, version Version, lang string, location, origin, id string) (Info, error) {
 	streamData := Info{}
 	switch s2s {
 	case true:
@@ -85,26 +93,35 @@ func Send(rw io.ReadWriter, s2s bool, version Version, lang string, location, or
 	}
 
 	streamData.ID = id
-	if id == "" {
-		id = " "
-	} else {
-		id = ` id='` + id + `' `
+	if id != "" {
+		id = `id='` + id + `' `
 	}
 
 	b := bufio.NewWriter(rw)
-	_, err := fmt.Fprintf(b,
-		decl.XMLHeader+`<stream:stream%sto='%s' from='%s' version='%s' `,
-		id,
-		location,
-		origin,
-		version,
-	)
+	var err error
+	if ws {
+		_, err = fmt.Fprintf(b,
+			`<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" %sto='%s' from='%s' version='%s'`,
+			id,
+			location,
+			origin,
+			version,
+		)
+	} else {
+		_, err = fmt.Fprintf(b,
+			decl.XMLHeader+`<stream:stream %sto='%s' from='%s' version='%s'`,
+			id,
+			location,
+			origin,
+			version,
+		)
+	}
 	if err != nil {
 		return streamData, err
 	}
 
 	if len(lang) > 0 {
-		_, err = b.Write([]byte("xml:lang='"))
+		_, err = b.Write([]byte(" xml:lang='"))
 		if err != nil {
 			return streamData, err
 		}
@@ -112,15 +129,19 @@ func Send(rw io.ReadWriter, s2s bool, version Version, lang string, location, or
 		if err != nil {
 			return streamData, err
 		}
-		_, err = b.Write([]byte("' "))
+		_, err = b.Write([]byte("'"))
 		if err != nil {
 			return streamData, err
 		}
 	}
 
-	_, err = fmt.Fprintf(b, `xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
-		streamData.xmlns,
-	)
+	if ws {
+		_, err = fmt.Fprint(b, `/>`)
+	} else {
+		_, err = fmt.Fprintf(b, ` xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
+			streamData.xmlns,
+		)
+	}
 	if err != nil {
 		return streamData, err
 	}
@@ -133,7 +154,7 @@ func Send(rw io.ReadWriter, s2s bool, version Version, lang string, location, or
 // If not, an error is returned. It then handles feature negotiation for the new
 // stream.
 // If an XML header is discovered instead, it is skipped.
-func Expect(ctx context.Context, d xml.TokenReader, recv bool) (streamData Info, err error) {
+func Expect(ctx context.Context, d xml.TokenReader, recv, ws bool) (streamData Info, err error) {
 	// Skip the XML declaration (if any).
 	d = decl.Skip(d)
 
@@ -156,13 +177,28 @@ func Expect(ctx context.Context, d xml.TokenReader, recv bool) (streamData Info,
 					return streamData, err
 				}
 				return streamData, se
-			case tok.Name.Local != "stream":
+			case !ws && tok.Name.Local != "stream":
+				// TODO: return sane error.
 				return streamData, stream.BadFormat
-			case tok.Name.Space != stream.NS:
-				return streamData, stream.InvalidNamespace
+			case ws && tok.Name.Local != "open":
+				// TODO: return sane error.
+				return streamData, stream.BadFormat
+			case !ws && tok.Name.Space != stream.NS:
+				// TODO: send invalid namespace, return sane error.
+				return streamData, fmt.Errorf("xmpp: invalid stream namespace: %s", tok.Name.Space)
+			case ws && tok.Name.Space != ns.WS:
+				// TODO: send invalid namespace, return sane error.
+				return streamData, fmt.Errorf("xmpp: invalid WebSocket stream namespace: %s", tok.Name.Space)
+			case ws && tok.Name.Local == "open" && tok.Name.Space == ns.WS:
+				// Websocket payloads are always full XML documents, so the "open"
+				// element is closed as well.
+				err = xmlstream.Skip(d)
+				if err != nil {
+					return streamData, err
+				}
 			}
 
-			streamData, err = streamFromStartElement(tok)
+			streamData, err = streamFromStartElement(tok, ws)
 			switch {
 			case err != nil:
 				return streamData, err

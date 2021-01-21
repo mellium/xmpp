@@ -97,13 +97,13 @@ func decodeStreamErr(start xml.StartElement, r xml.TokenReader) error {
 	return e
 }
 
-func negotiateFeatures(ctx context.Context, s *Session, first bool, features []StreamFeature) (mask SessionState, rw io.ReadWriter, err error) {
+func negotiateFeatures(ctx context.Context, s *Session, first, ws bool, features []StreamFeature) (mask SessionState, rw io.ReadWriter, err error) {
 	server := (s.state & Received) == Received
 
 	// If we're the server, write the initial stream features.
 	var list *streamFeaturesList
 	if server {
-		list, err = writeStreamFeatures(ctx, s, features)
+		list, err = writeStreamFeatures(ctx, s, ws, features)
 		if err != nil {
 			return mask, nil, err
 		}
@@ -302,8 +302,15 @@ func getFeature(name xml.Name, features []StreamFeature) (feature StreamFeature,
 	return feature, false
 }
 
-func writeStreamFeatures(ctx context.Context, s *Session, features []StreamFeature) (list *streamFeaturesList, err error) {
-	start := xml.StartElement{Name: xml.Name{Local: "stream:features"}}
+func writeStreamFeatures(ctx context.Context, s *Session, ws bool, features []StreamFeature) (list *streamFeaturesList, err error) {
+	var start xml.StartElement
+	if ws {
+		// There is no wrapping "stream:stream" element in the websocket
+		// subprotocol, so set the namespace using the unprefixed form.
+		start.Name = xml.Name{Space: stream.NS, Local: "features"}
+	} else {
+		start.Name = xml.Name{Local: "stream:features"}
+	}
 	w := s.TokenWriter()
 	defer w.Close()
 	if err = w.EncodeToken(start); err != nil {

@@ -38,6 +38,10 @@ type StreamConfig struct {
 	// A list of stream features to attempt to negotiate.
 	Features []StreamFeature
 
+	// WebSocket indicates that the negotiator should use the WebSocket
+	// subprotocol defined in RFC 7395.
+	WebSocket bool
+
 	// If set a copy of any reads from the session will be written to TeeIn and
 	// any writes to the session will be written to TeeOut (similar to the tee(1)
 	// command).
@@ -97,12 +101,12 @@ func negotiator(cfg StreamConfig) Negotiator {
 				// If we're the receiving entity wait for a new stream, then send one in
 				// response.
 
-				s.in.Info, err = stream.Expect(ctx, s.in.d, s.State()&Received == Received)
+				s.in.Info, err = stream.Expect(ctx, s.in.d, s.State()&Received == Received, cfg.WebSocket)
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
 				}
-				s.out.Info, err = stream.Send(s.Conn(), cfg.S2S, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), attr.RandomID())
+				s.out.Info, err = stream.Send(s.Conn(), cfg.S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), attr.RandomID())
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -111,12 +115,12 @@ func negotiator(cfg StreamConfig) Negotiator {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
 
-				s.out.Info, err = stream.Send(s.Conn(), cfg.S2S, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
+				s.out.Info, err = stream.Send(s.Conn(), cfg.S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
 				}
-				s.in.Info, err = stream.Expect(ctx, s.in.d, s.State()&Received == Received)
+				s.in.Info, err = stream.Expect(ctx, s.in.d, s.State()&Received == Received, cfg.WebSocket)
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -124,7 +128,7 @@ func negotiator(cfg StreamConfig) Negotiator {
 			}
 		}
 
-		mask, rw, err = negotiateFeatures(ctx, s, data == nil, cfg.Features)
+		mask, rw, err = negotiateFeatures(ctx, s, data == nil, cfg.WebSocket, cfg.Features)
 		nState.doRestart = rw != nil
 		if cfg.S2S {
 			mask |= S2S
