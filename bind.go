@@ -156,10 +156,11 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 
 				resp := bindIQ{
 					IQ: stanza.IQ{
-						ID:   iqid,
-						From: resReq.IQ.To,
-						To:   resReq.IQ.From,
-						Type: stanza.ResultIQ,
+						XMLName: xml.Name{Space: ns.Server, Local: "iq"},
+						ID:      iqid,
+						From:    resReq.IQ.To,
+						To:      resReq.IQ.From,
+						Type:    stanza.ResultIQ,
 					},
 				}
 
@@ -181,8 +182,9 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			reqID := attr.RandomID()
 			req := &bindIQ{
 				IQ: stanza.IQ{
-					ID:   reqID,
-					Type: stanza.SetIQ,
+					XMLName: xml.Name{Space: ns.Client, Local: "iq"},
+					ID:      reqID,
+					Type:    stanza.SetIQ,
 				},
 				Bind: bindPayload{
 					Resource: session.origin.Resourcepart(),
