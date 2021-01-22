@@ -24,9 +24,11 @@ import (
 // NewSession establishes an XMPP session on rw using the WebSocket subprotocol
 // without performing the WebSocket handshake.
 func NewSession(ctx context.Context, addr jid.JID, rw io.ReadWriter, received bool, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
+	wsConn, ok := rw.(*websocket.Conn)
 	n := xmpp.NewNegotiator(xmpp.StreamConfig{
 		Features:  features,
 		WebSocket: true,
+		Secure:    ok && wsConn.LocalAddr().(*websocket.Addr).Scheme == "wss",
 	})
 	return xmpp.NegotiateSession(ctx, addr.Domain(), addr, rw, received, n)
 }

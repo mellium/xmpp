@@ -8,6 +8,7 @@ package websocket_test
 
 import (
 	"context"
+	"crypto/tls"
 	"testing"
 
 	"mellium.im/sasl"
@@ -21,7 +22,7 @@ import (
 func TestIntegrationDialWebSocket(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
 		integration.Log(),
-		integration.Cert("localhost"),
+		integration.Cert("localhost:5281"),
 		prosody.ListenC2S(),
 	)
 	prosodyRun(integrationDialWebsocket)
@@ -29,18 +30,23 @@ func TestIntegrationDialWebSocket(t *testing.T) {
 
 func integrationDialWebsocket(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
 	j, pass := cmd.User()
-	conn, err := websocket.DialDirect(context.Background(), "http://localhost:5280/", "ws://localhost:5280/xmpp-websocket")
+	d := websocket.Dialer{
+		Origin: "http://localhost:5281/",
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	conn, err := d.DialDirect(context.Background(), "wss://localhost:5281/xmpp-websocket")
 	if err != nil {
 		t.Fatalf("error dialing WebSocket connection: %v", err)
 	}
-	saslFeature := xmpp.SASL("", pass, sasl.Plain)
-	saslFeature.Necessary &^= xmpp.Secure
 	session, err := xmpp.NegotiateSession(
 		context.TODO(), j.Domain(), j, conn, false,
 		xmpp.NewNegotiator(xmpp.StreamConfig{
 			WebSocket: true,
+			Secure:    true,
 			Features: []xmpp.StreamFeature{
-				saslFeature,
+				xmpp.SASL("", pass, sasl.Plain),
 				xmpp.BindResource(),
 			},
 		}),
