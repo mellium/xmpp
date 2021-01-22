@@ -7,6 +7,7 @@ package prosody // import "mellium.im/xmpp/internal/integration/prosody"
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"os/exec"
@@ -32,6 +33,18 @@ func New(ctx context.Context, opts ...integration.Option) (*integration.Cmd, err
 		ctx, cmdName,
 		opts...,
 	)
+}
+
+// WebSocket enables the websocket module.
+// WebSocket implies the HTTPS() option.
+func WebSocket() integration.Option {
+	return func(cmd *integration.Cmd) error {
+		err := Modules("websocket")(cmd)
+		if err != nil {
+			return err
+		}
+		return HTTPS()(cmd)
+	}
 }
 
 // ConfigFile is an option that can be used to write a temporary Prosody config
@@ -92,11 +105,12 @@ func ListenC2S() integration.Option {
 			return err
 		}
 		// Prosody creates its own sockets and doesn't provide us with a way of
-		// pointing it at an existing Unix domain socket or handing the filehandle for
-		// the TCP connection to it on start, so we're effectively just listening to
-		// get a random port that we'll use to configure Prosody, then we need to
-		// close the connection and let Prosody listen on that port.
-		// Technically this is racey, but it's not likely to be a problem in practice.
+		// pointing it at an existing Unix domain socket or handing the filehandle
+		// for the TCP connection to it on start, so we're effectively just
+		// listening to get a random port that we'll use to configure Prosody, then
+		// we need to close the connection and let Prosody listen on that port.
+		// Technically this is racey, but it's not likely to be a problem in
+		// practice.
 		c2sPort := c2sListener.Addr().(*net.TCPAddr).Port
 		err = c2sListener.Close()
 		if err != nil {
@@ -158,11 +172,12 @@ func Component(domain, secret string) integration.Option {
 			return err
 		}
 		// Prosody creates its own sockets and doesn't provide us with a way of
-		// pointing it at an existing Unix domain socket or handing the filehandle for
-		// the TCP connection to it on start, so we're effectively just listening to
-		// get a random port that we'll use to configure Prosody, then we need to
-		// close the connection and let Prosody listen on that port.
-		// Technically this is racey, but it's not likely to be a problem in practice.
+		// pointing it at an existing Unix domain socket or handing the filehandle
+		// for the TCP connection to it on start, so we're effectively just
+		// listening to get a random port that we'll use to configure Prosody, then
+		// we need to close the connection and let Prosody listen on that port.
+		// Technically this is racey, but it's not likely to be a problem in
+		// practice.
 		compPort := compListener.Addr().(*net.TCPAddr).Port
 		err = compListener.Close()
 		if err != nil {
@@ -177,6 +192,45 @@ func Component(domain, secret string) integration.Option {
 		cfg.Component[domain] = secret
 		cmd.Config = cfg
 		return nil
+	}
+}
+
+// HTTPS configures prosody to listen for HTTP and HTTPS on two randomized
+// ports and configures TLS certificates for localhost:https.
+func HTTPS() integration.Option {
+	return func(cmd *integration.Cmd) error {
+		httpsListener, err := cmd.HTTPSListen("tcp", "[::1]:0")
+		if err != nil {
+			return err
+		}
+		httpListener, err := cmd.HTTPListen("tcp", "[::1]:0")
+		if err != nil {
+			return err
+		}
+
+		// Prosody creates its own sockets and doesn't provide us with a way of
+		// pointing it at an existing Unix domain socket or handing the filehandle
+		// for the TCP connection to it on start, so we're effectively just
+		// listening to get a random port that we'll use to configure Prosody, then
+		// we need to close the connection and let Prosody listen on that port.
+		// Technically this is racey, but it's not likely to be a problem in
+		// practice.
+		httpPort := httpListener.Addr().(*net.TCPAddr).Port
+		httpsPort := httpsListener.Addr().(*net.TCPAddr).Port
+		err = httpListener.Close()
+		if err != nil {
+			return err
+		}
+		err = httpsListener.Close()
+		if err != nil {
+			return err
+		}
+
+		cfg := getConfig(cmd)
+		cfg.HTTPPort = httpPort
+		cfg.HTTPSPort = httpsPort
+		cmd.Config = cfg
+		return integration.Cert(fmt.Sprintf("localhost:%d", httpsPort))(cmd)
 	}
 }
 

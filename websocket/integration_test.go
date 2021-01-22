@@ -22,7 +22,7 @@ import (
 func TestIntegrationDialWebSocket(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
 		integration.Log(),
-		integration.Cert("localhost:5281"),
+		prosody.WebSocket(),
 		prosody.ListenC2S(),
 	)
 	prosodyRun(integrationDialWebsocket)
@@ -31,12 +31,12 @@ func TestIntegrationDialWebSocket(t *testing.T) {
 func integrationDialWebsocket(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
 	j, pass := cmd.User()
 	d := websocket.Dialer{
-		Origin: "http://localhost:5281/",
+		Origin: "http://localhost:" + cmd.HTTPSPort() + "/",
 		TLSConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
 	}
-	conn, err := d.DialDirect(context.Background(), "wss://localhost:5281/xmpp-websocket")
+	conn, err := d.DialDirect(context.Background(), "wss://localhost:"+cmd.HTTPSPort()+"/xmpp-websocket")
 	if err != nil {
 		t.Fatalf("error dialing WebSocket connection: %v", err)
 	}

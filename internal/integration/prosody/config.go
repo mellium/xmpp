@@ -16,6 +16,8 @@ type Config struct {
 	C2SPort   int
 	S2SPort   int
 	CompPort  int
+	HTTPPort  int
+	HTTPSPort int
 	Admins    []string
 	Modules   []string
 	VHosts    []string
@@ -28,9 +30,13 @@ pidfile = "{{ filepathJoin .ConfigDir "prosody.pid" }}"
 admins = { {{ joinQuote .Admins }} }
 data_path = "{{ .ConfigDir }}"
 interfaces = { "::1", "127.0.0.1" }
+http_interfaces = { "::1", "127.0.0.1" }
+https_interfaces = { "::1", "127.0.0.1" }
 {{ if .C2SPort }}c2s_ports = { {{ .C2SPort }} }{{ end }}
 {{ if .S2SPort }}s2s_ports = { {{ .S2SPort }} }{{ end }}
 {{ if .CompPort }}component_ports = { {{.CompPort}} }{{ end }}
+{{ if .HTTPPort }}http_ports = { {{.HTTPPort}} }{{ end }}
+{{ if .HTTPSPort }}https_ports = { {{.HTTPSPort}} }{{ end }}
 
 -- Settings added with prosody.Set:
 {{ range $k, $opt := .Options }}
@@ -45,8 +51,6 @@ consider_websocket_secure = true
 modules_enabled = {
 	-- Extra modules added with prosody.Modules:
 		{{ luaList .Modules }}
-
-		"websocket";
 
 	-- Generally required
 		"roster"; -- Allow users to have a roster. Recommended ;)
@@ -94,7 +98,7 @@ log = {
 
 statistics = "internal"
 certificates = "{{ .ConfigDir }}"
-https_certificate = "{{ filepathJoin .ConfigDir "localhost:5281.crt" }}"
+{{ if .HTTPSPort }}https_certificate = "{{ filepathJoin .ConfigDir "localhost:" }}{{ .HTTPSPort }}.crt"{{ end }}
 
 {{- range .VHosts }}
 VirtualHost "{{ . }}"
