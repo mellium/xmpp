@@ -15,6 +15,7 @@ type Config struct {
 	C2SSocket  string
 	S2SSocket  string
 	CompSocket string
+	HTTPSocket string
 	Component  map[string]string
 }
 
@@ -67,6 +68,14 @@ listen:
       '{{$domain}}':
         password: '{{ $secret }}'
 {{- end }}
+{{- end }}
+{{- if .HTTPSocket }}
+  -
+    port: "unix:{{ .HTTPSocket }}"
+    ip: "::1"
+    module: ejabberd_http
+    request_handlers:
+      /xmpp: ejabberd_http_ws
 {{- end }}
 
 s2s_use_starttls: optional

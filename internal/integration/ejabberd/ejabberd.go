@@ -206,6 +206,21 @@ func Component(domain, secret string) integration.Option {
 	}
 }
 
+// WebSocket listens for WebSocket connections.
+func WebSocket() integration.Option {
+	return func(cmd *integration.Cmd) error {
+		httpsListener, err := cmd.HTTPSListen("unix", filepath.Join(cmd.ConfigDir(), "https.socket"))
+		if err != nil {
+			return err
+		}
+
+		cfg := getConfig(cmd)
+		cfg.HTTPSocket = httpsListener.Addr().(*net.UnixAddr).Name
+		cmd.Config = cfg
+		return nil
+	}
+}
+
 // CreateUser returns an option that calls ejabberdctl to create a user.
 // It is equivalent to calling:
 // Ctl(ctx, "register", "localpart", "domainpart", "password") except that it
