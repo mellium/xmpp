@@ -363,6 +363,31 @@ func (cmd *Cmd) Conn(ctx context.Context, s2s bool) (net.Conn, error) {
 	return conn, nil
 }
 
+// HTTPConn dials a connection and returns it without negotiating a session.
+func (cmd *Cmd) HTTPConn(ctx context.Context, secure bool) (net.Conn, error) {
+	switch {
+	case secure && cmd.httpsListener == nil:
+		return nil, errors.New("HTTPS not configured, please configure an HTTPS listener")
+	case !secure && cmd.httpListener == nil:
+		return nil, errors.New("HTTP not configured, please configure an HTTP listener")
+	}
+
+	var addr, network string
+	if secure {
+		addr = cmd.httpsListener.Addr().String()
+		network = cmd.httpsNetwork
+	} else {
+		addr = cmd.httpListener.Addr().String()
+		network = cmd.httpNetwork
+	}
+
+	conn, err := net.Dial(network, addr)
+	if err != nil {
+		return nil, fmt.Errorf("error dialing %s: %w", addr, err)
+	}
+	return conn, nil
+}
+
 func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t *testing.T, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
 	conn, err := cmd.Conn(ctx, s2s)
 	if err != nil {
