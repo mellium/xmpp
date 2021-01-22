@@ -40,27 +40,31 @@ import (
 type Cmd struct {
 	*exec.Cmd
 
-	name         string
-	cfgDir       string
-	killCtx      context.Context
-	kill         context.CancelFunc
-	cfgF         func() error
-	deferF       func(*Cmd) error
-	stdoutWriter *testWriter
-	in, out      *testWriter
-	c2sListener  net.Listener
-	s2sListener  net.Listener
-	compListener net.Listener
-	c2sNetwork   string
-	s2sNetwork   string
-	compNetwork  string
-	shutdown     func(*Cmd) error
-	user         jid.JID
-	pass         string
-	clientCrt    []byte
-	clientCrtKey interface{}
-	stdinPipe    io.WriteCloser
-	closed       chan error
+	name          string
+	cfgDir        string
+	killCtx       context.Context
+	kill          context.CancelFunc
+	cfgF          func() error
+	deferF        func(*Cmd) error
+	stdoutWriter  *testWriter
+	in, out       *testWriter
+	c2sListener   net.Listener
+	s2sListener   net.Listener
+	compListener  net.Listener
+	c2sNetwork    string
+	s2sNetwork    string
+	httpsListener net.Listener
+	httpListener  net.Listener
+	httpsNetwork  string
+	httpNetwork   string
+	compNetwork   string
+	shutdown      func(*Cmd) error
+	user          jid.JID
+	pass          string
+	clientCrt     []byte
+	clientCrtKey  interface{}
+	stdinPipe     io.WriteCloser
+	closed        chan error
 
 	// Config is meant to be used by internal packages like prosody and ejabberd
 	// to store their internal representation of the config before writing it out.
@@ -171,6 +175,40 @@ func (cmd *Cmd) S2SListen(network, addr string) (net.Listener, error) {
 	return cmd.s2sListener, err
 }
 
+// HTTPSListen returns a listener with a random port (for HTTPS).
+// The listener is created on the first call to HTTPSListener.
+// Subsequent calls ignore the arguments and return the existing listener.
+func (cmd *Cmd) HTTPSListen(network, addr string) (net.Listener, error) {
+	if cmd.httpsListener != nil {
+		return cmd.httpsListener, nil
+	}
+
+	var err error
+	cmd.httpsListener, err = net.Listen(network, addr)
+	if err != nil {
+		return nil, err
+	}
+	cmd.httpsNetwork = network
+	return cmd.httpsListener, nil
+}
+
+// HTTPListen returns a listener with a random port (for HTTP).
+// The listener is created on the first call to HTTPListener.
+// Subsequent calls ignore the arguments and return the existing listener.
+func (cmd *Cmd) HTTPListen(network, addr string) (net.Listener, error) {
+	if cmd.httpListener != nil {
+		return cmd.httpListener, nil
+	}
+
+	var err error
+	cmd.httpListener, err = net.Listen(network, addr)
+	if err != nil {
+		return nil, err
+	}
+	cmd.httpNetwork = network
+	return cmd.httpListener, nil
+}
+
 // ComponentListen returns a listener with a random port.
 // The listener is created on the first call to ComponentListener.
 // Subsequent calls ignore the arguments and return the existing listener.
@@ -253,6 +291,22 @@ func (cmd *Cmd) C2SAddr() (net.Addr, string) {
 // C2SPort returns the port on which the C2S listener is running (if any).
 func (cmd *Cmd) C2SPort() string {
 	addr, _ := cmd.C2SAddr()
+	/* #nosec */
+	_, port, _ := net.SplitHostPort(addr.String())
+	return port
+}
+
+// HTTPSPort returns the port on which the HTTPS listener is running (if any).
+func (cmd *Cmd) HTTPSPort() string {
+	addr := cmd.httpsListener.Addr()
+	/* #nosec */
+	_, port, _ := net.SplitHostPort(addr.String())
+	return port
+}
+
+// HTTPPort returns the port on which the HTTP listener is running (if any).
+func (cmd *Cmd) HTTPPort() string {
+	addr := cmd.httpListener.Addr()
 	/* #nosec */
 	_, port, _ := net.SplitHostPort(addr.String())
 	return port
