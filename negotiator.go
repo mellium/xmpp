@@ -42,6 +42,11 @@ type StreamConfig struct {
 	// subprotocol defined in RFC 7395.
 	WebSocket bool
 
+	// Secure marks the connection as secure, even if TLS has not been negotiated.
+	// This is useful when a reverse proxy is handling TLS and we can't tell that
+	// the connection has already been secured.
+	Secure bool
+
 	// If set a copy of any reads from the session will be written to TeeIn and
 	// any writes to the session will be written to TeeOut (similar to the tee(1)
 	// command).
@@ -73,6 +78,12 @@ func negotiator(cfg StreamConfig) Negotiator {
 			nState = negotiatorState{
 				doRestart: true,
 				cancelTee: nil,
+			}
+			if cfg.S2S {
+				s.state |= S2S
+			}
+			if cfg.Secure {
+				s.state |= Secure
 			}
 		}
 
@@ -130,9 +141,6 @@ func negotiator(cfg StreamConfig) Negotiator {
 
 		mask, rw, err = negotiateFeatures(ctx, s, data == nil, cfg.WebSocket, cfg.Features)
 		nState.doRestart = rw != nil
-		if cfg.S2S {
-			mask |= S2S
-		}
 		return mask, rw, nState, err
 	}
 }
