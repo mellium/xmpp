@@ -94,6 +94,7 @@ log = {
 
 statistics = "internal"
 certificates = "{{ .ConfigDir }}"
+https_certificate = "{{ filepathJoin .ConfigDir "localhost:5281.crt" }}"
 
 {{- range .VHosts }}
 VirtualHost "{{ . }}"
