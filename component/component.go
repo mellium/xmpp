@@ -30,9 +30,9 @@ const (
 func NewClientSession(ctx context.Context, addr jid.JID, secret []byte, rw io.ReadWriter, received bool) (*xmpp.Session, error) {
 	addr = addr.Domain()
 	if received {
-		return xmpp.ReceiveSession(ctx, rw, Negotiator(addr, secret, false))
+		return xmpp.ReceiveSession(ctx, rw, Negotiator(addr, secret, received))
 	}
-	return xmpp.NegotiateSession(ctx, addr, addr, rw, Negotiator(addr, secret, false))
+	return xmpp.NegotiateSession(ctx, addr, addr, rw, Negotiator(addr, secret, received))
 }
 
 // Negotiator returns a new function that can be used to negotiate a component

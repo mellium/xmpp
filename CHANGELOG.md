@@ -68,6 +68,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- component: the `NewSession` function (previously `NewClientSession`) now
+  correctly marks the connection as having been received or initiated
 - component: the wrong error is no longer returned if Prosody sends an error
   immediately after the start of a stream with no ID
 - dial: dialing an XMPP connection where no xmpps SRV records exist no longer
