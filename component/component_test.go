@@ -109,7 +109,7 @@ func TestComponent(t *testing.T) {
 			out := new(bytes.Buffer)
 			in := strings.NewReader(tc.server)
 
-			_, err := component.NewClientSession(ctx, addr, []byte("secret"), struct {
+			_, err := component.NewSession(ctx, addr, []byte("secret"), struct {
 				io.Reader
 				io.Writer
 			}{
