@@ -38,7 +38,7 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 		return fmt.Errorf("Error dialing sesion: %w", err)
 	}
 
-	s, err := xmpp.NegotiateSession(ctx, j.Domain(), j, conn, false, xmpp.NewNegotiator(xmpp.StreamConfig{
+	s, err := xmpp.NegotiateSession(ctx, j.Domain(), j, conn, xmpp.NewNegotiator(xmpp.StreamConfig{
 		Lang: "en",
 		Features: []xmpp.StreamFeature{
 			xmpp.BindResource(),

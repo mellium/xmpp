@@ -21,19 +21,30 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-// NewSession establishes an XMPP session on rw using the WebSocket subprotocol
-// without performing the WebSocket handshake.
-func NewSession(ctx context.Context, addr jid.JID, rw io.ReadWriter, received bool, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
+// NewSession establishes an XMPP session from the perspective of the initiating
+// client on rw using the WebSocket subprotocol.
+// It does not perform the WebSocket handshake.
+func NewSession(ctx context.Context, addr jid.JID, rw io.ReadWriter, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
 	wsConn, ok := rw.(*websocket.Conn)
 	n := xmpp.NewNegotiator(xmpp.StreamConfig{
 		Features:  features,
 		WebSocket: true,
 		Secure:    ok && wsConn.LocalAddr().(*websocket.Addr).Scheme == "wss",
 	})
-	if received {
-		return xmpp.ReceiveSession(ctx, rw, n)
-	}
 	return xmpp.NegotiateSession(ctx, addr.Domain(), addr, rw, n)
+}
+
+// ReceiveSession establishes an XMPP session from the perspective of the
+// receiving server on rw using the WebSocket subprotocol.
+// It does not perform the WebSocket handshake.
+func ReceiveSession(ctx context.Context, rw io.ReadWriter, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
+	wsConn, ok := rw.(*websocket.Conn)
+	n := xmpp.NewNegotiator(xmpp.StreamConfig{
+		Features:  features,
+		WebSocket: true,
+		Secure:    ok && wsConn.LocalAddr().(*websocket.Addr).Scheme == "wss",
+	})
+	return xmpp.ReceiveSession(ctx, rw, n)
 }
 
 // NewClient performs the WebSocket handshake on rwc and then attempts to
@@ -52,7 +63,7 @@ func NewClient(ctx context.Context, origin, location string, addr jid.JID, rwc i
 	if err != nil {
 		return nil, err
 	}
-	return NewSession(ctx, addr, conn, false, features...)
+	return NewSession(ctx, addr, conn, features...)
 }
 
 // DialSession uses a default dialer to create a WebSocket connection and
@@ -65,7 +76,7 @@ func DialSession(ctx context.Context, origin string, addr jid.JID, features ...x
 	if err != nil {
 		return nil, err
 	}
-	return NewSession(ctx, addr, conn, false, features...)
+	return NewSession(ctx, addr, conn, features...)
 }
 
 // Dial discovers WebSocket endpoints associated with the given address and
