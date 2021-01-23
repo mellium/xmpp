@@ -29,14 +29,11 @@ const (
 // the component protocol.
 func NewClientSession(ctx context.Context, addr jid.JID, secret []byte, rw io.ReadWriter, received bool) (*xmpp.Session, error) {
 	addr = addr.Domain()
-	return xmpp.NegotiateSession(ctx, addr, addr, rw, received, Negotiator(addr, secret, false))
+	if received {
+		return xmpp.ReceiveSession(ctx, rw, Negotiator(addr, secret, false))
+	}
+	return xmpp.NegotiateSession(ctx, addr, addr, rw, Negotiator(addr, secret, false))
 }
-
-// AcceptSession accepts an XMPP session on the given io.ReadWriter using the
-// component protocol.
-//func AcceptSession(ctx context.Context, addr jid.JID, secret []byte, rw io.ReadWriter) (*xmpp.Session, error) {
-//	return xmpp.NegotiateSession(ctx, nil, rw, Negotiator(addr, secret, true))
-//}
 
 // Negotiator returns a new function that can be used to negotiate a component
 // protocol connection when passed to xmpp.NegotiateSession.

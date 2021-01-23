@@ -55,7 +55,6 @@ func NewSession(state xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
 			),
 			Writer: rw,
 		},
-		false,
 		NopNegotiator(state),
 	)
 	if err != nil {

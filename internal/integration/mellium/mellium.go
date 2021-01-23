@@ -39,7 +39,6 @@ import (
 	"mellium.im/sasl"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/integration"
-	"mellium.im/xmpp/jid"
 )
 
 type logWriter struct {
@@ -172,7 +171,6 @@ func listen(s2s bool, l net.Listener, logger *log.Logger, cfg Config) {
 	if s2s {
 		connType = "s2s"
 	}
-	addr := jid.MustParse("me@localhost")
 	for {
 		conn, err := l.Accept()
 		if err != nil {
@@ -192,10 +190,7 @@ func listen(s2s bool, l net.Listener, logger *log.Logger, cfg Config) {
 				streamCfg.TeeIn = logWriter{logger: log.New(logger.Writer(), "RECV ", log.LstdFlags)}
 				streamCfg.TeeOut = logWriter{logger: log.New(logger.Writer(), "SEND ", log.LstdFlags)}
 			}
-			session, err := xmpp.NegotiateSession(
-				context.TODO(), addr.Domain(), addr, conn, true,
-				xmpp.NewNegotiator(streamCfg),
-			)
+			session, err := xmpp.ReceiveSession(context.TODO(), conn, xmpp.NewNegotiator(streamCfg))
 			if err != nil {
 				logger.Printf("error negotiating %s session: %v", connType, err)
 				return

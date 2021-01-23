@@ -404,7 +404,6 @@ func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t 
 		location,
 		origin,
 		conn,
-		false,
 		negotiator,
 	)
 	if err != nil {

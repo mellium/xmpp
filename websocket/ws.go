@@ -30,7 +30,10 @@ func NewSession(ctx context.Context, addr jid.JID, rw io.ReadWriter, received bo
 		WebSocket: true,
 		Secure:    ok && wsConn.LocalAddr().(*websocket.Addr).Scheme == "wss",
 	})
-	return xmpp.NegotiateSession(ctx, addr.Domain(), addr, rw, received, n)
+	if received {
+		return xmpp.ReceiveSession(ctx, rw, n)
+	}
+	return xmpp.NegotiateSession(ctx, addr.Domain(), addr, rw, n)
 }
 
 // NewClient performs the WebSocket handshake on rwc and then attempts to
