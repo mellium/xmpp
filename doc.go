@@ -29,30 +29,21 @@
 //         xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
 //     )
 //
+// These functions are a convenience that dial a connection and establish an
+// XMPP session in one step.
 // If control over DNS or HTTP-based service discovery is desired, the user can
-// use the dial package to create a dial.Dialer or use dial.Client (c2s) or
-// dial.Server (s2s).
-// To use the resulting connection, or to use something other than a TCP
-// connection (eg. to communicate over a Unix domain socket, an in-memory pipe,
-// etc.) the connection can be passed to NewClientSession or NewServerSession.
+// use the dial package to create a connection and then use the NegotiateSession
+// function for full control over session initialization.
+// This also lets the user create the XMPP session over something other than a
+// TCP socket; for example a Unix domain socket or an in-memory pipe.
+// It even allows the use of a different session negotiation protocol altogether
+// such as the WebSocket subprotocol from the websocket package, or the Jabber
+// Component Protocol from the component package.
 //
 //     conn, err := dial.Client(context.TODO(), "tcp", addr)
 //     …
-//     session, err := xmpp.NewClientSession(
-//         context.TODO(), addr, conn, false,
-//         xmpp.BindResource(),
-//         xmpp.StartTLS(nil),
-//         xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
-//     )
-//
-//
-// If complete control over the session establishment process is needed the
-// NegotiateSession function can be used to support custom session negotiation
-// protocols or to customize options around the default negotiator by using the
-// NewNegotiator function.
-//
 //     session, err := xmpp.NegotiateSession(
-//         context.TODO(), addr.Domain(), addr, conn, false,
+//         context.TODO(), addr.Domain(), addr, conn,
 //         xmpp.NewNegotiator(xmpp.StreamConfig{
 //             Lang: "en",
 //             …
@@ -64,9 +55,8 @@
 // Implementations of the most common features (StartTLS, SASL-based
 // authentication, and resource binding) are provided.
 // Custom stream features may be created using the StreamFeature struct.
-// Stream features defined in this module are safe for concurrent use by
-// multiple goroutines and for efficiency should only be created once and
-// re-used.
+// StreamFeatures defined in this module are safe for concurrent use by multiple
+// goroutines and may be created once and then re-used.
 //
 // Handling Stanzas
 //
