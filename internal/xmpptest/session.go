@@ -42,7 +42,7 @@ func NewSession(state xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
 	location := jid.MustParse("example.net")
 	origin := jid.MustParse("test@example.net")
 
-	s, err := xmpp.NegotiateSession(
+	s, err := xmpp.NewSession(
 		context.Background(), location, origin,
 		struct {
 			io.Reader

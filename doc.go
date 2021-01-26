@@ -23,17 +23,31 @@
 // negotiation.
 //
 //     session, err := xmpp.DialClientSession(
-//         context.TODO(), addr,
-//         xmpp.BindResource(),
-//         xmpp.StartTLS(nil),
+//         context.TODO(),
+//         jid.MustParse("me@example.net"),
+//         xmpp.StartTLS(&tls.Config{…}),
 //         xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
+//         xmpp.BindResource(),
 //     )
 //
 // These functions are a convenience that dial a connection and establish an
 // XMPP session in one step.
 // If control over DNS or HTTP-based service discovery is desired, the user can
-// use the dial package to create a connection and then use the NegotiateSession
-// function for full control over session initialization.
+// use the dial package to create a connection and then use one of the other
+// session negotiate functions for full control over session initialization.
+//
+// Aside from the Dial functions there are 6 other functions for establishing a
+// session.
+// Their names are matched by the regular expression:
+//
+//     (New|Receive)(Client|Server)?Session
+//
+// If "New" is present it indicates that the session is from the initiating
+// entities perspective while "Receive" indicates the receiving entity.
+// If "Client" or "Server" are present they indicate a C2S or S2S connection
+// respectively, otherwise they take a Negotiator and its behavior controls or
+// detects the type of stream.
+//
 // This also lets the user create the XMPP session over something other than a
 // TCP socket; for example a Unix domain socket or an in-memory pipe.
 // It even allows the use of a different session negotiation protocol altogether
@@ -42,7 +56,7 @@
 //
 //     conn, err := dial.Client(context.TODO(), "tcp", addr)
 //     …
-//     session, err := xmpp.NegotiateSession(
+//     session, err := xmpp.NewSession(
 //         context.TODO(), addr.Domain(), addr, conn,
 //         xmpp.NewNegotiator(xmpp.StreamConfig{
 //             Lang: "en",

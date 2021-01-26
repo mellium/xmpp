@@ -399,7 +399,7 @@ func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t 
 		TeeOut:   cmd.out,
 		S2S:      s2s,
 	})
-	session, err := xmpp.NegotiateSession(
+	session, err := xmpp.NewSession(
 		ctx,
 		location,
 		origin,

@@ -124,12 +124,12 @@ func (s *Session) ConnectionState() tls.ConnectionState {
 	return s.connState()
 }
 
-// NegotiateSession creates an XMPP session from the initiating entity's
-// perspective using negotiate to manage the initial handshake.
-// Calling NegotiateSession with a nil Negotiator panics.
+// NewSession creates an XMPP session from the initiating entity's perspective
+// using negotiate to manage the initial handshake.
+// Calling NewSession with a nil Negotiator panics.
 //
 // For more information see the Negotiator type.
-func NegotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
+func NewSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
 	return negotiateSession(ctx, location, origin, rw, false, negotiate)
 }
 
@@ -225,7 +225,7 @@ func DialClientSession(ctx context.Context, origin jid.JID, features ...StreamFe
 	if err != nil {
 		return nil, err
 	}
-	return NegotiateSession(ctx, origin.Domain(), origin, conn, NewNegotiator(StreamConfig{Features: features}))
+	return NewSession(ctx, origin.Domain(), origin, conn, NewNegotiator(StreamConfig{Features: features}))
 }
 
 // DialServerSession uses a default dialer to create a TCP connection and
@@ -238,38 +238,54 @@ func DialServerSession(ctx context.Context, location, origin jid.JID, features .
 	if err != nil {
 		return nil, err
 	}
-	return NegotiateSession(ctx, location, origin, conn, NewNegotiator(StreamConfig{S2S: true, Features: features}))
+	return NewSession(ctx, location, origin, conn, NewNegotiator(StreamConfig{S2S: true, Features: features}))
 }
 
 // NewClientSession attempts to use an existing connection (or any
-// io.ReadWriter) to negotiate an XMPP client-to-server session.
+// io.ReadWriter) to negotiate an XMPP client-to-server session from the
+// initiating client's perspective.
 // If the provided context is canceled before stream negotiation is complete an
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
-func NewClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter, received bool, features ...StreamFeature) (*Session, error) {
-	if received {
-		return ReceiveSession(ctx, rw, NewNegotiator(StreamConfig{
-			Features: features,
-		}))
-	}
-	return NegotiateSession(ctx, origin.Domain(), origin, rw, NewNegotiator(StreamConfig{
+func NewClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return NewSession(ctx, origin.Domain(), origin, rw, NewNegotiator(StreamConfig{
+		Features: features,
+	}))
+}
+
+// ReceiveClientSession attempts to use an existing connection (or any
+// io.ReadWriter) to negotiate an XMPP client-to-server session from the
+// server's perspective.
+// If the provided context is canceled before stream negotiation is complete an
+// error is returned.
+// After stream negotiation if the context is canceled it has no effect.
+func ReceiveClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return ReceiveSession(ctx, rw, NewNegotiator(StreamConfig{
 		Features: features,
 	}))
 }
 
 // NewServerSession attempts to use an existing connection (or any
-// io.ReadWriter) to negotiate an XMPP server-to-server session.
+// io.ReadWriter) to negotiate an XMPP server-to-server session from the
+// initiating server's perspective.
 // If the provided context is canceled before stream negotiation is complete an
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
-func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, received bool, features ...StreamFeature) (*Session, error) {
-	if received {
-		return ReceiveSession(ctx, rw, NewNegotiator(StreamConfig{
-			S2S:      true,
-			Features: features,
-		}))
-	}
-	return NegotiateSession(ctx, location, origin, rw, NewNegotiator(StreamConfig{
+func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return NewSession(ctx, location, origin, rw, NewNegotiator(StreamConfig{
+		S2S:      true,
+		Features: features,
+	}))
+}
+
+// ReceiveServerSession attempts to use an existing connection (or any
+// io.ReadWriter) to negotiate an XMPP server-to-server session from the
+// receiving server's perspective.
+// If the provided context is canceled before stream negotiation is complete an
+// error is returned.
+// After stream negotiation if the context is canceled it has no effect.
+func ReceiveServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
+	return ReceiveSession(ctx, rw, NewNegotiator(StreamConfig{
 		S2S:      true,
 		Features: features,
 	}))

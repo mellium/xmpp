@@ -17,8 +17,8 @@ All notable changes to this project will be documented in this file.
   instead of an `xml.TokenReader`
 - xmpp: IQs sent during stream negotiation are now matched against registered
   stream features based on the namespace of their payload
-- xmpp: the `NegotiateSession` function now only handles initiated connections.
-  Received connections have been split out into the `ReceiveSession` function.
+- xmpp: the session negotiation functions have been renamed and revamped, see
+  the main package docs for a comprehensive overview
 - xtime: change the `Time` type to fix unmarshaling
 
 

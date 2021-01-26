@@ -77,7 +77,7 @@ func TestNilNegotiatorPanics(t *testing.T) {
 			t.Error("Expected panic, did not get one")
 		}
 	}()
-	xmpp.NegotiateSession(context.Background(), jid.JID{}, jid.JID{}, nil, nil)
+	xmpp.NewSession(context.Background(), jid.JID{}, jid.JID{}, nil, nil)
 }
 
 var errTestNegotiate = errors.New("a test error")
@@ -146,7 +146,7 @@ func TestNegotiator(t *testing.T) {
 				Reader: strings.NewReader(tc.in),
 				Writer: buf,
 			}
-			session, err := xmpp.NegotiateSession(context.Background(), tc.location, tc.origin, rw, tc.negotiator)
+			session, err := xmpp.NewSession(context.Background(), tc.location, tc.origin, rw, tc.negotiator)
 			if ((err == nil || tc.err == nil) && (err != nil || tc.err != nil)) && err.Error() != tc.err.Error() {
 				t.Errorf("unexpected error: want=%q, got=%q", tc.err, err)
 			}
@@ -403,7 +403,7 @@ func TestNegotiateStreamError(t *testing.T) {
 			Features: []xmpp.StreamFeature{errorStartTLS(stream.Conflict)},
 		}))
 	}()
-	_, err := xmpp.NegotiateSession(ctx, clientJID, clientJID.Bare(), clientConn, xmpp.NewNegotiator(xmpp.StreamConfig{
+	_, err := xmpp.NewSession(ctx, clientJID, clientJID.Bare(), clientConn, xmpp.NewNegotiator(xmpp.StreamConfig{
 		Features: []xmpp.StreamFeature{xmpp.StartTLS(nil)},
 	}))
 	if !errors.Is(err, stream.Conflict) {

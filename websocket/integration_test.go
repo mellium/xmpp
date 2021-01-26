@@ -70,7 +70,7 @@ func integrationDialWebsocket(ctx context.Context, t *testing.T, cmd *integratio
 	if err != nil {
 		t.Fatalf("error dialing WebSocket connection: %v", err)
 	}
-	session, err := xmpp.NegotiateSession(
+	session, err := xmpp.NewSession(
 		context.TODO(), j.Domain(), j, conn,
 		xmpp.NewNegotiator(xmpp.StreamConfig{
 			WebSocket: true,

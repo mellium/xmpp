@@ -31,7 +31,7 @@ func NewSession(ctx context.Context, addr jid.JID, rw io.ReadWriter, features ..
 		WebSocket: true,
 		Secure:    ok && wsConn.LocalAddr().(*websocket.Addr).Scheme == "wss",
 	})
-	return xmpp.NegotiateSession(ctx, addr.Domain(), addr, rw, n)
+	return xmpp.NewSession(ctx, addr.Domain(), addr, rw, n)
 }
 
 // ReceiveSession establishes an XMPP session from the perspective of the
