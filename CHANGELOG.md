@@ -6,7 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking
 
-- component: `NewClientSession` has been renamed `NewSession`
+- component: `NewClientSession` has been split in to `NewSession` and
+  `ReceiveSession`
 - mux: fixed the signature of the `IQFunc` option to differentiate it from the
   normal `IQ` option
 - stream: the `SeeOtherHost` function signature has changed now that payload is

@@ -36,7 +36,7 @@ func integrationComponentClient(ctx context.Context, t *testing.T, cmd *integrat
 	if err != nil {
 		t.Errorf("error dialing connection: %v", err)
 	}
-	_, err = component.NewSession(context.Background(), j, []byte(secret), conn, false)
+	_, err = component.NewSession(context.Background(), j, []byte(secret), conn)
 	if err != nil {
 		t.Errorf("error negotiating session: %v", err)
 	}

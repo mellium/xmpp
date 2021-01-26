@@ -115,7 +115,7 @@ func TestComponent(t *testing.T) {
 			}{
 				Reader: in,
 				Writer: out,
-			}, false)
+			})
 			var errStr, tcErrStr string
 			if err != nil {
 				errStr = err.Error()

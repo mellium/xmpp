@@ -26,13 +26,17 @@ const (
 )
 
 // NewSession initiates an XMPP session on the given io.ReadWriter using the
-// component protocol.
-func NewSession(ctx context.Context, addr jid.JID, secret []byte, rw io.ReadWriter, received bool) (*xmpp.Session, error) {
+// component protocol from the perspective of the component.
+func NewSession(ctx context.Context, addr jid.JID, secret []byte, rw io.ReadWriter) (*xmpp.Session, error) {
 	addr = addr.Domain()
-	if received {
-		return xmpp.ReceiveSession(ctx, rw, Negotiator(addr, secret, received))
-	}
-	return xmpp.NewSession(ctx, addr, addr, rw, Negotiator(addr, secret, received))
+	return xmpp.NewSession(ctx, addr, addr, rw, Negotiator(addr, secret, false))
+}
+
+// ReceiveSession initiates an XMPP session on the given io.ReadWriter using the
+// component protocol from the perspective of the server.
+func ReceiveSession(ctx context.Context, addr jid.JID, secret []byte, rw io.ReadWriter) (*xmpp.Session, error) {
+	addr = addr.Domain()
+	return xmpp.ReceiveSession(ctx, rw, Negotiator(addr, secret, true))
 }
 
 // Negotiator returns a new function that can be used to negotiate a component
