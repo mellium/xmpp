@@ -16,11 +16,16 @@
 //
 // Session Negotiation
 //
-// To create an XMPP session, most users will want to call DialClientSession or
-// DialServerSession to create a client-to-server (c2s) or server-to-server
-// (s2s) connection respectively.
-// These methods use sane defaults to dial a TCP connection and perform stream
-// negotiation.
+// There are 9 functions for establishing an XMPP session.
+// Their names are matched by the regular expression:
+//
+//     (New|Receive|Dial)(Client|Server)?Session
+//
+// If "Dial" is present it means the function uses sane defaults to dial a TCP
+// connection before negotiating an XMPP session on it.
+// Most users will want to call DialClientSession or DialServerSession to create
+// a client-to-server (c2s) or server-to-server (s2s) connection respectively.
+// These methods are the most convenient way to quickly start a connection.
 //
 //     session, err := xmpp.DialClientSession(
 //         context.TODO(),
@@ -30,23 +35,16 @@
 //         xmpp.BindResource(),
 //     )
 //
-// These functions are a convenience that dial a connection and establish an
-// XMPP session in one step.
 // If control over DNS or HTTP-based service discovery is desired, the user can
 // use the dial package to create a connection and then use one of the other
-// session negotiate functions for full control over session initialization.
+// session negotiation functions for full control over session initialization.
 //
-// Aside from the Dial functions there are 6 other functions for establishing a
-// session.
-// Their names are matched by the regular expression:
-//
-//     (New|Receive)(Client|Server)?Session
-//
-// If "New" is present it indicates that the session is from the initiating
-// entities perspective while "Receive" indicates the receiving entity.
+// If "New" or "Dial" is present in the function name it indicates that the
+// session is from the initiating entities perspective while "Receive" indicates
+// the receiving entity.
 // If "Client" or "Server" are present they indicate a C2S or S2S connection
-// respectively, otherwise they take a Negotiator and its behavior controls or
-// detects the type of stream.
+// respectively, otherwise the function takes a Negotiator and an initial
+// session state to determine the type of session to create.
 //
 // This also lets the user create the XMPP session over something other than a
 // TCP socket; for example a Unix domain socket or an in-memory pipe.
