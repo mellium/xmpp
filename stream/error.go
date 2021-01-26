@@ -233,7 +233,7 @@ func (s *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		}
 
 		switch {
-		case start.Name.Local == "text" && start.Name.Space == ErrorNS:
+		case start.Name.Local == "text" && start.Name.Space == NSError:
 			var lang string
 			for _, attr := range start.Attr {
 				if attr.Name.Local == "lang" && attr.Name.Space == ns.XML {
@@ -256,7 +256,7 @@ func (s *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 				Lang:  lang,
 				Value: t.Text,
 			})
-		case start.Name.Space == ErrorNS:
+		case start.Name.Space == NSError:
 			s.Err = start.Name.Local
 		}
 		if err = d.Skip(); err != nil {
@@ -281,7 +281,7 @@ func (s Error) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
 // TokenReader returns a new xml.TokenReader that returns an encoding of
 // the error.
 func (s Error) TokenReader() xml.TokenReader {
-	inner := xmlstream.Wrap(s.innerXML, xml.StartElement{Name: xml.Name{Local: s.Err, Space: ErrorNS}})
+	inner := xmlstream.Wrap(s.innerXML, xml.StartElement{Name: xml.Name{Local: s.Err, Space: NSError}})
 	if s.payload != nil {
 		inner = xmlstream.MultiReader(
 			inner,
@@ -289,7 +289,7 @@ func (s Error) TokenReader() xml.TokenReader {
 		)
 	}
 	for _, txt := range s.Text {
-		start := xml.StartElement{Name: xml.Name{Space: ErrorNS, Local: "text"}}
+		start := xml.StartElement{Name: xml.Name{Space: NSError, Local: "text"}}
 		if txt.Lang != "" {
 			start.Attr = append(start.Attr, xml.Attr{
 				Name:  xml.Name{Space: ns.XML, Local: "lang"},

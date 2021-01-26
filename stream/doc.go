@@ -12,5 +12,5 @@ package stream // import "mellium.im/xmpp/stream"
 // Namespaces used by XMPP streams and stream errors, provided as a convenience.
 const (
 	NS      = "http://etherx.jabber.org/streams"
-	ErrorNS = "urn:ietf:params:xml:ns:xmpp-streams"
+	NSError = "urn:ietf:params:xml:ns:xmpp-streams"
 )
