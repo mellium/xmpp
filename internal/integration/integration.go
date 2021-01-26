@@ -397,13 +397,17 @@ func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t 
 		Features: features,
 		TeeIn:    cmd.in,
 		TeeOut:   cmd.out,
-		S2S:      s2s,
 	})
+	var mask xmpp.SessionState
+	if s2s {
+		mask |= xmpp.S2S
+	}
 	session, err := xmpp.NewSession(
 		ctx,
 		location,
 		origin,
 		conn,
+		mask,
 		negotiator,
 	)
 	if err != nil {

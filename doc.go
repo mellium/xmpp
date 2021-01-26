@@ -57,7 +57,7 @@
 //     conn, err := dial.Client(context.TODO(), "tcp", addr)
 //     …
 //     session, err := xmpp.NewSession(
-//         context.TODO(), addr.Domain(), addr, conn,
+//         context.TODO(), addr.Domain(), addr, conn, xmpp.Secure,
 //         xmpp.NewNegotiator(xmpp.StreamConfig{
 //             Lang: "en",
 //             …

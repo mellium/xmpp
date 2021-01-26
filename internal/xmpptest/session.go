@@ -38,7 +38,7 @@ func NopNegotiator(state xmpp.SessionState) xmpp.Negotiator {
 //
 // NewSession panics on error for ease of use in testing, where a panic is
 // acceptable.
-func NewSession(state xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
+func NewSession(finalState xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
 	location := jid.MustParse("example.net")
 	origin := jid.MustParse("test@example.net")
 
@@ -55,7 +55,8 @@ func NewSession(state xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
 			),
 			Writer: rw,
 		},
-		NopNegotiator(state),
+		0,
+		NopNegotiator(finalState),
 	)
 	if err != nil {
 		panic(err)

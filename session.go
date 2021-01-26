@@ -129,8 +129,8 @@ func (s *Session) ConnectionState() tls.ConnectionState {
 // Calling NewSession with a nil Negotiator panics.
 //
 // For more information see the Negotiator type.
-func NewSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
-	return negotiateSession(ctx, location, origin, rw, false, negotiate)
+func NewSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, state SessionState, negotiate Negotiator) (*Session, error) {
+	return negotiateSession(ctx, location, origin, rw, state, negotiate)
 }
 
 // ReceiveSession creates an XMPP session from the receiving server's
@@ -138,11 +138,11 @@ func NewSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter,
 // Calling ReceiveSession with a nil Negotiator panics.
 //
 // For more information see the Negotiator type.
-func ReceiveSession(ctx context.Context, rw io.ReadWriter, negotiate Negotiator) (*Session, error) {
-	return negotiateSession(ctx, jid.JID{}, jid.JID{}, rw, true, negotiate)
+func ReceiveSession(ctx context.Context, rw io.ReadWriter, state SessionState, negotiate Negotiator) (*Session, error) {
+	return negotiateSession(ctx, jid.JID{}, jid.JID{}, rw, Received|state, negotiate)
 }
 
-func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, received bool, negotiate Negotiator) (*Session, error) {
+func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, state SessionState, negotiate Negotiator) (*Session, error) {
 	if negotiate == nil {
 		panic("xmpp: attempted to negotiate session with nil negotiator")
 	}
@@ -153,14 +153,10 @@ func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 		features:   make(map[string]interface{}),
 		negotiated: make(map[string]struct{}),
 		sentIQs:    make(map[string]chan xmlstream.TokenReadCloser),
+		state:      state,
 	}
 	if tc, ok := s.conn.(tlsConn); ok {
 		s.connState = tc.ConnectionState
-	}
-	if received {
-		// We don't need to lock the state mutex yet since we haven't returned
-		// session and nothing else can access it.
-		s.state |= Received
 	}
 	s.out.Locker = &sync.Mutex{}
 	s.in.Locker = &sync.Mutex{}
@@ -225,7 +221,7 @@ func DialClientSession(ctx context.Context, origin jid.JID, features ...StreamFe
 	if err != nil {
 		return nil, err
 	}
-	return NewSession(ctx, origin.Domain(), origin, conn, NewNegotiator(StreamConfig{Features: features}))
+	return NewSession(ctx, origin.Domain(), origin, conn, 0, NewNegotiator(StreamConfig{Features: features}))
 }
 
 // DialServerSession uses a default dialer to create a TCP connection and
@@ -238,7 +234,7 @@ func DialServerSession(ctx context.Context, location, origin jid.JID, features .
 	if err != nil {
 		return nil, err
 	}
-	return NewSession(ctx, location, origin, conn, NewNegotiator(StreamConfig{S2S: true, Features: features}))
+	return NewSession(ctx, location, origin, conn, S2S, NewNegotiator(StreamConfig{Features: features}))
 }
 
 // NewClientSession attempts to use an existing connection (or any
@@ -248,7 +244,7 @@ func DialServerSession(ctx context.Context, location, origin jid.JID, features .
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
 func NewClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return NewSession(ctx, origin.Domain(), origin, rw, NewNegotiator(StreamConfig{
+	return NewSession(ctx, origin.Domain(), origin, rw, 0, NewNegotiator(StreamConfig{
 		Features: features,
 	}))
 }
@@ -260,7 +256,7 @@ func NewClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter, fea
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
 func ReceiveClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return ReceiveSession(ctx, rw, NewNegotiator(StreamConfig{
+	return ReceiveSession(ctx, rw, 0, NewNegotiator(StreamConfig{
 		Features: features,
 	}))
 }
@@ -272,8 +268,7 @@ func ReceiveClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter,
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
 func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return NewSession(ctx, location, origin, rw, NewNegotiator(StreamConfig{
-		S2S:      true,
+	return NewSession(ctx, location, origin, rw, S2S, NewNegotiator(StreamConfig{
 		Features: features,
 	}))
 }
@@ -285,8 +280,7 @@ func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 // error is returned.
 // After stream negotiation if the context is canceled it has no effect.
 func ReceiveServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
-	return ReceiveSession(ctx, rw, NewNegotiator(StreamConfig{
-		S2S:      true,
+	return ReceiveSession(ctx, rw, S2S, NewNegotiator(StreamConfig{
 		Features: features,
 	}))
 }

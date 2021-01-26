@@ -178,10 +178,10 @@ func listen(s2s bool, l net.Listener, logger *log.Logger, cfg Config) {
 			return
 		}
 		go func() {
-			streamCfg := xmpp.StreamConfig{
-				S2S: s2s,
-			}
+			var mask xmpp.SessionState
+			streamCfg := xmpp.StreamConfig{}
 			if s2s {
+				mask |= xmpp.S2S
 				streamCfg.Features = cfg.S2SFeatures
 			} else {
 				streamCfg.Features = cfg.C2SFeatures
@@ -190,7 +190,7 @@ func listen(s2s bool, l net.Listener, logger *log.Logger, cfg Config) {
 				streamCfg.TeeIn = logWriter{logger: log.New(logger.Writer(), "RECV ", log.LstdFlags)}
 				streamCfg.TeeOut = logWriter{logger: log.New(logger.Writer(), "SEND ", log.LstdFlags)}
 			}
-			session, err := xmpp.ReceiveSession(context.TODO(), conn, xmpp.NewNegotiator(streamCfg))
+			session, err := xmpp.ReceiveSession(context.TODO(), conn, mask, xmpp.NewNegotiator(streamCfg))
 			if err != nil {
 				logger.Printf("error negotiating %s session: %v", connType, err)
 				return

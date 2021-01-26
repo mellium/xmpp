@@ -72,9 +72,9 @@ func integrationDialWebsocket(ctx context.Context, t *testing.T, cmd *integratio
 	}
 	session, err := xmpp.NewSession(
 		context.TODO(), j.Domain(), j, conn,
+		xmpp.Secure,
 		xmpp.NewNegotiator(xmpp.StreamConfig{
 			WebSocket: true,
-			Secure:    true,
 			Features: []xmpp.StreamFeature{
 				xmpp.SASL("", pass, sasl.Plain),
 				xmpp.BindResource(),

@@ -32,20 +32,12 @@ type StreamConfig struct {
 	// The native language of the stream.
 	Lang string
 
-	// S2S causes the negotiator to negotiate a server-to-server (s2s) connection.
-	S2S bool
-
 	// A list of stream features to attempt to negotiate.
 	Features []StreamFeature
 
 	// WebSocket indicates that the negotiator should use the WebSocket
 	// subprotocol defined in RFC 7395.
 	WebSocket bool
-
-	// Secure marks the connection as secure, even if TLS has not been negotiated.
-	// This is useful when a reverse proxy is handling TLS and we can't tell that
-	// the connection has already been secured.
-	Secure bool
 
 	// If set a copy of any reads from the session will be written to TeeIn and
 	// any writes to the session will be written to TeeOut (similar to the tee(1)
@@ -80,12 +72,6 @@ func negotiator(cfg StreamConfig) Negotiator {
 				doRestart: true,
 				cancelTee: nil,
 			}
-			if cfg.S2S {
-				s.state |= S2S
-			}
-			if cfg.Secure {
-				s.state |= Secure
-			}
 		}
 
 		c := s.Conn()
@@ -118,7 +104,7 @@ func negotiator(cfg StreamConfig) Negotiator {
 					nState.doRestart = false
 					return mask, nil, nState, err
 				}
-				s.out.Info, err = stream.Send(s.Conn(), cfg.S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), attr.RandomID())
+				s.out.Info, err = stream.Send(s.Conn(), s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), attr.RandomID())
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -127,7 +113,7 @@ func negotiator(cfg StreamConfig) Negotiator {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
 
-				s.out.Info, err = stream.Send(s.Conn(), cfg.S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
+				s.out.Info, err = stream.Send(s.Conn(), s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
