@@ -26,7 +26,9 @@ import (
 // It does not perform the WebSocket handshake.
 func NewSession(ctx context.Context, addr jid.JID, rw io.ReadWriter, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
 	n := xmpp.NewNegotiator(xmpp.StreamConfig{
-		Features:  features,
+		Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
+			return features
+		},
 		WebSocket: true,
 	})
 	var mask xmpp.SessionState
@@ -41,7 +43,9 @@ func NewSession(ctx context.Context, addr jid.JID, rw io.ReadWriter, features ..
 // It does not perform the WebSocket handshake.
 func ReceiveSession(ctx context.Context, rw io.ReadWriter, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
 	n := xmpp.NewNegotiator(xmpp.StreamConfig{
-		Features:  features,
+		Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
+			return features
+		},
 		WebSocket: true,
 	})
 	var mask xmpp.SessionState

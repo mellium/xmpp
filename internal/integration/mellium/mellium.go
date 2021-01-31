@@ -182,9 +182,13 @@ func listen(s2s bool, l net.Listener, logger *log.Logger, cfg Config) {
 			streamCfg := xmpp.StreamConfig{}
 			if s2s {
 				mask |= xmpp.S2S
-				streamCfg.Features = cfg.S2SFeatures
+				streamCfg.Features = func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
+					return cfg.S2SFeatures
+				}
 			} else {
-				streamCfg.Features = cfg.C2SFeatures
+				streamCfg.Features = func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
+					return cfg.C2SFeatures
+				}
 			}
 			if cfg.LogXML {
 				streamCfg.TeeIn = logWriter{logger: log.New(logger.Writer(), "RECV ", log.LstdFlags)}

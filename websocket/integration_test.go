@@ -75,9 +75,11 @@ func integrationDialWebsocket(ctx context.Context, t *testing.T, cmd *integratio
 		xmpp.Secure,
 		xmpp.NewNegotiator(xmpp.StreamConfig{
 			WebSocket: true,
-			Features: []xmpp.StreamFeature{
-				xmpp.SASL("", pass, sasl.Plain),
-				xmpp.BindResource(),
+			Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
+				return []xmpp.StreamFeature{
+					xmpp.SASL("", pass, sasl.Plain),
+					xmpp.BindResource(),
+				}
 			},
 		}),
 	)

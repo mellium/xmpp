@@ -33,7 +33,24 @@ type StreamConfig struct {
 	Lang string
 
 	// A list of stream features to attempt to negotiate.
-	Features []StreamFeature
+	// Features will be called every time a new stream is started so that the user
+	// may look up required stream features based on information about an incoming
+	// stream such as the location and origin JID.
+	// Individual features still control whether or not they are listed at any
+	// given time, so all possible features should be returned on each step and
+	// new features only added to the list when we learn that they are possible
+	// eg. because the origin or location JID is set and we can look up that users
+	// configuration in the database.
+	// For example, you would not return StartTLS the first time this feature is
+	// called then return Auth once you see that the secure bit is set on the
+	// session state because the stream features themselves would handle this for
+	// you.
+	// Instead you would always return StartTLS and Auth, but you might only add
+	// the "password reset" feature once you see that the origin JID is one that
+	// has a backup email in the database.
+	// The previous stream features list is passed in at each step so that it can
+	// be re-used or appended to if desired (however, this is not required).
+	Features func(*Session, ...StreamFeature) []StreamFeature
 
 	// WebSocket indicates that the negotiator should use the WebSocket
 	// subprotocol defined in RFC 7395.
@@ -63,6 +80,7 @@ type negotiatorState struct {
 }
 
 func negotiator(cfg StreamConfig) Negotiator {
+	var features []StreamFeature
 	return func(ctx context.Context, s *Session, data interface{}) (mask SessionState, rw io.ReadWriter, restartNext interface{}, err error) {
 		nState, ok := data.(negotiatorState)
 		// If no state was passed in, this is the first negotiate call so make up a
@@ -126,7 +144,10 @@ func negotiator(cfg StreamConfig) Negotiator {
 			}
 		}
 
-		mask, rw, err = negotiateFeatures(ctx, s, data == nil, cfg.WebSocket, cfg.Features)
+		if cfg.Features != nil {
+			features = cfg.Features(s, features...)
+		}
+		mask, rw, err = negotiateFeatures(ctx, s, data == nil, cfg.WebSocket, features)
 		nState.doRestart = rw != nil
 		return mask, rw, nState, err
 	}

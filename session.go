@@ -237,7 +237,14 @@ func DialClientSession(ctx context.Context, origin jid.JID, features ...StreamFe
 	if err != nil {
 		return nil, err
 	}
-	return NewSession(ctx, origin.Domain(), origin, conn, 0, NewNegotiator(StreamConfig{Features: features}))
+	return NewSession(ctx, origin.Domain(), origin, conn, 0, NewNegotiator(StreamConfig{
+		Features: func(_ *Session, f ...StreamFeature) []StreamFeature {
+			if f != nil {
+				return f
+			}
+			return features
+		},
+	}))
 }
 
 // DialServerSession uses a default dialer to create a TCP connection and
@@ -250,7 +257,11 @@ func DialServerSession(ctx context.Context, location, origin jid.JID, features .
 	if err != nil {
 		return nil, err
 	}
-	return NewSession(ctx, location, origin, conn, S2S, NewNegotiator(StreamConfig{Features: features}))
+	return NewSession(ctx, location, origin, conn, S2S, NewNegotiator(StreamConfig{
+		Features: func(*Session, ...StreamFeature) []StreamFeature {
+			return features
+		},
+	}))
 }
 
 // NewClientSession attempts to use an existing connection (or any
@@ -261,7 +272,9 @@ func DialServerSession(ctx context.Context, location, origin jid.JID, features .
 // After stream negotiation if the context is canceled it has no effect.
 func NewClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
 	return NewSession(ctx, origin.Domain(), origin, rw, 0, NewNegotiator(StreamConfig{
-		Features: features,
+		Features: func(*Session, ...StreamFeature) []StreamFeature {
+			return features
+		},
 	}))
 }
 
@@ -273,7 +286,9 @@ func NewClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter, fea
 // After stream negotiation if the context is canceled it has no effect.
 func ReceiveClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
 	return ReceiveSession(ctx, rw, 0, NewNegotiator(StreamConfig{
-		Features: features,
+		Features: func(*Session, ...StreamFeature) []StreamFeature {
+			return features
+		},
 	}))
 }
 
@@ -285,7 +300,9 @@ func ReceiveClientSession(ctx context.Context, origin jid.JID, rw io.ReadWriter,
 // After stream negotiation if the context is canceled it has no effect.
 func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
 	return NewSession(ctx, location, origin, rw, S2S, NewNegotiator(StreamConfig{
-		Features: features,
+		Features: func(*Session, ...StreamFeature) []StreamFeature {
+			return features
+		},
 	}))
 }
 
@@ -297,7 +314,9 @@ func NewServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 // After stream negotiation if the context is canceled it has no effect.
 func ReceiveServerSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, features ...StreamFeature) (*Session, error) {
 	return ReceiveSession(ctx, rw, S2S, NewNegotiator(StreamConfig{
-		Features: features,
+		Features: func(*Session, ...StreamFeature) []StreamFeature {
+			return features
+		},
 	}))
 }
 

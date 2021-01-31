@@ -113,7 +113,9 @@ var negotiateTests = [...]negotiateTestCase{
 	0: {negotiator: errNegotiator, err: errTestNegotiate},
 	1: {
 		negotiator: xmpp.NewNegotiator(xmpp.StreamConfig{
-			Features: []xmpp.StreamFeature{xmpp.StartTLS(nil)},
+			Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
+				return []xmpp.StreamFeature{xmpp.StartTLS(nil)}
+			},
 		}),
 		in:  `<stream:stream id='316732270768047465' version='1.0' xml:lang='en' xmlns:stream='http://etherx.jabber.org/streams' xmlns='jabber:client'><stream:features><other/></stream:features>`,
 		out: `<?xml version="1.0" encoding="UTF-8"?><stream:stream to='' from='' version='1.0' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'><starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`,
@@ -127,7 +129,9 @@ var negotiateTests = [...]negotiateTestCase{
 	},
 	3: {
 		negotiator: xmpp.NewNegotiator(xmpp.StreamConfig{
-			Features: []xmpp.StreamFeature{readyFeature},
+			Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
+				return []xmpp.StreamFeature{readyFeature}
+			},
 		}),
 		in:           `<stream:stream id='316732270768047465' version='1.0' xml:lang='en' xmlns:stream='http://etherx.jabber.org/streams' xmlns='jabber:server'><stream:features><ready xmlns='urn:example'/></stream:features>`,
 		out:          `<?xml version="1.0" encoding="UTF-8"?><stream:stream to='' from='' version='1.0' xmlns='jabber:server' xmlns:stream='http://etherx.jabber.org/streams'>`,
@@ -401,11 +405,15 @@ func TestNegotiateStreamError(t *testing.T) {
 	clientJID := jid.MustParse("me@example.net")
 	go func() {
 		xmpp.ReceiveSession(ctx, serverConn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
-			Features: []xmpp.StreamFeature{errorStartTLS(stream.Conflict)},
+			Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
+				return []xmpp.StreamFeature{errorStartTLS(stream.Conflict)}
+			},
 		}))
 	}()
 	_, err := xmpp.NewSession(ctx, clientJID, clientJID.Bare(), clientConn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
-		Features: []xmpp.StreamFeature{xmpp.StartTLS(nil)},
+		Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
+			return []xmpp.StreamFeature{xmpp.StartTLS(nil)}
+		},
 	}))
 	if !errors.Is(err, stream.Conflict) {
 		t.Errorf("unexpected client err: want=%v, got=%v", stream.Conflict, err)

@@ -40,12 +40,17 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 
 	s, err := xmpp.NewSession(ctx, j.Domain(), j, conn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
 		Lang: "en",
-		Features: []xmpp.StreamFeature{
-			xmpp.BindResource(),
-			xmpp.StartTLS(&tls.Config{
-				ServerName: j.Domain().String(),
-			}),
-			xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
+		Features: func(_ *xmpp.Session, f ...xmpp.StreamFeature) []xmpp.StreamFeature {
+			if f != nil {
+				return f
+			}
+			return []xmpp.StreamFeature{
+				xmpp.BindResource(),
+				xmpp.StartTLS(&tls.Config{
+					ServerName: j.Domain().String(),
+				}),
+				xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
+			}
 		},
 		TeeIn:  xmlIn,
 		TeeOut: xmlOut,
