@@ -39,7 +39,7 @@ func ReceiveSession(ctx context.Context, addr jid.JID, secret []byte, rw io.Read
 }
 
 // Negotiator returns a new function that can be used to negotiate a component
-// protocol connection when passed to xmpp.NegotiateSession.
+// protocol connection when passed to xmpp.NewSession.
 //
 // It currently only supports the client side of the component protocol.
 // If recv is true (indicating that we are receiving a connection on the server
