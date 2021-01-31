@@ -97,14 +97,14 @@ type Session struct {
 	sentIQs     map[string]chan xmlstream.TokenReadCloser
 
 	in struct {
-		intstream.Info
+		stream.Info
 		d      xml.TokenReader
 		ctx    context.Context
 		cancel context.CancelFunc
 		sync.Locker
 	}
 	out struct {
-		intstream.Info
+		stream.Info
 		e interface {
 			xmlstream.TokenWriter
 			xmlstream.Flusher

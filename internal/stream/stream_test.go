@@ -12,7 +12,8 @@ import (
 	"testing"
 
 	"mellium.im/xmpp/internal/decl"
-	"mellium.im/xmpp/internal/stream"
+	intstream "mellium.im/xmpp/internal/stream"
+	"mellium.im/xmpp/stream"
 )
 
 func TestSendNewS2S(t *testing.T) {
@@ -34,7 +35,7 @@ func TestSendNewS2S(t *testing.T) {
 			if tc.id {
 				ids = "abc"
 			}
-			_, err := stream.Send(&b, tc.s2s, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
+			_, err := intstream.Send(&b, tc.s2s, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
 
 			str := b.String()
 			if !strings.HasPrefix(str, decl.XMLHeader) {
@@ -77,7 +78,7 @@ func (nopReader) Read(p []byte) (n int, err error) {
 }
 
 func TestSendNewS2SReturnsWriteErr(t *testing.T) {
-	_, err := stream.Send(struct {
+	_, err := intstream.Send(struct {
 		io.Reader
 		io.Writer
 	}{

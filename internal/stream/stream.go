@@ -15,65 +15,8 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/decl"
 	"mellium.im/xmpp/internal/ns"
-	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stream"
 )
-
-// Info contains metadata extracted from a stream start token.
-type Info struct {
-	Name    xml.Name
-	to      *jid.JID
-	from    *jid.JID
-	ID      string
-	version Version
-	xmlns   string
-	lang    string
-}
-
-// This MUST only return stream errors.
-// TODO: Is the above true? Just make it return a StreamError?
-func streamFromStartElement(s xml.StartElement, ws bool) (Info, error) {
-	streamData := Info{
-		Name: s.Name,
-	}
-	for _, attr := range s.Attr {
-		switch attr.Name {
-		case xml.Name{Space: "", Local: "to"}:
-			streamData.to = &jid.JID{}
-			if err := streamData.to.UnmarshalXMLAttr(attr); err != nil {
-				return streamData, stream.ImproperAddressing
-			}
-		case xml.Name{Space: "", Local: "from"}:
-			streamData.from = &jid.JID{}
-			if err := streamData.from.UnmarshalXMLAttr(attr); err != nil {
-				return streamData, stream.ImproperAddressing
-			}
-		case xml.Name{Space: "", Local: "id"}:
-			streamData.ID = attr.Value
-		case xml.Name{Space: "", Local: "version"}:
-			err := (&streamData.version).UnmarshalXMLAttr(attr)
-			if err != nil {
-				return streamData, stream.BadFormat
-			}
-		case xml.Name{Space: "", Local: "xmlns"}:
-			// TODO:  why did we do this in the case block? Shouldn't we check s.Name?
-			if (ws && attr.Value != ns.WS) || (!ws && attr.Value != "jabber:client" && attr.Value != "jabber:server") {
-				return streamData, fmt.Errorf("xmpp: invalid xmlns attribute: %s", attr.Value)
-			}
-			streamData.xmlns = attr.Value
-		case xml.Name{Space: "xmlns", Local: "stream"}:
-			// If we're using the websocket subprotocol this will never show up (but
-			// if it does, we don't care at all, it's just extra stuff that we won't
-			// end up using).
-			if !ws && attr.Value != stream.NS {
-				return streamData, stream.InvalidNamespace
-			}
-		case xml.Name{Space: "xml", Local: "lang"}:
-			streamData.lang = attr.Value
-		}
-	}
-	return streamData, nil
-}
 
 // Send sends a new XML header followed by a stream start element on the given
 // io.Writer.
@@ -83,13 +26,13 @@ func streamFromStartElement(s xml.StartElement, ws bool) (Info, error) {
 // is much faster than encoding.
 // Afterwards, clear the StreamRestartRequired bit and set the output stream
 // information.
-func Send(rw io.ReadWriter, s2s, ws bool, version Version, lang string, location, origin, id string) (Info, error) {
-	streamData := Info{}
+func Send(rw io.ReadWriter, s2s, ws bool, version stream.Version, lang string, location, origin, id string) (stream.Info, error) {
+	streamData := stream.Info{}
 	switch s2s {
 	case true:
-		streamData.xmlns = ns.Server
+		streamData.XMLNS = ns.Server
 	case false:
-		streamData.xmlns = ns.Client
+		streamData.XMLNS = ns.Client
 	}
 
 	streamData.ID = id
@@ -103,7 +46,7 @@ func Send(rw io.ReadWriter, s2s, ws bool, version Version, lang string, location
 	} else {
 		_, err = fmt.Fprintf(b,
 			decl.XMLHeader+`<stream:stream xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams' version='%s'`,
-			streamData.xmlns,
+			streamData.XMLNS,
 			version,
 		)
 	}
@@ -162,7 +105,7 @@ func Send(rw io.ReadWriter, s2s, ws bool, version Version, lang string, location
 // If not, an error is returned. It then handles feature negotiation for the new
 // stream.
 // If an XML header is discovered instead, it is skipped.
-func Expect(ctx context.Context, d xml.TokenReader, recv, ws bool) (streamData Info, err error) {
+func Expect(ctx context.Context, d xml.TokenReader, recv, ws bool) (streamData stream.Info, err error) {
 	// Skip the XML declaration (if any).
 	d = decl.Skip(d)
 
@@ -206,11 +149,11 @@ func Expect(ctx context.Context, d xml.TokenReader, recv, ws bool) (streamData I
 				}
 			}
 
-			streamData, err = streamFromStartElement(tok, ws)
+			err = streamData.FromStartElement(tok)
 			switch {
 			case err != nil:
 				return streamData, err
-			case streamData.version != DefaultVersion:
+			case streamData.Version != stream.DefaultVersion:
 				return streamData, stream.UnsupportedVersion
 			}
 

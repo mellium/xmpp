@@ -9,7 +9,8 @@ import (
 	"io"
 
 	"mellium.im/xmpp/internal/attr"
-	"mellium.im/xmpp/internal/stream"
+	intstream "mellium.im/xmpp/internal/stream"
+	"mellium.im/xmpp/stream"
 )
 
 // Negotiator is a function that can be passed to NegotiateSession to perform
@@ -117,12 +118,12 @@ func negotiator(cfg StreamConfig) Negotiator {
 				// If we're the receiving entity wait for a new stream, then send one in
 				// response.
 
-				s.in.Info, err = stream.Expect(ctx, s.in.d, s.State()&Received == Received, cfg.WebSocket)
+				s.in.Info, err = intstream.Expect(ctx, s.in.d, s.State()&Received == Received, cfg.WebSocket)
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
 				}
-				s.out.Info, err = stream.Send(s.Conn(), s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), attr.RandomID())
+				s.out.Info, err = intstream.Send(s.Conn(), s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), attr.RandomID())
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -131,12 +132,12 @@ func negotiator(cfg StreamConfig) Negotiator {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
 
-				s.out.Info, err = stream.Send(s.Conn(), s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
+				s.out.Info, err = intstream.Send(s.Conn(), s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
 				}
-				s.in.Info, err = stream.Expect(ctx, s.in.d, s.State()&Received == Received, cfg.WebSocket)
+				s.in.Info, err = intstream.Expect(ctx, s.in.d, s.State()&Received == Received, cfg.WebSocket)
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err

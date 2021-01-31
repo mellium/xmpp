@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"testing"
 
-	"mellium.im/xmpp/internal/stream"
+	"mellium.im/xmpp/stream"
 )
 
 // Compile time interface checks.

@@ -40,6 +40,7 @@ All notable changes to this project will be documented in this file.
   to easily construct customized stream errors
 - stream: ability to compare errors with `errors.Is`
 - stream: support adding human-readable text to errors
+- stream: add `Info` block for use by custom `Negotiators`
 - styling: add `Disable` and `Unstyled` to support disabling styling on some
   messages
 - websocket: added a new package for dialing WebSocket connections
