@@ -55,10 +55,10 @@ func TestSendNewS2S(t *testing.T) {
 				t.Errorf("Expected string to contain ` from='test@example.net' ` but got: %s", str)
 			case !strings.Contains(str, ` version='1.0' `):
 				t.Errorf("Expected string to contain ` version='1.0' ` but got: %s", str)
-			case !strings.Contains(str, ` xml:lang='und' `):
-				t.Errorf("Expected string to contain ` xml:lang='und' ` but got: %s", str)
-			case !strings.HasSuffix(str, ` xmlns:stream='http://etherx.jabber.org/streams'>`):
-				t.Errorf("Expected string to end with xmlns:stream=… but got: %s", str)
+			case !strings.Contains(str, ` xml:lang='und'`):
+				t.Errorf("Expected string to contain ` xml:lang='und'` but got: %s", str)
+			case !strings.Contains(str, ` xmlns:stream='http://etherx.jabber.org/streams'`):
+				t.Errorf("Expected string to contain xmlns:stream=… but got: %s", str)
 			}
 		})
 	}

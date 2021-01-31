@@ -93,31 +93,41 @@ func Send(rw io.ReadWriter, s2s, ws bool, version Version, lang string, location
 	}
 
 	streamData.ID = id
-	if id != "" {
-		id = `id='` + id + `' `
-	}
-
 	b := bufio.NewWriter(rw)
 	var err error
 	if ws {
 		_, err = fmt.Fprintf(b,
-			`<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" %sto='%s' from='%s' version='%s'`,
-			id,
-			location,
-			origin,
+			`<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" version='%s'`,
 			version,
 		)
 	} else {
 		_, err = fmt.Fprintf(b,
-			decl.XMLHeader+`<stream:stream %sto='%s' from='%s' version='%s'`,
-			id,
-			location,
-			origin,
+			decl.XMLHeader+`<stream:stream xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams' version='%s'`,
+			streamData.xmlns,
 			version,
 		)
 	}
 	if err != nil {
 		return streamData, err
+	}
+
+	if id != "" {
+		_, err = fmt.Fprintf(b, " id='%s'", id)
+		if err != nil {
+			return streamData, err
+		}
+	}
+	if location != "" {
+		_, err = fmt.Fprintf(b, " to='%s'", location)
+		if err != nil {
+			return streamData, err
+		}
+	}
+	if origin != "" {
+		_, err = fmt.Fprintf(b, " from='%s'", origin)
+		if err != nil {
+			return streamData, err
+		}
 	}
 
 	if len(lang) > 0 {
@@ -138,9 +148,7 @@ func Send(rw io.ReadWriter, s2s, ws bool, version Version, lang string, location
 	if ws {
 		_, err = fmt.Fprint(b, `/>`)
 	} else {
-		_, err = fmt.Fprintf(b, ` xmlns='%s' xmlns:stream='http://etherx.jabber.org/streams'>`,
-			streamData.xmlns,
-		)
+		_, err = fmt.Fprint(b, `>`)
 	}
 	if err != nil {
 		return streamData, err
