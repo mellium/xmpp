@@ -51,7 +51,8 @@ type StreamConfig struct {
 	// any writes to the session will be written to TeeOut (similar to the tee(1)
 	// command).
 	// This can be used to build an "XML console", but users should be careful
-	// since this bypasses TLS and could expose passwords and other sensitive data.
+	// since this bypasses TLS and could expose passwords and other sensitive
+	// data.
 	TeeIn, TeeOut io.Writer
 }
 

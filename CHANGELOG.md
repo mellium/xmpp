@@ -133,7 +133,6 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - roster: iters that have errored no longer panic when closed
-- sasl2: using TeeIn/TeeOut no longer breaks SCRAM based SASL mechanisms
 - xmpp: using TeeIn/TeeOut no longer breaks SCRAM based SASL mechanisms
 - xmpp: stream negotiation no longer fails when the only required features
   cannot yet be negotiated because they depend on optional features
