@@ -35,7 +35,8 @@ func TestSendNewS2S(t *testing.T) {
 			if tc.id {
 				ids = "abc"
 			}
-			_, err := intstream.Send(&b, tc.s2s, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
+			out := stream.Info{}
+			err := intstream.Send(&b, &out, tc.s2s, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
 
 			str := b.String()
 			if !strings.HasPrefix(str, decl.XMLHeader) {
@@ -78,13 +79,14 @@ func (nopReader) Read(p []byte) (n int, err error) {
 }
 
 func TestSendNewS2SReturnsWriteErr(t *testing.T) {
-	_, err := intstream.Send(struct {
+	out := stream.Info{}
+	err := intstream.Send(struct {
 		io.Reader
 		io.Writer
 	}{
 		nopReader{},
 		errWriter{},
-	}, true, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", "abc")
+	}, &out, true, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", "abc")
 	if err != io.ErrUnexpectedEOF {
 		t.Errorf("Expected errWriterErr (%s) but got `%s`", io.ErrUnexpectedEOF, err)
 	}

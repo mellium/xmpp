@@ -174,9 +174,13 @@ func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	var data interface{}
 	for s.state&Ready == 0 {
 		var mask SessionState
-		var rw io.ReadWriter
 		var err error
-		mask, rw, data, err = negotiate(ctx, s, data)
+		// Clear the info if the stream was restarted.
+		if rw != nil {
+			s.in.Info = stream.Info{}
+			s.out.Info = stream.Info{}
+		}
+		mask, rw, data, err = negotiate(ctx, &s.in.Info, &s.out.Info, s, data)
 		if err != nil {
 			return s, err
 		}
@@ -385,9 +389,9 @@ func (s *Session) sendError(err error) (e error) {
 		return err
 	}
 
-	switch typErr := err.(type) {
-	case stream.Error:
-		if _, e = typErr.WriteXML(s.out.e); e != nil {
+	se := stream.Error{}
+	if errors.As(err, &se) {
+		if _, e = se.WriteXML(s.out.e); e != nil {
 			return e
 		}
 		if e = s.closeSession(); e != nil {
@@ -395,6 +399,7 @@ func (s *Session) sendError(err error) (e error) {
 		}
 		return err
 	}
+
 	// TODO: What should we do here? RFC 6120 §4.9.3.21. undefined-condition
 	// says:
 	//
@@ -402,6 +407,9 @@ func (s *Session) sendError(err error) (e error) {
 	//     conditions in this list; this error condition SHOULD NOT be used
 	//     except in conjunction with an application-specific condition.
 	if _, e = stream.UndefinedCondition.WriteXML(s.out.e); e != nil {
+		return e
+	}
+	if e = s.closeSession(); e != nil {
 		return e
 	}
 	return err

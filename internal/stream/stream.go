@@ -26,8 +26,7 @@ import (
 // is much faster than encoding.
 // Afterwards, clear the StreamRestartRequired bit and set the output stream
 // information.
-func Send(rw io.ReadWriter, s2s, ws bool, version stream.Version, lang string, location, origin, id string) (stream.Info, error) {
-	streamData := stream.Info{}
+func Send(rw io.ReadWriter, streamData *stream.Info, s2s, ws bool, version stream.Version, lang string, location, origin, id string) error {
 	switch s2s {
 	case true:
 		streamData.XMLNS = ns.Server
@@ -51,40 +50,40 @@ func Send(rw io.ReadWriter, s2s, ws bool, version stream.Version, lang string, l
 		)
 	}
 	if err != nil {
-		return streamData, err
+		return err
 	}
 
 	if id != "" {
 		_, err = fmt.Fprintf(b, " id='%s'", id)
 		if err != nil {
-			return streamData, err
+			return err
 		}
 	}
 	if location != "" {
 		_, err = fmt.Fprintf(b, " to='%s'", location)
 		if err != nil {
-			return streamData, err
+			return err
 		}
 	}
 	if origin != "" {
 		_, err = fmt.Fprintf(b, " from='%s'", origin)
 		if err != nil {
-			return streamData, err
+			return err
 		}
 	}
 
 	if len(lang) > 0 {
 		_, err = b.Write([]byte(" xml:lang='"))
 		if err != nil {
-			return streamData, err
+			return err
 		}
 		err = xml.EscapeText(b, []byte(lang))
 		if err != nil {
-			return streamData, err
+			return err
 		}
 		_, err = b.Write([]byte("'"))
 		if err != nil {
-			return streamData, err
+			return err
 		}
 	}
 
@@ -94,10 +93,10 @@ func Send(rw io.ReadWriter, s2s, ws bool, version stream.Version, lang string, l
 		_, err = fmt.Fprint(b, `>`)
 	}
 	if err != nil {
-		return streamData, err
+		return err
 	}
 
-	return streamData, b.Flush()
+	return b.Flush()
 }
 
 // Expect reads a token from d and expects that it will be a new stream start
@@ -105,19 +104,19 @@ func Send(rw io.ReadWriter, s2s, ws bool, version stream.Version, lang string, l
 // If not, an error is returned. It then handles feature negotiation for the new
 // stream.
 // If an XML header is discovered instead, it is skipped.
-func Expect(ctx context.Context, d xml.TokenReader, recv, ws bool) (streamData stream.Info, err error) {
+func Expect(ctx context.Context, in *stream.Info, d xml.TokenReader, recv, ws bool) error {
 	// Skip the XML declaration (if any).
 	d = decl.Skip(d)
 
 	for {
 		select {
 		case <-ctx.Done():
-			return streamData, ctx.Err()
+			return ctx.Err()
 		default:
 		}
 		t, err := d.Token()
 		if err != nil {
-			return streamData, err
+			return err
 		}
 		switch tok := t.(type) {
 		case xml.StartElement:
@@ -125,49 +124,45 @@ func Expect(ctx context.Context, d xml.TokenReader, recv, ws bool) (streamData s
 			case tok.Name.Local == "error" && tok.Name.Space == stream.NS:
 				se := stream.Error{}
 				if err := xml.NewTokenDecoder(d).DecodeElement(&se, &tok); err != nil {
-					return streamData, err
+					return err
 				}
-				return streamData, se
-			case !ws && tok.Name.Local != "stream":
-				// TODO: return sane error.
-				return streamData, stream.BadFormat
-			case ws && tok.Name.Local != "open":
-				// TODO: return sane error.
-				return streamData, stream.BadFormat
-			case !ws && tok.Name.Space != stream.NS:
-				// TODO: send invalid namespace, return sane error.
-				return streamData, fmt.Errorf("xmpp: invalid stream namespace: %s", tok.Name.Space)
-			case ws && tok.Name.Space != ns.WS:
-				// TODO: send invalid namespace, return sane error.
-				return streamData, fmt.Errorf("xmpp: invalid WebSocket stream namespace: %s", tok.Name.Space)
+				return se
+			case !ws && (tok.Name.Local != "stream" || tok.Name.Space != stream.NS):
+				return fmt.Errorf("expected stream open element %v, got %v: %w", xml.Name{Space: stream.NS, Local: "stream"}, tok.Name, stream.InvalidNamespace)
+			case ws && (tok.Name.Local != "open" || tok.Name.Space != ns.WS):
+				return fmt.Errorf("expected WebSocket stream open element %v, got %v: %w", xml.Name{Space: ns.WS, Local: "open"}, tok.Name, stream.InvalidNamespace)
 			case ws && tok.Name.Local == "open" && tok.Name.Space == ns.WS:
 				// Websocket payloads are always full XML documents, so the "open"
 				// element is closed as well.
 				err = xmlstream.Skip(d)
 				if err != nil {
-					return streamData, err
+					return err
 				}
 			}
 
-			err = streamData.FromStartElement(tok)
+			err = in.FromStartElement(tok)
 			switch {
 			case err != nil:
-				return streamData, err
-			case streamData.Version != stream.DefaultVersion:
-				return streamData, stream.UnsupportedVersion
+				return err
+			case in.Version != stream.DefaultVersion:
+				return stream.UnsupportedVersion
 			}
 
-			if !recv && streamData.ID == "" {
-				// if we are the initiating entity and there is no stream ID…
-				return streamData, stream.BadFormat
+			if !ws && in.XMLNS != ns.Client && in.XMLNS != ns.Server {
+				return fmt.Errorf("expected jabber:client or jabber:server for default namespace, got %q: %w", in.XMLNS, stream.InvalidNamespace)
 			}
-			return streamData, nil
+
+			if !recv && in.ID == "" {
+				// if we are the initiating entity and there is no stream ID…
+				return fmt.Errorf("initiating entity must set stream ID: %w", stream.BadFormat)
+			}
+			return nil
 		case xml.ProcInst:
-			return streamData, stream.RestrictedXML
+			return fmt.Errorf("unexpected procinst encountered: %w", stream.RestrictedXML)
 		case xml.EndElement:
-			return streamData, stream.NotWellFormed
+			return fmt.Errorf("unexpected end element encountered: %w", stream.NotWellFormed)
 		default:
-			return streamData, stream.RestrictedXML
+			return fmt.Errorf("unexpected XML token %T encountered: %w", t, stream.RestrictedXML)
 		}
 	}
 }

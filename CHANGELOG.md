@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - stream: the `TokenReader` method signature has changed to make it match the
   `xmlstream.Marshaler` interface
 - stream: renamed `ErrorNS` to `NSError` for consistency
+- xmpp: the `Negotiator` type signature has changed
 - xmpp: the `StreamConfig.Features` field is now a callback instead of a slice
 - xmpp: the `StreamFeature` type's `Parse` function now takes an xml.Decoder
   instead of an `xml.TokenReader`

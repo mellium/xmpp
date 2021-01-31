@@ -82,9 +82,9 @@ func TestNilNegotiatorPanics(t *testing.T) {
 
 var errTestNegotiate = errors.New("a test error")
 
-func errNegotiator(ctx context.Context, session *xmpp.Session, data interface{}) (mask xmpp.SessionState, rw io.ReadWriter, cache interface{}, err error) {
+func errNegotiator(ctx context.Context, _, _ *stream.Info, session *xmpp.Session, data interface{}) (mask xmpp.SessionState, rw io.ReadWriter, cache interface{}, err error) {
 	err = errTestNegotiate
-	return
+	return mask, rw, cache, err
 }
 
 type negotiateTestCase struct {
@@ -404,11 +404,18 @@ func TestNegotiateStreamError(t *testing.T) {
 	clientConn, serverConn := net.Pipe()
 	clientJID := jid.MustParse("me@example.net")
 	go func() {
-		xmpp.ReceiveSession(ctx, serverConn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
+		s, err := xmpp.ReceiveSession(ctx, serverConn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
 			Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
 				return []xmpp.StreamFeature{errorStartTLS(stream.Conflict)}
 			},
 		}))
+		if err != nil {
+			t.Logf("error receiving session: %v", err)
+		}
+		err = s.Close()
+		if err != nil {
+			t.Logf("error closing session: %v", err)
+		}
 	}()
 	_, err := xmpp.NewSession(ctx, clientJID, clientJID.Bare(), clientConn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
 		Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {

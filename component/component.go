@@ -45,7 +45,7 @@ func ReceiveSession(ctx context.Context, addr jid.JID, secret []byte, rw io.Read
 // If recv is true (indicating that we are receiving a connection on the server
 // side) the returned xmpp.Negotiator will panic.
 func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
-	return func(ctx context.Context, s *xmpp.Session, _ interface{}) (mask xmpp.SessionState, _ io.ReadWriter, _ interface{}, err error) {
+	return func(ctx context.Context, in, out *stream.Info, s *xmpp.Session, _ interface{}) (mask xmpp.SessionState, _ io.ReadWriter, _ interface{}, err error) {
 		d := xml.NewDecoder(s.Conn())
 
 		if recv {
@@ -55,10 +55,12 @@ func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 		} else {
 			// If we're the initiating entity, send a new stream and then wait for one
 			// in response.
-			_, err = fmt.Fprintf(s.Conn(), `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' to='%s'>`, addr)
+			_, err = fmt.Fprintf(s.Conn(), `<stream:stream xmlns='`+NSAccept+`' xmlns:stream='http://etherx.jabber.org/streams' to='%s'>`, addr)
 			if err != nil {
 				return mask, nil, nil, err
 			}
+			out.To = addr
+			out.XMLNS = NSAccept
 		}
 
 		foundProc := false
@@ -88,6 +90,11 @@ func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 
 		if start.Name.Local != "stream" || start.Name.Space != stream.NS {
 			return mask, nil, nil, errors.New("component: expected stream:stream from server")
+		}
+
+		err = in.FromStartElement(start)
+		if err != nil {
+			return mask, nil, nil, err
 		}
 
 		var id string

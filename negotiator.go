@@ -21,13 +21,16 @@ import (
 //
 // If a Negotiator is passed into NewSession it will be called repeatedly until
 // a mask is returned with the Ready bit set.
+// When the negotiator reads the new stream start element it should unmarshal
+// the correct values into "in" and set the correct values in "out" for the
+// input and output stream respectively.
 // Each time Negotiator is called any bits set in the state mask that it returns
-// will be set on the session state and any cache value that is returned will be
-// passed back in during the next iteration.
+// will be set on the session state, and any cache value that is returned will
+// be passed back in during the next iteration.
 // If a new io.ReadWriter is returned, it is set as the session's underlying
 // io.ReadWriter and the internal session state (encoders, decoders, etc.) will
 // be reset.
-type Negotiator func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, cache interface{}, err error)
+type Negotiator func(ctx context.Context, in, out *stream.Info, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, cache interface{}, err error)
 
 // StreamConfig contains options for configuring the default Negotiator.
 type StreamConfig struct {
@@ -83,7 +86,7 @@ type negotiatorState struct {
 
 func negotiator(cfg StreamConfig) Negotiator {
 	var features []StreamFeature
-	return func(ctx context.Context, s *Session, data interface{}) (mask SessionState, rw io.ReadWriter, restartNext interface{}, err error) {
+	return func(ctx context.Context, in, out *stream.Info, s *Session, data interface{}) (mask SessionState, rw io.ReadWriter, restartNext interface{}, err error) {
 		nState, ok := data.(negotiatorState)
 		// If no state was passed in, this is the first negotiate call so make up a
 		// default.
@@ -119,12 +122,13 @@ func negotiator(cfg StreamConfig) Negotiator {
 				// If we're the receiving entity wait for a new stream, then send one in
 				// response.
 
-				s.in.Info, err = intstream.Expect(ctx, s.in.d, s.State()&Received == Received, cfg.WebSocket)
+				err = intstream.Expect(ctx, in, s.in.d, s.State()&Received == Received, cfg.WebSocket)
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
 				}
-				s.out.Info, err = intstream.Send(s.Conn(), s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), attr.RandomID())
+
+				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), attr.RandomID())
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -133,12 +137,12 @@ func negotiator(cfg StreamConfig) Negotiator {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
 
-				s.out.Info, err = intstream.Send(s.Conn(), s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
+				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
 				}
-				s.in.Info, err = intstream.Expect(ctx, s.in.d, s.State()&Received == Received, cfg.WebSocket)
+				err = intstream.Expect(ctx, in, s.in.d, s.State()&Received == Received, cfg.WebSocket)
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err

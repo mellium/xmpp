@@ -7,7 +7,6 @@ package stream
 import (
 	"encoding/xml"
 
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 )
 
@@ -25,9 +24,10 @@ type Info struct {
 // FromStartElement sets the data in Info from the provided StartElement.
 func (i *Info) FromStartElement(s xml.StartElement) error {
 	i.Name = s.Name
-	ws := s.Name.Local == "open"
 	for _, attr := range s.Attr {
 		switch attr.Name {
+		case xml.Name{Space: "", Local: "xmlns"}:
+			i.XMLNS = attr.Value
 		case xml.Name{Space: "", Local: "to"}:
 			if err := (&i.To).UnmarshalXMLAttr(attr); err != nil {
 				return ImproperAddressing
@@ -42,18 +42,6 @@ func (i *Info) FromStartElement(s xml.StartElement) error {
 			err := (&i.Version).UnmarshalXMLAttr(attr)
 			if err != nil {
 				return BadFormat
-			}
-		case xml.Name{Space: "", Local: "xmlns"}:
-			if (ws && attr.Value != ns.WS) || (!ws && attr.Value != "jabber:client" && attr.Value != "jabber:server") {
-				return InvalidNamespace
-			}
-			i.XMLNS = attr.Value
-		case xml.Name{Space: "xmlns", Local: "stream"}:
-			// If we're using the websocket subprotocol this will never show up (but
-			// if it does, we don't care at all, it's just extra stuff that we won't
-			// end up using).
-			if !ws && attr.Value != NS {
-				return InvalidNamespace
 			}
 		case xml.Name{Space: "xml", Local: "lang"}:
 			i.Lang = attr.Value

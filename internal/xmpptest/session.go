@@ -22,7 +22,7 @@ import (
 // validation on the token, transmit any data over the wire, or perform any
 // other session negotiation.
 func NopNegotiator(state xmpp.SessionState) xmpp.Negotiator {
-	return func(ctx context.Context, s *xmpp.Session, data interface{}) (xmpp.SessionState, io.ReadWriter, interface{}, error) {
+	return func(ctx context.Context, _, _ *stream.Info, s *xmpp.Session, data interface{}) (xmpp.SessionState, io.ReadWriter, interface{}, error) {
 		// Pop the stream start token.
 		rc := s.TokenReader()
 		defer rc.Close()
