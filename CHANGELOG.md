@@ -90,6 +90,8 @@ All notable changes to this project will be documented in this file.
 - xmpp: stream feature parse functions can no longer read beyond the end of the
   feature element
 - xmpp: the resource binding feature was previously broken for server sessions.
+- xmpp: the "to" and "from" attributes on incoming streams are now verified and
+  an error is returned if they change between stream restarts
 
 
 ## v0.17.1 — 2020-11-21
