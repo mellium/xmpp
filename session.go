@@ -84,9 +84,6 @@ type Session struct {
 	state      SessionState
 	stateMutex sync.RWMutex
 
-	origin   jid.JID
-	location jid.JID
-
 	// The stream feature namespaces advertised for the current streams.
 	features map[string]interface{}
 
@@ -148,13 +145,24 @@ func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	}
 	s := &Session{
 		conn:       newConn(rw, nil),
-		origin:     origin,
-		location:   location,
 		features:   make(map[string]interface{}),
 		negotiated: make(map[string]struct{}),
 		sentIQs:    make(map[string]chan xmlstream.TokenReadCloser),
 		state:      state,
 	}
+
+	if s.state&Received == Received {
+		s.in.Info.To = location
+		s.in.Info.From = origin
+		s.out.Info.To = origin
+		s.out.Info.From = location
+	} else {
+		s.in.Info.To = origin
+		s.in.Info.From = location
+		s.out.Info.To = location
+		s.out.Info.From = origin
+	}
+
 	if tc, ok := s.conn.(tlsConn); ok {
 		s.connState = tc.ConnectionState
 	}
@@ -175,10 +183,17 @@ func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	for s.state&Ready == 0 {
 		var mask SessionState
 		var err error
-		// Clear the info if the stream was restarted.
+		// Clear the info if the stream was restarted (but preserve to/from so that
+		// we can verify that it has not changed).
 		if rw != nil {
-			s.in.Info = stream.Info{}
-			s.out.Info = stream.Info{}
+			s.in.Info = stream.Info{
+				To:   s.in.Info.To,
+				From: s.in.Info.From,
+			}
+			s.out.Info = stream.Info{
+				To:   s.out.Info.To,
+				From: s.out.Info.From,
+			}
 		}
 		mask, rw, data, err = negotiate(ctx, &s.in.Info, &s.out.Info, s, data)
 		if err != nil {
@@ -758,23 +773,13 @@ func (s *Session) OutSID() string {
 // LocalAddr returns the Origin address for initiated connections, or the
 // Location for received connections.
 func (s *Session) LocalAddr() jid.JID {
-	s.stateMutex.RLock()
-	defer s.stateMutex.RUnlock()
-	if (s.state & Received) == Received {
-		return s.location
-	}
-	return s.origin
+	return s.in.Info.To
 }
 
 // RemoteAddr returns the Location address for initiated connections, or the
 // Origin address for received connections.
 func (s *Session) RemoteAddr() jid.JID {
-	s.stateMutex.RLock()
-	defer s.stateMutex.RUnlock()
-	if (s.state & Received) == Received {
-		return s.origin
-	}
-	return s.location
+	return s.in.Info.From
 }
 
 // SetCloseDeadline sets a deadline for the input stream to be closed by the

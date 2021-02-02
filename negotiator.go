@@ -124,6 +124,8 @@ func negotiator(cfg StreamConfig) Negotiator {
 				// If we're the receiving entity wait for a new stream, then send one in
 				// response.
 
+				location := s.LocalAddr()
+				origin := s.RemoteAddr()
 				err = intstream.Expect(ctx, in, s.in.d, s.State()&Received == Received, cfg.WebSocket)
 				if err != nil {
 					nState.doRestart = false
@@ -131,25 +133,23 @@ func negotiator(cfg StreamConfig) Negotiator {
 				}
 
 				switch {
-				case s.state&S2S == 0 && s.origin.Equal(jid.JID{}):
+				case s.state&S2S == 0 && origin.Equal(jid.JID{}):
 					// If we're a server receiving a c2s connection and "from" wasn't
 					// previously set, just set it as the new origin JID since we've probably
 					// just negotiated TLS and the client is comfortable telling us who it is
 					// claiming to be now.
-					s.origin = s.in.Info.From
-				case !s.origin.Equal(s.in.Info.From):
-					return mask, nil, nState, fmt.Errorf("xmpp: stream origin %s does not match previously set origin %s", s.in.Info.From, s.origin)
+				case !origin.Equal(s.in.Info.From):
+					return mask, nil, nState, fmt.Errorf("xmpp: stream origin %s does not match previously set origin %s", s.in.Info.From, origin)
 				}
 				switch {
-				case s.location.Equal(jid.JID{}):
+				case location.Equal(jid.JID{}):
 					// If we're a server receiving connection and "to" wasn't previously set,
 					// just set it as this is the virtualhost we should use.
-					s.location = s.in.Info.To
-				case !s.location.Equal(s.in.Info.To):
-					return mask, nil, nState, fmt.Errorf("xmpp: stream location %s does not match previously set location %s", s.in.Info.To, s.location)
+				case !location.Equal(s.in.Info.To):
+					return mask, nil, nState, fmt.Errorf("xmpp: stream location %s does not match previously set location %s", s.in.Info.To, location)
 				}
 
-				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), attr.RandomID())
+				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, location.String(), origin.String(), attr.RandomID())
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -157,7 +157,9 @@ func negotiator(cfg StreamConfig) Negotiator {
 			} else {
 				// If we're the initiating entity, send a new stream and then wait for
 				// one in response.
-				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, s.location.String(), s.origin.String(), "")
+				origin := s.LocalAddr()
+				location := s.RemoteAddr()
+				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, location.String(), origin.String(), "")
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -169,14 +171,14 @@ func negotiator(cfg StreamConfig) Negotiator {
 				}
 
 				switch {
-				case !s.location.Equal(s.in.Info.From):
-					return mask, nil, nState, fmt.Errorf("xmpp: stream location %s does not match previously set location %s", s.in.Info.From, s.location)
-				case !s.in.Info.To.Equal(jid.JID{}) && !s.origin.Equal(s.in.Info.To):
+				case !location.Equal(s.in.Info.From):
+					return mask, nil, nState, fmt.Errorf("xmpp: stream location %s does not match previously set location %s", s.in.Info.From, location)
+				case !s.in.Info.To.Equal(jid.JID{}) && !origin.Equal(s.in.Info.To):
 					// Technically this logic is not correct (we should only allow empty
 					// "to" attributes if we didn't set "from" yet, so we should be
 					// checking that). However, some servers don't send a "to" at all in
 					// violation of the spec. See: https://issues.prosody.im/1625
-					return mask, nil, nState, fmt.Errorf("xmpp: stream origin %s does not match previously set origin %s", s.in.Info.To, s.origin)
+					return mask, nil, nState, fmt.Errorf("xmpp: stream origin %s does not match previously set origin %s", s.in.Info.To, origin)
 				}
 			}
 		}

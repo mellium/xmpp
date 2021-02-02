@@ -187,7 +187,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 					Type:    stanza.SetIQ,
 				},
 				Bind: bindPayload{
-					Resource: session.origin.Resourcepart(),
+					Resource: session.LocalAddr().Resourcepart(),
 				},
 			}
 			_, err = req.WriteXML(w)
@@ -227,7 +227,9 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			case resp.ID != reqID:
 				return mask, nil, stream.UndefinedCondition
 			case resp.Type == stanza.ResultIQ:
-				session.origin = resp.Bind.JID
+				// TODO: this should not use internal session details.
+				session.in.Info.To = resp.Bind.JID
+				session.out.Info.From = resp.Bind.JID
 			case resp.Type == stanza.ErrorIQ:
 				return mask, nil, resp.Err
 			default:
