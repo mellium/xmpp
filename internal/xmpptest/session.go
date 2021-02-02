@@ -8,11 +8,13 @@ package xmpptest // import "mellium.im/xmpp/internal/xmpptest"
 import (
 	"context"
 	"io"
+	"io/ioutil"
 	"net"
 	"strings"
 
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/ns"
+	intstream "mellium.im/xmpp/internal/stream"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stream"
 )
@@ -22,25 +24,40 @@ import (
 // validation on the token, transmit any data over the wire, or perform any
 // other session negotiation.
 func NopNegotiator(state xmpp.SessionState) xmpp.Negotiator {
-	return func(ctx context.Context, _, _ *stream.Info, s *xmpp.Session, data interface{}) (xmpp.SessionState, io.ReadWriter, interface{}, error) {
+	return func(ctx context.Context, in, out *stream.Info, s *xmpp.Session, data interface{}) (xmpp.SessionState, io.ReadWriter, interface{}, error) {
 		// Pop the stream start token.
 		rc := s.TokenReader()
 		defer rc.Close()
 
-		_, err := rc.Token()
+		err := intstream.Expect(ctx, in, rc, s.State()&xmpp.Received == xmpp.Received, false)
+		if err != nil {
+			return state | xmpp.Ready, nil, nil, err
+		}
+		err = intstream.Send(struct {
+			io.Reader
+			io.Writer
+		}{
+			Writer: ioutil.Discard,
+		}, out, s.State()&xmpp.S2S == xmpp.S2S, false, stream.DefaultVersion, "", "example.net", "test@example.net", "123")
+
 		return state | xmpp.Ready, nil, nil, err
 	}
 }
 
 // NewSession returns a new client-to-client XMPP session with the state bits
-// set to state|xmpp.Ready, the origin JID set to "test@example.net" and the
-// location JID set to "example.net".
+// set to finalState|xmpp.Ready, the origin JID set to "test@example.net" and
+// the location JID set to "example.net".
 //
 // NewSession panics on error for ease of use in testing, where a panic is
 // acceptable.
 func NewSession(finalState xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
 	location := jid.MustParse("example.net")
 	origin := jid.MustParse("test@example.net")
+
+	to, from := origin, location
+	if finalState&xmpp.Received == xmpp.Received {
+		to, from = from, to
+	}
 
 	s, err := xmpp.NewSession(
 		context.Background(), location, origin,
@@ -49,7 +66,7 @@ func NewSession(finalState xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
 			io.Writer
 		}{
 			Reader: io.MultiReader(
-				strings.NewReader(`<stream:stream xmlns="`+ns.Client+`" xmlns:stream="`+stream.NS+`">`),
+				strings.NewReader(`<stream:stream from="`+from.String()+`" to="`+to.String()+`" id="123" version="1.0" xmlns="`+ns.Client+`" xmlns:stream="`+stream.NS+`">`),
 				rw,
 				strings.NewReader(`</stream:stream>`),
 			),
