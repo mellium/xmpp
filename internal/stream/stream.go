@@ -154,7 +154,7 @@ func Expect(ctx context.Context, in *stream.Info, d xml.TokenReader, recv, ws bo
 
 			if !recv && in.ID == "" {
 				// if we are the initiating entity and there is no stream ID…
-				return fmt.Errorf("initiating entity must set stream ID: %w", stream.BadFormat)
+				return fmt.Errorf("receiving entity must set stream ID: %w", stream.BadFormat)
 			}
 			return nil
 		case xml.ProcInst:
