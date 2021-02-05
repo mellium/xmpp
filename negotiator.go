@@ -149,7 +149,10 @@ func negotiator(cfg StreamConfig) Negotiator {
 					return mask, nil, nState, fmt.Errorf("xmpp: stream location %s does not match previously set location %s", s.in.Info.To, location)
 				}
 
-				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, location.String(), origin.String(), attr.RandomID())
+				location = in.To
+				origin = in.From
+
+				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, origin.String(), location.String(), attr.RandomID())
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
