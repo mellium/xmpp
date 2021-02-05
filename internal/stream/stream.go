@@ -26,7 +26,7 @@ import (
 // is much faster than encoding.
 // Afterwards, clear the StreamRestartRequired bit and set the output stream
 // information.
-func Send(rw io.ReadWriter, streamData *stream.Info, s2s, ws bool, version stream.Version, lang string, location, origin, id string) error {
+func Send(rw io.ReadWriter, streamData *stream.Info, s2s, ws bool, version stream.Version, lang string, to, from, id string) error {
 	switch s2s {
 	case true:
 		streamData.XMLNS = ns.Server
@@ -59,14 +59,14 @@ func Send(rw io.ReadWriter, streamData *stream.Info, s2s, ws bool, version strea
 			return err
 		}
 	}
-	if location != "" {
-		_, err = fmt.Fprintf(b, " to='%s'", location)
+	if to != "" {
+		_, err = fmt.Fprintf(b, " to='%s'", to)
 		if err != nil {
 			return err
 		}
 	}
-	if origin != "" {
-		_, err = fmt.Fprintf(b, " from='%s'", origin)
+	if from != "" {
+		_, err = fmt.Fprintf(b, " from='%s'", from)
 		if err != nil {
 			return err
 		}
