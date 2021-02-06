@@ -17,7 +17,7 @@ The process involves:
 
 Finally, if accepted, the proposal may be implemented and the patch set merged!
 
-If you need help with this process, feel free to join the [chat
-room](https://conversations.im/j/mellium@conference.samwhited.com).
+If you need help with this process, feel free to join the
+[chat room](https://mellium.chat).
 
 [template.md]: https://mellium.im/design/template
