@@ -46,13 +46,13 @@ func (t Transformer) String(s string) string {
 	return s
 }
 
+// Transformations defined in XEP-0106: JID Escaping.
 var (
-	// Escape is a transform that maps escapable runes to their escaped form as
-	// defined in XEP-0106: JID Escaping.
+	// Escape is a transform that maps escapable runes to their escaped form.
 	Escape Transformer = Transformer{escapeMapping{}}
 
 	// Unescape is a transform that maps valid escape sequences to their unescaped
-	// form as defined in XEP-0106: JID Escaping.
+	// form.
 	Unescape Transformer = Transformer{unescapeMapping{}}
 )
 
