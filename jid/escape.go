@@ -109,19 +109,8 @@ type unescapeMapping struct {
 	transform.NopResetter
 }
 
-// TODO: Be more specific. Only check if it's the starting character in any
-//       valid escape sequence.
-
 func ishex(c byte) bool {
-	switch {
-	case '0' <= c && c <= '9':
-		return true
-	case 'a' <= c && c <= 'f':
-		return true
-	case 'A' <= c && c <= 'F':
-		return true
-	}
-	return false
+	return '0' <= c && c <= 'F'
 }
 
 // I just wrote these all out because it's a lot faster and not likely to
