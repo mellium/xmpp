@@ -5,14 +5,15 @@
 // Package xmpp provides functionality from the Extensible Messaging and
 // Presence Protocol, sometimes known as "Jabber".
 //
-// It is subdivided into several packages; this package provides functionality
-// for establishing an XMPP session, feature negotiation (including an API for
-// defining your own stream features), and low-level connection and stream
-// manipulation.
+// This module is subdivided into several packages.
+// This package provides functionality for establishing an XMPP session, feature
+// negotiation (including an API for defining your own stream features), and
+// handling events.
 // Other important packages include the jid package, which provides an
-// implementation of the XMPP address format, and the mux package which provides
-// an XMPP handler that can multiplex payloads to other handlers and
-// functionality for creating your own multiplexers.
+// implementation of the XMPP address format, the mux package which provides an
+// XMPP handler that can multiplex payloads to other handlers and functionality
+// for creating your own multiplexers, and the stanza package which provides
+// functionality for transmitting XMPP primitives and errors.
 //
 // Session Negotiation
 //
@@ -64,7 +65,7 @@
 //
 // The default Negotiator and related functions use a list of StreamFeature's to
 // negotiate the state of the session.
-// Implementations of the most common features (StartTLS, SASL-based
+// Implementations of the most commonly used features (StartTLS, SASL-based
 // authentication, and resource binding) are provided.
 // Custom stream features may be created using the StreamFeature struct.
 // StreamFeatures defined in this module are safe for concurrent use by multiple
@@ -90,15 +91,28 @@
 // The stanza package contains functions and structs that aid in the
 // construction of message, presence and info/query (IQ) elements which have
 // special semantics in XMPP and are known as "stanzas".
-// These can be sent with the Send, SendElement, SendIQ, and SendIQElement
-// methods.
+// There are 8 methods on Session used for transmitting stanzas and other events
+// over the output stream.
+// Their names are matched by the regular expression:
+//
+//     (Send|Encode)(IQ)?(Element)?
+//
+// If "Send" is present it means that the method copies one XML token stream
+// into the output stream, while "Encode" indicates that it takes a value and
+// marshals it into XML.
+// If "IQ" is present it means that the stream or value contains an XMPP IQ and
+// the method blocks waiting on a response.
+// If "Element" is present it indicates that the stream or struct is a payload
+// and not the full element to be transmitted and that it should be wrapped in
+// the provided start element token or stanza.
 //
 //     // Send initial presence to let the server know we want to receive messages.
 //     _, err = session.Send(context.TODO(), stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
 //
-// For SendIQ to correctly handle IQ responses, and to make the common case of
-// polling for incoming XML on the input stream—and possibly writing to the
-// output stream in response—easier, we need a long running goroutine.
+// For SendIQ and related methods to correctly handle IQ responses, and to make
+// the common case of polling for incoming XML on the input stream—and possibly
+// writing to the output stream in response—easier, we need a long running
+// goroutine.
 // Session includes the Serve method for starting this processing.
 //
 // Serve provides a Handler with access to the stream but prevents it from
