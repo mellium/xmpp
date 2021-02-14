@@ -23,6 +23,7 @@ import (
 
 	"mellium.im/sasl"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/dial"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/uri"
@@ -32,6 +33,15 @@ const (
 	envAddr = "XMPP_ADDR"
 	envPass = "XMPP_PASS"
 )
+
+type logWriter struct {
+	logger *log.Logger
+}
+
+func (w logWriter) Write(p []byte) (int, error) {
+	w.logger.Printf("%s", p)
+	return len(p), nil
+}
 
 // messageBody is a message stanza that contains a body. It is normally used for
 // chat messages.
@@ -45,6 +55,8 @@ type messageBody struct {
 func main() {
 	logger := log.New(os.Stderr, "", log.LstdFlags)
 	debug := log.New(ioutil.Discard, "DEBUG ", log.LstdFlags)
+	sentXML := log.New(ioutil.Discard, "SENT ", log.LstdFlags)
+	recvXML := log.New(ioutil.Discard, "RECV ", log.LstdFlags)
 
 	// Get and parse the XMPP address to send from.
 	addr := os.Getenv(envAddr)
@@ -69,6 +81,7 @@ func main() {
 		room    bool
 		isURI   bool
 		verbose bool
+		logXML  bool
 		subject string
 	)
 	flags := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
@@ -78,7 +91,8 @@ func main() {
 	flags.BoolVar(&room, "room", room, "The provided JID is a multi-user chat (MUC) room.")
 	flags.BoolVar(&isURI, "uri", isURI, "Parse the recipient as an XMPP URI instead of a JID.")
 	flags.BoolVar(&verbose, "v", verbose, "Show verbose logging.")
-	flags.StringVar(&addr, "addr", addr, "The XMPP address to connect to, overrides $XMPP_ADDR")
+	flags.BoolVar(&logXML, "vv", logXML, "Show verbose logging and sent and received XML.")
+	flags.StringVar(&addr, "addr", addr, "The XMPP address to connect to, overrides $XMPP_ADDR.")
 	flags.StringVar(&subject, "subject", subject, "Set the subject of the message or chat room.")
 
 	err = flags.Parse(os.Args[1:])
@@ -101,6 +115,11 @@ func main() {
 
 	if verbose {
 		debug.SetOutput(os.Stderr)
+	}
+	if logXML {
+		debug.SetOutput(os.Stderr)
+		sentXML.SetOutput(os.Stderr)
+		recvXML.SetOutput(os.Stderr)
 	}
 
 	args := flags.Args()
@@ -154,14 +173,24 @@ func main() {
 	// Login to the XMPP server.
 	debug.Println("logging in…")
 	dialCtx, dialCtxCancel := context.WithTimeout(ctx, 30*time.Second)
-	session, err := xmpp.DialClientSession(
-		dialCtx, parsedAddr,
-		xmpp.BindResource(),
-		xmpp.StartTLS(&tls.Config{
-			ServerName: parsedAddr.Domain().String(),
-		}),
-		xmpp.SASL(parsedAuthAddr.String(), pass, sasl.ScramSha256Plus, sasl.ScramSha1Plus, sasl.ScramSha256, sasl.ScramSha1, sasl.Plain),
-	)
+	conn, err := dial.Client(dialCtx, "tcp", parsedAddr)
+	if err != nil {
+		logger.Fatalf("error dialing connection: %v", err)
+	}
+	negotiator := xmpp.NewNegotiator(xmpp.StreamConfig{
+		Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
+			return []xmpp.StreamFeature{
+				xmpp.BindResource(),
+				xmpp.StartTLS(&tls.Config{
+					ServerName: parsedAddr.Domain().String(),
+				}),
+				xmpp.SASL(parsedAuthAddr.String(), pass, sasl.ScramSha256Plus, sasl.ScramSha1Plus, sasl.ScramSha256, sasl.ScramSha1, sasl.Plain),
+			}
+		},
+		TeeIn:  logWriter{logger: recvXML},
+		TeeOut: logWriter{logger: sentXML},
+	})
+	session, err := xmpp.NewSession(dialCtx, parsedAddr.Domain(), parsedAddr, conn, 0, negotiator)
 	dialCtxCancel()
 	if err != nil {
 		logger.Fatalf("error loging in: %v", err)
