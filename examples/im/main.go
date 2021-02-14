@@ -27,6 +27,7 @@ import (
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/uri"
+	"mellium.im/xmpp/version"
 )
 
 const (
@@ -81,6 +82,7 @@ func main() {
 		room    bool
 		isURI   bool
 		verbose bool
+		verReq  bool
 		logXML  bool
 		subject string
 	)
@@ -92,6 +94,7 @@ func main() {
 	flags.BoolVar(&isURI, "uri", isURI, "Parse the recipient as an XMPP URI instead of a JID.")
 	flags.BoolVar(&verbose, "v", verbose, "Show verbose logging.")
 	flags.BoolVar(&logXML, "vv", logXML, "Show verbose logging and sent and received XML.")
+	flags.BoolVar(&verReq, "ver", verReq, "Request the software version of the remote entity instead of sending messages.")
 	flags.StringVar(&addr, "addr", addr, "The XMPP address to connect to, overrides $XMPP_ADDR.")
 	flags.StringVar(&subject, "subject", subject, "Set the subject of the message or chat room.")
 
@@ -193,8 +196,14 @@ func main() {
 	session, err := xmpp.NewSession(dialCtx, parsedAddr.Domain(), parsedAddr, conn, 0, negotiator)
 	dialCtxCancel()
 	if err != nil {
-		logger.Fatalf("error loging in: %v", err)
+		logger.Fatalf("error logging in: %v", err)
 	}
+	go func() {
+		err := session.Serve(nil)
+		if err != nil {
+			logger.Printf("error handling session responses: %v", err)
+		}
+	}()
 
 	originJID := session.LocalAddr()
 
@@ -217,6 +226,18 @@ func main() {
 			logger.Fatalf("error closing connection: %v", err)
 		}
 	}()
+
+	if verReq {
+		if parsedToAddr.Equal(jid.JID{}) {
+			logger.Fatalf("requested software version but no address provided")
+		}
+		verResp, err := version.Fetch(ctx, session, parsedToAddr)
+		if err != nil {
+			logger.Fatalf("error requesting software version: %v", err)
+		}
+		logger.Printf("got version response:\n\tName: %s\n\tVersion: %s\n\tOS: %s", verResp.Name, verResp.Version, verResp.OS)
+		return
+	}
 
 	if rawMsg == "" {
 		rawMsgBuf, err := ioutil.ReadAll(os.Stdin)
