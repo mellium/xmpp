@@ -92,6 +92,8 @@ All notable changes to this project will be documented in this file.
 - xmpp: the resource binding feature was previously broken for server sessions.
 - xmpp: the "to" and "from" attributes on incoming streams are now verified and
   an error is returned if they change between stream restarts
+- xmpp: empty "from" attributes are now removed before marshaling so that a
+  default value can be set (if applicable)
 
 
 ## v0.17.1 — 2020-11-21

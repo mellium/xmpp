@@ -1061,6 +1061,7 @@ func (se *stanzaEncoder) EncodeToken(t xml.Token) error {
 				tok.Name.Space = se.ns
 			}
 			var foundID, foundFrom bool
+			attrs := tok.Attr[:0]
 			for _, attr := range tok.Attr {
 				switch attr.Name.Local {
 				case "id":
@@ -1068,6 +1069,9 @@ func (se *stanzaEncoder) EncodeToken(t xml.Token) error {
 					// For <message/> and <presence/> stanzas, it is RECOMMENDED for the
 					// originating entity to include an 'id' attribute; for <iq/> stanzas,
 					// it is REQUIRED.
+					if attr.Value == "" {
+						continue
+					}
 					foundID = true
 				case "from":
 					// RFC6120 § 4.7.1
@@ -1075,12 +1079,14 @@ func (se *stanzaEncoder) EncodeToken(t xml.Token) error {
 					// XML streams qualified by the 'jabber:client' namespace, whereas
 					// they are REQUIRED on stanzas sent over XML streams qualified by the
 					// 'jabber: server' namespace
+					if attr.Value == "" {
+						continue
+					}
 					foundFrom = true
 				}
-				if foundID && foundFrom {
-					break
-				}
+				attrs = append(attrs, attr)
 			}
+			tok.Attr = attrs
 			if f := se.from.String(); f != "" && !foundFrom {
 				tok.Attr = append(tok.Attr, xml.Attr{
 					Name:  xml.Name{Local: "from"},
