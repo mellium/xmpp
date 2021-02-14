@@ -99,6 +99,10 @@ func main() {
 		os.Exit(0)
 	}
 
+	if verbose {
+		debug.SetOutput(os.Stderr)
+	}
+
 	args := flags.Args()
 	if len(args) < 1 {
 		printHelp(flags)
