@@ -65,8 +65,8 @@ func (r *Requested) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return d.Skip()
 }
 
-var receiptInserter = xmlstream.InsertFunc(func(start xml.StartElement, w xmlstream.TokenWriter) error {
-	if start.Name.Local != "message" || (start.Name.Space != ns.Client && start.Name.Space != ns.Server) {
+var receiptInserter = xmlstream.InsertFunc(func(start xml.StartElement, depth uint64, w xmlstream.TokenWriter) error {
+	if depth != 1 || start.Name.Local != "message" || (start.Name.Space != ns.Client && start.Name.Space != ns.Server) {
 		return nil
 	}
 	for _, attr := range start.Attr {
