@@ -13,15 +13,16 @@ import (
 // IDLen is the standard length of stanza identifiers in bytes.
 const IDLen = 16
 
-// TODO: This will be called a lot, and probably needs to be faster than we can
-//       get when reading from getrandom(2). Should we use a fast userspace
-//       CSPRNG and just seed with data from the OS?
-
 // RandomID generates a new random identifier of length IDLen. If the OS's
 // entropy pool isn't initialized, or we can't generate random numbers for some
 // other reason, panic.
 func RandomID() string {
 	return randomID(IDLen, rand.Reader)
+}
+
+// RandomLen is like RandomID but the length is configurable.
+func RandomLen(n int) string {
+	return randomID(n, rand.Reader)
 }
 
 func randomID(n int, r io.Reader) string {
