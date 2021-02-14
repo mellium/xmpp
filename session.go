@@ -1099,8 +1099,19 @@ func (se *stanzaEncoder) EncodeToken(t xml.Token) error {
 					Value: attr.RandomID(),
 				})
 			}
-			t = tok
 		}
+
+		// For all start elements, regardless of depth, prevent duplicate xmlns
+		// attributes. See https://mellium.im/issue/75
+		attrs := tok.Attr[:0]
+		for _, attr := range tok.Attr {
+			if attr.Name.Local == "xmlns" && tok.Name.Space != "" {
+				continue
+			}
+			attrs = append(attrs, attr)
+		}
+		tok.Attr = attrs
+		t = tok
 	case xml.EndElement:
 		if se.depth == 1 && tok.Name.Space == "" && isStanzaEmptySpace(tok.Name) {
 			tok.Name.Space = se.ns
