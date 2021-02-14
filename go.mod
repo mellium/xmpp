@@ -9,5 +9,5 @@ require (
 	golang.org/x/sys v0.0.0-20210110051926-789bb1bd4061
 	golang.org/x/text v0.3.2
 	mellium.im/sasl v0.2.1
-	mellium.im/xmlstream v0.15.2-0.20201219131358-a51cc5cf8151
+	mellium.im/xmlstream v0.15.2
 )

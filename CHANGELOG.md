@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- stanza: new functions `AddID` and `AddOriginID` to support unique and stable
+  stanza IDs
+
+
 ## v0.18.0 — 2021-02-14
 
 ### Breaking
