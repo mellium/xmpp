@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- disco: new package implementing [XEP-0030: Service Discovery]
 - paging: new package implementing [XEP-0059: Result Set Management]
 - stanza: new functions `AddID` and `AddOriginID` to support unique and stable
   stanza IDs
@@ -20,6 +21,7 @@ All notable changes to this project will be documented in this file.
 - xmpp: unknown IQ error responses are now sent to the correct address
 
 
+[XEP-0030: Service Discovery]: https://xmpp.org/extensions/xep-0030.html
 [XEP-0059: Result Set Management]: https://xmpp.org/extensions/xep-0059.html
 [XEP-0092: Software Version]: https://xmpp.org/extensions/xep-0092.html
 
