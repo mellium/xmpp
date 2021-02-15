@@ -73,34 +73,8 @@ func GetIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) (Query, error) {
 	if iq.Type != stanza.GetIQ {
 		iq.Type = stanza.GetIQ
 	}
+
 	query := Query{}
-	resp, err := s.SendIQElement(ctx, query.TokenReader(), iq)
-	if err != nil {
-		return query, err
-	}
-
-	// Pop the start IQ token.
-	tok, err := resp.Token()
-	if err != nil {
-		return query, err
-	}
-
-	start := tok.(xml.StartElement)
-	iqStart, err := stanza.NewIQ(start)
-	if err != nil {
-		return query, err
-	}
-	d := xml.NewTokenDecoder(resp)
-	// TODO: replace with the function from #114 when that is available.
-	if iqStart.Type == stanza.ErrorIQ {
-		var err stanza.Error
-		decodeErr := d.Decode(&err)
-		if decodeErr != nil {
-			return query, err
-		}
-		return query, err
-	}
-
-	err = d.Decode(&query)
+	err := s.UnmarshalIQ(ctx, iq.Wrap(query.TokenReader()), &query)
 	return query, err
 }

@@ -8,6 +8,7 @@ package ping // import "mellium.im/xmpp/ping"
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
@@ -47,16 +48,12 @@ func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml
 // resource exists and could be pinged, it just doesn't support this particular
 // protocol for doing so).
 func Send(ctx context.Context, s *xmpp.Session, to jid.JID) error {
-	iq := IQ{IQ: stanza.IQ{
+	err := s.UnmarshalIQ(ctx, IQ{IQ: stanza.IQ{
 		Type: stanza.GetIQ,
 		To:   to,
-	}}
-	resp, err := s.SendIQ(ctx, iq.TokenReader())
-	if resp != nil {
-		defer resp.Close()
-	}
+	}}.TokenReader(), nil)
 
-	if stanzaErr, ok := err.(stanza.Error); ok {
+	if stanzaErr := (stanza.Error{}); errors.As(err, &stanzaErr) {
 		// If the ping namespace isn't supported and we get back
 		// service-unavailable, treat this as if the ping succeeded (because the
 		// client was obviously able to send us the error that ping isn't

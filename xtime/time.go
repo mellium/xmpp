@@ -94,24 +94,16 @@ func (t *Time) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 // Get sends a request to the provided JID asking for its time.
 func Get(ctx context.Context, s *xmpp.Session, to jid.JID) (time.Time, error) {
-	result, err := s.SendIQ(ctx, stanza.IQ{
-		Type: stanza.GetIQ,
-		To:   to,
-	}.Wrap(xmlstream.Wrap(nil, xml.StartElement{Name: xml.Name{Local: "time", Space: NS}})))
-	var t time.Time
-	if err != nil {
-		return t, err
-	}
-	d := xml.NewTokenDecoder(result)
-	data := struct {
-		stanza.IQ
-		Time Time
-	}{}
-	err = d.Decode(&data)
-	if err != nil {
-		return t, err
-	}
-	return time.Time(data.Time.Time), nil
+	data := Time{}
+	err := s.UnmarshalIQ(
+		ctx,
+		stanza.IQ{
+			Type: stanza.GetIQ,
+			To:   to,
+		}.Wrap(xmlstream.Wrap(nil, xml.StartElement{Name: xml.Name{Local: "time", Space: NS}})),
+		&data,
+	)
+	return data.Time, err
 }
 
 // Handle returns an option that registers a Handler for entity time requests.
