@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - stanza: new functions `AddID` and `AddOriginID` to support unique and stable
   stanza IDs
 - version: new package implementing [XEP-0092: Software Version]
+- xmpp: new `UnmarshalIQ` and `UnmarshalIQElement` methods on `Session`
 
 [XEP-0092: Software Version]: https://xmpp.org/extensions/xep-0092.html
 

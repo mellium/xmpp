@@ -798,6 +798,9 @@ func (s *Session) SetCloseDeadline(t time.Time) error {
 
 // EncodeIQ is like Encode except that it returns an error if v does not marshal
 // to an IQ stanza and like SendIQ it blocks until a response is received.
+// For more information see SendIQ.
+//
+// EncodeIQ is safe for concurrent use by multiple goroutines.
 func (s *Session) EncodeIQ(ctx context.Context, v interface{}) (xmlstream.TokenReadCloser, error) {
 	r, err := marshal.TokenReader(v)
 	if err != nil {
@@ -808,6 +811,9 @@ func (s *Session) EncodeIQ(ctx context.Context, v interface{}) (xmlstream.TokenR
 
 // EncodeIQElement is like EncodeIQ except that it wraps the payload in an
 // Info/Query (IQ) element.
+// For more information see SendIQ.
+//
+// EncodeIQElement is safe for concurrent use by multiple goroutines.
 func (s *Session) EncodeIQElement(ctx context.Context, payload interface{}, iq stanza.IQ) (xmlstream.TokenReadCloser, error) {
 	r, err := marshal.TokenReader(payload)
 	if err != nil {
@@ -1000,11 +1006,71 @@ func (s *Session) SendIQ(ctx context.Context, r xml.TokenReader) (xmlstream.Toke
 
 // SendIQElement is like SendIQ except that it wraps the payload in an
 // Info/Query (IQ) element.
-// For more information, see SendIQ.
+// For more information see SendIQ.
 //
 // SendIQElement is safe for concurrent use by multiple goroutines.
 func (s *Session) SendIQElement(ctx context.Context, payload xml.TokenReader, iq stanza.IQ) (xmlstream.TokenReadCloser, error) {
 	return s.SendIQ(ctx, iq.Wrap(payload))
+}
+
+// UnmarshalIQ is like SendIQ except that error replies are unmarshaled into a
+// stanza.Error and returned and otherwise the response payload is unmarshaled
+// into v.
+// For more information see SendIQ.
+//
+// UnmarshalIQ is safe for concurrent use by multiple goroutines.
+func (s *Session) UnmarshalIQ(ctx context.Context, iq xml.TokenReader, v interface{}) error {
+	return unmarshalIQ(ctx, iq, v, s)
+}
+
+// UnmarshalIQElement is like UnmarshalIQ but it wraps a payload in the provided IQ.
+// For more information see SendIQ.
+//
+// UnmarshalIQElement is safe for concurrent use by multiple goroutines.
+func (s *Session) UnmarshalIQElement(ctx context.Context, payload xml.TokenReader, iq stanza.IQ, v interface{}) error {
+	return unmarshalIQ(ctx, iq.Wrap(payload), v, s)
+}
+
+func unmarshalIQ(ctx context.Context, iq xml.TokenReader, v interface{}, s *Session) (e error) {
+	resp, err := s.SendIQ(ctx, iq)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		ee := resp.Close()
+		if e == nil {
+			e = ee
+		}
+	}()
+
+	tok, err := resp.Token()
+	if err != nil {
+		return err
+	}
+	start, ok := tok.(xml.StartElement)
+	if !ok {
+		return fmt.Errorf("stanza: expected IQ start token, got %T %[1]v", tok)
+	}
+
+	// TODO: replace with the function from #114 when that is available.
+	iqStart, err := stanza.NewIQ(start)
+	if err != nil {
+		return err
+	}
+	d := xml.NewTokenDecoder(resp)
+	if iqStart.Type == stanza.ErrorIQ {
+		var err stanza.Error
+		decodeErr := d.Decode(&err)
+		if decodeErr != nil {
+			return decodeErr
+		}
+		return err
+	}
+
+	if v == nil {
+		return nil
+	}
+	return d.Decode(v)
 }
 
 func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenReader, start xml.StartElement) (xmlstream.TokenReadCloser, error) {
