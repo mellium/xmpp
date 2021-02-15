@@ -61,15 +61,15 @@ func (q Query) WriteXML(w xmlstream.TokenWriter) (int, error) {
 	return xmlstream.Copy(w, q.TokenReader())
 }
 
-// Fetch requests the software version of the provided entity.
+// Get requests the software version of the provided entity.
 // It blocks until a response is received.
-func Fetch(ctx context.Context, s *xmpp.Session, to jid.JID) (Query, error) {
-	return FetchIQ(ctx, stanza.IQ{To: to}, s)
+func Get(ctx context.Context, s *xmpp.Session, to jid.JID) (Query, error) {
+	return GetIQ(ctx, stanza.IQ{To: to}, s)
 }
 
-// FetchIQ is like Fetch but it allows you to customize the IQ.
+// GetIQ is like Get but it allows you to customize the IQ.
 // Changing the type of the provided IQ has no effect.
-func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) (Query, error) {
+func GetIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) (Query, error) {
 	if iq.Type != stanza.GetIQ {
 		iq.Type = stanza.GetIQ
 	}

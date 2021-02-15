@@ -72,7 +72,7 @@ func TestMarshal(t *testing.T) {
 	}
 }
 
-func TestFetch(t *testing.T) {
+func TestGet(t *testing.T) {
 	query := version.Query{
 		Name:    "name",
 		Version: "ver",
@@ -88,7 +88,7 @@ func TestFetch(t *testing.T) {
 			return err
 		}),
 	)
-	resp, err := version.Fetch(context.Background(), cs.Client, jid.JID{})
+	resp, err := version.Get(context.Background(), cs.Client, jid.JID{})
 	if err != nil {
 		t.Fatalf("error querying version: %v", err)
 	}
