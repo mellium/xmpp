@@ -1031,6 +1031,67 @@ func (s *Session) UnmarshalIQElement(ctx context.Context, payload xml.TokenReade
 	return unmarshalIQ(ctx, iq.Wrap(payload), v, s)
 }
 
+// IterIQ is like SendIQ except that error replies are unmarshaled into a
+// stanza.Error and returned and otherwise an iterator over the children of the
+// response payload is returned.
+// For more information see SendIQ.
+//
+// IterIQ is safe for concurrent use by multiple goroutines.
+func (s *Session) IterIQ(ctx context.Context, iq xml.TokenReader) (*xmlstream.Iter, error) {
+	return iterIQ(ctx, iq, s)
+}
+
+// IterIQElement is like IterIQ but it wraps a payload in the provided IQ.
+// For more information see SendIQ.
+//
+// IterIQElement is safe for concurrent use by multiple goroutines.
+func (s *Session) IterIQElement(ctx context.Context, payload xml.TokenReader, iq stanza.IQ) (*xmlstream.Iter, error) {
+	return iterIQ(ctx, iq.Wrap(payload), s)
+}
+
+func iterIQ(ctx context.Context, iq xml.TokenReader, s *Session) (_ *xmlstream.Iter, e error) {
+	resp, err := s.SendIQ(ctx, iq)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if e != nil {
+			/* #nosec */
+			resp.Close()
+		}
+	}()
+
+	tok, err := resp.Token()
+	if err != nil {
+		return nil, err
+	}
+	start, ok := tok.(xml.StartElement)
+	if !ok {
+		return nil, fmt.Errorf("stanza: expected IQ start token, got %T %[1]v", tok)
+	}
+	// TODO: replace with the function from #114 when that is available.
+	iqStart, err := stanza.NewIQ(start)
+	if err != nil {
+		return nil, err
+	}
+	if iqStart.Type == stanza.ErrorIQ {
+		d := xml.NewTokenDecoder(resp)
+		var err stanza.Error
+		decodeErr := d.Decode(&err)
+		if decodeErr != nil {
+			return nil, decodeErr
+		}
+		return nil, err
+	}
+
+	// Pop the payload start token, we want to iterate over its children.
+	_, err = resp.Token()
+	if err != nil {
+		return nil, err
+	}
+	return xmlstream.NewIter(resp), nil
+}
+
 func unmarshalIQ(ctx context.Context, iq xml.TokenReader, v interface{}, s *Session) (e error) {
 	resp, err := s.SendIQ(ctx, iq)
 	if err != nil {
