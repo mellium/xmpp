@@ -107,27 +107,14 @@ func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) *Iter {
 		iq.Type = stanza.GetIQ
 	}
 	rosterIQ := IQ{IQ: iq}
-	payload := rosterIQ.payload()
-	r, err := s.SendIQElement(ctx, payload, iq)
-	if err != nil {
-		return &Iter{err: err}
-	}
-
-	// Pop the start IQ token.
-	_, err = r.Token()
-	if err != nil {
-		return &Iter{err: err}
-	}
-
-	// Pop the roster wrapper token.
-	_, err = r.Token()
+	iter, err := s.IterIQ(ctx, rosterIQ.TokenReader())
 	if err != nil {
 		return &Iter{err: err}
 	}
 
 	// Return the iterator which will parse the rest of the payload incrementally.
 	return &Iter{
-		iter: xmlstream.NewIter(r),
+		iter: iter,
 	}
 }
 
