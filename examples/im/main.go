@@ -231,7 +231,7 @@ func main() {
 		if parsedToAddr.Equal(jid.JID{}) {
 			logger.Fatalf("requested software version but no address provided")
 		}
-		verResp, err := version.Fetch(ctx, session, parsedToAddr)
+		verResp, err := version.Get(ctx, session, parsedToAddr)
 		if err != nil {
 			logger.Fatalf("error requesting software version: %v", err)
 		}
