@@ -7,7 +7,7 @@ require (
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/text v0.3.4 // indirect
 	mellium.im/sasl v0.2.1
-	mellium.im/xmlstream v0.15.2
+	mellium.im/xmlstream v0.15.3-0.20210217040345-cc2ffc655204
 	mellium.im/xmpp v0.16.0
 )
 

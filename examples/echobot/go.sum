@@ -24,5 +24,5 @@ mellium.im/reader v0.1.0 h1:UUEMev16gdvaxxZC7fC08j7IzuDKh310nB6BlwnxTww=
 mellium.im/reader v0.1.0/go.mod h1:F+X5HXpkIfJ9EE1zHQG9lM/hO946iYAmU7xjg5dsQHI=
 mellium.im/sasl v0.2.1 h1:nspKSRg7/SyO0cRGY71OkfHab8tf9kCts6a6oTDut0w=
 mellium.im/sasl v0.2.1/go.mod h1:ROaEDLQNuf9vjKqE1SrAfnsobm2YKXT1gnN1uDp1PjQ=
-mellium.im/xmlstream v0.15.2 h1:RleOK10lEsVtzpEZsJeRl4Iu0iC5SQnTQIGJZ7ZHGEc=
-mellium.im/xmlstream v0.15.2/go.mod h1:7SUlP7f2qnMczK+Cu/OFgqaIhldMolVjo8np7xG41D0=
+mellium.im/xmlstream v0.15.3-0.20210217040345-cc2ffc655204 h1:T/ggGyWYtK8D6BrzyqV6bGRLE1n74ckvQU8laOlPChE=
+mellium.im/xmlstream v0.15.3-0.20210217040345-cc2ffc655204/go.mod h1:7SUlP7f2qnMczK+Cu/OFgqaIhldMolVjo8np7xG41D0=
