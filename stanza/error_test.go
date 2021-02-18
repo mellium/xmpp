@@ -6,6 +6,7 @@ package stanza_test
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -16,17 +17,92 @@ import (
 )
 
 var (
-	_ error               = (*stanza.Error)(nil)
 	_ error               = stanza.Error{}
-	_ xmlstream.WriterTo  = (*stanza.Error)(nil)
 	_ xmlstream.WriterTo  = stanza.Error{}
-	_ xmlstream.Marshaler = (*stanza.Error)(nil)
 	_ xmlstream.Marshaler = stanza.Error{}
 
 	simpleText = map[string]string{
 		"": "test",
 	}
 )
+
+var cmpTests = [...]struct {
+	err    error
+	target error
+	is     bool
+}{
+	0: {
+		err:    stanza.Error{},
+		target: errors.New("test"),
+	},
+	1: {
+		err:    stanza.Error{},
+		target: stanza.Error{},
+		is:     true,
+	},
+	2: {
+		err:    stanza.Error{Type: stanza.Cancel},
+		target: stanza.Error{},
+		is:     true,
+	},
+	3: {
+		err:    stanza.Error{Condition: stanza.UnexpectedRequest},
+		target: stanza.Error{},
+		is:     true,
+	},
+	4: {
+		err:    stanza.Error{Type: stanza.Auth, Condition: stanza.UndefinedCondition},
+		target: stanza.Error{},
+		is:     true,
+	},
+	5: {
+		err:    stanza.Error{Type: stanza.Cancel},
+		target: stanza.Error{Type: stanza.Auth},
+	},
+	6: {
+		err:    stanza.Error{Type: stanza.Auth},
+		target: stanza.Error{Type: stanza.Auth},
+		is:     true,
+	},
+	7: {
+		err:    stanza.Error{Type: stanza.Continue, Condition: stanza.SubscriptionRequired},
+		target: stanza.Error{Type: stanza.Continue},
+		is:     true,
+	},
+	8: {
+		err:    stanza.Error{Type: stanza.Continue},
+		target: stanza.Error{Type: stanza.Continue, Condition: stanza.SubscriptionRequired},
+	},
+	9: {
+		err:    stanza.Error{Condition: stanza.BadRequest},
+		target: stanza.Error{Condition: stanza.Conflict},
+	},
+	10: {
+		err:    stanza.Error{Condition: stanza.FeatureNotImplemented},
+		target: stanza.Error{Condition: stanza.FeatureNotImplemented},
+		is:     true,
+	},
+	11: {
+		err:    stanza.Error{Type: stanza.Continue, Condition: stanza.Forbidden},
+		target: stanza.Error{Condition: stanza.Forbidden},
+		is:     true,
+	},
+	12: {
+		err:    stanza.Error{Condition: stanza.Forbidden},
+		target: stanza.Error{Type: stanza.Continue, Condition: stanza.Forbidden},
+	},
+}
+
+func TestCmp(t *testing.T) {
+	for i, tc := range cmpTests {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			is := errors.Is(tc.err, tc.target)
+			if is != tc.is {
+				t.Errorf("unexpected comparison, want=%t, got=%t", tc.is, is)
+			}
+		})
+	}
+}
 
 func TestErrorReturnsCondition(t *testing.T) {
 	s := stanza.Error{Condition: "leprosy"}

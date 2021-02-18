@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - paging: new package implementing [XEP-0059: Result Set Management]
 - stanza: new functions `AddID` and `AddOriginID` to support unique and stable
   stanza IDs
+- stanza: ability to compare errors with `errors.Is`
 - version: new package implementing [XEP-0092: Software Version]
 - xmpp: new `UnmarshalIQ`, `UnmarshalIQElement`, `IterIQ`, and `IterIQElement`
   methods
