@@ -35,8 +35,14 @@ type Iter struct {
 // NewIter returns a new iterator that iterates over the children of the most
 // recent start element already consumed from r.
 func NewIter(r xml.TokenReader, max uint64) *Iter {
+	return WrapIter(xmlstream.NewIter(r), max)
+}
+
+// WrapIter returns a new iterator that supports paging from an existing
+// xmlstream.Iter.
+func WrapIter(iter *xmlstream.Iter, max uint64) *Iter {
 	return &Iter{
-		iter: xmlstream.NewIter(r),
+		iter: iter,
 		max:  max,
 	}
 }
