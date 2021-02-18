@@ -543,9 +543,18 @@ noreply:
 
 	// If the user did not write a response to an IQ, send a default one.
 	if needsResp && !rw.wroteResp {
+		_, toAttr := attr.Get(start.Attr, "to")
+		var to jid.JID
+		if toAttr != "" {
+			to, err = jid.Parse(toAttr)
+			if err != nil {
+				return err
+			}
+		}
 		_, err := xmlstream.Copy(w, stanza.IQ{
 			ID:   id,
 			Type: stanza.ErrorIQ,
+			To:   to,
 		}.Wrap(stanza.Error{
 			Type:      stanza.Cancel,
 			Condition: stanza.ServiceUnavailable,

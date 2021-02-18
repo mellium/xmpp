@@ -14,6 +14,11 @@ All notable changes to this project will be documented in this file.
 - xmpp: new `UnmarshalIQ`, `UnmarshalIQElement`, `IterIQ`, and `IterIQElement`
   methods
 
+### Fixed
+
+- xmpp: unknown IQ error responses are now sent to the correct address
+
+
 [XEP-0059: Result Set Management]: https://xmpp.org/extensions/xep-0059.html
 [XEP-0092: Software Version]: https://xmpp.org/extensions/xep-0092.html
 
