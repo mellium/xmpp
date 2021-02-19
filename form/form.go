@@ -106,6 +106,11 @@ func (d *Data) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error 
 			start = t
 		case xml.EndElement:
 			return nil
+		case xml.CharData:
+			// Realistically we should never hit this in XMPP, but for the sake of
+			// being able to parse forms from examples and the like skip over
+			// chardata.
+			continue
 		default:
 			// We shouldn't ever hit this, but just in case we do return an error.
 			return errors.New("unexpected token type")

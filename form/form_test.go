@@ -483,3 +483,29 @@ func TestSetGet(t *testing.T) {
 		}
 	})
 }
+
+func TestUnmarshalChardata(t *testing.T) {
+	const formData = `
+<x xmlns="jabber:x:data" type="submit">
+	<field type="boolean" var="foo">
+		<required></required><value>true</value>
+	</field>
+</x>`
+	data := &form.Data{}
+	err := xml.Unmarshal([]byte(formData), data)
+	if err != nil {
+		t.Fatalf("error unmarshaling: %v", err)
+	}
+	if b, ok := data.GetBool("foo"); !ok || !b {
+		t.Fatalf("expected form field 'foo' to be set, got %t, %t", b, ok)
+	}
+}
+
+func TestUnmarshalInvalidToken(t *testing.T) {
+	const formData = `<x xmlns="jabber:x:data"><!-- Not allowed --></x>`
+	data := &form.Data{}
+	err := xml.Unmarshal([]byte(formData), data)
+	if err == nil {
+		t.Fatalf("expected error when unmarshaling disallowed token type")
+	}
+}
