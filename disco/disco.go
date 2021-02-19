@@ -2,6 +2,8 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
+//go:generate go run gen.go
+
 // Package disco implements service discovery.
 package disco // import "mellium.im/xmpp/disco"
 
