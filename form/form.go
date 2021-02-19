@@ -147,6 +147,9 @@ func (d *Data) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error 
 			if err != nil {
 				return err
 			}
+			if f.typ == "" {
+				f.typ = TypeText
+			}
 			d.fields = append(d.fields, f)
 		default:
 			return fmt.Errorf("unexpected element %v", start.Name)
@@ -195,7 +198,7 @@ func (d *Data) Get(id string) (v interface{}, ok bool) {
 			}
 		}
 		return false, false
-	case TypeText, TypeTextPrivate, TypeHidden, TypeList:
+	case TypeText, TypeTextPrivate, TypeHidden, TypeList, "":
 		if len(field.value) == 0 {
 			return "", false
 		}

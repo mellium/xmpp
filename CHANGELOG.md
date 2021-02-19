@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- form: if no field type is set the correct default (text-single) is used
 - xmpp: unknown IQ error responses are now sent to the correct address
 
 
