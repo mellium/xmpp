@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- delay: new package implementing [XEP-0203: Delayed Delivery]
 - disco: new package implementing [XEP-0030: Service Discovery]
 - paging: new package implementing [XEP-0059: Result Set Management]
 - stanza: new functions `AddID` and `AddOriginID` to support unique and stable
@@ -25,6 +26,7 @@ All notable changes to this project will be documented in this file.
 [XEP-0030: Service Discovery]: https://xmpp.org/extensions/xep-0030.html
 [XEP-0059: Result Set Management]: https://xmpp.org/extensions/xep-0059.html
 [XEP-0092: Software Version]: https://xmpp.org/extensions/xep-0092.html
+[XEP-0203: Delayed Delivery]: https://xmpp.org/extensions/xep-0203.html
 
 
 ## v0.18.0 — 2021-02-14
