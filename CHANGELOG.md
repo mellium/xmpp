@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - version: new package implementing [XEP-0092: Software Version]
 - xmpp: new `UnmarshalIQ`, `UnmarshalIQElement`, `IterIQ`, and `IterIQElement`
   methods
+- xtime: times can now be marshaled and unmarshaled as XML attributes
 
 ### Fixed
 

@@ -92,6 +92,21 @@ func (t *Time) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return nil
 }
 
+// MarshalXMLAttr implements xml.MarshalerAttr.
+func (t Time) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
+	return xml.Attr{
+		Name:  name,
+		Value: time.Time(t.Time).UTC().Format(time.RFC3339Nano),
+	}, nil
+}
+
+// UnmarshalXMLAttr implements xml.UnmarshalerAttr.
+func (t *Time) UnmarshalXMLAttr(attr xml.Attr) error {
+	var err error
+	t.Time, err = time.Parse(time.RFC3339, attr.Value)
+	return err
+}
+
 // Get sends a request to the provided JID asking for its time.
 func Get(ctx context.Context, s *xmpp.Session, to jid.JID) (time.Time, error) {
 	data := Time{}
