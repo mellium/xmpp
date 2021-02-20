@@ -64,3 +64,24 @@ tasks:
         git diff --exit-code -- go.mod go.sum
         popd
       done
+  - contributors: |
+      cd xmpp/
+      function on_err {
+        cat <<EOF
+      We didn't find you in the CONTRIBUTORS file!
+      Please read the file "DCO" and then, if you agree, add yourself to the
+      CONTRIBUTORS file by running:
+
+          make CONTRIBUTORS
+
+      If you are already in the CONTRIBUTORS file, check that you comitted using
+      the correct name and password and if not fix your commits or (if they've
+      already been merged) add a .mailmap entry for yourself.
+      For more info see https://www.git-scm.com/docs/git-check-mailmap
+      EOF
+      }
+      trap on_err ERR
+
+      rm -f CONTRIBUTORS && make CONTRIBUTORS
+      git diff --exit-code -- CONTRIBUTORS
+
