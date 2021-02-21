@@ -23,30 +23,52 @@ var (
 	_ xml.Unmarshaler     = (*delay.Delay)(nil)
 )
 
-var disableTestCases = [...]struct {
-	in  string
-	out string
+var insertTestCases = [...]struct {
+	in     string
+	out    string
+	stanza bool
 }{
 	0: {},
 	1: {
+		stanza: true,
+		in:     `<message xmlns="jabber:client"/>`,
+		out:    `<message xmlns="jabber:client"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message>`,
+	},
+	2: {
+		stanza: true,
+		in:     `<message xmlns="jabber:server"/><message xmlns="jabber:client"><body>test</body></message>`,
+		out:    `<message xmlns="jabber:server"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message><message xmlns="jabber:client"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay><body xmlns="jabber:client">test</body></message>`,
+	},
+	3: {
+		stanza: true,
+		in:     `<message xmlns="jabber:badns"/>`,
+		out:    `<message xmlns="jabber:badns"></message>`,
+	},
+	4: {
 		in:  `<message xmlns="jabber:client"/>`,
 		out: `<message xmlns="jabber:client"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message>`,
 	},
-	2: {
+	5: {
 		in:  `<message xmlns="jabber:server"/><message xmlns="jabber:client"><body>test</body></message>`,
 		out: `<message xmlns="jabber:server"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message><message xmlns="jabber:client"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay><body xmlns="jabber:client">test</body></message>`,
 	},
-	3: {
+	6: {
 		in:  `<message xmlns="jabber:badns"/>`,
-		out: `<message xmlns="jabber:badns"></message>`,
+		out: `<message xmlns="jabber:badns"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message>`,
 	},
 }
 
-func TestDisable(t *testing.T) {
-	for i, tc := range disableTestCases {
-		stanzaDelayer := delay.Stanza(delay.Delay{From: jid.MustParse("me@example.net"), Time: time.Time{}, Reason: "foo"})
+func TestInsert(t *testing.T) {
+	for i, tc := range insertTestCases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			r := stanzaDelayer(xml.NewDecoder(strings.NewReader(tc.in)))
+			d := delay.Delay{From: jid.MustParse("me@example.net"), Time: time.Time{}, Reason: "foo"}
+			var r xml.TokenReader
+			if tc.stanza {
+				stanzaDelayer := delay.Stanza(d)
+				r = stanzaDelayer(xml.NewDecoder(strings.NewReader(tc.in)))
+			} else {
+				r = delay.Insert(d)(xml.NewDecoder(strings.NewReader(tc.in)))
+			}
 			// Prevent duplicate xmlns attributes. See https://mellium.im/issue/75
 			r = xmlstream.RemoveAttr(func(start xml.StartElement, attr xml.Attr) bool {
 				return (start.Name.Local == "message" || start.Name.Local == "iq") && attr.Name.Local == "xmlns"

@@ -118,3 +118,16 @@ func Stanza(d Delay) xmlstream.Transformer {
 		return err
 	})
 }
+
+// Insert adds a delay into any element read through the transformer at the
+// current nesting level.
+func Insert(d Delay) xmlstream.Transformer {
+	return xmlstream.InsertFunc(func(start xml.StartElement, level uint64, w xmlstream.TokenWriter) error {
+		if level != 1 {
+			return nil
+		}
+
+		_, err := xmlstream.Copy(w, d.TokenReader())
+		return err
+	})
+}
