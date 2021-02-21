@@ -107,7 +107,7 @@ func isStanza(name xml.Name) bool {
 		(name.Space == ns.Client || name.Space == ns.Server)
 }
 
-// Stanza inserts a delay into any stanza read through the st ream.
+// Stanza inserts a delay into any stanza read through the stream.
 func Stanza(d Delay) xmlstream.Transformer {
 	return xmlstream.InsertFunc(func(start xml.StartElement, level uint64, w xmlstream.TokenWriter) error {
 		if !isStanza(start.Name) || level != 1 {
