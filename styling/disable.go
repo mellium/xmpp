@@ -41,10 +41,7 @@ func (u Unstyled) WriteXML(w xmlstream.TokenWriter) (int, error) {
 // MarshalXML implements xml.Marshaler.
 func (u Unstyled) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 	_, err := u.WriteXML(e)
-	if err != nil {
-		return err
-	}
-	return e.Flush()
+	return err
 }
 
 // UnmarshalXML implements xml.Unmarshaler.
