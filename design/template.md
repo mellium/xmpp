@@ -28,7 +28,7 @@ rest of the document. This SHOULD include the latest text from [BCP 14]:
 A longer description explaining what is being proposed in more detail, but also
 why it is needed and the history of the issue or the feature in Mellium if
 applicable, as well as any necessary background information required to fully
-understand and evaluate the proposal 
+understand and evaluate the proposal.
 
 
 ## Requirements
