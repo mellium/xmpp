@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - stanza: new functions `AddID` and `AddOriginID` to support unique and stable
   stanza IDs
 - stanza: ability to compare errors with `errors.Is`
+- styling: satisfy `fmt.Stringer` for the `Style` type
 - version: new package implementing [XEP-0092: Software Version]
 - xmpp: new `UnmarshalIQ`, `UnmarshalIQElement`, `IterIQ`, and `IterIQElement`
   methods

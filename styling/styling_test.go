@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -15,6 +16,8 @@ import (
 
 	"mellium.im/xmpp/styling"
 )
+
+var _ fmt.Stringer = styling.Style(0)
 
 func TestCopyToken(t *testing.T) {
 	tok := &styling.Token{
