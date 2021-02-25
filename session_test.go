@@ -26,6 +26,8 @@ import (
 	"mellium.im/xmpp/stream"
 )
 
+var _ fmt.Stringer = xmpp.SessionState(0)
+
 func TestClosedInputStream(t *testing.T) {
 	for i := 0; i <= math.MaxUint8; i++ {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
