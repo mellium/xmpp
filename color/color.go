@@ -17,16 +17,19 @@ import (
 // Size is the length of the hash output.
 const Size = 2
 
+// CVD represents a color vision deficiency to correct for.
+type CVD uint8
+
 // A list of color vision deficiencies.
 const (
-	None uint8 = iota
+	None CVD = iota
 	RedGreen
 	Blue
 )
 
 // Hash returns a new hash.Hash computing the Y'CbCr color.
 // For more information see Sum.
-func Hash(cvd uint8) hash.Hash {
+func Hash(cvd CVD) hash.Hash {
 	return digest{
 		/* #nosec */
 		Hash: sha1.New(),
@@ -36,7 +39,7 @@ func Hash(cvd uint8) hash.Hash {
 
 type digest struct {
 	hash.Hash
-	cvd uint8
+	cvd CVD
 }
 
 func (d digest) Size() int { return Size }
@@ -67,7 +70,7 @@ func (d digest) Sum(b []byte) []byte {
 //
 // If a color vision deficiency constant is provided (other than None), the
 // algorithm attempts to avoid confusable colors.
-func Sum(data []byte, cvd uint8) [Size]byte {
+func Sum(data []byte, cvd CVD) [Size]byte {
 	b := make([]byte, 0, Size)
 	h := Hash(cvd)
 	/* #nosec */
@@ -79,7 +82,7 @@ func Sum(data []byte, cvd uint8) [Size]byte {
 // Bytes converts a byte slice to a color.YCbCr.
 //
 // For more information see Sum.
-func Bytes(b []byte, luma uint8, cvd uint8) color.YCbCr {
+func Bytes(b []byte, luma uint8, cvd CVD) color.YCbCr {
 	ba := Sum(b, cvd)
 	return color.YCbCr{
 		Y:  luma,
@@ -91,6 +94,6 @@ func Bytes(b []byte, luma uint8, cvd uint8) color.YCbCr {
 // String converts a string to a color.YCbCr.
 //
 // For more information see Sum.
-func String(s string, luma uint8, cvd uint8) color.YCbCr {
+func String(s string, luma uint8, cvd CVD) color.YCbCr {
 	return Bytes([]byte(s), luma, cvd)
 }

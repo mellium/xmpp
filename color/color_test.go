@@ -22,7 +22,7 @@ func TestSize(t *testing.T) {
 var colorTests = [...]struct {
 	s     string
 	lum   uint8
-	cvd   uint8
+	cvd   xmppcolor.CVD
 	c     color.YCbCr
 	panic bool
 }{

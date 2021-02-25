@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Breaking
+
+- color: change list of color vision deficiencies from uint8 to a new type
+
+
 ### Added
 
 - delay: new package implementing [XEP-0203: Delayed Delivery]
@@ -18,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - xmpp: new `UnmarshalIQ`, `UnmarshalIQElement`, `IterIQ`, and `IterIQElement`
   methods
 - xtime: times can now be marshaled and unmarshaled as XML attributes
+
 
 ### Fixed
 
