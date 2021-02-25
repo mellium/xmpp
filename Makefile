@@ -11,7 +11,10 @@ CONTRIBUTORS:
 	echo "" >> $@
 	git --no-pager shortlog --summary --email | cut -f2- >> $@
 
-generate: session.go styling/styling_string.go disco/categories.go
+generate: session.go color/cvd_string.go styling/styling_string.go disco/categories.go
+
+color/cvd_string.go: color/color.go
+	go generate ./color
 
 disco/categories.go: disco/disco.go
 	go generate ./disco

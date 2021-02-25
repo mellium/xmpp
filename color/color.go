@@ -2,6 +2,8 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
+//go:generate go run -tags=tools golang.org/x/tools/cmd/stringer -type=CVD
+
 // Package color implements XEP-0392: Consistent Color Generation v0.4.
 package color // import "mellium.im/xmpp/color"
 

@@ -5,12 +5,15 @@
 package color_test
 
 import (
+	"fmt"
 	"image/color"
 	"strconv"
 	"testing"
 
 	xmppcolor "mellium.im/xmpp/color"
 )
+
+var _ fmt.Stringer = xmppcolor.CVD(0)
 
 func TestSize(t *testing.T) {
 	h := xmppcolor.Hash(xmppcolor.None)
