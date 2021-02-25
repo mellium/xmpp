@@ -12,6 +12,7 @@ existing code.
 The rules in this post were designed to facilitate consistent extension packages
 and should always be followed when contributing new packages upstream.
 
+
 ## Group XEPs into packages by functionality
 
 Normally this means that each XEP is given its own package.
@@ -33,6 +34,37 @@ share a single package as they wouldn't share much code whereas XEP-0234 likely
 When in doubt, [ask][support].
 There are no hard and fast rules to grouping XEPs into packages.
 
+
+## Namespaces and Constants
+
+Most packages will implement at least one XEP, and most XEPs will define an XML
+namespace.
+XML namespaces used by the package should be included as exported string
+constants.
+If a single namespace will be defined, it should be called `NS` by convention.
+For example, the `mam` package might define the namespace as `mam.NS`:
+
+    // The XML namespace used by this package, provided as a convenience.
+    const NS = `urn:xmpp:mam:2`
+
+If multiple namespaces are defined in a single package (because it implements
+more than one XEP or because the XEP it implements defines more than one
+namespace) they should be prefixed with `NS` and followed by a word describing
+the specific namespace.
+For example, the `disco` package defines `disco.NSInfo` and `disco.NSItems`:
+
+    // Namespaces used by this package
+    const (
+    	NSInfo  = `http://jabber.org/protocol/disco#info`
+    	NSItems = `http://jabber.org/protocol/disco#items`
+    )
+
+Other constants and "magic" values such as [standardized data form
+types][XEP-0068] should be exported in a similar manner for the users
+convenience.
+
+
+[XEP-0068]: https://xmpp.org/extensions/xep-0068.html
 
 ## Implement data transmissions with simple functions
 
