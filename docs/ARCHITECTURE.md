@@ -112,6 +112,7 @@ If you are looking for a specific XEP and the package that implements it see:
 [`mellium.im/xmpp`]: https://mellium.im/xmpp
 [`mux`]: https://pkg.go.dev/mellium.im/xmpp/mux
 [`stanza`]: https://pkg.go.dev/mellium.im/xmpp/stanza
+[`stream`]: https://pkg.go.dev/mellium.im/xmpp/stream
 [`websocket`]: https://pkg.go.dev/mellium.im/xmpp/websocket
 [XEP-0082]: https://xmpp.org/extensions/xep-0082.html
 [XEP-0202]: https://xmpp.org/extensions/xep-0202.html
