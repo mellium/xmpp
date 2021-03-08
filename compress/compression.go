@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	errNoMethods = errors.New("No supported compression methods were found")
+	errNoMethods = errors.New("no supported compression methods were found")
 )
 
 // New returns a new xmpp.StreamFeature that can be used to negotiate stream
@@ -140,7 +140,7 @@ func New(methods ...Method) xmpp.StreamFeature {
 			}
 
 			if selected.Name == "" {
-				return mask, nil, errors.New(`No matching compression method found`)
+				return mask, nil, errors.New(`no matching compression method found`)
 			}
 
 			_, err = fmt.Fprintf(conn, `<compress xmlns='`+NSProtocol+`'><method>%s</method></compress>`, selected.Name)
