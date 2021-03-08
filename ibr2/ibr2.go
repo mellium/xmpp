@@ -7,7 +7,6 @@ package ibr2
 import (
 	"context"
 	"encoding/xml"
-	"errors"
 	"io"
 
 	"mellium.im/xmlstream"
@@ -18,10 +17,6 @@ import (
 // Namespaces used by IBR.
 const (
 	NS = "urn:xmpp:register:0"
-)
-
-var (
-	errNoChallenge = errors.New("no supported challenges were found")
 )
 
 func challengeStart(typ string) xml.StartElement {
