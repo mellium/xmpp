@@ -328,10 +328,8 @@ func getHostMetaXML(
 			return xrd, ctx.Err()
 		default:
 			if se, ok := t.(xml.StartElement); ok && se.Name == xrdName {
-				if err = d.DecodeElement(&xrd, &se); err != nil {
-					return xrd, err
-				}
-				break
+				err = d.DecodeElement(&xrd, &se)
+				return xrd, err
 			}
 		}
 	}
