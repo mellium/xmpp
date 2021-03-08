@@ -256,9 +256,7 @@ func CreateUser(ctx context.Context, addr, pass string) integration.Option {
 func Modules(mod ...string) integration.Option {
 	return func(cmd *integration.Cmd) error {
 		cfg := getConfig(cmd)
-		for _, m := range mod {
-			cfg.Modules = append(cfg.Modules, m)
-		}
+		cfg.Modules = append(cfg.Modules, mod...)
 		cmd.Config = cfg
 		return nil
 	}
