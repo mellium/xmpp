@@ -65,7 +65,7 @@ func Example() {
 		w := bounds.Max.X / len(parts)
 		bounds.Min.X = w * x
 		bounds.Max.X = w * (x + 1)
-		draw.Draw(img, bounds, &image.Uniform{bg}, image.ZP, draw.Src)
+		draw.Draw(img, bounds, &image.Uniform{bg}, image.Point{}, draw.Src)
 
 		for y, s := range strs {
 			d := &font.Drawer{
