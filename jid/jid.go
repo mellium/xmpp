@@ -18,14 +18,14 @@ import (
 )
 
 var (
-	errForbiddenLocalpart = errors.New("Localpart contains forbidden characters")
-	errInvalidDomainLen   = errors.New("The domainpart must be between 1 and 1023 bytes")
-	errInvalidIPv6        = errors.New("Domainpart is not a valid IPv6 address")
-	errInvalidUTF8        = errors.New("JID contains invalid UTF-8")
-	errLongLocalpart      = errors.New("The localpart must be smaller than 1024 bytes")
-	errLongResourcepart   = errors.New("The resourcepart must be smaller than 1024 bytes")
-	errNoLocalpart        = errors.New("The localpart must be larger than 0 bytes")
-	errNoResourcepart     = errors.New("The resourcepart must be larger than 0 bytes")
+	errForbiddenLocalpart = errors.New("localpart contains forbidden characters")
+	errInvalidDomainLen   = errors.New("the domainpart must be between 1 and 1023 bytes")
+	errInvalidIPv6        = errors.New("domainpart is not a valid IPv6 address")
+	errInvalidUTF8        = errors.New("jID contains invalid UTF-8")
+	errLongLocalpart      = errors.New("the localpart must be smaller than 1024 bytes")
+	errLongResourcepart   = errors.New("the resourcepart must be smaller than 1024 bytes")
+	errNoLocalpart        = errors.New("the localpart must be larger than 0 bytes")
+	errNoResourcepart     = errors.New("the resourcepart must be larger than 0 bytes")
 )
 
 // JID represents an XMPP address (Jabber ID) comprising a localpart,
