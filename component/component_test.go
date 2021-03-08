@@ -20,11 +20,6 @@ import (
 
 const header = `<?xml version="1.0" encoding="UTF-8"?>`
 
-// some is a sentinal error that represents that some error must occur.
-type some struct{}
-
-func (some) Error() string { return "Anything" }
-
 type componentClientTest struct {
 	server string
 	client string
