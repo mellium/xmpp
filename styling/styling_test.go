@@ -798,18 +798,18 @@ func TestEOFPre(t *testing.T) {
 	}
 }
 
-var testingErr = errors.New("an error")
+var errTesting = errors.New("an error")
 
 type ErrRead struct{}
 
 func (ErrRead) Read([]byte) (int, error) {
-	return 0, testingErr
+	return 0, errTesting
 }
 
 func TestDecodeErr(t *testing.T) {
 	d := styling.NewDecoder(ErrRead{})
 	_, err := d.Token()
-	if err != testingErr {
+	if err != errTesting {
 		t.Errorf("Want error passed through, got %v", err)
 	}
 }
