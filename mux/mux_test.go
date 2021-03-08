@@ -23,19 +23,25 @@ import (
 )
 
 var (
-	passTest = errors.New("mux_test: PASSED")
-	failTest = errors.New("mux_test: FAILED")
+	errPassTest = errors.New("mux_test: PASSED")
+	errFailTest = errors.New("mux_test: FAILED")
 )
 
 const exampleNS = "com.example"
 
 type passHandler struct{}
 
-func (passHandler) HandleXMPP(xmlstream.TokenReadEncoder, *xml.StartElement) error   { return passTest }
-func (passHandler) HandleMessage(stanza.Message, xmlstream.TokenReadEncoder) error   { return passTest }
-func (passHandler) HandlePresence(stanza.Presence, xmlstream.TokenReadEncoder) error { return passTest }
+func (passHandler) HandleXMPP(xmlstream.TokenReadEncoder, *xml.StartElement) error {
+	return errPassTest
+}
+func (passHandler) HandleMessage(stanza.Message, xmlstream.TokenReadEncoder) error {
+	return errPassTest
+}
+func (passHandler) HandlePresence(stanza.Presence, xmlstream.TokenReadEncoder) error {
+	return errPassTest
+}
 func (passHandler) HandleIQ(stanza.IQ, xmlstream.TokenReadEncoder, *xml.StartElement) error {
-	return passTest
+	return errPassTest
 }
 
 type multiHandler struct{}
@@ -58,7 +64,7 @@ func (multiHandler) HandlePresence(_ stanza.Presence, t xmlstream.TokenReadEncod
 	if data.Example != "example" {
 		return fmt.Errorf("wrong value for example element: want=%q, got=%q", "example", data.Test)
 	}
-	return passTest
+	return errPassTest
 }
 
 func (m multiHandler) HandleMessage(_ stanza.Message, t xmlstream.TokenReadEncoder) error {
@@ -79,22 +85,22 @@ func (m multiHandler) HandleMessage(_ stanza.Message, t xmlstream.TokenReadEncod
 	if data.Example != "example" {
 		return fmt.Errorf("wrong value for example element: want=%q, got=%q", "example", data.Test)
 	}
-	return passTest
+	return errPassTest
 }
 
 type failHandler struct{}
 
 func (failHandler) HandleXMPP(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-	return failTest
+	return errFailTest
 }
 func (failHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
-	return failTest
+	return errFailTest
 }
 func (failHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEncoder) error {
-	return failTest
+	return errFailTest
 }
 func (failHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-	return failTest
+	return errFailTest
 }
 
 type decodeHandler struct {
@@ -115,7 +121,7 @@ func (h decodeHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEn
 	if h.Body != data.Body {
 		return fmt.Errorf("wrong body: want=%q, got=%q", h.Body, data.Body)
 	}
-	return passTest
+	return errPassTest
 }
 
 var testCases = [...]struct {
@@ -132,7 +138,7 @@ var testCases = [...]struct {
 			mux.Presence(stanza.AvailablePresence, xml.Name{}, failHandler{}),
 		},
 		x:   `<iq xml:lang="en-us" type="get" xmlns="jabber:client"><a/></iq>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	1: {
 		// Basic muxing isn't affected by the server namespace.
@@ -142,7 +148,7 @@ var testCases = [...]struct {
 			mux.Presence(stanza.AvailablePresence, xml.Name{}, failHandler{}),
 		},
 		x:   `<iq type="set" xmlns="jabber:server"><b/></iq>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	2: {
 		// The message option works with a client namespace.
@@ -151,7 +157,7 @@ var testCases = [...]struct {
 			mux.Message(stanza.ChatMessage, xml.Name{}, passHandler{}),
 		},
 		x:   `<message id="123" type="chat" xmlns="jabber:client"></message>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	3: {
 		// The message option works with a server namespace.
@@ -160,7 +166,7 @@ var testCases = [...]struct {
 			mux.MessageFunc(stanza.ChatMessage, xml.Name{}, passHandler{}.HandleMessage),
 		},
 		x:   `<message to="feste@example.net" from="olivia@example.net" type="chat" xmlns="jabber:server"></message>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	4: {
 		// The presence option works with a client namespace and no type attribute.
@@ -170,7 +176,7 @@ var testCases = [...]struct {
 			mux.Presence(stanza.AvailablePresence, xml.Name{}, passHandler{}),
 		},
 		x:   `<presence id="484" xml:lang="es" xmlns="jabber:client"></presence>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	5: {
 		m: []mux.Option{
@@ -181,19 +187,19 @@ var testCases = [...]struct {
 			mux.PresenceFunc(stanza.AvailablePresence, xml.Name{}, passHandler{}.HandlePresence),
 		},
 		x:   `<presence type="" xmlns="jabber:server"></presence>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	6: {
 		// Other top level elements can be routed with a wildcard namespace.
 		m:   []mux.Option{mux.Handle(xml.Name{Local: "test"}, passHandler{})},
 		x:   `<test xmlns="summertime"/>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	7: {
 		// Other top level elements can be routed with a wildcard localname.
 		m:   []mux.Option{mux.HandleFunc(xml.Name{Space: "summertime"}, passHandler{}.HandleXMPP)},
 		x:   `<test xmlns="summertime"/>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	8: {
 		// Other top level elements can be routed with an exact match.
@@ -203,7 +209,7 @@ var testCases = [...]struct {
 			mux.HandleFunc(xml.Name{Local: "test", Space: "summertime"}, passHandler{}.HandleXMPP),
 		},
 		x:   `<test xmlns="summertime"/>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	9: {
 		// IQ exact child match handler.
@@ -216,7 +222,7 @@ var testCases = [...]struct {
 			mux.IQ(stanza.GetIQ, xml.Name{Local: "test", Space: exampleNS}, passHandler{}),
 		},
 		x:   `<iq type="get" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	10: {
 		// If no exact match is available, fallback to the namespace wildcard
@@ -226,7 +232,7 @@ var testCases = [...]struct {
 			mux.IQ(stanza.GetIQ, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
 		},
 		x:   `<iq type="get" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	11: {
 		// If no exact match or namespace handler is available, fallback local name
@@ -236,7 +242,7 @@ var testCases = [...]struct {
 			mux.IQ(stanza.ResultIQ, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
 		},
 		x:   `<iq type="get" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	12: {
 		// If no exact match or localname/namespace wildcard is available, fallback
@@ -246,7 +252,7 @@ var testCases = [...]struct {
 			mux.IQ(stanza.ErrorIQ, xml.Name{}, passHandler{}),
 		},
 		x:   `<iq type="error" xmlns="jabber:client"><test xmlns="com.example"/></iq>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	13: {
 		// Test nop non-stanza handler.
@@ -385,7 +391,7 @@ var testCases = [...]struct {
 			mux.Message(stanza.ChatMessage, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
 		},
 		x:   `<message type="chat" xmlns="jabber:client"><test xmlns="com.example"/></message>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	34: {
 		// If no exact match or namespace handler is available, fallback local name
@@ -395,7 +401,7 @@ var testCases = [...]struct {
 			mux.Message(stanza.NormalMessage, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
 		},
 		x:   `<message type="chat" xmlns="jabber:client"><test xmlns="com.example"/></message>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	35: {
 		// If no exact match or localname/namespace wildcard is available, fallback
@@ -405,7 +411,7 @@ var testCases = [...]struct {
 			mux.Message(stanza.ChatMessage, xml.Name{}, passHandler{}),
 		},
 		x:   `<message type="chat" xmlns="jabber:client"><test xmlns="com.example"/></message>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	36: {
 		// If no exact match is available, fallback to the namespace wildcard
@@ -415,7 +421,7 @@ var testCases = [...]struct {
 			mux.Presence(stanza.SubscribePresence, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
 		},
 		x:   `<presence type="subscribe" xmlns="jabber:client"><test xmlns="com.example"/></presence>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	37: {
 		// If no exact match or namespace handler is available, fallback local name
@@ -425,7 +431,7 @@ var testCases = [...]struct {
 			mux.Presence(stanza.SubscribedPresence, xml.Name{Local: "", Space: exampleNS}, failHandler{}),
 		},
 		x:   `<presence type="subscribe" xmlns="jabber:client"><test xmlns="com.example"/></presence>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	38: {
 		// If no exact match or localname/namespace wildcard is available, fallback
@@ -435,7 +441,7 @@ var testCases = [...]struct {
 			mux.Presence(stanza.SubscribePresence, xml.Name{}, passHandler{}),
 		},
 		x:   `<presence type="subscribe" xmlns="jabber:client"><test xmlns="com.example"/></presence>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	39: {
 		// Test that multiple handlers can run correctly for presence.
@@ -460,7 +466,7 @@ var testCases = [...]struct {
 			mux.Message(stanza.ChatMessage, xml.Name{}, decodeHandler{}),
 		},
 		x:   `<message xmlns='jabber:client' type='chat'/>`,
-		err: passTest,
+		err: errPassTest,
 	},
 	42: {
 		// An empty IQ is illegal and should result in EOF.
