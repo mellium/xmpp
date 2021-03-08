@@ -156,6 +156,6 @@ func (f *Failure) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	}
 	tag, _, _ := language.NewMatcher(tags).Match(f.Lang)
 	f.Lang = tag
-	f.Text, _ = data[tag]
+	f.Text = data[tag]
 	return nil
 }
