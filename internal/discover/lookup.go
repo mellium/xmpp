@@ -319,6 +319,9 @@ func getHostMetaXML(
 	d := xml.NewDecoder(resp.Body)
 
 	t, err := d.Token()
+	if err != nil {
+		return xrd, err
+	}
 	for {
 		select {
 		case <-ctx.Done():
