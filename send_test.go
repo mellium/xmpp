@@ -32,7 +32,7 @@ func (r errReader) Token() (xml.Token, error) {
 }
 
 var (
-	errExpected = errors.New("Expected error")
+	errExpected = errors.New("expected error")
 	to          = jid.MustParse("test@example.net")
 )
 
