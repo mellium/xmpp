@@ -48,7 +48,7 @@ type bindIQ struct {
 	stanza.IQ
 
 	Bind bindPayload   `xml:"urn:ietf:params:xml:ns:xmpp-bind bind,omitempty"`
-	Err  *stanza.Error `xml:"error,ommitempty"`
+	Err  *stanza.Error `xml:"error,omitempty"`
 }
 
 func (biq *bindIQ) TokenReader() xml.TokenReader {
