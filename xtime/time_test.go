@@ -25,11 +25,6 @@ var (
 	_ xml.UnmarshalerAttr = (*xtime.Time)(nil)
 )
 
-type tokenReadEncoder struct {
-	xml.TokenReader
-	xmlstream.Encoder
-}
-
 func TestRoundTrip(t *testing.T) {
 	serverTime := time.Time{}
 	serverTime = serverTime.Add(24 * time.Hour * 7 * 52)
