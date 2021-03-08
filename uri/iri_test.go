@@ -198,6 +198,7 @@ func TestParse(t *testing.T) {
 func TestParseErrorsReturned(t *testing.T) {
 	const badURL = " xmpp://feste@example.net"
 	_, err := uri.Parse(badURL)
+	//lint:ignore SA1007 Deliberately testing parsing of invalid URL
 	_, expected := url.Parse(badURL)
 	if expected == nil {
 		t.Fatal("test requires an invalid URL")
