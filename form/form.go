@@ -229,9 +229,7 @@ func (d *Data) Get(id string) (v interface{}, ok bool) {
 		return b.String(), len(field.value) > 0
 	case TypeListMulti:
 		var items []string
-		for _, vv := range field.value {
-			items = append(items, vv)
-		}
+		items = append(items, field.value...)
 		return items, len(items) > 0
 	}
 	return nil, false
