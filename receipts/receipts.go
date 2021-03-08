@@ -65,20 +65,6 @@ func (r *Requested) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return d.Skip()
 }
 
-var receiptInserter = xmlstream.InsertFunc(func(start xml.StartElement, depth uint64, w xmlstream.TokenWriter) error {
-	if depth != 1 || start.Name.Local != "message" || (start.Name.Space != ns.Client && start.Name.Space != ns.Server) {
-		return nil
-	}
-	for _, attr := range start.Attr {
-		if attr.Name.Local == "type" && attr.Value == "error" {
-			return nil
-		}
-	}
-
-	_, err := xmlstream.Copy(w, Requested{Value: true}.TokenReader())
-	return err
-})
-
 // Request is an xmlstream.Transformer that inserts a request for a read receipt
 // into any message read through r that is not itself a receipt.
 // It is provided to allow easily requesting read receipts asynchronously.
