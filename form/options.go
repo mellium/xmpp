@@ -91,5 +91,4 @@ func getFieldOpts(f *field, o ...Option) {
 	for _, opt := range o {
 		opt(f)
 	}
-	return
 }
