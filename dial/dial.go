@@ -82,22 +82,6 @@ func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (net.Co
 	return d.dial(ctx, network, addr)
 }
 
-func getHostPort(domain, network, service string) (host string, port uint16, err error) {
-	host, strPort, splitErr := net.SplitHostPort(domain)
-	bigPort, parseErr := strconv.ParseUint(strPort, 10, 16)
-	p := uint16(bigPort)
-	if splitErr != nil || parseErr != nil {
-		// If there is no port in the domain part, pick a default port.
-		p, err = discover.LookupPort(network, service)
-	}
-	// If the error was during splitting return the domain instead of the split
-	// host.
-	if splitErr != nil {
-		return domain, p, err
-	}
-	return host, p, err
-}
-
 func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
 	// If we're not looking up SRV records, make up some fake ones.
 	var addrs []*net.SRV
