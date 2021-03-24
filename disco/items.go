@@ -112,7 +112,7 @@ func (i *ItemIter) Next() bool {
 		return false
 	}
 	// TODO: set context based on a deadline?
-	i.iter = GetItems(i.ctx, i.current, i.session).iter
+	i.iter = FetchItems(i.ctx, i.current, i.session).iter
 	return i.Next()
 }
 
@@ -140,7 +140,7 @@ func (i *ItemIter) Close() error {
 	return i.iter.Close()
 }
 
-// GetItems discovers a set of items associated with a JID and optional node of
+// FetchItems discovers a set of items associated with a JID and optional node of
 // the provided item.
 // The Name attribute of the query item is ignored.
 // An empty Node means to query the root items for the JID.
@@ -149,13 +149,13 @@ func (i *ItemIter) Close() error {
 // The iterator must be closed before anything else is done on the session.
 // Any errors encountered while creating the iter are deferred until the iter is
 // used.
-func GetItems(ctx context.Context, item Item, s *xmpp.Session) *ItemIter {
-	return GetItemsIQ(ctx, item.Node, stanza.IQ{To: item.JID}, s)
+func FetchItems(ctx context.Context, item Item, s *xmpp.Session) *ItemIter {
+	return FetchItemsIQ(ctx, item.Node, stanza.IQ{To: item.JID}, s)
 }
 
-// GetItemsIQ is like GetItems but it allows you to customize the IQ.
+// FetchItemsIQ is like FetchItems but it allows you to customize the IQ.
 // Changing the type of the provided IQ has no effect.
-func GetItemsIQ(ctx context.Context, node string, iq stanza.IQ, s *xmpp.Session) *ItemIter {
+func FetchItemsIQ(ctx context.Context, node string, iq stanza.IQ, s *xmpp.Session) *ItemIter {
 	if iq.Type != stanza.GetIQ {
 		iq.Type = stanza.GetIQ
 	}
@@ -260,7 +260,7 @@ func walkItem(ctx context.Context, level, itemIdx int, items []Item, s *xmpp.Ses
 }
 
 func appendItems(ctx context.Context, s *xmpp.Session, itemIdx int, items []Item) (i []Item, err error) {
-	iter := GetItems(ctx, items[itemIdx], s)
+	iter := FetchItems(ctx, items[itemIdx], s)
 	defer func() {
 		e := iter.Close()
 		if err == nil {

@@ -18,7 +18,7 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
-var testGetItems = [...]struct {
+var testFetchItems = [...]struct {
 	node  string
 	items map[string][]disco.Item
 	err   error
@@ -52,12 +52,12 @@ type queryItems struct {
 	Items   []disco.Item `xml:"item"`
 }
 
-func TestGetItems(t *testing.T) {
+func TestFetchItems(t *testing.T) {
 	var IQ = stanza.IQ{
 		ID:   "123",
 		Type: stanza.ResultIQ,
 	}
-	for i, tc := range testGetItems {
+	for i, tc := range testFetchItems {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			cs := xmpptest.NewClientServer(
 				xmpptest.ServerHandlerFunc(func(e xmlstream.TokenReadEncoder, start *xml.StartElement) error {
@@ -78,7 +78,7 @@ func TestGetItems(t *testing.T) {
 					return e.Encode(sendIQ)
 				}),
 			)
-			iter := disco.GetItemsIQ(context.Background(), tc.node, IQ, cs.Client)
+			iter := disco.FetchItemsIQ(context.Background(), tc.node, IQ, cs.Client)
 			items := make([]disco.Item, 0, len(tc.items))
 			for iter.Next() {
 				items = append(items, iter.Item())

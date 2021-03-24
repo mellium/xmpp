@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Breaking
 
 - color: change list of color vision deficiencies from uint8 to a new type
+- disco: rename `GetItems` and `GetItemsIQ` to `FetchItems` and `FetchItemsIQ`
+  to signal that they return an iterator
 
 
 ### Added
