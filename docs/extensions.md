@@ -278,6 +278,10 @@ func (i *Iter) Next() bool {
 }
 ```
 
+Functions that returns iterators are called `Fetch` by convention (eg.
+`roster.Fetch`), or start with `Fetch` if the type of the item is not obvious
+(eg. `disco.FetchItems`).
+
 
 [`xmlstream.Iter`]: https://pkg.go.dev/mellium.im/xmlstream#Iter
 [`mellium.im/xmpp`]: https://pkg.go.dev/mellium.im/xmpp/mux
