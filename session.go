@@ -481,7 +481,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 	}
 
 	// If this is a stanza, normalize the "from" attribute.
-	if isStanza(start.Name) {
+	if stanza.Is(start.Name) {
 		for i, attr := range start.Attr {
 			if attr.Name.Local == "from" /*&& attr.Name.Space == start.Name.Space*/ {
 				local := s.LocalAddr().Bare().String()
@@ -947,11 +947,6 @@ func isIQ(name xml.Name) bool {
 
 func isIQEmptySpace(name xml.Name) bool {
 	return name.Local == "iq" && (name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
-}
-
-func isStanza(name xml.Name) bool {
-	return (name.Local == "iq" || name.Local == "message" || name.Local == "presence") &&
-		(name.Space == ns.Client || name.Space == ns.Server)
 }
 
 func isStanzaEmptySpace(name xml.Name) bool {

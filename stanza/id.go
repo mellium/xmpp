@@ -9,7 +9,6 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/attr"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 )
 
@@ -66,16 +65,11 @@ func (id OriginID) WriteXML(w xmlstream.TokenWriter) (int, error) {
 	return xmlstream.Copy(w, id.TokenReader())
 }
 
-func isStanza(name xml.Name) bool {
-	return (name.Local == "iq" || name.Local == "message" || name.Local == "presence") &&
-		(name.Space == ns.Client || name.Space == ns.Server)
-}
-
 // AddID returns an transformer that adds a random stanza ID to any stanzas that
 // does not already have one.
 func AddID(by jid.JID) xmlstream.Transformer {
 	return xmlstream.InsertFunc(func(start xml.StartElement, level uint64, w xmlstream.TokenWriter) error {
-		if isStanza(start.Name) && level == 1 {
+		if Is(start.Name) && level == 1 {
 			_, err := ID{
 				ID: attr.RandomLen(idLen),
 				By: by,
@@ -88,7 +82,7 @@ func AddID(by jid.JID) xmlstream.Transformer {
 
 var (
 	addOriginID = xmlstream.InsertFunc(func(start xml.StartElement, level uint64, w xmlstream.TokenWriter) error {
-		if isStanza(start.Name) && level == 1 {
+		if Is(start.Name) && level == 1 {
 			_, err := OriginID{
 				ID: attr.RandomLen(idLen),
 			}.WriteXML(w)
