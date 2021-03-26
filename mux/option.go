@@ -8,7 +8,6 @@ import (
 	"encoding/xml"
 
 	"mellium.im/xmpp"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -85,11 +84,6 @@ func PresenceFunc(typ stanza.PresenceType, payload xml.Name, h PresenceHandlerFu
 	return Presence(typ, payload, h)
 }
 
-func isStanza(name xml.Name) bool {
-	return (name.Local == iqStanza || name.Local == msgStanza || name.Local == presStanza) &&
-		(name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
-}
-
 // Handle returns an option that matches on the provided XML name.
 // If a handler already exists for n when the option is applied, the option
 // panics.
@@ -98,7 +92,7 @@ func Handle(n xml.Name, h xmpp.Handler) Option {
 		if h == nil {
 			panic("mux: nil handler")
 		}
-		if isStanza(n) {
+		if stanza.Is(n) {
 			panic("mux: tried to register stanza handler with Handle, use HandleIQ, HandleMessage, or HandlePresence instead")
 		}
 		if _, ok := m.patterns[n]; ok {

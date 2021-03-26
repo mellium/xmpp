@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/xtime"
 )
 
@@ -101,16 +101,10 @@ func (d *Delay) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error
 	return decoder.Skip()
 }
 
-// TODO: replace when #113 is ready.
-func isStanza(name xml.Name) bool {
-	return (name.Local == "iq" || name.Local == "message" || name.Local == "presence") &&
-		(name.Space == ns.Client || name.Space == ns.Server)
-}
-
 // Stanza inserts a delay into any stanza read through the stream.
 func Stanza(d Delay) xmlstream.Transformer {
 	return xmlstream.InsertFunc(func(start xml.StartElement, level uint64, w xmlstream.TokenWriter) error {
-		if !isStanza(start.Name) || level != 1 {
+		if !stanza.Is(start.Name) || level != 1 {
 			return nil
 		}
 
