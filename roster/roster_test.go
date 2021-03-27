@@ -81,6 +81,24 @@ func TestFetch(t *testing.T) {
 	}
 }
 
+func TestFetchNoStart(t *testing.T) {
+	cs := xmpptest.NewClientServer(
+		xmpptest.ServerHandlerFunc(func(e xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			const resp = `<iq id="123" type="result"><query xmlns='jabber:iq:roster'><!-- comment --></query></iq>`
+			_, err := xmlstream.Copy(e, xml.NewDecoder(strings.NewReader(resp)))
+			return err
+		}),
+	)
+	iter := roster.FetchIQ(context.Background(), stanza.IQ{ID: "123"}, cs.Client)
+	for iter.Next() {
+		// Just iterate
+	}
+	if err := iter.Err(); err != nil {
+		t.Errorf("Wrong error after iter: want=nil, got=%q", err)
+	}
+	iter.Close()
+}
+
 func TestReceivePush(t *testing.T) {
 	const itemJID = "nurse@example.com"
 	const x = `<iq xmlns='jabber:client' id='a78b4q6ha463' to='juliet@example.com/chamber' type='set'><query xmlns='jabber:iq:roster'><item jid='` + itemJID + `'/></query></iq>`

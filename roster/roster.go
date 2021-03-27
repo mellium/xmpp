@@ -55,9 +55,15 @@ func (i *Iter) Next() bool {
 		return false
 	}
 	start, r := i.iter.Current()
-	d := xml.NewTokenDecoder(r)
+	// If we encounter a lone token that doesn't begin with a start element (eg.
+	// a comment) skip it. This should never happen with XMPP, but we don't want
+	// to panic in case this somehow happens so just skip it.
+	if start == nil {
+		return i.Next()
+	}
+	d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*start), r))
 	item := Item{}
-	i.err = d.DecodeElement(&item, start)
+	i.err = d.Decode(&item)
 	if i.err != nil {
 		return false
 	}

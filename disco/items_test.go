@@ -9,6 +9,7 @@ import (
 	"encoding/xml"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 
 	"mellium.im/xmlstream"
@@ -98,4 +99,30 @@ func TestFetchItems(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFetchItemsNoStart(t *testing.T) {
+	cs := xmpptest.NewClientServer(
+		xmpptest.ServerHandlerFunc(func(e xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			query := disco.ItemsQuery{}
+			err := xml.NewTokenDecoder(e).Decode(&query)
+			if err != nil {
+				return err
+			}
+			const resp = `<iq id="123" type="result"><query xmlns='http://jabber.org/protocol/disco#items'><!-- comment --></query></iq>`
+			_, err = xmlstream.Copy(e, xml.NewDecoder(strings.NewReader(resp)))
+			return err
+		}),
+	)
+	iter := disco.FetchItemsIQ(context.Background(), "", stanza.IQ{
+		ID:   "123",
+		Type: stanza.ResultIQ,
+	}, cs.Client)
+	for iter.Next() {
+		// Just iterate and make sure it doesn't panic.
+	}
+	if err := iter.Err(); err != nil {
+		t.Errorf("wrong error after iter: want=nil, got=%q", err)
+	}
+	iter.Close()
 }
