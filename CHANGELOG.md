@@ -34,8 +34,9 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - form: if no field type is set the correct default (text-single) is used
-- xmpp: unknown IQ error responses are now sent to the correct address
 - jid: JIDs created with `New` now trim trailing dots from the domainpart
+- xmpp: unknown IQ error responses are now sent to the correct address
+- xmpp: fixed DOS where reads/writes never timed out on `Dial*` functions
 
 
 [XEP-0030: Service Discovery]: https://xmpp.org/extensions/xep-0030.html

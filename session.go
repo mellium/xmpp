@@ -42,6 +42,9 @@ const (
 	closeStreamWSTag = `<close xmlns="urn:ietf:params:xml:ns:xmpp-framing"/>`
 )
 
+// aLongTimeAgo is a convenient way to cancel dials.
+var aLongTimeAgo = time.Unix(1, 0)
+
 // SessionState is a bitmask that represents the current state of an XMPP
 // session. For a description of each bit, see the various SessionState typed
 // constants.
@@ -141,10 +144,46 @@ func ReceiveSession(ctx context.Context, rw io.ReadWriter, state SessionState, n
 	return negotiateSession(ctx, jid.JID{}, jid.JID{}, rw, Received|state, negotiate)
 }
 
+func setDeadline(ctx context.Context, conn net.Conn) context.CancelFunc {
+	cancelCtx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-ctx.Done():
+			/* #nosec */
+			conn.SetDeadline(aLongTimeAgo)
+			/* #nosec */
+			conn.SetDeadline(time.Time{})
+		case <-cancelCtx.Done():
+		}
+	}()
+	return cancel
+}
+
+func setWriteDeadline(ctx context.Context, conn net.Conn) context.CancelFunc {
+	cancelCtx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-ctx.Done():
+			/* #nosec */
+			conn.SetWriteDeadline(aLongTimeAgo)
+			/* #nosec */
+			conn.SetWriteDeadline(time.Time{})
+		case <-cancelCtx.Done():
+		}
+	}()
+	return cancel
+}
+
 func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, state SessionState, negotiate Negotiator) (*Session, error) {
 	if negotiate == nil {
 		panic("xmpp: attempted to negotiate session with nil negotiator")
 	}
+
+	// If the ReadWriter is a net.Conn, respect context deadlines.
+	if conn, ok := rw.(net.Conn); ok {
+		defer setDeadline(ctx, conn)()
+	}
+
 	s := &Session{
 		conn:       newConn(rw, nil),
 		features:   make(map[string]interface{}),
@@ -840,15 +879,7 @@ func (s *Session) Encode(ctx context.Context, v interface{}) error {
 	s.out.Lock()
 	defer s.out.Unlock()
 
-	if deadline, ok := ctx.Deadline(); ok {
-		err := s.conn.SetDeadline(deadline)
-		if err != nil {
-			return err
-		}
-		/* #nosec */
-		defer s.conn.SetDeadline(time.Time{})
-	}
-
+	defer setWriteDeadline(ctx, s.conn)()
 	return marshal.EncodeXML(s.out.e, v)
 }
 
@@ -860,15 +891,7 @@ func (s *Session) EncodeElement(ctx context.Context, v interface{}, start xml.St
 	s.out.Lock()
 	defer s.out.Unlock()
 
-	if deadline, ok := ctx.Deadline(); ok {
-		err := s.conn.SetDeadline(deadline)
-		if err != nil {
-			return err
-		}
-		/* #nosec */
-		defer s.conn.SetDeadline(time.Time{})
-	}
-
+	defer setWriteDeadline(ctx, s.conn)()
 	return marshal.EncodeXMLElement(s.out.e, v, start)
 }
 
@@ -891,14 +914,7 @@ func send(ctx context.Context, s *Session, r xml.TokenReader, start *xml.StartEl
 	s.out.Lock()
 	defer s.out.Unlock()
 
-	if deadline, ok := ctx.Deadline(); ok {
-		err := s.conn.SetDeadline(deadline)
-		if err != nil {
-			return err
-		}
-		/* #nosec */
-		defer s.conn.SetDeadline(time.Time{})
-	}
+	defer setWriteDeadline(ctx, s.conn)()
 
 	if start == nil {
 		tok, err := r.Token()
