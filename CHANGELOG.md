@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - disco: rename `GetItems` and `GetItemsIQ` to `FetchItems` and `FetchItemsIQ`
   to signal that they return an iterator
 - xmpp: remove unused argument from `DialSession`
+- jid: splitting a JID no longer trims trailing dots from the domainpart
 
 
 ### Added
@@ -33,6 +34,7 @@ All notable changes to this project will be documented in this file.
 
 - form: if no field type is set the correct default (text-single) is used
 - xmpp: unknown IQ error responses are now sent to the correct address
+- jid: JIDs created with `New` now trim trailing dots from the domainpart
 
 
 [XEP-0030: Service Discovery]: https://xmpp.org/extensions/xep-0030.html

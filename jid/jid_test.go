@@ -40,6 +40,7 @@ func TestValidJIDs(t *testing.T) {
 		8:  {"mercutio@example.net//@//", "mercutio", "example.net", "/@//"},
 		9:  {"[::1]", "", "[::1]", ""},
 		10: {"juliet@example.com/ foo", "juliet", "example.com", " foo"},
+		11: {"example.net.", "", "example.net", ""},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			j, err := jid.Parse(tc.jid)

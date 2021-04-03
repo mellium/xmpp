@@ -72,6 +72,18 @@ func New(localpart, domainpart, resourcepart string) (JID, error) {
 		return JID{}, errInvalidUTF8
 	}
 
+	// We'll throw out any trailing dots on domainparts, since they're ignored:
+	//
+	//    If the domainpart includes a final character considered to be a label
+	//    separator (dot) by [RFC1034], this character MUST be stripped from
+	//    the domainpart before the JID of which it is a part is used for the
+	//    purpose of routing an XML stanza, comparing against another JID, or
+	//    constructing an XMPP URI or IRI [RFC5122].  In particular, such a
+	//    character MUST be stripped before any other canonicalization steps
+	//    are taken.
+
+	domainpart = strings.TrimSuffix(domainpart, ".")
+
 	// RFC 7622 §3.2.1.  Preparation
 	//
 	//    An entity that prepares a string for inclusion in an XMPP domainpart
@@ -386,18 +398,6 @@ func splitString(s string, safe bool) (localpart, domainpart, resourcepart strin
 		domainpart = s[sep+1:]
 		localpart = s[:sep]
 	}
-
-	// We'll throw out any trailing dots on domainparts, since they're ignored:
-	//
-	//    If the domainpart includes a final character considered to be a label
-	//    separator (dot) by [RFC1034], this character MUST be stripped from
-	//    the domainpart before the JID of which it is a part is used for the
-	//    purpose of routing an XML stanza, comparing against another JID, or
-	//    constructing an XMPP URI or IRI [RFC5122].  In particular, such a
-	//    character MUST be stripped before any other canonicalization steps
-	//    are taken.
-
-	domainpart = strings.TrimSuffix(domainpart, ".")
 
 	return
 }
