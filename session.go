@@ -234,7 +234,7 @@ func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 
 // DialSession uses a default client or server dialer to create a TCP connection
 // and attempts to negotiate an XMPP session over it.
-func DialSession(ctx context.Context, location, origin jid.JID, rw io.ReadWriter, state SessionState, negotiate Negotiator) (*Session, error) {
+func DialSession(ctx context.Context, location, origin jid.JID, state SessionState, negotiate Negotiator) (*Session, error) {
 	var conn net.Conn
 	var err error
 	if state&S2S == S2S {
