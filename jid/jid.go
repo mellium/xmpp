@@ -20,7 +20,6 @@ import (
 var (
 	errForbiddenLocalpart = errors.New("localpart contains forbidden characters")
 	errInvalidDomainLen   = errors.New("the domainpart must be between 1 and 1023 bytes")
-	errInvalidIPv6        = errors.New("domainpart is not a valid IPv6 address")
 	errInvalidUTF8        = errors.New("jID contains invalid UTF-8")
 	errLongLocalpart      = errors.New("the localpart must be smaller than 1024 bytes")
 	errLongResourcepart   = errors.New("the resourcepart must be smaller than 1024 bytes")
@@ -66,52 +65,17 @@ func MustParse(s string) JID {
 // resourcepart.
 func New(localpart, domainpart, resourcepart string) (JID, error) {
 	// Ensure that parts are valid UTF-8 (and short circuit the rest of the
-	// process if they're not). We'll check the domainpart after performing
-	// the IDNA ToUnicode operation.
+	// process if they're not).
+	// The domainpart is checked in normalizeDomainpart.
 	if !utf8.ValidString(localpart) || !utf8.ValidString(resourcepart) {
 		return JID{}, errInvalidUTF8
 	}
 
-	// We'll throw out any trailing dots on domainparts, since they're ignored:
-	//
-	//    If the domainpart includes a final character considered to be a label
-	//    separator (dot) by [RFC1034], this character MUST be stripped from
-	//    the domainpart before the JID of which it is a part is used for the
-	//    purpose of routing an XML stanza, comparing against another JID, or
-	//    constructing an XMPP URI or IRI [RFC5122].  In particular, such a
-	//    character MUST be stripped before any other canonicalization steps
-	//    are taken.
-
-	domainpart = strings.TrimSuffix(domainpart, ".")
-
-	// RFC 7622 §3.2.1.  Preparation
-	//
-	//    An entity that prepares a string for inclusion in an XMPP domainpart
-	//    slot MUST ensure that the string consists only of Unicode code points
-	//    that are allowed in NR-LDH labels or U-labels as defined in
-	//    [RFC5890].  This implies that the string MUST NOT include A-labels as
-	//    defined in [RFC5890]; each A-label MUST be converted to a U-label
-	//    during preparation of a string for inclusion in a domainpart slot.
-
 	var err error
-	domainpart, err = idna.ToUnicode(domainpart)
+	domainpart, err = normalizeDomainpart(domainpart)
 	if err != nil {
 		return JID{}, err
 	}
-
-	if !utf8.ValidString(domainpart) {
-		return JID{}, errInvalidUTF8
-	}
-
-	// RFC 7622 §3.2.2.  Enforcement
-	//
-	//   An entity that performs enforcement in XMPP domainpart slots MUST
-	//   prepare a string as described in Section 3.2.1 and MUST also apply
-	//   the normalization, case-mapping, and width-mapping rules defined in
-	//   [RFC5892].
-	//
-	// TODO: I have no idea what this is talking about… what rules? RFC 5892 is a
-	//       bunch of property lists. Maybe it meant RFC 5895?
 
 	var lenlocal int
 	data := make([]byte, 0, len(localpart)+len(domainpart)+len(resourcepart))
@@ -133,7 +97,13 @@ func New(localpart, domainpart, resourcepart string) (JID, error) {
 		}
 	}
 
-	if err := commonChecks(data[:lenlocal], domainpart, data[lenlocal+len(domainpart):]); err != nil {
+	err = localChecks(data[:lenlocal])
+	if err != nil {
+		return JID{}, err
+	}
+
+	err = resourceChecks(data[lenlocal+len(domainpart):])
+	if err != nil {
 		return JID{}, err
 	}
 
@@ -172,16 +142,10 @@ func (j JID) WithLocal(localpart string) (JID, error) {
 // WithDomain returns a copy of the JID with a new domainpart.
 // This elides validation of the localpart and resourcepart.
 func (j JID) WithDomain(domainpart string) (JID, error) {
-	err := domainChecks(domainpart)
+	var err error
+	domainpart, err = normalizeDomainpart(domainpart)
 	if err != nil {
 		return j, err
-	}
-	domainpart, err = idna.ToUnicode(domainpart)
-	if err != nil {
-		return j, err
-	}
-	if !utf8.ValidString(domainpart) {
-		return j, errInvalidUTF8
 	}
 
 	dl := len(domainpart)
@@ -192,7 +156,7 @@ func (j JID) WithDomain(domainpart string) (JID, error) {
 
 	j.domainlen = dl
 	j.data = data
-	return j, domainChecks(domainpart)
+	return j, nil
 }
 
 // WithResource returns a copy of the JID with a new resourcepart.
@@ -402,31 +366,6 @@ func splitString(s string, safe bool) (localpart, domainpart, resourcepart strin
 	return
 }
 
-func checkIP6String(domainpart string) error {
-	// If the domainpart is a valid IPv6 address (with brackets), short circuit.
-	if l := len(domainpart); l > 2 && strings.HasPrefix(domainpart, "[") &&
-		strings.HasSuffix(domainpart, "]") {
-		if ip := net.ParseIP(domainpart[1 : l-1]); ip == nil || ip.To4() != nil {
-			return errInvalidIPv6
-		}
-	}
-	return nil
-}
-
-func commonChecks(localpart []byte, domainpart string, resourcepart []byte) error {
-	err := localChecks(localpart)
-	if err != nil {
-		return err
-	}
-
-	err = resourceChecks(resourcepart)
-	if err != nil {
-		return err
-	}
-
-	return domainChecks(domainpart)
-}
-
 func localChecks(localpart []byte) error {
 	if len(localpart) > 1023 {
 		return errLongLocalpart
@@ -452,10 +391,60 @@ func resourceChecks(resourcepart []byte) error {
 	return nil
 }
 
-func domainChecks(domainpart string) error {
-	if l := len(domainpart); l < 1 || l > 1023 {
-		return errInvalidDomainLen
+func normalizeDomainpart(domainpart string) (string, error) {
+	if !utf8.ValidString(domainpart) {
+		return domainpart, errInvalidUTF8
 	}
 
-	return checkIP6String(domainpart)
+	// If the domainpart is a valid IPv6 address (with brackets), short circuit.
+	if l := len(domainpart) - 1; l > 1 && domainpart[0] == '[' && domainpart[l] == ']' {
+		if ip := net.ParseIP(domainpart[1:l]); ip != nil && ip.To4() == nil {
+			return domainpart, nil
+		}
+	}
+
+	// If the domainpart is a valid IPv4 address, short circuit.
+	if ip := net.ParseIP(domainpart); ip != nil && ip.To4() != nil {
+		return domainpart, nil
+	}
+
+	// RFC 7622 §3.2.  Domainpart
+	//
+	//    If the domainpart includes a final character considered to be a label
+	//    separator (dot) by [RFC1034], this character MUST be stripped from
+	//    the domainpart before the JID of which it is a part is used for the
+	//    purpose of routing an XML stanza, comparing against another JID, or
+	//    constructing an XMPP URI or IRI [RFC5122].  In particular, such a
+	//    character MUST be stripped before any other canonicalization steps
+	//    are taken.
+	domainpart = strings.TrimSuffix(domainpart, ".")
+
+	// RFC 7622 §3.2.1.  Preparation
+	//
+	//    An entity that prepares a string for inclusion in an XMPP domainpart
+	//    slot MUST ensure that the string consists only of Unicode code points
+	//    that are allowed in NR-LDH labels or U-labels as defined in
+	//    [RFC5890].  This implies that the string MUST NOT include A-labels as
+	//    defined in [RFC5890]; each A-label MUST be converted to a U-label
+	//    during preparation of a string for inclusion in a domainpart slot.
+	//
+	// RFC 7622 §3.2.2.  Enforcement
+	//
+	//   An entity that performs enforcement in XMPP domainpart slots MUST
+	//   prepare a string as described in Section 3.2.1 and MUST also apply
+	//   the normalization, case-mapping, and width-mapping rules defined in
+	//   [RFC5892].
+	//
+	// Per EID 4534 this is actually talking about RFC 5895.
+	var err error
+	domainpart, err = idna.Display.ToUnicode(domainpart)
+	if err != nil {
+		return domainpart, err
+	}
+
+	if l := len(domainpart); l < 1 || l > 1023 {
+		return domainpart, errInvalidDomainLen
+	}
+
+	return domainpart, nil
 }

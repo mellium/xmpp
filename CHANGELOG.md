@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 
 - delay: new package implementing [XEP-0203: Delayed Delivery]
 - disco: new package implementing [XEP-0030: Service Discovery]
+- jid: normalization of domainparts for display purposes
 - paging: new package implementing [XEP-0059: Result Set Management]
 - stanza: new functions `AddID` and `AddOriginID` to support unique and stable
   stanza IDs

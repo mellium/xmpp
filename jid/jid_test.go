@@ -39,8 +39,10 @@ func TestValidJIDs(t *testing.T) {
 		7:  {"mercutio@example.net//@", "mercutio", "example.net", "/@"},
 		8:  {"mercutio@example.net//@//", "mercutio", "example.net", "/@//"},
 		9:  {"[::1]", "", "[::1]", ""},
-		10: {"juliet@example.com/ foo", "juliet", "example.com", " foo"},
-		11: {"example.net.", "", "example.net", ""},
+		10: {"127.0.0.1", "", "127.0.0.1", ""},
+		11: {"juliet@example.com/ foo", "juliet", "example.com", " foo"},
+		12: {"example.net.", "", "example.net", ""},
+		13: {"A.Example.nEt.", "", "a.example.net", ""},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			j, err := jid.Parse(tc.jid)
@@ -82,6 +84,9 @@ var invalidJIDs = [...]string{
 	16: `♚@example.com`,
 	17: `juliet@`,
 	18: `/foobar`,
+	19: `[127.0.0.1]`,
+	20: `[::1`,
+	21: `::1]`,
 }
 
 func TestInvalidParseJIDs(t *testing.T) {
@@ -401,8 +406,9 @@ func TestParseMallocs(t *testing.T) {
 			panic(err)
 		}
 	})
-	if n != 3 {
-		t.Errorf("got %f allocs, want 3", n)
+	const mallocs = 4
+	if n != mallocs {
+		t.Errorf("got %f allocs, want %d", n, mallocs)
 	}
 }
 
