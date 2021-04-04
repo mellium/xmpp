@@ -44,7 +44,7 @@ func TestValidJIDs(t *testing.T) {
 		12: {"example.net.", "", "example.net", ""},
 		13: {"A.Example.nEt.", "", "a.example.net", ""},
 	} {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("parse/%d", i), func(t *testing.T) {
 			j, err := jid.Parse(tc.jid)
 			if err != nil {
 				t.Fatal(err)
@@ -233,15 +233,17 @@ func TestWithLocal(t *testing.T) {
 
 func TestWithDomain(t *testing.T) {
 	for i, tc := range [...]struct {
-		jid    string
-		domain string
-		err    bool
+		jid      string
+		domain   string
+		err      bool
+		expected string
 	}{
-		0: {"mercutio@example.net/test", "example.org", false},
-		1: {"mercutio@example.net/test", invalidutf8, true},
-		2: {"example.net", "example.org", false},
-		3: {"example.net", "", true},
-		4: {"example.net", strings.Repeat("a", 1024), true},
+		0: {jid: "mercutio@example.net/test", domain: "example.org"},
+		1: {jid: "mercutio@example.net/test", domain: invalidutf8, err: true},
+		2: {jid: "example.net", domain: "example.org"},
+		3: {jid: "example.net", err: true},
+		4: {jid: "example.net", domain: strings.Repeat("a", 1024), err: true},
+		5: {jid: "example.net", domain: "A.Example.nEt.", expected: "a.example.net"},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			old := jid.MustParse(tc.jid)
@@ -255,8 +257,14 @@ func TestWithDomain(t *testing.T) {
 			if old.String() != tc.jid {
 				t.Fatalf("WithDomain should clone data")
 			}
-			if r := new.Domainpart(); r != tc.domain {
-				t.Errorf("Unexpected domainpart: want=`%s', got=`%s'", tc.domain, r)
+			if r := new.Domainpart(); tc.expected != "" {
+				if r != tc.expected {
+					t.Errorf("unexpected domainpart: want=`%s', got=`%s'", tc.expected, r)
+				}
+			} else {
+				if r != tc.domain {
+					t.Errorf("unexpected domainpart: want=`%s', got=`%s'", tc.domain, r)
+				}
 			}
 			if new.Localpart() != old.Localpart() {
 				t.Errorf("Unexpected localpart mutation: want=`%s', got=`%s'", old.Localpart(), new.Localpart())
