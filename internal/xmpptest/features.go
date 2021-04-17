@@ -35,6 +35,7 @@ type FeatureTestCase struct {
 	Out        string
 	FinalState xmpp.SessionState
 	Err        error
+	ErrStrCmp  bool
 }
 
 // RunFeatureTests simulates a stream feature neogtiation and tests the output.
@@ -92,8 +93,20 @@ func checkFeatureErr(step string, t *testing.T, tc FeatureTestCase, err error) b
 	if tc.Err == nil {
 		t.Errorf("unexpected error during %s: %v", step, err)
 	}
-	if !errors.Is(err, tc.Err) {
-		t.Errorf("wrong error during %s: want=%v, got=%v", step, tc.Err, err)
+	if tc.ErrStrCmp {
+		if err == nil {
+			err = errors.New("nil")
+		}
+		if tc.Err == nil {
+			tc.Err = errors.New("nil")
+		}
+		if err.Error() != tc.Err.Error() {
+			t.Errorf("wrong error str during %s: want=%q, got=%q", step, tc.Err, err)
+		}
+	} else {
+		if !errors.Is(err, tc.Err) {
+			t.Errorf("wrong error during %s: want=%v, got=%v", step, tc.Err, err)
+		}
 	}
 	return false
 }
