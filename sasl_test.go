@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"errors"
 	"strings"
 	"testing"
 
@@ -147,10 +148,11 @@ var saslTestCases = [...]xmpptest.FeatureTestCase{
 		Err:     xmpp.ErrUnexpectedPayload,
 	},
 	1: {
-		Feature: xmpp.SASL("", "", sasl.Plain),
-		In:      `<!-- not a start element -->`,
-		Out:     `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
-		Err:     xmpp.ErrUnexpectedPayload,
+		Feature:   xmpp.SASL("", "", sasl.Plain),
+		In:        `<!-- not a start element -->`,
+		Out:       `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
+		Err:       errors.New("invalid token type: xml.Comment"),
+		ErrStrCmp: true,
 	},
 	2: {
 		Feature: xmpp.SASL("", "", sasl.Plain),
@@ -175,10 +177,11 @@ var saslTestCases = [...]xmpptest.FeatureTestCase{
 		Err:     xmpp.ErrUnexpectedPayload,
 	},
 	5: {
-		State:   xmpp.Received,
-		Feature: xmpp.SASLServer(panicPerms, sasl.Plain),
-		In:      `<!-- not a start element -->`,
-		Err:     xmpp.ErrUnexpectedPayload,
+		State:     xmpp.Received,
+		Feature:   xmpp.SASLServer(panicPerms, sasl.Plain),
+		In:        `<!-- not a start element -->`,
+		Err:       errors.New("invalid token type: xml.Comment"),
+		ErrStrCmp: true,
 	},
 	6: {
 		// TODO: can the client send failure?

@@ -359,6 +359,30 @@ var serveTests = [...]struct {
 		out:   `<iq xmlns="jabber:server" type="result" from="from@example.net" id="1234"></iq></stream:stream>`,
 		state: xmpp.S2S,
 	},
+	17: {
+		in:           `<?xml version="1.0" encoding="UTF-8"?>`,
+		out:          `</stream:stream>`,
+		err:          errors.New("invalid token type: xml.ProcInst"),
+		errStringCmp: true,
+	},
+	18: {
+		in:           `<!-- Test -->`,
+		out:          `</stream:stream>`,
+		err:          errors.New("invalid token type: xml.Comment"),
+		errStringCmp: true,
+	},
+	19: {
+		in:           `<!dir>`,
+		out:          `</stream:stream>`,
+		err:          errors.New("invalid token type: xml.Directive"),
+		errStringCmp: true,
+	},
+	20: {
+		in:           `<iq xmlns="jabber:client"><!-- Test --></iq>`,
+		out:          `</stream:stream>`,
+		err:          errors.New("invalid token type: xml.Comment"),
+		errStringCmp: true,
+	},
 }
 
 func TestServe(t *testing.T) {

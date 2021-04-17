@@ -5,7 +5,6 @@
 package stream_test
 
 import (
-	"bytes"
 	"encoding/xml"
 	"errors"
 	"reflect"
@@ -20,10 +19,11 @@ import (
 )
 
 var readerTestCases = [...]struct {
-	in      string
-	skip    int
-	err     error
-	errType error
+	in        string
+	skip      int
+	err       error
+	errType   error
+	errStrCmp bool
 }{
 	0: {},
 	1: {
@@ -83,6 +83,32 @@ var readerTestCases = [...]struct {
 		in:   `<stream:stream xmlns:stream='http://etherx.jabber.org/streams'></stream:stream>`,
 		skip: 1,
 	},
+	12: {
+		in:        `<message><!-- Test --></message></stream:stream>`,
+		err:       errors.New("invalid token type: xml.Comment"),
+		errStrCmp: true,
+	},
+	13: {
+		in:        `<iq><!dir></iq></stream:stream>`,
+		err:       errors.New("invalid token type: xml.Directive"),
+		errStrCmp: true,
+	},
+	14: {
+		in:        `<iq><!dir></iq>`,
+		err:       errors.New("invalid token type: xml.Directive"),
+		errStrCmp: true,
+	},
+	15: {
+		in:        `<iq><?xml?></iq>`,
+		err:       errors.New("invalid token type: xml.ProcInst"),
+		errStrCmp: true,
+	},
+	16: {
+		// Chardata is checked elsewhere because it is valid as long as it's not at
+		// the top level, or is at the top level but is only whitespace and this
+		// reader doesn't track the nesting level.
+		in: `aaa<iq></iq>`,
+	},
 }
 
 func TestReader(t *testing.T) {
@@ -106,6 +132,16 @@ func TestReader(t *testing.T) {
 			}
 			_, err := xmlstream.Copy(e, stream.Reader(d))
 			switch {
+			case tc.errStrCmp:
+				if err == nil {
+					err = errors.New("nil")
+				}
+				if tc.err == nil {
+					tc.err = errors.New("nil")
+				}
+				if tc.err.Error() != err.Error() {
+					t.Errorf("unexpected error string: want=%q, got=%q", tc.err, err)
+				}
 			case tc.errType != nil:
 				if reflect.TypeOf(tc.errType) != reflect.TypeOf(err) {
 					t.Errorf("unexpected error type: want=%T, got=%T", tc.err, err)
@@ -137,18 +173,4 @@ func TestBadFormat(t *testing.T) {
 		t.Errorf("error flushing: %v", err)
 	}
 	t.Logf("output: %q", out.String())
-}
-
-func TestDisallowedTokenType(t *testing.T) {
-	comment := xml.Comment("foo")
-	toks := &xmpptest.Tokens{comment}
-	r := stream.Reader(toks)
-	tok, err := r.Token()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	if c, ok := tok.(xml.Comment); !ok || !bytes.Equal(c, comment) {
-		t.Errorf("expected unknown token type to be passed through: want=%#v, got=%#v", comment, tok)
-	}
 }

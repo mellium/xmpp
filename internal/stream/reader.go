@@ -7,6 +7,7 @@ package stream
 import (
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 
 	"mellium.im/xmpp/stream"
@@ -63,8 +64,13 @@ func (r reader) Token() (xml.Token, error) {
 		// If this is a stream level end element but not </stream:stream>,
 		// something is really weird…
 		return nil, stream.BadFormat
+	case xml.CharData:
+		// Pass chardata through. We ensure that any chardata at the top level of
+		// the stream is only whitespace elsewhere.
+		return tok, err
 	}
-	return tok, err
+	// Other XML tokens are forbidden.
+	return tok, fmt.Errorf("invalid token type: %T", tok)
 }
 
 // Reader returns a token reader that handles stream level tokens on an already
