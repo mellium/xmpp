@@ -261,36 +261,8 @@ type Error struct {
 	Text      map[string]string
 }
 
-// Is will be used by errors.Is when comparing errors.
-// It compares the condition and type fields.
-// If either is empty it is treated as a wildcard.
-// If both are empty the comparison is true if err is of type Error.
-//
-// For more information see the errors package.
-func (se Error) Is(target error) bool {
-	err, ok := target.(Error)
-	if !ok {
-		return false
-	}
-
-	switch {
-	case err.Type == "" && err.Condition == "":
-		return true
-	case err.Type == "":
-		return err.Condition == se.Condition
-	case err.Condition == "":
-		return err.Type == se.Type
-	}
-	return err.Condition == se.Condition && err.Type == se.Type
-}
-
-// Error satisfies the error interface by returning the condition.
-func (se Error) Error() string {
-	return string(se.Condition)
-}
-
-// TokenReader satisfies the xmlstream.Marshaler interface for Error.
-func (se Error) TokenReader() xml.TokenReader {
+// Wrap wraps the payload in an error.
+func (se Error) Wrap(payload xml.TokenReader) xml.TokenReader {
 	start := xml.StartElement{
 		Name: xml.Name{Space: ``, Local: "error"},
 		Attr: []xml.Attr{},
@@ -338,9 +310,43 @@ func (se Error) TokenReader() xml.TokenReader {
 				},
 			),
 			text,
+			payload,
 		),
 		start,
 	)
+}
+
+// Is will be used by errors.Is when comparing errors.
+// It compares the condition and type fields.
+// If either is empty it is treated as a wildcard.
+// If both are empty the comparison is true if err is of type Error.
+//
+// For more information see the errors package.
+func (se Error) Is(target error) bool {
+	err, ok := target.(Error)
+	if !ok {
+		return false
+	}
+
+	switch {
+	case err.Type == "" && err.Condition == "":
+		return true
+	case err.Type == "":
+		return err.Condition == se.Condition
+	case err.Condition == "":
+		return err.Type == se.Type
+	}
+	return err.Condition == se.Condition && err.Type == se.Type
+}
+
+// Error satisfies the error interface by returning the condition.
+func (se Error) Error() string {
+	return string(se.Condition)
+}
+
+// TokenReader satisfies the xmlstream.Marshaler interface for Error.
+func (se Error) TokenReader() xml.TokenReader {
+	return se.Wrap(nil)
 }
 
 // WriteXML satisfies the xmlstream.WriterTo interface.

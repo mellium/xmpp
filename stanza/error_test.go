@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"mellium.im/xmlstream"
@@ -207,5 +208,25 @@ func TestUnmarshalStanzaError(t *testing.T) {
 				t.Errorf("Expected unmarshaled stanza error:\n`%#v`\nbut got:\n`%#v`", data.se, se2)
 			}
 		})
+	}
+}
+
+func TestWrapError(t *testing.T) {
+	stanzaErr := stanza.Error{Condition: stanza.RecipientUnavailable, Text: map[string]string{
+		"ac-u": "test",
+	}}
+	r := stanzaErr.Wrap(xmlstream.Wrap(nil, xml.StartElement{Name: xml.Name{Local: "foo"}}))
+	var buf strings.Builder
+	e := xml.NewEncoder(&buf)
+	_, err := xmlstream.Copy(e, r)
+	if err != nil {
+		t.Fatalf("error copying tokens: %v", err)
+	}
+	if err = e.Flush(); err != nil {
+		t.Fatalf("error flushing buffer: %v", err)
+	}
+	const expected = `<error><recipient-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></recipient-unavailable><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="ac-u">test</text><foo></foo></error>`
+	if out := buf.String(); out != expected {
+		t.Errorf("wrong output: want=%v, got=%v", expected, out)
 	}
 }

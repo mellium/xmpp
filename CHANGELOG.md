@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
   stanza IDs
 - stanza: ability to compare errors with `errors.Is`
 - stanza: add `Is` function to check if an XMLName is a valid stanza name
+- stanza: new `Wrap` method on `Error`
 - styling: satisfy `fmt.Stringer` for the `Style` type
 - version: new package implementing [XEP-0092: Software Version]
 - xmpp: satisfy `fmt.Stringer` for the `SessionState` type
