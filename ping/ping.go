@@ -78,6 +78,12 @@ func (iq IQ) WriteXML(w xmlstream.TokenWriter) (int, error) {
 	return xmlstream.Copy(w, iq.TokenReader())
 }
 
+// MarshalXML implements xml.Marshaler.
+func (iq IQ) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
+	_, err := iq.WriteXML(e)
+	return err
+}
+
 // TokenReader satisfies the xmlstream.Marshaler interface.
 func (iq IQ) TokenReader() xml.TokenReader {
 	start := xml.StartElement{Name: xml.Name{Local: "ping", Space: NS}}

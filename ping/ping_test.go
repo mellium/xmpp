@@ -19,46 +19,33 @@ import (
 )
 
 var (
+	_ xml.Marshaler       = ping.IQ{}
 	_ xmlstream.WriterTo  = ping.IQ{}
 	_ xmlstream.Marshaler = ping.IQ{}
 	_ mux.IQHandler       = ping.Handler{}
 )
 
+var marshalTestCases = []xmpptest.EncodingTestCase{
+	0: {
+		NoUnmarshal: true,
+		Value: &ping.IQ{
+			IQ: stanza.IQ{To: jid.MustParse("feste@example.net")},
+		},
+		XML: `<iq type="" to="feste@example.net"><ping xmlns="urn:xmpp:ping"></ping></iq>`,
+	},
+	1: {
+		Value: &ping.IQ{
+			IQ: stanza.IQ{
+				Type: stanza.GetIQ,
+				To:   jid.MustParse("feste@example.net"),
+			},
+		},
+		XML: `<iq type="get" to="feste@example.net"><ping xmlns="urn:xmpp:ping"></ping></iq>`,
+	},
+}
+
 func TestEncode(t *testing.T) {
-	j := jid.MustParse("feste@example.net")
-
-	ping := ping.IQ{
-		IQ: stanza.IQ{To: j},
-	}
-
-	t.Run("marshal", func(t *testing.T) {
-		out, err := xml.Marshal(ping)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		const expected = `<iq id="" to="feste@example.net" from="" type="get"><ping xmlns="urn:xmpp:ping"></ping></iq>`
-		if string(out) != expected {
-			t.Errorf("wrong encoding: want=%s, got=%s", expected, out)
-		}
-	})
-
-	t.Run("write", func(t *testing.T) {
-		var b strings.Builder
-		e := xml.NewEncoder(&b)
-		_, err := ping.WriteXML(e)
-		if err != nil {
-			t.Fatalf("error writing XML token stream: %v", err)
-		}
-		err = e.Flush()
-		if err != nil {
-			t.Fatalf("error flushing token stream: %v", err)
-		}
-
-		const expected = `<iq type="" to="feste@example.net"><ping xmlns="urn:xmpp:ping"></ping></iq>`
-		if streamOut := b.String(); streamOut != expected {
-			t.Errorf("wrong stream encoding: want=%s, got=%s", expected, streamOut)
-		}
-	})
+	xmpptest.RunEncodingTests(t, marshalTestCases)
 }
 
 type tokenReadEncoder struct {
