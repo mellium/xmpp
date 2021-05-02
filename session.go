@@ -1091,18 +1091,8 @@ func iterIQ(ctx context.Context, iq xml.TokenReader, s *Session) (_ *xmlstream.I
 	if !ok {
 		return nil, fmt.Errorf("stanza: expected IQ start token, got %T %[1]v", tok)
 	}
-	// TODO: replace with the function from #114 when that is available.
-	iqStart, err := stanza.NewIQ(start)
+	_, err = stanza.UnmarshalIQError(resp, start)
 	if err != nil {
-		return nil, err
-	}
-	if iqStart.Type == stanza.ErrorIQ {
-		d := xml.NewTokenDecoder(resp)
-		var err stanza.Error
-		decodeErr := d.Decode(&err)
-		if decodeErr != nil {
-			return nil, decodeErr
-		}
 		return nil, err
 	}
 
@@ -1135,21 +1125,11 @@ func unmarshalIQ(ctx context.Context, iq xml.TokenReader, v interface{}, s *Sess
 		return fmt.Errorf("stanza: expected IQ start token, got %T %[1]v", tok)
 	}
 
-	// TODO: replace with the function from #114 when that is available.
-	iqStart, err := stanza.NewIQ(start)
+	_, err = stanza.UnmarshalIQError(resp, start)
 	if err != nil {
 		return err
 	}
 	d := xml.NewTokenDecoder(resp)
-	if iqStart.Type == stanza.ErrorIQ {
-		var err stanza.Error
-		decodeErr := d.Decode(&err)
-		if decodeErr != nil {
-			return decodeErr
-		}
-		return err
-	}
-
 	if v == nil {
 		return nil
 	}
