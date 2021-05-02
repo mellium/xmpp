@@ -124,12 +124,32 @@ func TestMarshalStanzaError(t *testing.T) {
 		xml string
 		err bool
 	}{
-		0: {stanza.Error{}, "", true},
-		1: {stanza.Error{Condition: stanza.UnexpectedRequest}, `<error><unexpected-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></unexpected-request></error>`, false},
-		2: {stanza.Error{Type: stanza.Cancel, Condition: stanza.UnexpectedRequest}, `<error type="cancel"><unexpected-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></unexpected-request></error>`, false},
-		3: {stanza.Error{Type: stanza.Wait, Condition: stanza.UndefinedCondition}, `<error type="wait"><undefined-condition xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></undefined-condition></error>`, false},
-		4: {stanza.Error{Type: stanza.Modify, By: jid.MustParse("test@example.net"), Condition: stanza.SubscriptionRequired}, `<error type="modify" by="test@example.net"><subscription-required xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></subscription-required></error>`, false},
-		5: {stanza.Error{Type: stanza.Continue, Condition: stanza.ServiceUnavailable, Text: simpleText}, `<error type="continue"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas">test</text></error>`, false},
+		0: {se: stanza.Error{}, xml: "", err: true},
+		1: {
+			se:  stanza.Error{Condition: stanza.UnexpectedRequest},
+			xml: `<error><unexpected-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></unexpected-request></error>`,
+			err: false,
+		},
+		2: {
+			se:  stanza.Error{Type: stanza.Cancel, Condition: stanza.UnexpectedRequest},
+			xml: `<error type="cancel"><unexpected-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></unexpected-request></error>`,
+			err: false,
+		},
+		3: {
+			se:  stanza.Error{Type: stanza.Wait, Condition: stanza.UndefinedCondition},
+			xml: `<error type="wait"><undefined-condition xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></undefined-condition></error>`,
+			err: false,
+		},
+		4: {
+			se:  stanza.Error{Type: stanza.Modify, By: jid.MustParse("test@example.net"), Condition: stanza.SubscriptionRequired},
+			xml: `<error type="modify" by="test@example.net"><subscription-required xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></subscription-required></error>`,
+			err: false,
+		},
+		5: {
+			se:  stanza.Error{Type: stanza.Continue, Condition: stanza.ServiceUnavailable, Text: simpleText},
+			xml: `<error type="continue"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas">test</text></error>`,
+			err: false,
+		},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			b, err := xml.Marshal(data.se)
