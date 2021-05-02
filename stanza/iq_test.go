@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -236,5 +237,18 @@ func TestIQFromStartElement(t *testing.T) {
 				t.Errorf("wrong value for type: want=%q, got=%q", v, msg.Type)
 			}
 		})
+	}
+}
+
+func TestUnmarshalIQError(t *testing.T) {
+	d := xml.NewDecoder(strings.NewReader(`<iq type="error"><error/></iq>`))
+	tok, err := d.Token()
+	if err != nil {
+		t.Fatalf("error popping start token: %v", err)
+	}
+	start := tok.(xml.StartElement)
+	_, err = stanza.UnmarshalIQError(d, start)
+	if !errors.Is(err, stanza.Error{}) {
+		t.Fatalf("wrong error type: want=%T, got=%T (%[2]v)", stanza.Error{}, err)
 	}
 }

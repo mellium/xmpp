@@ -24,6 +24,27 @@ type IQ struct {
 	Type    IQType   `xml:"type,attr"`
 }
 
+// UnmarshalIQError converts the provided XML token into an IQ.
+// If the type of the IQ is "error" it unmarshals the entire payload and returns
+// the error along with the original IQ.
+func UnmarshalIQError(r xml.TokenReader, start xml.StartElement) (IQ, error) {
+	iqStart, err := NewIQ(start)
+	if err != nil {
+		return iqStart, err
+	}
+	if iqStart.Type != ErrorIQ {
+		return iqStart, nil
+	}
+
+	d := xml.NewTokenDecoder(r)
+	var stanzaErr Error
+	decodeErr := d.Decode(&stanzaErr)
+	if decodeErr != nil {
+		return iqStart, decodeErr
+	}
+	return iqStart, stanzaErr
+}
+
 // NewIQ unmarshals an XML token into a IQ.
 func NewIQ(start xml.StartElement) (IQ, error) {
 	v := IQ{
