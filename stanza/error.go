@@ -301,6 +301,10 @@ func (se Error) Wrap(payload xml.TokenReader) xml.TokenReader {
 		)
 	}
 
+	if se.Condition == "" {
+		se.Condition = UndefinedCondition
+	}
+
 	return xmlstream.Wrap(
 		xmlstream.MultiReader(
 			xmlstream.Wrap(

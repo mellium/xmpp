@@ -124,7 +124,7 @@ func TestMarshalStanzaError(t *testing.T) {
 		xml string
 		err bool
 	}{
-		0: {se: stanza.Error{}, xml: "", err: true},
+		0: {se: stanza.Error{}, xml: `<error><undefined-condition xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></undefined-condition></error>`},
 		1: {
 			se:  stanza.Error{Condition: stanza.UnexpectedRequest},
 			xml: `<error><unexpected-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></unexpected-request></error>`,
