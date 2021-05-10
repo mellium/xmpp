@@ -130,7 +130,7 @@ func (i *ItemIter) Err() error {
 	return i.iter.Err()
 }
 
-// Item returns the last roster item parsed by the iterator.
+// Item returns the last item parsed by the iterator.
 func (i *ItemIter) Item() Item {
 	return i.current
 }
