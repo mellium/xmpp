@@ -74,7 +74,6 @@ func (i Item) WriteXML(w xmlstream.TokenWriter) (int, error) {
 // ItemIter is an iterator over discovered items.
 // It supports paging
 type ItemIter struct {
-	max     uint64
 	iter    *paging.Iter
 	current Item
 	err     error
