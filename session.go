@@ -1017,7 +1017,6 @@ func (s *Session) SendIQ(ctx context.Context, r xml.TokenReader) (xmlstream.Toke
 
 	// If this an IQ of type "set" or "get" we expect a response.
 	if iqNeedsResp(start.Attr) {
-		// return s.sendResp(ctx, id, xmlstream.Wrap(r, start))
 		return s.sendResp(ctx, id, xmlstream.Inner(r), start)
 	}
 
