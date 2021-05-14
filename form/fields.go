@@ -183,11 +183,6 @@ func (f *field) TokenReader() xml.TokenReader {
 	)
 }
 
-type fieldopt struct {
-	XMLName xml.Name `xml:"jabber:x:data option"`
-	Value   string   `xml:"value,omitempty"`
-}
-
 func newField(typ FieldType, id string, o ...Option) func(data *Data) {
 	return func(data *Data) {
 		f := field{
