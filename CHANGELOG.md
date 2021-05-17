@@ -4,12 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Aded
+
+- commands: new package implementing [XEP-0050: Ad-Hoc Commands]
+
 ### Fixed
 
 - form: calling `Set` after unmarshaling into an uninitialized form no longer
   panics
 - form: unmarshaling into an existing form now resets the stored values to
   prevent data leaks across forms
+
+
+[XEP-0050: Ad-Hoc Commands]: https://xmpp.org/extensions/xep-0050.html
 
 
 ## v0.19.0 — 2021-05-02
