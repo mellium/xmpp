@@ -6,6 +6,8 @@ package commands
 
 import (
 	"encoding/xml"
+
+	"mellium.im/xmlstream"
 )
 
 //go:generate go run -tags=tools golang.org/x/tools/cmd/stringer -type=Actions -linecomment
@@ -24,37 +26,44 @@ const (
 	Execute = 0x38
 )
 
-// MarshalXML satisfies xml.Marshaler.
-func (a Actions) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
-	start := xml.StartElement{
-		Name: xml.Name{Local: "actions"},
-	}
+// TokenReader satisfies the xmlstream.Marshaler interface.
+func (a Actions) TokenReader() xml.TokenReader {
+	var attr []xml.Attr
 	switch execute := (a & Execute) >> 3; execute {
 	case Prev, Next, Complete:
-		start.Attr = []xml.Attr{{Name: xml.Name{Local: "execute"}, Value: execute.String()}}
+		attr = []xml.Attr{{Name: xml.Name{Local: "execute"}, Value: execute.String()}}
 	default:
 	}
-	err := e.EncodeToken(start)
-	if err != nil {
-		return err
-	}
+
+	var inner []xml.TokenReader
 	for i := Actions(1); i <= Complete; i <<= 1 {
 		if a&i == 0 {
 			continue
 		}
-		action := xml.StartElement{
+		inner = append(inner, xmlstream.Wrap(nil, xml.StartElement{
 			Name: xml.Name{Local: i.String()},
-		}
-		err = e.EncodeToken(action)
-		if err != nil {
-			return err
-		}
-		err = e.EncodeToken(action.End())
-		if err != nil {
-			return err
-		}
+		}))
 	}
-	return e.EncodeToken(start.End())
+
+	return xmlstream.Wrap(
+		xmlstream.MultiReader(inner...),
+		xml.StartElement{
+			Name: xml.Name{Local: "actions"},
+			Attr: attr,
+		},
+	)
+}
+
+// WriteXML satisfies the xmlstream.WriterTo interface.
+// It is like MarshalXML except it writes tokens to w.
+func (a Actions) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
+	return xmlstream.Copy(w, a.TokenReader())
+}
+
+// MarshalXML satisfies xml.Marshaler.
+func (a Actions) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
+	_, err := a.WriteXML(e)
+	return err
 }
 
 // UnmarshalXML satisfies xml.Unmarshaler.
