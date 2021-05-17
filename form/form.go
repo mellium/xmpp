@@ -92,6 +92,8 @@ func (d *Data) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error 
 		}
 	}
 
+	d.values = make(map[string]interface{})
+
 	for {
 		tok, err := decoder.Token()
 		if err != nil && err != io.EOF {
