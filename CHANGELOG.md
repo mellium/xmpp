@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### Aded
+### Security
+
+- all: update the default TLS config to disable TLS < 1.2
+
+### Added
 
 - commands: new package implementing [XEP-0050: Ad-Hoc Commands]
 

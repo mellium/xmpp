@@ -57,6 +57,7 @@ func StartTLS(cfg *tls.Config) StreamFeature {
 			if cfg == nil {
 				cfg = &tls.Config{
 					ServerName: session.LocalAddr().Domain().String(),
+					MinVersion: tls.VersionTLS12,
 				}
 			}
 

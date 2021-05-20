@@ -71,6 +71,7 @@ func main() {
 		xmpp.BindResource(),
 		xmpp.StartTLS(&tls.Config{
 			ServerName: parsedAddr.Domain().String(),
+			MinVersion: tls.VersionTLS12,
 		}),
 		xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
 	)

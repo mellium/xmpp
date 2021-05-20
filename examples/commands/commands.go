@@ -50,6 +50,7 @@ func main() {
 		myJID,
 		xmpp.StartTLS(&tls.Config{
 			ServerName: myJID.Domain().String(),
+			MinVersion: tls.VersionTLS12,
 		}),
 		xmpp.SASL("", pass, sasl.ScramSha256Plus, sasl.ScramSha1Plus, sasl.ScramSha256, sasl.ScramSha1, sasl.Plain),
 		xmpp.BindResource(),

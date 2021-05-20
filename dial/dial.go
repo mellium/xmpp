@@ -150,7 +150,10 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 				c, e = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
 					addr.Target,
 					strconv.FormatUint(uint64(addr.Port), 10),
-				), &tls.Config{ServerName: domain})
+				), &tls.Config{
+					ServerName: domain,
+					MinVersion: tls.VersionTLS12,
+				})
 			} else {
 				c, e = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
 					addr.Target,

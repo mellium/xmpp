@@ -228,6 +228,7 @@ func (d *Dialer) config(addr string) (cfg *websocket.Config, err error) {
 	if cfg.TlsConfig == nil {
 		cfg.TlsConfig = &tls.Config{
 			ServerName: cfg.Location.Host,
+			MinVersion: tls.VersionTLS12,
 		}
 	}
 	cfg.Dialer = d.Dialer

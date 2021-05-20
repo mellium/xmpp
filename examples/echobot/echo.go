@@ -48,6 +48,7 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 				xmpp.BindResource(),
 				xmpp.StartTLS(&tls.Config{
 					ServerName: j.Domain().String(),
+					MinVersion: tls.VersionTLS12,
 				}),
 				xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
 			}
