@@ -33,7 +33,7 @@ tasks:
       go env
 
       go get -u honnef.co/go/tools/cmd/staticcheck
-      go get -u github.com/securego/gosec/cmd/gosec
+      go get -u github.com/securego/gosec/v2/cmd/gosec
       go get -u git.sr.ht/~samwhited/checkdoc
       go get -u mellium.im/checkmd
 
