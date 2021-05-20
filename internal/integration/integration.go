@@ -531,6 +531,7 @@ func TempFile(cfgFileName string, f func(*Cmd, io.Writer) error) Option {
 
 		newF := func() error {
 			cfgFilePath := filepath.Join(cmd.cfgDir, cfgFileName)
+			/* #nosec */
 			cfgFile, err := os.OpenFile(cfgFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 			if err != nil {
 				return err
@@ -608,6 +609,7 @@ func Log() Option {
 func LogFile(f string, tee io.Writer) Option {
 	return Defer(func(cmd *Cmd) error {
 		var r io.Reader
+		/* #nosec */
 		fd, err := os.OpenFile(f, os.O_RDONLY, os.ModeNamedPipe)
 		if err != nil {
 			return err

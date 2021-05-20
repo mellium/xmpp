@@ -56,6 +56,7 @@ func ConfigFile(cfg Config) integration.Option {
 			if err != nil {
 				return err
 			}
+			/* #nosec */
 			cfg.FIFO, err = os.OpenFile(fifoPath, os.O_RDWR, os.ModeNamedPipe)
 			if err != nil {
 				return err
