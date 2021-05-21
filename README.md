@@ -38,5 +38,5 @@ conditions.
 
 [docs]: https://pkg.go.dev/mellium.im/xmpp
 [CONTRIBUTING.md]: https://mellium.im/docs/CONTRIBUTING
-[LICENSE]: https://github.com/mellium/xmpp/blob/master/LICENSE
-[LICENSE-GO]: https://github.com/mellium/xmpp/blob/master/LICENSE-GO
+[LICENSE]: https://github.com/mellium/xmpp/blob/main/LICENSE
+[LICENSE-GO]: https://github.com/mellium/xmpp/blob/main/LICENSE-GO
