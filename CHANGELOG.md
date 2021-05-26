@@ -18,6 +18,8 @@ All notable changes to this project will be documented in this file.
   panics
 - form: unmarshaling into an existing form now resets the stored values to
   prevent data leaks across forms
+- stanza: unmarshaling error IQs now works even if the error is not the first
+  child in the payload
 
 
 [XEP-0050: Ad-Hoc Commands]: https://xmpp.org/extensions/xep-0050.html
