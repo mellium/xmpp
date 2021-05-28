@@ -195,7 +195,6 @@ func executeCommand(ctx context.Context, cmdName string, cmdIter commands.Iter, 
 		case 0:
 			return resp.Cancel(), allPayloads, nil
 		}
-		fmt.Printf("--- Got: %d\n", actions>>3)
 		return commands.Command{}, nil, nil
 	})
 	if err != nil {
