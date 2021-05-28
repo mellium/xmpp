@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
+	"io"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
@@ -34,11 +35,11 @@ type Command struct {
 //
 // If the response is not nil it must be closed before stream processing will
 // continue.
-func (c Command) Execute(ctx context.Context, s *xmpp.Session) (resp Response, payload xmlstream.TokenReadCloser, err error) {
+func (c Command) Execute(ctx context.Context, payload xml.TokenReader, s *xmpp.Session) (Response, xmlstream.TokenReadCloser, error) {
 	return c.ExecuteIQ(ctx, stanza.IQ{
 		Type: stanza.SetIQ,
 		To:   c.JID,
-	}, s)
+	}, payload, s)
 }
 
 // ExecuteIQ is like Execute except that it allows you to customize the IQ.
@@ -46,38 +47,38 @@ func (c Command) Execute(ctx context.Context, s *xmpp.Session) (resp Response, p
 //
 // If the response is not nil it must be closed before stream processing will
 // continue.
-func (c Command) ExecuteIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) (resp Response, payload xmlstream.TokenReadCloser, err error) {
+func (c Command) ExecuteIQ(ctx context.Context, iq stanza.IQ, payload xml.TokenReader, s *xmpp.Session) (resp Response, respPayload xmlstream.TokenReadCloser, err error) {
 	if iq.Type != stanza.SetIQ {
 		iq.Type = stanza.SetIQ
 	}
 
-	payload, err = s.SendIQ(ctx, iq.Wrap(Command{
+	respPayload, err = s.SendIQ(ctx, iq.Wrap(Command{
 		SID:    c.SID,
 		Node:   c.Node,
-		Action: "execute",
-	}.TokenReader()))
+		Action: c.Action,
+	}.wrap(payload)))
 	if err != nil {
 		return resp, nil, err
 	}
 	defer func() {
-		payload := payload
-		if err != nil {
+		respPayload := respPayload
+		if err != nil && respPayload != nil {
 			/* #nosec */
-			payload.Close()
+			respPayload.Close()
 		}
 	}()
 	var t xml.Token
-	t, err = payload.Token()
+	t, err = respPayload.Token()
 	if err != nil {
 		return resp, nil, err
 	}
 	start := t.(xml.StartElement)
-	respIQ, err := stanza.UnmarshalIQError(payload, start)
+	respIQ, err := stanza.UnmarshalIQError(respPayload, start)
 	if err != nil {
 		return resp, nil, err
 	}
 
-	t, err = payload.Token()
+	t, err = respPayload.Token()
 	if err != nil {
 		return resp, nil, err
 	}
@@ -87,7 +88,13 @@ func (c Command) ExecuteIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) (
 		return resp, nil, err
 	}
 
-	return resp, payload, nil
+	return resp, struct {
+		xml.TokenReader
+		io.Closer
+	}{
+		TokenReader: xmlstream.Inner(respPayload),
+		Closer:      respPayload,
+	}, nil
 }
 
 func respFromStart(start xml.StartElement, stanzaIQ stanza.IQ) (Response, error) {
@@ -151,4 +158,26 @@ func (c Command) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
 func (c Command) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 	_, err := c.WriteXML(e)
 	return err
+}
+
+// ForEach executes each command in a multi-command chain, returning when the
+// final command is marked as completed.
+func (c Command) ForEach(ctx context.Context, payload xml.TokenReader, s *xmpp.Session, f func(Response, xml.TokenReader) (Command, xml.TokenReader, error)) error {
+	for {
+		resp, respPayload, err := c.Execute(ctx, payload, s)
+		if err != nil {
+			return err
+		}
+		c, payload, err = f(resp, respPayload)
+		if err != nil {
+			return err
+		}
+		err = respPayload.Close()
+		if err != nil {
+			return err
+		}
+		if resp.Status != "executing" || c.Node == "" {
+			return nil
+		}
+	}
 }

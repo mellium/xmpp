@@ -5,11 +5,9 @@
 package commands
 
 import (
-	"context"
 	"encoding/xml"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -24,67 +22,43 @@ type Response struct {
 }
 
 // Cancel ends the multi-stage command.
-func (r Response) Cancel(ctx context.Context, s *xmpp.Session) error {
-	return r.CancelIQ(ctx, stanza.IQ{
-		Type: stanza.SetIQ,
-		To:   r.IQ.From,
-	}, s)
-}
-
-// CancelIQ is like Cancel except that it allows you to customize the IQ.
-// Changing the type has no effect.
-func (r Response) CancelIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) error {
-	if iq.Type != stanza.SetIQ {
-		iq.Type = stanza.SetIQ
-	}
-	resp, err := s.SendIQ(ctx, iq.Wrap(Command{
+func (r Response) Cancel() Command {
+	return Command{
+		JID:    r.IQ.From,
 		SID:    r.SID,
 		Node:   r.Node,
 		Action: "cancel",
-	}.TokenReader()))
-	if err != nil {
-		return err
 	}
-	/* #nosec */
-	defer resp.Close()
-	t, err := resp.Token()
-	if err != nil {
-		return err
-	}
-	_, err = stanza.UnmarshalIQError(resp, t.(xml.StartElement))
-	return err
 }
 
 // Complete ends the multi-stage command and optionally submits data.
-func (r Response) Complete(ctx context.Context, payload xml.TokenReader, s *xmpp.Session) error {
-	return r.CompleteIQ(ctx, stanza.IQ{
-		Type: stanza.SetIQ,
-		To:   r.IQ.From,
-	}, payload, s)
-}
-
-// CompleteIQ is like Complete except that it allows you to customize the IQ.
-// Changing the type has no effect.
-func (r Response) CompleteIQ(ctx context.Context, iq stanza.IQ, payload xml.TokenReader, s *xmpp.Session) error {
-	if iq.Type != stanza.SetIQ {
-		iq.Type = stanza.SetIQ
-	}
-	resp, err := s.SendIQ(ctx, iq.Wrap(Command{
+func (r Response) Complete() Command {
+	return Command{
+		JID:    r.IQ.From,
 		SID:    r.SID,
 		Node:   r.Node,
 		Action: "complete",
-	}.wrap(payload)))
-	if err != nil {
-		return err
 	}
-	/* #nosec */
-	defer resp.Close()
-	t, err := resp.Token()
-	if err != nil {
-		return err
+}
+
+// Next requests the next step in a multi-stage command.
+func (r Response) Next() Command {
+	return Command{
+		JID:    r.IQ.From,
+		SID:    r.SID,
+		Node:   r.Node,
+		Action: "next",
 	}
-	_, err = stanza.UnmarshalIQError(resp, t.(xml.StartElement))
-	return err
+}
+
+// Prev requests the previous step in a multi-stage command.
+func (r Response) Prev() Command {
+	return Command{
+		JID:    r.IQ.From,
+		SID:    r.SID,
+		Node:   r.Node,
+		Action: "prev",
+	}
 }
 
 // TokenReader satisfies the xmlstream.Marshaler interface.

@@ -6,23 +6,25 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"encoding/xml"
 	"fmt"
-	"io"
 	"log"
+	"mellium.im/xmlstream"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"mellium.im/sasl"
-	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/commands"
 	"mellium.im/xmpp/form"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/oob"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -102,86 +104,152 @@ func executeCommand(ctx context.Context, cmdName string, cmdIter commands.Iter, 
 		return fmt.Errorf("no command %s advertised by %v", cmdName, theirJID)
 	}
 
-	resp, payload, err := cmd.Execute(ctx, session)
-	if err != nil {
-		return err
-	}
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	go func() {
-		<-ctx.Done()
-		/* #nosec */
-		payload.Close()
-	}()
-	// TODO: support multi-command flows.
-	d := xml.NewTokenDecoder(xmlstream.Inner(payload))
-	var actions commands.Actions
-	var foundForm bool
-	for {
-		tok, err := d.Token()
-		if tok == nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
-		start := tok.(xml.StartElement)
-		switch {
-		case start.Name.Space == commands.NS && start.Name.Local == "note":
-			err = handleNote(d, &start)
-			if err != nil {
-				return err
-			}
-		case start.Name.Space == oob.NS:
-			err = handleOOB(d, &start)
-			if err != nil {
-				return err
-			}
-		case start.Name.Space == form.NS:
-			if actions != 0 {
-				foundForm = true
-			}
-			var formData form.Data
-			err := d.DecodeElement(&formData, &start)
-			if err != nil {
-				return err
+	err = cmd.ForEach(ctx, nil, session, func(resp commands.Response, payload xml.TokenReader) (commands.Command, xml.TokenReader, error) {
+		var payloads []xml.TokenReader
+		var actions commands.Actions
+		var foundForm bool
+		iter := xmlstream.NewIter(payload)
+		for iter.Next() {
+			start, inner := iter.Current()
+			if start == nil {
+				continue
 			}
 
-			err = handleForm(formData, actions, func() {
-				cancel()
-				/* #nosec */
-				resp.Cancel(context.TODO(), session)
-			}, func(submit xml.TokenReader) {
-				cancel()
-				err := resp.Complete(context.TODO(), submit, session)
+			d := xml.NewTokenDecoder(xmlstream.Wrap(inner, *start))
+			// Pop the start element to put the decoder in the correct state.
+			_, err = d.Token()
+			if err != nil {
+				return commands.Command{}, nil, err
+			}
+			switch {
+			case start.Name.Space == commands.NS && start.Name.Local == "note":
+				err = handleNote(d, start)
 				if err != nil {
-					log.Fatalf("error submitting form: %v", err)
+					return commands.Command{}, nil, err
 				}
-			}, resp)
-			if err != nil {
-				return err
+			case start.Name.Space == oob.NS:
+				err = handleOOB(d, start)
+				if err != nil {
+					return commands.Command{}, nil, err
+				}
+			case start.Name.Space == form.NS:
+				foundForm = true
+				var formData form.Data
+				err := d.DecodeElement(&formData, start)
+				if err != nil {
+					return commands.Command{}, nil, err
+				}
+
+				newAction, newPayload, err := handleForm(formData, actions, resp)
+				if err != nil {
+					return commands.Command{}, nil, err
+				}
+				payloads = append(payloads, newPayload)
+				switch newAction {
+				case commands.Prev, commands.Next, commands.Complete:
+					actions &^= commands.Execute
+					actions |= newAction << 3
+				case 0:
+					return commands.Command{}, nil, nil
+				}
+			case start.Name.Space == commands.NS && start.Name.Local == "actions":
+				// Just decode the actions, they will be displayed at the end.
+				err := d.DecodeElement(&actions, start)
+				if err != nil {
+					return commands.Command{}, nil, err
+				}
+			default:
+				return commands.Command{}, nil, fmt.Errorf("unsupported payload %v", start.Name)
 			}
-		case start.Name.Space == commands.NS && start.Name.Local == "actions":
-			// Just decode the actions, they will be displayed at the end.
-			err := d.DecodeElement(&actions, &start)
-			if err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unsupported payload %v", start.Name)
 		}
-	}
-	// Actions are not part of the normal ordered flow of child elements, so we
-	// ask the user for further input last (regardless of where the actions
-	// appeared in the XML). However, if we displayed a form (or "forms") after we
-	// encountered the actions we've already shown the actions to the user in the
-	// form interface, so don't ask for them again.
-	if !foundForm {
-		// TODO: display actions
-		fmt.Println("Found actions:", actions)
+		if err := iter.Err(); err != nil {
+			return commands.Command{}, nil, err
+		}
+
+		// Actions are not part of the normal ordered flow of child elements, so we
+		// ask the user for further input last (regardless of where the actions
+		// appeared in the XML). However, if we displayed a form (or "forms") after we
+		// encountered the actions we've already shown the actions to the user in the
+		// form interface, so don't ask for them again.
+		if !foundForm && actions != 0 {
+			newAction, err := handleActions(actions, resp, session)
+			if err != nil {
+				return commands.Command{}, nil, fmt.Errorf("error handling actions: %v", err)
+			}
+			switch newAction {
+			case commands.Prev, commands.Next, commands.Complete:
+				actions &^= commands.Execute
+				actions |= newAction << 3
+			case 0:
+				return commands.Command{}, nil, nil
+			}
+		}
+		allPayloads := xmlstream.MultiReader(payloads...)
+		switch actions >> 3 {
+		case commands.Prev:
+			return resp.Prev(), allPayloads, nil
+		case commands.Next:
+			return resp.Next(), allPayloads, nil
+		case commands.Complete:
+			return resp.Complete(), allPayloads, nil
+		case 0:
+			return resp.Cancel(), allPayloads, nil
+		}
+		fmt.Printf("--- Got: %d\n", actions>>3)
+		return commands.Command{}, nil, nil
+	})
+	if err != nil {
+		return fmt.Errorf("error executing multi-stage command: %w", err)
 	}
 	return nil
+}
+
+func handleActions(actions commands.Actions, resp commands.Response, session *xmpp.Session) (commands.Actions, error) {
+	fmt.Print("Please enter one of the following actions: ")
+	var actionStrings []string
+	var def string
+	var afterFirst bool
+	for i := commands.Actions(1); i <= commands.Complete; i <<= 1 {
+		action := actions & i
+		if action == 0 {
+			continue
+		}
+		var start string
+		if afterFirst {
+			start = ", "
+		}
+		if action == ((actions & commands.Execute) >> 3) {
+			def = "*"
+		}
+		fmt.Printf("%s%s[%s]", start, def, action)
+		actionStrings = append(actionStrings, action.String())
+		afterFirst = true
+	}
+	var text string
+inputloop:
+	for {
+		fmt.Printf("\n> ")
+		reader := bufio.NewReader(os.Stdin)
+		text, _ = reader.ReadString('\n')
+		if text == "" {
+			text = def
+		}
+		for _, actionName := range actionStrings {
+			if text == actionName {
+				break inputloop
+			}
+		}
+	}
+
+	switch text {
+	case "prev":
+		return commands.Prev, nil
+	case "next":
+		return commands.Next, nil
+	case "complete":
+		return commands.Complete, nil
+	}
+	return 0, nil
 }
 
 func handleOOB(d *xml.Decoder, start *xml.StartElement) error {
@@ -217,15 +285,80 @@ func handleNote(d *xml.Decoder, start *xml.StartElement) error {
 	return nil
 }
 
-func handleForm(formData form.Data, actions commands.Actions, cancel func(), complete func(xml.TokenReader), resp commands.Response) error {
+// Label is a tview primitive that can be added to forms and draws a single line
+// of text.
+// It does not draw any actual form item.
+type label struct {
+	*tview.Box
+	label    string
+	finished func(key tcell.Key)
+}
+
+func newLabel(l string) *label {
+	return &label{
+		Box:   tview.NewBox(),
+		label: l,
+	}
+}
+
+// GetLabel always returns the empty string (the label itself is drawn by the
+// widget, not as a form label which would change indentation of other, shorter,
+// labels around it).
+func (l label) GetLabel() string {
+	return ""
+}
+
+// SetFormAttributes is a noop.
+func (l *label) SetFormAttributes(labelWidth int, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) tview.FormItem {
+	return l
+}
+
+// GetFieldWidth always returns 0 (dynamic width).
+func (l *label) GetFieldWidth() int {
+	return 0
+}
+
+// SetFinishedFunc is a noop.
+func (l *label) SetFinishedFunc(handler func(key tcell.Key)) tview.FormItem {
+	l.finished = handler
+	return l
+}
+
+// Draw draws the text.
+func (l *label) Draw(screen tcell.Screen) {
+	l.Box.DrawForSubclass(screen, l)
+	//totalWidth, totalHeight := screen.Size()
+	x, y, _, _ := l.GetInnerRect()
+	tview.PrintSimple(screen, l.label, x, y)
+}
+
+func (l *label) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
+	return l.WrapInputHandler(func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
+		// Process key event.
+		switch key := event.Key(); key {
+		//case tcell.KeyRune, tcell.KeyEnter: // Check.
+		case tcell.KeyTab, tcell.KeyBacktab, tcell.KeyEscape: // We're done.
+			if l.finished != nil {
+				l.finished(key)
+			}
+		}
+	})
+}
+
+func handleForm(formData form.Data, actions commands.Actions, resp commands.Response) (commands.Actions, xml.TokenReader, error) {
 	app := tview.NewApplication()
 
-	title := "Untitled Data Form"
+	title := "Data Form"
 	if t := formData.Title(); t != "" {
 		title = t
 	}
 	box := tview.NewForm()
 	box.SetBorder(true).SetTitle(title)
+	if instructions := formData.Instructions(); instructions != "" {
+		for _, line := range strings.Split(instructions, "\n") {
+			box.AddFormItem(newLabel(line))
+		}
+	}
 	formData.ForFields(func(field form.FieldData) {
 		switch field.Type {
 		case form.TypeBoolean:
@@ -238,9 +371,9 @@ func handleForm(formData form.Data, actions commands.Actions, cancel func(), com
 				}
 			})
 		case form.TypeFixed:
-			// TODO: this is a dumb way to display text. Write a widget that just
-			// displays its label (with no input) instead.
-			box.AddButton("Fixed: "+field.Label, nil)
+			for _, line := range strings.Split(field.Label, "\n") {
+				box.AddFormItem(newLabel(line))
+			}
 			// TODO: will this just work? it's on the form already right?
 		//case form.TypeHidden:
 		//box.AddButton("Hidden: "+field.Label, nil)
@@ -302,34 +435,40 @@ func handleForm(formData form.Data, actions commands.Actions, cancel func(), com
 			})
 		}
 	})
+	var action commands.Actions
+	var submit xml.TokenReader
 	if actions&commands.Prev == commands.Prev {
 		box.AddButton("Previous", func() {
-			panic("TODO: prev")
+			submit, _ = formData.Submit()
+			app.Stop()
+			action = commands.Prev
 		})
 	}
 	if actions&commands.Next == commands.Next {
 		box.AddButton("Next", func() {
-			panic("TODO: next")
+			submit, _ = formData.Submit()
+			app.Stop()
+			action = commands.Next
 		})
 	}
 	if actions&commands.Complete == commands.Complete {
 		box.AddButton("Submit", func() {
-			submit, _ := formData.Submit()
+			submit, _ = formData.Submit()
 			app.Stop()
-			complete(submit)
+			action = commands.Complete
 		})
 	}
 	box.AddButton("Cancel", func() {
 		app.Stop()
-		cancel()
+		action = 0
 	})
 
 	err := app.SetRoot(box, true).EnableMouse(true).Run()
 	if err != nil {
-		return err
+		return action, submit, err
 	}
 
-	return nil
+	return action, submit, nil
 }
 
 func listCommands(cmdIter commands.Iter, theirJID jid.JID, session *xmpp.Session) error {

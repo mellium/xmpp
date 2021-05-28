@@ -3,6 +3,7 @@ module mellium.im/xmpp/examples/commands
 go 1.16
 
 require (
+	github.com/gdamore/tcell/v2 v2.3.3
 	github.com/rivo/tview v0.0.0-20210514202809-22dbf8415b04
 	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf // indirect
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
