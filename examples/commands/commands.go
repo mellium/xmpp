@@ -104,6 +104,7 @@ func executeCommand(ctx context.Context, cmdName string, cmdIter commands.Iter, 
 		return fmt.Errorf("no command %s advertised by %v", cmdName, theirJID)
 	}
 
+	var newAction commands.Actions
 	err = cmd.ForEach(ctx, nil, session, func(resp commands.Response, payload xml.TokenReader) (commands.Command, xml.TokenReader, error) {
 		var payloads []xml.TokenReader
 		var actions commands.Actions
@@ -140,17 +141,18 @@ func executeCommand(ctx context.Context, cmdName string, cmdIter commands.Iter, 
 					return commands.Command{}, nil, err
 				}
 
-				newAction, newPayload, err := handleForm(formData, actions, resp)
+				var newPayload xml.TokenReader
+				newAction, newPayload, err = handleForm(formData, actions, resp)
 				if err != nil {
 					return commands.Command{}, nil, err
 				}
-				payloads = append(payloads, newPayload)
+				if newPayload != nil {
+					payloads = append(payloads, newPayload)
+				}
 				switch newAction {
 				case commands.Prev, commands.Next, commands.Complete:
 					actions &^= commands.Execute
 					actions |= newAction << 3
-				case 0:
-					return commands.Command{}, nil, nil
 				}
 			case start.Name.Space == commands.NS && start.Name.Local == "actions":
 				// Just decode the actions, they will be displayed at the end.
@@ -171,8 +173,8 @@ func executeCommand(ctx context.Context, cmdName string, cmdIter commands.Iter, 
 		// appeared in the XML). However, if we displayed a form (or "forms") after we
 		// encountered the actions we've already shown the actions to the user in the
 		// form interface, so don't ask for them again.
-		if !foundForm && actions != 0 {
-			newAction, err := handleActions(actions, resp, session)
+		if !foundForm || (newAction != 0 && newAction&^commands.Execute == 0) {
+			newAction, err = handleActions(actions, resp, session)
 			if err != nil {
 				return commands.Command{}, nil, fmt.Errorf("error handling actions: %v", err)
 			}
@@ -180,8 +182,6 @@ func executeCommand(ctx context.Context, cmdName string, cmdIter commands.Iter, 
 			case commands.Prev, commands.Next, commands.Complete:
 				actions &^= commands.Execute
 				actions |= newAction << 3
-			case 0:
-				return commands.Command{}, nil, nil
 			}
 		}
 		allPayloads := xmlstream.MultiReader(payloads...)
@@ -204,34 +204,38 @@ func executeCommand(ctx context.Context, cmdName string, cmdIter commands.Iter, 
 }
 
 func handleActions(actions commands.Actions, resp commands.Response, session *xmpp.Session) (commands.Actions, error) {
+	// Don't show a cancel button if it's the only action.
+	if actions&^commands.Execute == 0 {
+		return 0, nil
+	}
 	fmt.Print("Please enter one of the following actions: ")
 	var actionStrings []string
-	var def string
-	var afterFirst bool
+	fmt.Print("[cancel")
 	for i := commands.Actions(1); i <= commands.Complete; i <<= 1 {
 		action := actions & i
 		if action == 0 {
 			continue
 		}
-		var start string
-		if afterFirst {
-			start = ", "
-		}
+		fmt.Print(", ")
 		if action == ((actions & commands.Execute) >> 3) {
-			def = "*"
+			fmt.Print("*")
 		}
-		fmt.Printf("%s%s[%s]", start, def, action)
+		fmt.Printf("%s", action)
 		actionStrings = append(actionStrings, action.String())
-		afterFirst = true
 	}
+	fmt.Println("]")
 	var text string
 inputloop:
 	for {
 		fmt.Printf("\n> ")
 		reader := bufio.NewReader(os.Stdin)
 		text, _ = reader.ReadString('\n')
-		if text == "" {
-			text = def
+		text = strings.TrimSuffix(text, "\n")
+		// If there's a default action and we left it blank or used the string
+		// "execute" go ahead and terminate the loop.
+		// Alternatively, always terminate if we type "cancel".
+		if ((text == "" || text == "execute") && actions>>3 != 0) || text == "cancel" {
+			break
 		}
 		for _, actionName := range actionStrings {
 			if text == actionName {
@@ -241,11 +245,13 @@ inputloop:
 	}
 
 	switch text {
+	case "", "execute":
+		return actions >> 3, nil
 	case "prev":
 		return commands.Prev, nil
 	case "next":
 		return commands.Next, nil
-	case "complete":
+	case "complete", "submit":
 		return commands.Complete, nil
 	}
 	return 0, nil
@@ -461,6 +467,15 @@ func handleForm(formData form.Data, actions commands.Actions, resp commands.Resp
 		app.Stop()
 		action = 0
 	})
+	// If no actions were found always show a "submit" button.
+	// The actions will then be shown later in the CLI view.
+	if actions == 0 {
+		box.AddButton("Submit", func() {
+			submit, _ = formData.Submit()
+			app.Stop()
+			action = commands.Complete << 3
+		})
+	}
 
 	err := app.SetRoot(box, true).EnableMouse(true).Run()
 	if err != nil {
