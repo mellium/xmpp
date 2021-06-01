@@ -405,8 +405,9 @@ func TestNegotiateStreamError(t *testing.T) {
 	defer cancel()
 	clientConn, serverConn := net.Pipe()
 	clientJID := jid.MustParse("me@example.net")
+	semaphore := make(chan struct{})
 	go func() {
-		s, err := xmpp.ReceiveSession(ctx, serverConn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
+		_, err := xmpp.ReceiveSession(ctx, serverConn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
 			Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
 				return []xmpp.StreamFeature{errorStartTLS(stream.Conflict)}
 			},
@@ -414,10 +415,7 @@ func TestNegotiateStreamError(t *testing.T) {
 		if err != nil {
 			t.Logf("error receiving session: %v", err)
 		}
-		err = s.Close()
-		if err != nil {
-			t.Logf("error closing session: %v", err)
-		}
+		close(semaphore)
 	}()
 	_, err := xmpp.NewSession(ctx, clientJID, clientJID.Bare(), clientConn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
 		Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
@@ -427,4 +425,5 @@ func TestNegotiateStreamError(t *testing.T) {
 	if !errors.Is(err, stream.Conflict) {
 		t.Errorf("unexpected client err: want=%v, got=%v", stream.Conflict, err)
 	}
+	<-semaphore
 }
