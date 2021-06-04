@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
   prevent data leaks across forms
 - stanza: unmarshaling error IQs now works even if the error is not the first
   child in the payload
+- styling: pre-block start tokens with no newline had nonsensical formatting
 
 
 [XEP-0050: Ad-Hoc Commands]: https://xmpp.org/extensions/xep-0050.html

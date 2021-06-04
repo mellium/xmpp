@@ -210,8 +210,12 @@ func (d *Decoder) Token() (Token, error) {
 		Data: d.s.Bytes(),
 	}
 
-	if t.Mask&BlockPreStart == BlockPreStart && len(t.Data) > len(fence)+1 {
-		t.Info = t.Data[len(fence) : len(t.Data)-1]
+	var newlineLen int
+	if len(t.Data) > 0 && t.Data[len(t.Data)-1] == '\n' {
+		newlineLen = 1
+	}
+	if t.Mask&BlockPreStart == BlockPreStart && len(t.Data) > len(fence)+newlineLen {
+		t.Info = t.Data[len(fence) : len(t.Data)-newlineLen]
 	}
 
 	// If we've dropped a block quote level, insert a token to indicate that we're
@@ -346,18 +350,19 @@ func (d *Decoder) scan(data []byte, atEOF bool) (advance int, token []byte, err 
 
 	newLineIDX := bytes.IndexByte(data, '\n')
 	if bytes.HasPrefix(data, fence) {
-		// A fenced code block is starting:
-		d.mask |= BlockPre | BlockPreStart
-		d.clearMask |= BlockPreStart
 		switch {
 		case newLineIDX > 0:
-			// The full line is the codeblock start or end element or an invalid end
-			// element that is actually a plain block that just starts with "```"
+			// The full line is the codeblock start.
+			d.mask |= BlockPre | BlockPreStart
+			d.clearMask |= BlockPreStart
 			return newLineIDX + 1, data[:newLineIDX+1], nil
 		case atEOF:
-			// We're at the end of the file, so the token is just the remainder of the
-			// data.
+			// We're at the end of the file so the token is the remainder of the data.
+			d.mask |= BlockPre | BlockPreStart
+			d.clearMask |= BlockPreStart
 			return len(data), data, nil
+		case newLineIDX == -1:
+			return 0, nil, nil
 		}
 	}
 

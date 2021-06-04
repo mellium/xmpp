@@ -47,6 +47,19 @@ var decoderTestCases = []struct {
 	Err   error
 }{
 	{
+		name:  "pre block start no newline backtick info string",
+		input: "````",
+		toks: []tokenAndStyle{
+			{
+				Token: styling.Token{
+					Data: []byte("````"),
+					Info: []byte("`"),
+					Mask: styling.BlockPre | styling.BlockPreStart,
+				},
+			},
+		},
+	},
+	{
 		name: "plain blocks",
 		input: `one
 and two`,
