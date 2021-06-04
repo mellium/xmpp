@@ -1,8 +1,8 @@
-.PHONY: generate
 .POSIX:
+.PHONY: generate
 .SILENT:
 
-CONTRIBUTORS:
+CONTRIBUTORS: FORCE
 	echo "// This is the official list of contributors for copyright purposes." > $@
 	echo "//" >> $@
 	echo "// If you see your name twice, please fix your commits or create a .mailmap" >> $@
@@ -10,6 +10,8 @@ CONTRIBUTORS:
 	echo "// For more info see https://www.git-scm.com/docs/git-check-mailmap" >> $@
 	echo "" >> $@
 	git --no-pager shortlog --summary --email | cut -f2- >> $@
+
+FORCE:
 
 generate: session.go color/cvd_string.go styling/styling_string.go disco/categories.go
 
