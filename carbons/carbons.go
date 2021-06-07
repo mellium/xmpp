@@ -2,6 +2,8 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
+//go:generate go run ../internal/genfeature -receiver "h Handler"
+
 // Package carbons implements carbon copying messages to all interested clients.
 package carbons // import "mellium.im/xmpp/carbons"
 
