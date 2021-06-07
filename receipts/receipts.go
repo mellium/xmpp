@@ -2,6 +2,8 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
+//go:generate go run ../internal/genfeature -receiver "h *Handler"
+
 // Package receipts implements XEP-0184: Message Delivery Receipts.
 package receipts // import "mellium.im/xmpp/receipts"
 

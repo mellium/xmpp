@@ -2,6 +2,8 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
+//go:generate go run ../internal/genfeature -vars=Feature:NS,FeatureIQ:NS
+
 // Package oob implements XEP-0066: Out of Band Data.
 package oob // import "mellium.im/xmpp/oob"
 

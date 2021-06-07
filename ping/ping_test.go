@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/disco/info"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
@@ -23,6 +24,7 @@ var (
 	_ xmlstream.WriterTo  = ping.IQ{}
 	_ xmlstream.Marshaler = ping.IQ{}
 	_ mux.IQHandler       = ping.Handler{}
+	_ info.FeatureIter    = ping.Handler{}
 )
 
 var marshalTestCases = []xmpptest.EncodingTestCase{

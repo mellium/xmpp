@@ -2,6 +2,8 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
+//go:generate go run ../internal/genfeature -receiver "*Client"
+
 // Package muc implements Multi-User Chat.
 //
 // Unlike many Multi-User Chat (MUC) implementations, the muc package tries to

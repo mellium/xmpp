@@ -2,6 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
+//go:generate go run ../internal/genfeature
 //go:generate go run -tags=tools golang.org/x/tools/cmd/stringer -type=Style
 
 // Package styling implements XEP-0393: Message Styling, a simple styling
