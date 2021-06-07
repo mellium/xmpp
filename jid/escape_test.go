@@ -28,6 +28,7 @@ var escapeTestCases = [...]struct {
 	4: {"", "", true, 0, nil, nil},
 	5: {"", "", false, 0, nil, nil},
 	6: {`a `, `a\20`, true, 1, nil, transform.ErrEndOfSpan},
+	7: {`nothing?to+do-here`, `nothing?to+do-here`, true, 18, nil, nil},
 }
 
 var unescapeTestCases = [...]struct {
@@ -44,7 +45,7 @@ var unescapeTestCases = [...]struct {
 	5: {`nothingtodohere`, `nothingtodohere`, false, 15, nil, nil},
 	6: {`a\a\20`, `a\a `, false, 3, nil, transform.ErrEndOfSpan},
 	7: {`aa\2`, `aa\2`, true, 4, nil, nil},
-	8: {`aa\2`, `aa`, false, 2, transform.ErrShortSrc, transform.ErrShortSrc},
+	8: {`nothing?to+do-here`, `nothing?to+do-here`, true, 18, nil, nil},
 }
 
 func TestUnescape(t *testing.T) {

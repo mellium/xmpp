@@ -109,19 +109,18 @@ type unescapeMapping struct {
 	transform.NopResetter
 }
 
-// TODO: Be more specific. Only check if it's the starting character in any
-//       valid escape sequence.
-
+// reference link: https://xmpp.org/extensions/xep-0106.html#unescaping
 func ishex(c byte) bool {
-	switch {
-	case '0' <= c && c <= '9':
-		return true
-	case 'a' <= c && c <= 'f':
-		return true
-	case 'A' <= c && c <= 'F':
-		return true
-	}
-	return false
+	return c == 0x20  || // Char: <space>
+		c == 0x22 || // Char: "
+		c == 0x26 || // Char: &
+		c == 0x27 || // Char: '
+		c == 0x2f || // Char: /
+		c == 0x3a || // Char: :
+		c == 0x3c || // Char: <
+		c == 0x3e || // Char: >
+		c == 0x40 || // Char: @
+		c == 0x5c  // Char:  \
 }
 
 // I just wrote these all out because it's a lot faster and not likely to
