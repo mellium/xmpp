@@ -10,6 +10,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/disco/info"
 	"mellium.im/xmpp/form"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
@@ -80,34 +81,12 @@ func (i Identity) WriteXML(w xmlstream.TokenWriter) (int, error) {
 	return xmlstream.Copy(w, i.TokenReader())
 }
 
-// Feature represents a feature supported by an entity on the network.
-type Feature struct {
-	XMLName xml.Name `xml:"http://jabber.org/protocol/disco#info feature"`
-	Var     string   `xml:"var,attr"`
-}
-
-// TokenReader implements xmlstream.Marshaler.
-func (f Feature) TokenReader() xml.TokenReader {
-	return xmlstream.Wrap(nil, xml.StartElement{
-		Name: xml.Name{Space: NSInfo, Local: "feature"},
-		Attr: []xml.Attr{{
-			Name:  xml.Name{Local: "var"},
-			Value: f.Var,
-		}},
-	})
-}
-
-// WriteXML implements xmlstream.WriterTo.
-func (f Feature) WriteXML(w xmlstream.TokenWriter) (int, error) {
-	return xmlstream.Copy(w, f.TokenReader())
-}
-
 // Info is a response to a disco info query.
 type Info struct {
 	InfoQuery
-	Identity []Identity `xml:"identity"`
-	Features []Feature  `xml:"feature"`
-	Form     *form.Data `xml:"jabber:x:data x,omitempty"`
+	Identity []Identity     `xml:"identity"`
+	Features []info.Feature `xml:"feature"`
+	Form     *form.Data     `xml:"jabber:x:data x,omitempty"`
 }
 
 // TokenReader implements xmlstream.Marshaler.

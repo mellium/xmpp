@@ -21,6 +21,10 @@ All notable changes to this project will be documented in this file.
 
 - all: update the default TLS config to disable TLS < 1.2
 
+### Breaking
+
+- disco: the `Feature` type moved to `info.Feature`
+
 
 ### Added
 
@@ -37,6 +41,7 @@ All notable changes to this project will be documented in this file.
 - stanza: add `Error` method to `Presence` and `Message`
 - websocket: add `Negotiator` to replace the `WebSocket` option on the stream
   config
+- disco/info: new package containing the former `disco.Feature` type
 
 
 ### Fixed
