@@ -179,27 +179,15 @@ func (tc teeConn) ConnectionState() tls.ConnectionState {
 }
 
 func (tc teeConn) Write(p []byte) (int, error) {
-	if tc.multiWriter == nil {
+	if _, ok := <-tc.ctx.Done(); tc.multiWriter == nil || ok {
 		return tc.Conn.Write(p)
-	}
-	select {
-	case <-tc.ctx.Done():
-		tc.multiWriter = nil
-		return tc.Conn.Write(p)
-	default:
 	}
 	return tc.multiWriter.Write(p)
 }
 
 func (tc teeConn) Read(p []byte) (int, error) {
-	if tc.teeReader == nil {
+	if _, ok := <-tc.ctx.Done(); tc.teeReader == nil || ok {
 		return tc.Conn.Read(p)
-	}
-	select {
-	case <-tc.ctx.Done():
-		tc.teeReader = nil
-		return tc.Conn.Read(p)
-	default:
 	}
 	return tc.teeReader.Read(p)
 }
