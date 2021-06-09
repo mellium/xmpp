@@ -21,17 +21,8 @@ but *most* people shorten it.`)
 
 	var out strings.Builder
 	out.WriteString("<!doctype HTML>\n")
-	for {
-		tok, err := d.Token()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			out.WriteString("<mark>")
-			out.WriteString(html.EscapeString(fmt.Sprintf("Error encountered while parsing tokens: %v", err)))
-			out.WriteString("</mark>")
-			break
-		}
+	for d.Next() {
+		tok := d.Token()
 
 		switch {
 		case tok.Mask&styling.SpanEmphStart == styling.SpanEmphStart:
@@ -54,6 +45,13 @@ but *most* people shorten it.`)
 		default:
 			out.WriteString(html.EscapeString(string(tok.Data)))
 		}
+	}
+
+	err := d.Err()
+	if err != nil && err != io.EOF {
+		out.WriteString("<mark>")
+		out.WriteString(html.EscapeString(fmt.Sprintf("Error encountered while parsing tokens: %v", err)))
+		out.WriteString("</mark>")
 	}
 	fmt.Println(out.String())
 

@@ -159,15 +159,17 @@ func Scan() bufio.SplitFunc {
 // A Decoder represents a styling lexer reading a particular input stream.
 // The parser assumes that input is encoded in UTF-8.
 type Decoder struct {
-	s             *bufio.Scanner
-	clearMask     Style
-	mask          Style
-	quoteSplit    *Decoder
-	quoteStarted  bool
-	lastNewline   bool
-	hasRun        bool
-	spanStack     []byte
-	bufferedToken *Token
+	s                *bufio.Scanner
+	clearMask        Style
+	mask             Style
+	quoteSplit       *Decoder
+	quoteStarted     bool
+	lastNewline      bool
+	hasRun           bool
+	spanStack        []byte
+	insertBlockClose bool
+	bufferedToken    *Token
+	lastError        error
 }
 
 // NewDecoder creates a new styling parser reading from r.
@@ -181,7 +183,6 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 // Token returns the next styling token in the input stream.
-// At the end of the input stream, it returns an empty token and io.EOF.
 // Returned tokens do not always correspond directly to the input stream.
 // For example, at the end of a block quote an empty token is returned with the
 // mask BlockQuote|BlockQuoteEnd, but there is no explicit block quote
@@ -190,22 +191,39 @@ func NewDecoder(r io.Reader) *Decoder {
 // Slices of bytes in the returned token data refer to the parser's internal
 // buffer and remain valid only until the next call to Token.
 // To acquire a copy of the bytes call the token's Copy method.
-func (d *Decoder) Token() (Token, error) {
-	if d.bufferedToken != nil {
-		t := *d.bufferedToken
-		d.bufferedToken = nil
-		return t, nil
+func (d *Decoder) Token() Token {
+	ret := d.bufferedToken
+	d.bufferedToken = nil
+	return *ret
+}
+
+// Next prepares the next styling token in the input stream for reading with
+// the Token method.
+// It returns true on success, or false if end of input stream is reached
+// or an error happened while preparing it.
+// Err should be consulted to distinguish between the two cases.
+// Every call to Token, even the first one, must be preceded by a call to Next.
+func (d *Decoder) Next() bool {
+	if d.insertBlockClose {
+		d.insertBlockClose = false
+		d.bufferedToken = &Token{
+			Mask: d.Style(),
+			Data: d.s.Bytes(),
+		}
+		return true
 	}
 
 	prevLevel := d.Quote()
 	if s := d.s.Scan(); !s {
 		if err := d.s.Err(); err != nil {
-			return Token{}, err
+			d.lastError = err
+			return false
 		}
-		return Token{}, io.EOF
+		d.lastError = io.EOF
+		return false
 	}
 
-	t := Token{
+	t := &Token{
 		Mask: d.Style(),
 		Data: d.s.Bytes(),
 	}
@@ -222,66 +240,76 @@ func (d *Decoder) Token() (Token, error) {
 	// at the end of the quote since block quotes have no explicit terminator.
 	currLevel := d.Quote()
 	if currLevel < prevLevel {
-		d.bufferedToken = &t
-		return Token{Mask: d.Style()}, nil
+		d.insertBlockClose = true
+		d.bufferedToken = &Token{Mask: d.Style()}
+		return true
 	}
 
-	return t, nil
+	d.bufferedToken = t
+	return true
+}
+
+// Err returns the error, if any, that was encountered while reading the input stream.
+// In case of EOF, Err returns io.EOF
+func (d *Decoder) Err() error {
+	return d.lastError
 }
 
 // SkipSpan pops tokens from the decoder until it reaches the end of the current
 // span, positioning the token stream at the beginning of the next span or
 // block.
 // If SkipSpan is called while no span is entered it behaves like SkipBlock.
-// It returns any errors it encounters along the way.
-func (d *Decoder) SkipSpan() error {
-	for {
-		prevLevel := d.Quote()
-		tok, err := d.Token()
-		if err != nil {
-			return err
-		}
+// It returns true if it succeeds without errors, false otherwise
+// Err should be consulted to check for errors.
+func (d *Decoder) SkipSpan() bool {
+	for prevLevel := d.Quote(); d.Next(); prevLevel = d.Quote() {
+		tok := d.Token()
 
 		switch {
 		case tok.Mask&StartDirective&^BlockQuoteStart > 0 || (tok.Mask&BlockQuoteStart == BlockQuoteStart && d.Quote() > prevLevel):
-			if err := d.SkipSpan(); err != nil {
-				return err
+			if !d.SkipSpan() {
+				return false
 			}
 		case tok.Mask&EndDirective > 0 || (tok.Mask == 0 && d.lastNewline):
-			return nil
+			return true
 		}
 	}
+	if err := d.Err(); err != nil {
+		return false
+	}
+	return true
 }
 
 // SkipBlock pops tokens from the decoder until it reaches the end of the
 // current block, positioning the token stream at the beginning of the next
 // block.
-// It returns any errors it encounters along the way.
+// It returns true if it succeeds without errors, false otherwise
+// Err should be consulted to check for errors.
 // If SkipBlock is called at the beginning of the input stream before any tokens
 // have been popped or any blocks have been entered, it will skip the entire
 // input stream as if everything were contained in an imaginary "root" block.
-func (d *Decoder) SkipBlock() error {
-	for {
-		prevLevel := d.Quote()
-		tok, err := d.Token()
-		if err != nil {
-			return err
-		}
+func (d *Decoder) SkipBlock() bool {
+	for prevLevel := d.Quote(); d.Next(); prevLevel = d.Quote() {
+		tok := d.Token()
 		switch {
 		case tok.Mask&BlockStartDirective&^BlockQuoteStart > 0 || (tok.Mask&BlockQuoteStart == BlockQuoteStart && d.Quote() > prevLevel):
 			// If we're a start directive (other than starting a block quote), or
 			// we're a block quote start directive that's deeper than the previous
 			// level of block quote (ie. starting a new blockquote, not continuing an
 			// existing one), recurse down into the inner block, skipping tokens.
-			if err := d.SkipBlock(); err != nil {
-				return err
+			if !d.SkipBlock() {
+				return false
 			}
 		case tok.Mask&BlockEndDirective > 0 || (tok.Mask == 0 && d.lastNewline):
 			// If this is an end directive (or the end of a plain block), we're done
 			// with skipping the current level, so end the current level of recursion.
-			return nil
+			return true
 		}
 	}
+	if err := d.Err(); err != nil {
+		return false
+	}
+	return true
 }
 
 func (d *Decoder) scan(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -377,7 +405,7 @@ func (d *Decoder) Quote() uint {
 	}
 	// If the next token is a virtual block quote end token, pretend we haven't
 	// dropped down a level yet.
-	if d.bufferedToken != nil {
+	if d.insertBlockClose {
 		level++
 	}
 	return level
@@ -386,7 +414,7 @@ func (d *Decoder) Quote() uint {
 // Style returns a bitmask representing the currently applied styles at the
 // current position in the document.
 func (d *Decoder) Style() Style {
-	if d.bufferedToken != nil {
+	if d.insertBlockClose {
 		return BlockQuoteEnd | BlockQuote
 	}
 	if d.hasRun {

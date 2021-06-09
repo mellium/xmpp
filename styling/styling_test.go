@@ -711,30 +711,11 @@ func TestToken(t *testing.T) {
 			r := strings.NewReader(tc.input)
 			d := styling.NewDecoder(r)
 			var n int
-			for {
-				tok, err := d.Token()
-				switch err {
-				case nil:
-				case io.EOF:
-					if tc.Err != nil {
-						t.Errorf("Expected error but got io.EOF: %v", err)
-					}
-					if len(toks) != 0 {
-						var tokStrs []string
-						for _, tok := range toks {
-							tokStrs = append(tokStrs, string(tok.Data))
-						}
-						t.Fatalf("Reached EOF at token %d, but expected remaining tokens: %+v (%v)", n, tc.toks, tokStrs)
-					}
-					return
-				default:
-					if tc.Err != err {
-						t.Errorf("Unexpected error: want=%v, got=%v", tc.Err, err)
-					}
-				}
+			for d.Next() {
+				tok := d.Token()
 
 				if len(toks) == 0 {
-					t.Fatalf("Did not expect more tokens but got %+v (%q), %v", tok, tok.Data, err)
+					t.Fatalf("Did not expect more tokens but got %+v (%q)", tok, tok.Data)
 				}
 
 				var expectedTok tokenAndStyle
@@ -755,6 +736,28 @@ func TestToken(t *testing.T) {
 					t.Errorf("Unexpected block quote level after token %d: want=%d, got=%d", n, expectedTok.Quote, d.Quote())
 				}
 				n++
+			}
+
+			err := d.Err()
+
+			switch err {
+			case nil:
+			case io.EOF:
+				if tc.Err != nil && tc.Err != io.EOF {
+					t.Errorf("Expected error but got io.EOF: %v", tc.Err)
+				}
+				if len(toks) != 0 {
+					var tokStrs []string
+					for _, tok := range toks {
+						tokStrs = append(tokStrs, string(tok.Data))
+					}
+					t.Fatalf("Reached EOF at token %d, but expected remaining tokens: %+v (%v)", n, tc.toks, tokStrs)
+				}
+				return
+			default:
+				if tc.Err != err {
+					t.Errorf("Unexpected error: want=%v, got=%v", tc.Err, err)
+				}
 			}
 		})
 	}
@@ -802,7 +805,11 @@ func (EOFRead) Read(b []byte) (int, error) {
 
 func TestEOFPre(t *testing.T) {
 	d := styling.NewDecoder(EOFRead{})
-	tok, err := d.Token()
+	var tok styling.Token
+	if d.Next() {
+		tok = d.Token()
+	}
+	err := d.Err()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -821,7 +828,10 @@ func (ErrRead) Read([]byte) (int, error) {
 
 func TestDecodeErr(t *testing.T) {
 	d := styling.NewDecoder(ErrRead{})
-	_, err := d.Token()
+	if d.Next() {
+		t.Fatal("Next() should return false, got true")
+	}
+	err := d.Err()
 	if err != errTesting {
 		t.Errorf("Want error passed through, got %v", err)
 	}
@@ -862,24 +872,39 @@ func TestSkip(t *testing.T) {
 			r := strings.NewReader(tc.input)
 			d := styling.NewDecoder(r)
 			for i := 0; i < tc.pop; i++ {
-				_, err := d.Token()
+				if d.Next() {
+					d.Token()
+				}
+				err := d.Err()
 				if err != nil {
 					t.Fatalf("error at token %d: %v", i, err)
 				}
 			}
 			var err error
+			var skipSuccess bool
 			if tc.span {
-				err = d.SkipSpan()
+				skipSuccess = d.SkipSpan()
 			} else {
-				err = d.SkipBlock()
+				skipSuccess = d.SkipBlock()
 			}
+			err = d.Err()
 			if err != tc.err {
 				t.Errorf("final error does not match: want=%v, got=%v", tc.err, err)
 			}
 			if err != nil {
+				if skipSuccess {
+					t.Errorf("expected return value of skip function to be false")
+				}
 				return
 			}
-			tok, err := d.Token()
+			if !skipSuccess {
+				t.Errorf("expected return value of skip function to be true")
+			}
+			var tok styling.Token
+			if d.Next() {
+				tok = d.Token()
+			}
+			err = d.Err()
 			if err != nil {
 				t.Fatalf("error on expected token: %v", err)
 			}
