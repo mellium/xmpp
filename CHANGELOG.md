@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Breaking
+
+- styling: decoding tokens now uses an iterator pattern
+
 ### Security
 
 - all: update the default TLS config to disable TLS < 1.2
