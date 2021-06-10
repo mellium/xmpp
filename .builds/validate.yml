@@ -27,7 +27,7 @@ tasks:
 
       # Check that all commits that aren't in main are signed off by the same
       # committer (taken from the HEAD commit).
-      [[ ! "$(git log --invert-grep --grep="Signed-off-by: $(git show -s --pretty="%cn <%ce>" HEAD)" origin/main..)" ]]
+      [[ ! "$(git log --invert-grep --grep="Signed-off-by: $(git show -s --pretty="%an <%ae>" HEAD)" origin/main..)" ]]
   - setup: |
       go version
       go env
