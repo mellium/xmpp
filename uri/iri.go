@@ -30,7 +30,7 @@ type URI struct {
 	ToAddr jid.JID
 
 	// AuthAddr is empty if we should perform an action as the currently
-	// authenticated account or ask the uesr to input the account to use.
+	// authenticated account or ask the user to input the account to use.
 	// Otherwise it is the auth address if present in an xmpp:// URI or IRI.
 	AuthAddr jid.JID
 
