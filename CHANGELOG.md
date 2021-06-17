@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- blocklist: new package implementing [XEP-0191: Blocking Command]
 - commands: new package implementing [XEP-0050: Ad-Hoc Commands]
 
 ### Fixed
@@ -29,6 +30,7 @@ All notable changes to this project will be documented in this file.
 - xmpp: empty IQ iters no longer return EOF when there is no payload
 
 
+[XEP-0191: Blocking Command]: https://xmpp.org/extensions/xep-0191.html
 [XEP-0050: Ad-Hoc Commands]: https://xmpp.org/extensions/xep-0050.html
 
 
