@@ -19,7 +19,8 @@ import (
 
 // Namespaces used by this package provided as a convenience.
 const (
-	NS = "jabber:iq:roster"
+	NS         = "jabber:iq:roster"
+	NSFeatures = "urn:xmpp:features:rosterver"
 )
 
 // Iter is an iterator over roster items.
