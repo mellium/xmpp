@@ -23,13 +23,6 @@ const (
 	NSFeatures = "urn:xmpp:features:rosterver"
 )
 
-// Iter is an iterator over roster items.
-type Iter struct {
-	iter    *xmlstream.Iter
-	current Item
-	err     error
-}
-
 // Handle returns an option that registers a Handler for roster pushes.
 func Handle(h Handler) mux.Option {
 	return mux.IQ(stanza.SetIQ, xml.Name{Local: "query", Space: NS}, h)
@@ -48,6 +41,13 @@ func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml
 		return err
 	}
 	return h.Push(item)
+}
+
+// Iter is an iterator over roster items.
+type Iter struct {
+	iter    *xmlstream.Iter
+	current Item
+	err     error
 }
 
 // Next returns true if there are more items to decode.
