@@ -1097,7 +1097,8 @@ func iterIQ(ctx context.Context, iq xml.TokenReader, s *Session) (_ *xmlstream.I
 
 	// Pop the payload start token, we want to iterate over its children.
 	_, err = resp.Token()
-	if err != nil {
+	// Discard early EOF so that the iterator doesn't end up returning it.
+	if err != nil && err != io.EOF {
 		return nil, err
 	}
 	return xmlstream.NewIter(resp), nil

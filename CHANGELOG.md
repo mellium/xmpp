@@ -25,6 +25,7 @@ All notable changes to this project will be documented in this file.
 - stanza: unmarshaling error IQs now works even if the error is not the first
   child in the payload
 - styling: pre-block start tokens with no newline had nonsensical formatting
+- xmpp: empty IQ iters no longer return EOF when there is no payload
 
 
 [XEP-0050: Ad-Hoc Commands]: https://xmpp.org/extensions/xep-0050.html
