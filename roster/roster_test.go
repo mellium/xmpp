@@ -199,7 +199,7 @@ var marshalTests = [...]struct {
 	1: {
 		in: roster.IQ{
 			Query: struct {
-				Ver  string        `xml:"version,attr,omitempty"`
+				Ver  string        `xml:"ver,attr"`
 				Item []roster.Item `xml:"item"`
 			}{
 				Ver: "123",
@@ -209,7 +209,7 @@ var marshalTests = [...]struct {
 				},
 			},
 		},
-		out: `<iq type=""><query xmlns="jabber:iq:roster" version="123"><item></item><item name="foo"></item></query></iq>`,
+		out: `<iq type=""><query xmlns="jabber:iq:roster" ver="123"><item></item><item name="foo"></item></query></iq>`,
 	},
 	2: {
 		in:  roster.Item{},

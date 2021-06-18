@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking
 
+- roster: rename `version` attribute to `ver`
 - styling: decoding tokens now uses an iterator pattern
 
 ### Security

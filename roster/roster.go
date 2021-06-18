@@ -130,7 +130,7 @@ type IQ struct {
 	stanza.IQ
 
 	Query struct {
-		Ver  string `xml:"version,attr,omitempty"`
+		Ver  string `xml:"ver,attr"`
 		Item []Item `xml:"item"`
 	} `xml:"jabber:iq:roster query"`
 }
@@ -174,7 +174,7 @@ func (iq IQ) TokenReader() xml.TokenReader {
 func (iq IQ) payload() xml.TokenReader {
 	attrs := []xml.Attr{}
 	if iq.Query.Ver != "" {
-		attrs = append(attrs, xml.Attr{Name: xml.Name{Local: "version"}, Value: iq.Query.Ver})
+		attrs = append(attrs, xml.Attr{Name: xml.Name{Local: "ver"}, Value: iq.Query.Ver})
 	}
 
 	return xmlstream.Wrap(
