@@ -91,7 +91,7 @@ func TestFetchNoStart(t *testing.T) {
 	)
 	iter := roster.FetchIQ(context.Background(), stanza.IQ{ID: "123"}, cs.Client)
 	for iter.Next() {
-		// Just iterate
+		t.Fatalf("iterator should never have any items!")
 	}
 	if err := iter.Err(); err != nil {
 		t.Errorf("Wrong error after iter: want=nil, got=%q", err)
