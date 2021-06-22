@@ -47,13 +47,16 @@ func (h Handler) HandleIQ(iq stanza.IQ, r xmlstream.TokenReadEncoder, start *xml
 				close(c)
 			}()
 			for j := range c {
-				xmlstream.Copy(r, xmlstream.Wrap(nil, xml.StartElement{
+				_, err = xmlstream.Copy(r, xmlstream.Wrap(nil, xml.StartElement{
 					Name: xml.Name{Space: NS, Local: "item"},
 					Attr: []xml.Attr{{
 						Name:  xml.Name{Local: "jid"},
 						Value: j.String(),
 					}},
 				}))
+				if err != nil {
+					return err
+				}
 			}
 		}
 		// Copy the end payload and end IQ.
