@@ -17,6 +17,9 @@ import (
 const (
 	// The namespace for unique and stable stanza and origin IDs.
 	NSSid = "urn:xmpp:sid:0"
+
+	// The namespace for delayed delivery.
+	NSDelay = "urn:xmpp:delay"
 )
 
 const idLen = 32

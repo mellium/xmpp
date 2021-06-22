@@ -9,14 +9,18 @@ All notable changes to this project will be documented in this file.
 - roster: rename `version` attribute to `ver`
 - styling: decoding tokens now uses an iterator pattern
 
+
 ### Security
 
 - all: update the default TLS config to disable TLS < 1.2
+
 
 ### Added
 
 - blocklist: new package implementing [XEP-0191: Blocking Command]
 - commands: new package implementing [XEP-0050: Ad-Hoc Commands]
+- stanza: implement [XEP-0203: Delayed Delivery]
+
 
 ### Fixed
 
@@ -32,6 +36,7 @@ All notable changes to this project will be documented in this file.
 
 [XEP-0191: Blocking Command]: https://xmpp.org/extensions/xep-0191.html
 [XEP-0050: Ad-Hoc Commands]: https://xmpp.org/extensions/xep-0050.html
+[XEP-0203: Delayed Delivery]: https://xmpp.org/extensions/xep-0203.html
 
 
 ## v0.19.0 — 2021-05-02
