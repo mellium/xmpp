@@ -36,26 +36,11 @@ func UnmarshalIQError(r xml.TokenReader, start xml.StartElement) (IQ, error) {
 		return iqStart, nil
 	}
 
-	iter := xmlstream.NewIter(r)
-	for iter.Next() {
-		start, p := iter.Current()
-		if start.Name.Local != "error" {
-			continue
-		}
-
-		d := xml.NewTokenDecoder(xmlstream.Wrap(p, *start))
-		var stanzaErr Error
-		decodeErr := d.Decode(&stanzaErr)
-		if decodeErr != nil {
-			return iqStart, decodeErr
-		}
-		return iqStart, stanzaErr
-	}
-	if err = iter.Err(); err != nil {
+	stanzaErr, err := UnmarshalError(r)
+	if err != nil {
 		return iqStart, err
 	}
-
-	return iqStart, Error{}
+	return iqStart, stanzaErr
 }
 
 // NewIQ unmarshals an XML token into a IQ.

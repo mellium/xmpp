@@ -6,6 +6,7 @@ package stanza
 
 import (
 	"encoding/xml"
+	"errors"
 	"io"
 
 	"mellium.im/xmlstream"
@@ -400,4 +401,28 @@ func (se *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		se.Text[text.Lang] = text.Data
 	}
 	return nil
+}
+
+// UnmarshalError unmarshals the first stanaza error payload it finds in a token
+// stream, skipping over the sender XML if it is present.
+//
+// If no error payload is found an error indicating that the payload was not
+// found is returned.
+func UnmarshalError(r xml.TokenReader) (Error, error) {
+	iter := xmlstream.NewIter(r)
+	for iter.Next() {
+		start, p := iter.Current()
+		if start.Name.Local != "error" {
+			continue
+		}
+
+		d := xml.NewTokenDecoder(xmlstream.Wrap(p, *start))
+		var stanzaErr Error
+		decodeErr := d.Decode(&stanzaErr)
+		return stanzaErr, decodeErr
+	}
+	if err := iter.Err(); err != nil {
+		return Error{}, iter.Err()
+	}
+	return Error{}, errors.New("stanza: expected error payload")
 }
