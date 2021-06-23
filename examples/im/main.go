@@ -25,6 +25,8 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/dial"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/muc"
+	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/uri"
 	"mellium.im/xmpp/version"
@@ -77,14 +79,16 @@ func main() {
 	}
 
 	var (
-		help    bool
-		rawXML  bool
-		room    bool
-		isURI   bool
-		verbose bool
-		verReq  bool
-		logXML  bool
-		subject string
+		help     bool
+		rawXML   bool
+		room     bool
+		isURI    bool
+		verbose  bool
+		verReq   bool
+		logXML   bool
+		subject  string
+		nick     string
+		roomPass string
 	)
 	flags := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	flags.BoolVar(&help, "help", help, "Show this help message")
@@ -97,6 +101,8 @@ func main() {
 	flags.BoolVar(&verReq, "ver", verReq, "Request the software version of the remote entity instead of sending messages.")
 	flags.StringVar(&addr, "addr", addr, "The XMPP address to connect to, overrides $XMPP_ADDR.")
 	flags.StringVar(&subject, "subject", subject, "Set the subject of the message or chat room.")
+	flags.StringVar(&nick, "nick", nick, "A nickname to set when joining a chat room.")
+	flags.StringVar(&roomPass, "pass", roomPass, "A password to use when joining protected rooms.")
 
 	err = flags.Parse(os.Args[1:])
 	switch err {
@@ -199,8 +205,11 @@ func main() {
 	if err != nil {
 		logger.Fatalf("error logging in: %v", err)
 	}
+
+	mucClient := &muc.Client{}
+	mux := mux.New(muc.HandleClient(mucClient))
 	go func() {
-		err := session.Serve(nil)
+		err := session.Serve(mux)
 		if err != nil {
 			logger.Printf("error handling session responses: %v", err)
 		}
@@ -251,21 +260,12 @@ func main() {
 
 	if room {
 		debug.Printf("joining the chat room %s…", addr)
-		// Join the MUC.
-		joinPresence := struct {
-			stanza.Presence
-			X struct {
-				History struct {
-					MaxStanzas int `xml:"maxstanzas,attr"`
-				} `xml:"history"`
-			} `xml:"http://jabber.org/protocol/muc x"`
-		}{
-			Presence: stanza.Presence{
-				From: originJID,
-				To:   parsedToAddr,
-			},
+		roomJID, _ := parsedToAddr.WithResource(nick)
+		opts := []muc.Option{muc.MaxBytes(0)}
+		if roomPass != "" {
+			opts = append(opts, muc.Password(roomPass))
 		}
-		err = session.Encode(ctx, joinPresence)
+		_, err = mucClient.Join(ctx, roomJID, session, opts...)
 		if err != nil {
 			log.Fatalf("error joining MUC %s: %v", addr, err)
 		}

@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 
 - blocklist: new package implementing [XEP-0191: Blocking Command]
 - commands: new package implementing [XEP-0050: Ad-Hoc Commands]
+- muc: new package implementing [XEP-0045: Multi-User Chat] and [XEP-0249: Direct MUC Invitations]
 - stanza: implement [XEP-0203: Delayed Delivery]
 - stanza: more general `UnmarshalError` function that doesn't focus on IQs
 - stanza: add `Error` method to `Presence` and `Message`
@@ -36,9 +37,11 @@ All notable changes to this project will be documented in this file.
 - xmpp: empty IQ iters no longer return EOF when there is no payload
 
 
+[XEP-0045: Multi-User Chat]: https://xmpp.org/extensions/xep-0045.html
 [XEP-0191: Blocking Command]: https://xmpp.org/extensions/xep-0191.html
 [XEP-0050: Ad-Hoc Commands]: https://xmpp.org/extensions/xep-0050.html
 [XEP-0203: Delayed Delivery]: https://xmpp.org/extensions/xep-0203.html
+[XEP-0249: Direct MUC Invitations]: https://xmpp.org/extensions/xep-0249.html
 
 
 ## v0.19.0 — 2021-05-02
