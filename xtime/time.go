@@ -40,12 +40,6 @@ type Time struct {
 	time.Time
 }
 
-// WriteXML satisfies the xmlstream.WriterTo interface.
-// It is like MarshalXML except it writes tokens to w.
-func (t Time) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
-	return xmlstream.Copy(w, t.TokenReader())
-}
-
 // TokenReader satisfies the xmlstream.Marshaler interface.
 func (t Time) TokenReader() xml.TokenReader {
 	tt := time.Time(t.Time)
@@ -59,6 +53,12 @@ func (t Time) TokenReader() xml.TokenReader {
 		),
 		xml.StartElement{Name: xml.Name{Local: "time", Space: NS}},
 	)
+}
+
+// WriteXML satisfies the xmlstream.WriterTo interface.
+// It is like MarshalXML except it writes tokens to w.
+func (t Time) WriteXML(w xmlstream.TokenWriter) (n int, err error) {
+	return xmlstream.Copy(w, t.TokenReader())
 }
 
 // MarshalXML implements xml.Marshaler.
