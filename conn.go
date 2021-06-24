@@ -184,7 +184,6 @@ func (tc teeConn) Write(p []byte) (int, error) {
 	}
 	select {
 	case <-tc.ctx.Done():
-		tc.multiWriter = nil
 		return tc.Conn.Write(p)
 	default:
 	}
@@ -197,7 +196,6 @@ func (tc teeConn) Read(p []byte) (int, error) {
 	}
 	select {
 	case <-tc.ctx.Done():
-		tc.teeReader = nil
 		return tc.Conn.Read(p)
 	default:
 	}
