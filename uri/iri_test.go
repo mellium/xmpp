@@ -54,18 +54,6 @@ var parseTests = [...]struct {
 		},
 	},
 	7: {
-		raw: "xmpp:example-node@example.com?message;subject=Hello%20World",
-		iri: "xmpp:example-node@example.com?message;subject=Hello World",
-		u: &uri.URI{
-			ToAddr: jid.MustParse("example-node@example.com"),
-			Action: "message",
-		},
-		values: url.Values{
-			"message": []string{""},
-			"subject": []string{"Hello World"},
-		},
-	},
-	8: {
 		raw: "xmpp:example-node@example.com?message&subject=Hello%20World",
 		iri: "xmpp:example-node@example.com?message&subject=Hello World",
 		u: &uri.URI{
@@ -77,23 +65,23 @@ var parseTests = [...]struct {
 			"subject": []string{"Hello World"},
 		},
 	},
-	9: {
+	8: {
 		// Tests that JID errors in the xmpp: parsing path are passed through.
 		raw: "xmpp:feste@/ilyria",
 		err: jidErr("feste@/ilyria"),
 	},
-	10: {
+	9: {
 		// Tests that JID errors in the xmpp:// parsing path are passed through.
 		raw: "xmpp://b&d@example.net",
 		err: jidErr("b&d@example.net"),
 	},
-	11: {
+	10: {
 		// Tests that recipient JID errors in the xmpp:// parsing path are passed
 		// through.
 		raw: "xmpp://feste@example.net/b&d@example.net",
 		err: jidErr("b&d@example.net"),
 	},
-	12: {
+	11: {
 		raw: "xmpp://nasty!%23$%25()*+,-.;=%3F%5B%5C%5D%5E_%60%7B%7C%7D~node@example.com/node@example.com/repulsive%20!%23%22$%25&'()*+,-.%2F:;%3C=%3E%3F%40%5B%5C%5D%5E_%60%7B%7C%7D~resource",
 		iri: "xmpp://nasty!#$%()*+,-.;=?[\\]^_`{|}~node@example.com/node@example.com/repulsive !#\"$%&'()*+,-./:;<=>?@[\\]^_`{|}~resource",
 		u: &uri.URI{
@@ -101,14 +89,14 @@ var parseTests = [...]struct {
 			ToAddr:   jid.MustParse("node@example.com/repulsive !#\"$%&'()*+,-./:;<=>?@[\\]^_`{|}~resource"),
 		},
 	},
-	13: {
+	12: {
 		raw: "xmpp:node@example.com/repulsive%20!%23%22$%25&'()*+,-.%2F:;%3C=%3E%3F%40%5B%5C%5D%5E_%60%7B%7C%7D~resource",
 		iri: "xmpp:node@example.com/repulsive !#\"$%&'()*+,-./:;<=>?@[\\]^_`{|}~resource",
 		u: &uri.URI{
 			ToAddr: jid.MustParse("node@example.com/repulsive !#\"$%&'()*+,-./:;<=>?@[\\]^_`{|}~resource"),
 		},
 	},
-	14: {
+	13: {
 		// Errors from unescaping the path should be passed through.
 		raw: "xmpp:test%%bad",
 		err: func() error {
@@ -116,7 +104,7 @@ var parseTests = [...]struct {
 			return err
 		}(),
 	},
-	15: {
+	14: {
 		// Test from RFC 3987 §3.2.1
 		raw: "xmpp:example.org/D%C3%BCrst",
 		iri: "xmpp:example.org/Dürst",
@@ -124,7 +112,7 @@ var parseTests = [...]struct {
 			ToAddr: jid.MustParse("example.org/Dürst"),
 		},
 	},
-	16: {
+	15: {
 		// Test from RFC 3987 §3.2.1
 		raw: "xmpp:example.org/D%FCrst",
 		iri: "xmpp:example.org/D%FCrst",
@@ -132,7 +120,7 @@ var parseTests = [...]struct {
 			ToAddr: jid.MustParse("example.org/D%FCrst"),
 		},
 	},
-	17: {
+	16: {
 		// Test from RFC 3987 §3.2.1
 		raw: "xmpp:xn--99zt52a.example.org/%e2%80%ae",
 		iri: "xmpp:xn--99zt52a.example.org/%E2%80%AE",
@@ -140,7 +128,7 @@ var parseTests = [...]struct {
 			ToAddr: jid.MustParse("\u7D0D\u8C46.example.org/%E2%80%AE"),
 		},
 	},
-	18: {
+	17: {
 		// Check that allowed multi-byte scalar values get written even if the fast
 		// path is skipped.
 		raw: "xmpp:feste@example.net/%E2%80☃",
