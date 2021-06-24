@@ -146,7 +146,15 @@ func TestParse(t *testing.T) {
 			if !errors.Is(err, tc.err) {
 				t.Fatalf("unexpected error: want=%v, got=%v", tc.err, err)
 			}
-			if err != nil {
+			switch {
+			case err == nil && tc.err != nil:
+				t.Fatalf("did not get error parsing but expected %v", tc.err)
+			case err != nil && tc.err == nil:
+				t.Fatalf("did not expect error while parsing but got %v", err)
+			case err == nil && tc.err == nil:
+			case !errors.Is(err, tc.err):
+				t.Fatalf("wrong error: want=%v, got=%v", tc.err, err)
+			case errors.Is(err, tc.err):
 				return
 			}
 
