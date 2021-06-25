@@ -22,7 +22,11 @@ type Config struct {
 	Modules   []string
 	VHosts    []string
 	Options   map[string]interface{}
-	Component map[string]string
+	Component map[string]struct {
+		Name    string
+		Secret  string
+		Modules []string
+	}
 }
 
 const cfgBase = `daemonize = false
@@ -104,9 +108,10 @@ certificates = "{{ .ConfigDir }}"
 VirtualHost "{{ . }}"
 {{- end }}
 
-{{ range $domain, $secret := .Component }}
-Component "{{$domain}}"
-         component_secret = "{{$secret}}"
+{{ range $domain, $cfg := .Component }}
+Component "{{$domain}}" {{if $cfg.Name}}"{{$cfg.Name}}"{{end}}
+				 {{if $cfg.Modules}}modules_enabled = { {{ luaList $cfg.Modules }} }{{end}}
+				 {{if $cfg.Secret}}component_secret = "{{$cfg.Secret}}"{{end}}
 {{ end }}`
 
 var cfgTmpl = template.Must(template.New("cfg").Funcs(template.FuncMap{

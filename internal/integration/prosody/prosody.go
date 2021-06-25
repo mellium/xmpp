@@ -163,33 +163,50 @@ func VHost(hosts ...string) integration.Option {
 	}
 }
 
-// Component adds an external component with the given domain and secret to the
-// config file.
-func Component(domain, secret string) integration.Option {
-	return func(cmd *integration.Cmd) error {
-		compListener, err := cmd.ComponentListen("tcp", "[::1]:0")
-		if err != nil {
-			return err
-		}
-		// Prosody creates its own sockets and doesn't provide us with a way of
-		// pointing it at an existing Unix domain socket or handing the filehandle
-		// for the TCP connection to it on start, so we're effectively just
-		// listening to get a random port that we'll use to configure Prosody, then
-		// we need to close the connection and let Prosody listen on that port.
-		// Technically this is racey, but it's not likely to be a problem in
-		// practice.
-		compPort := compListener.Addr().(*net.TCPAddr).Port
-		err = compListener.Close()
-		if err != nil {
-			return err
-		}
+// MUC launches prosody with the built-in multi-user chat component enabled.
+// It is the same as Component(domain, "", "muc", modules).
+func MUC(domain string, modules ...string) integration.Option {
+	return Component(domain, "", "muc", modules...)
+}
 
+// Component adds an component with the given domain and secret to the config
+// file.
+// If a name is provided the component must be a builtin.
+func Component(domain, secret, name string, modules ...string) integration.Option {
+	return func(cmd *integration.Cmd) error {
 		cfg := getConfig(cmd)
-		cfg.CompPort = compPort
-		if cfg.Component == nil {
-			cfg.Component = make(map[string]string)
+		if name == "" {
+			compListener, err := cmd.ComponentListen("tcp", "[::1]:0")
+			if err != nil {
+				return err
+			}
+			// Prosody creates its own sockets and doesn't provide us with a way of
+			// pointing it at an existing Unix domain socket or handing the filehandle
+			// for the TCP connection to it on start, so we're effectively just
+			// listening to get a random port that we'll use to configure Prosody, then
+			// we need to close the connection and let Prosody listen on that port.
+			// Technically this is racey, but it's not likely to be a problem in
+			// practice.
+			compPort := compListener.Addr().(*net.TCPAddr).Port
+			err = compListener.Close()
+			if err != nil {
+				return err
+			}
+
+			cfg.CompPort = compPort
 		}
-		cfg.Component[domain] = secret
+		if cfg.Component == nil {
+			cfg.Component = make(map[string]struct {
+				Name    string
+				Secret  string
+				Modules []string
+			})
+		}
+		comp := cfg.Component[domain]
+		comp.Secret = secret
+		comp.Name = name
+		comp.Modules = modules
+		cfg.Component[domain] = comp
 		cmd.Config = cfg
 		return nil
 	}

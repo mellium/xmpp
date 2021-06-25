@@ -26,7 +26,7 @@ func TestIntegrationComponentClient(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
 		integration.Log(),
 		prosody.ListenC2S(),
-		prosody.Component(domain, secret),
+		prosody.Component(domain, secret, ""),
 	)
 	prosodyRun(integrationComponentClient)
 }
