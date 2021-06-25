@@ -49,7 +49,7 @@ func RunEncodingTests(t *testing.T, testCases []EncodingTestCase) {
 						t.Fatalf("unexpected error: want=%v, got=%v", tc.Err, err)
 					}
 					if !reflect.DeepEqual(newVal, tc.Value) {
-						t.Fatalf("unexpected value: want=%+v, got=%+v", tc.Value, newVal)
+						t.Fatalf("unexpected value:\nwant=%+v,\n got=%+v", tc.Value, newVal)
 					}
 				})
 			}
