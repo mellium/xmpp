@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 
 - blocklist: new package implementing [XEP-0191: Blocking Command]
 - commands: new package implementing [XEP-0050: Ad-Hoc Commands]
+- moved: add initial support for the Moved 2.0 ProtoXEP
 - stanza: implement [XEP-0203: Delayed Delivery]
 
 
