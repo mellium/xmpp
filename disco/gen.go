@@ -2,6 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
+//go:build ignore
 // +build ignore
 
 // The gen command creates disco identity options from the disco-categories
