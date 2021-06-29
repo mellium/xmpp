@@ -107,7 +107,7 @@
 // the provided start element token or stanza.
 //
 //     // Send initial presence to let the server know we want to receive messages.
-//     _, err = session.Send(context.TODO(), stanza.WrapPresence(jid.JID{}, stanza.AvailablePresence, nil))
+//     _, err = session.Send(context.TODO(), stanza.Presence{}.Wrap(nil))
 //
 // For SendIQ and related methods to correctly handle IQ responses, and to make
 // the common case of polling for incoming XML on the input stream—and possibly
