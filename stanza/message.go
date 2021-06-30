@@ -73,14 +73,14 @@ func (msg Message) StartElement() xml.StartElement {
 
 	attr := make([]xml.Attr, 0, 5)
 	attr = append(attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(msg.Type)})
-	if msg.ID != "" {
-		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: msg.ID})
-	}
 	if !msg.To.Equal(jid.JID{}) {
 		attr = append(attr, xml.Attr{Name: xml.Name{Local: "to"}, Value: msg.To.String()})
 	}
 	if !msg.From.Equal(jid.JID{}) {
 		attr = append(attr, xml.Attr{Name: xml.Name{Local: "from"}, Value: msg.From.String()})
+	}
+	if msg.ID != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: msg.ID})
 	}
 	if msg.Lang != "" {
 		attr = append(attr, xml.Attr{Name: xml.Name{Space: ns.XML, Local: "lang"}, Value: msg.Lang})
@@ -95,6 +95,15 @@ func (msg Message) StartElement() xml.StartElement {
 // Wrap wraps the payload in a stanza.
 func (msg Message) Wrap(payload xml.TokenReader) xml.TokenReader {
 	return xmlstream.Wrap(payload, msg.StartElement())
+}
+
+// Error returns a token reader that wraps the provided Error in a message
+// stanza with the to and from attributes switched and the type set to
+// ErrorMessage.
+func (msg Message) Error(err Error) xml.TokenReader {
+	msg.Type = ErrorMessage
+	msg.From, msg.To = msg.To, msg.From
+	return msg.Wrap(err.TokenReader())
 }
 
 // MessageType is the type of a message stanza.

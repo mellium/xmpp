@@ -72,8 +72,8 @@ func (p Presence) StartElement() xml.StartElement {
 	name.Local = "presence"
 
 	attr := make([]xml.Attr, 0, 5)
-	if p.ID != "" {
-		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: p.ID})
+	if p.Type != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(p.Type)})
 	}
 	if !p.To.Equal(jid.JID{}) {
 		attr = append(attr, xml.Attr{Name: xml.Name{Local: "to"}, Value: p.To.String()})
@@ -81,11 +81,11 @@ func (p Presence) StartElement() xml.StartElement {
 	if !p.From.Equal(jid.JID{}) {
 		attr = append(attr, xml.Attr{Name: xml.Name{Local: "from"}, Value: p.From.String()})
 	}
+	if p.ID != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "id"}, Value: p.ID})
+	}
 	if p.Lang != "" {
 		attr = append(attr, xml.Attr{Name: xml.Name{Space: ns.XML, Local: "lang"}, Value: p.Lang})
-	}
-	if p.Type != "" {
-		attr = append(attr, xml.Attr{Name: xml.Name{Local: "type"}, Value: string(p.Type)})
 	}
 
 	return xml.StartElement{
@@ -100,6 +100,15 @@ func (p Presence) StartElement() xml.StartElement {
 // presence.
 func (p Presence) Wrap(payload xml.TokenReader) xml.TokenReader {
 	return xmlstream.Wrap(payload, p.StartElement())
+}
+
+// Error returns a token reader that wraps the provided Error in a presence
+// stanza with the to and from attributes switched and the type set to
+// ErrorPresence.
+func (p Presence) Error(err Error) xml.TokenReader {
+	p.Type = ErrorPresence
+	p.From, p.To = p.To, p.From
+	return p.Wrap(err.TokenReader())
 }
 
 // PresenceType is the type of a presence stanza.

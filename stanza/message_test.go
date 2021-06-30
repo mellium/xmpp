@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"testing"
 
+	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/attr"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
@@ -176,4 +177,27 @@ func getLangAttr(start xml.StartElement) xml.Attr {
 		}
 	}
 	return langAttr
+}
+
+func TestMessageError(t *testing.T) {
+	msg := stanza.Message{
+		To:   jid.MustParse("to"),
+		From: jid.MustParse("from"),
+	}.Error(stanza.Error{
+		Condition: stanza.BadRequest,
+	})
+	var buf bytes.Buffer
+	e := xml.NewEncoder(&buf)
+	_, err := xmlstream.Copy(e, msg)
+	if err != nil {
+		t.Fatalf("error encoding stream: %v", err)
+	}
+	err = e.Flush()
+	if err != nil {
+		t.Fatalf("error flushing stream: %v", err)
+	}
+	const expected = `<message type="error" to="from" from="to"><error><bad-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></bad-request></error></message>`
+	if out := buf.String(); expected != out {
+		t.Errorf("unexpected output:\nwant=%s,\n got=%s", expected, out)
+	}
 }

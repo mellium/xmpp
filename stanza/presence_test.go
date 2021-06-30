@@ -38,7 +38,7 @@ var wrapPresenceTests = [...]struct {
 	3: {
 		to:  exampleJID,
 		typ: stanza.SubscribedPresence,
-		out: `<presence to="example.net" type="subscribed"></presence>`,
+		out: `<presence type="subscribed" to="example.net"></presence>`,
 	},
 	4: {
 		payload: &testReader{},
@@ -210,5 +210,28 @@ func TestPresenceFromStartElement(t *testing.T) {
 				t.Errorf("wrong value for type: want=%q, got=%q", v, msg.Type)
 			}
 		})
+	}
+}
+
+func TestPresenceError(t *testing.T) {
+	pres := stanza.Presence{
+		To:   jid.MustParse("to"),
+		From: jid.MustParse("from"),
+	}.Error(stanza.Error{
+		Condition: stanza.BadRequest,
+	})
+	var buf bytes.Buffer
+	e := xml.NewEncoder(&buf)
+	_, err := xmlstream.Copy(e, pres)
+	if err != nil {
+		t.Fatalf("error encoding stream: %v", err)
+	}
+	err = e.Flush()
+	if err != nil {
+		t.Fatalf("error flushing stream: %v", err)
+	}
+	const expected = `<presence type="error" to="from" from="to"><error><bad-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></bad-request></error></presence>`
+	if out := buf.String(); expected != out {
+		t.Errorf("unexpected output:\nwant=%s,\n got=%s", expected, out)
 	}
 }

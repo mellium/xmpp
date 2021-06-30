@@ -236,7 +236,7 @@ var sendTests = [...]struct {
 	},
 	4: {
 		r:   stanza.Presence{To: to, Type: stanza.SubscribePresence, ID: "123"}.Wrap(nil),
-		out: `<presence xmlns="jabber:client" id="123" to="test@example.net" type="subscribe"></presence>`,
+		out: `<presence xmlns="jabber:client" type="subscribe" to="test@example.net" id="123"></presence>`,
 	},
 	5: {
 		r: stanza.IQ{Type: stanza.ResultIQ}.Wrap(nil),

@@ -252,3 +252,26 @@ func TestUnmarshalIQError(t *testing.T) {
 		t.Fatalf("wrong error type: want=%T, got=%T (%[2]v)", stanza.Error{}, err)
 	}
 }
+
+func TestIQError(t *testing.T) {
+	iq := stanza.IQ{
+		To:   jid.MustParse("to"),
+		From: jid.MustParse("from"),
+	}.Error(stanza.Error{
+		Condition: stanza.BadRequest,
+	})
+	var buf bytes.Buffer
+	e := xml.NewEncoder(&buf)
+	_, err := xmlstream.Copy(e, iq)
+	if err != nil {
+		t.Fatalf("error encoding stream: %v", err)
+	}
+	err = e.Flush()
+	if err != nil {
+		t.Fatalf("error flushing stream: %v", err)
+	}
+	const expected = `<iq type="error" to="from" from="to"><error><bad-request xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></bad-request></error></iq>`
+	if out := buf.String(); expected != out {
+		t.Errorf("unexpected output:\nwant=%s,\n got=%s", expected, out)
+	}
+}

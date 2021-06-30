@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file.
 - commands: new package implementing [XEP-0050: Ad-Hoc Commands]
 - stanza: implement [XEP-0203: Delayed Delivery]
 - stanza: more general `UnmarshalError` function that doesn't focus on IQs
+- stanza: add `Error` method to `Presence` and `Message`
 
 
 ### Fixed

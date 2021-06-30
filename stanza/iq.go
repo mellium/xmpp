@@ -127,9 +127,8 @@ func (iq IQ) Result(payload xml.TokenReader) xml.TokenReader {
 	return iq.Wrap(payload)
 }
 
-// Error returns a token reader that wraps the first element from payload in an
-// IQ stanza with the to and from attributes switched and the type set to
-// ErrorIQ.
+// Error returns a token reader that wraps the provided Error in an IQ stanza
+// with the to and from attributes switched and the type set to ErrorIQ.
 func (iq IQ) Error(err Error) xml.TokenReader {
 	iq.Type = ErrorIQ
 	iq.From, iq.To = iq.To, iq.From
