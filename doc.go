@@ -91,11 +91,17 @@
 // The stanza package contains functions and structs that aid in the
 // construction of message, presence and info/query (IQ) elements which have
 // special semantics in XMPP and are known as "stanzas".
-// There are 8 methods on Session used for transmitting stanzas and other events
-// over the output stream.
+// There are 16 methods on Session used for transmitting stanzas and other
+// events over the output stream.
 // Their names are matched by the regular expression:
 //
-//     (Send|Encode)(IQ)?(Element)?
+//     (Send|Encode)(Message|Presence|IQ)?(Element)?
+//
+// There are also four methods specifically for sending IQs and handling their
+// responses.
+// Their names are matched by:
+//
+//     (Unmarshal|Iter)IQ(Element)?
 //
 // If "Send" is present it means that the method copies one XML token stream
 // into the output stream, while "Encode" indicates that it takes a value and
