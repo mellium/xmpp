@@ -538,9 +538,8 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 
 	iqOk := isIQ(start.Name)
 	_, _, id, typ := getIDTyp(start.Attr)
-	iqNeedsResp := typ == string(stanza.GetIQ) || typ == string(stanza.SetIQ)
 
-	if !iqNeedsResp {
+	if typ == string(stanza.ResultIQ) || typ == "error" {
 		s.sentIQMutex.Lock()
 		c := s.sentIQs[id]
 		s.sentIQMutex.Unlock()
@@ -571,6 +570,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 		return err
 	}
 
+	iqNeedsResp := typ == string(stanza.GetIQ) || typ == string(stanza.SetIQ)
 	// If the user did not write a response to an IQ, send a default one.
 	if iqOk && iqNeedsResp && !rw.wroteResp {
 		_, toAttr := attr.Get(start.Attr, "to")
