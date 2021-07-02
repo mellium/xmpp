@@ -47,7 +47,7 @@ var testCases = [...]struct {
 }
 
 func TestFetch(t *testing.T) {
-	var IQ = stanza.IQ{ID: "123"}
+	var IQ = stanza.IQ{ID: "123", Type: stanza.ResultIQ}
 	for i, tc := range testCases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			cs := xmpptest.NewClientServer(
