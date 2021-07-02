@@ -547,7 +547,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 		if c != nil {
 			inner := xmlstream.Inner(r)
 			c <- iqResponder{
-				r: xmlstream.MultiReader(xmlstream.Token(start), inner, xmlstream.Token(start.End())),
+				r: xmlstream.Wrap(inner, start),
 				c: c,
 			}
 			<-c
