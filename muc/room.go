@@ -122,3 +122,36 @@ func (c *Channel) Invite(ctx context.Context, reason string, to jid.JID) error {
 		Reason:   reason,
 	}.MarshalMediated()))
 }
+
+// SetAffiliation changes the affiliation of the provided JID which should be
+// the users real bare-JID (not their room JID).
+func (c *Channel) SetAffiliation(ctx context.Context, a Affiliation, j jid.JID, nick, reason string) error {
+	var reasonEl xml.TokenReader
+	if reason != "" {
+		reasonEl = xmlstream.Wrap(
+			xmlstream.Token(xml.CharData(reason)),
+			xml.StartElement{Name: xml.Name{Local: "reason"}},
+		)
+	}
+	attr := []xml.Attr{
+		{Name: xml.Name{Local: "affiliation"}, Value: a.String()},
+		{Name: xml.Name{Local: "jid"}, Value: j.Bare().String()},
+	}
+	if nick != "" {
+		attr = append(attr, xml.Attr{Name: xml.Name{Local: "nick"}, Value: nick})
+	}
+	payload := xmlstream.Wrap(
+		xmlstream.Wrap(
+			reasonEl,
+			xml.StartElement{
+				Name: xml.Name{Local: "item"},
+				Attr: attr,
+			},
+		),
+		xml.StartElement{Name: xml.Name{Space: NSAdmin, Local: "query"}},
+	)
+	return c.session.UnmarshalIQElement(ctx, payload, stanza.IQ{
+		Type: stanza.SetIQ,
+		To:   c.addr.Bare(),
+	}, nil)
+}

@@ -9,7 +9,20 @@ package muc
 import (
 	"encoding/xml"
 	"errors"
+
+	"mellium.im/xmpp/jid"
 )
+
+// Item represents a user in the channel.
+// Various fields will be set when a user joins the channel or when the channel
+// informs us of upates to the users information.
+type Item struct {
+	JID         jid.JID     `xml:"jid,attr,omitempty"`
+	Affiliation Affiliation `xml:"affiliation,attr,omitempty"`
+	Nick        string      `xml:"nick,attr,omitempty"`
+	Role        Role        `xml:"role,attr,omitempty"`
+	Reason      string      `xml:"reason"`
+}
 
 // Affiliation indicates a users affiliation to the room.
 type Affiliation uint8

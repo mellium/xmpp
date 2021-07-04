@@ -24,6 +24,7 @@ const (
 	NS      = `http://jabber.org/protocol/muc`
 	NSUser  = `http://jabber.org/protocol/muc#user`
 	NSOwner = `http://jabber.org/protocol/muc#owner`
+	NSAdmin = `http://jabber.org/protocol/muc#admin`
 
 	// NSConf is the legacy conference namespace, now only used for direct MUC
 	// invitations and backwards compatibility.
@@ -101,7 +102,8 @@ type Client struct {
 	managedM sync.Mutex
 
 	// HandleInvite will be called if we receive a mediated MUC invitation.
-	HandleInvite func(Invitation)
+	HandleInvite       func(Invitation)
+	HandleUserPresence func(stanza.Presence, Item)
 }
 
 // HandleMessage satisfies mux.MessageHandler.
@@ -125,6 +127,26 @@ func (c *Client) HandleMessage(p stanza.Message, r xmlstream.TokenReadEncoder) e
 	return nil
 }
 
+type mucPresence struct {
+	stanza.Presence
+	X struct {
+		XMLName xml.Name
+		Item    Item `xml:"item"`
+		Status  []struct {
+			Code int `xml:"code,attr"`
+		} `xml:"status,omitempty"`
+	} `xml:"x"`
+}
+
+func (p *mucPresence) HasStatus(code int) bool {
+	for _, status := range p.X.Status {
+		if status.Code == code {
+			return true
+		}
+	}
+	return false
+}
+
 // HandlePresence satisfies mux.PresenceHandler.
 // it is used by the multiplexer and normally does not need to be called by the
 // user.
@@ -138,10 +160,26 @@ func (c *Client) HandlePresence(p stanza.Presence, r xmlstream.TokenReadEncoder)
 	if !ok {
 		return nil
 	}
+	d := xml.NewTokenDecoder(r)
+	var decodedPresence mucPresence
+	err := d.Decode(&decodedPresence)
+	if err != nil {
+		return err
+	}
 
 	switch p.Type {
 	case stanza.AvailablePresence:
-		channel.join <- p.From
+		// TODO: make consts for the statuses when possible. Wait until we can
+		// determine if they can be generated or have to be hand rolled first.
+		// See: https://github.com/xsf/registrar/pull/38
+		if decodedPresence.HasStatus(110) && channel.join != nil {
+			channel.join <- p.From
+			channel.join = nil
+			return nil
+		}
+		if decodedPresence.X.XMLName.Space == NSUser && c.HandleUserPresence != nil {
+			c.HandleUserPresence(decodedPresence.Presence, decodedPresence.X.Item)
+		}
 	case stanza.UnavailablePresence:
 		channel.depart <- struct{}{}
 		delete(c.managed, channel.addr.String())
