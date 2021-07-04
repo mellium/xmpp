@@ -169,10 +169,7 @@ func (c *Client) HandlePresence(p stanza.Presence, r xmlstream.TokenReadEncoder)
 
 	switch p.Type {
 	case stanza.AvailablePresence:
-		// TODO: make consts for the statuses when possible. Wait until we can
-		// determine if they can be generated or have to be hand rolled first.
-		// See: https://github.com/xsf/registrar/pull/38
-		if decodedPresence.HasStatus(110) && channel.join != nil {
+		if channel.join != nil {
 			channel.join <- p.From
 			channel.join = nil
 			return nil
