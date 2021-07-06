@@ -46,6 +46,13 @@ func TestIntegrationSetAffiliation(t *testing.T) {
 		integration.Log(),
 		integration.LogXML(),
 		prosody.MUC("muc.localhost"),
+		prosody.Channel("muc.localhost", prosody.ChannelConfig{
+			Localpart:  "bridgecrew",
+			Admins:     []string{userOne},
+			Name:       "Bridge Crew",
+			Persistent: true,
+			Public:     true,
+		}),
 		prosody.CreateUser(context.TODO(), userOne, userPass),
 		prosody.CreateUser(context.TODO(), userTwo, userPass),
 		prosody.ListenC2S(),
@@ -172,21 +179,6 @@ func integrationSetAffiliation(ctx context.Context, t *testing.T, cmd *integrati
 	channelOne, err := mucClientOne.Join(ctx, roomJID, userOneSession)
 	if err != nil {
 		t.Fatalf("error joining MUC as %s: %v", roomJID.Resourcepart(), err)
-	}
-
-	// TODO: make a prosody option for creating and configuring a room.
-	roomForm, err := muc.GetConfig(ctx, roomJID.Bare(), userOneSession)
-	if err != nil {
-		t.Fatalf("error fetching config: %v", err)
-	}
-	_, err = roomForm.Set("muc#roomconfig_publicroom", true)
-	if err != nil {
-		t.Errorf("error making room public: %v", err)
-	}
-
-	err = muc.SetConfig(ctx, roomJID.Bare(), roomForm, userOneSession)
-	if err != nil {
-		t.Fatalf("error setting room config: %v", err)
 	}
 
 	roomJIDTwo, err := roomJID.WithResource("CrusherMD")

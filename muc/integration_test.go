@@ -150,6 +150,14 @@ func TestIntegrationJoinErr(t *testing.T) {
 		integration.Log(),
 		integration.LogXML(),
 		prosody.MUC("muc.localhost"),
+		prosody.Channel("muc.localhost", prosody.ChannelConfig{
+			Localpart:  "bridgecrew",
+			Admins:     []string{"me@localhost"},
+			Name:       "Bridge Crew",
+			Persistent: true,
+			Public:     true,
+			Pass:       "nojoin",
+		}),
 		prosody.ListenC2S(),
 	)
 	prosodyRun(integrationJoinErr)
@@ -177,46 +185,7 @@ func integrationJoinErr(ctx context.Context, t *testing.T, cmd *integration.Cmd)
 	}()
 
 	roomJID := jid.MustParse("bridgecrew@muc.localhost/Picard")
-	channel, err := mucClient.Join(ctx, roomJID, session)
-	if err != nil {
-		t.Fatalf("error creating room: %v", err)
-	}
-
-	// Configure the room to make it password protected, then join without a
-	// password to trigger an error.
-	roomForm, err := muc.GetConfig(ctx, roomJID.Bare(), session)
-	if err != nil {
-		t.Fatalf("error fetching config: %v", err)
-	}
-	_, err = roomForm.Set("muc#roomconfig_maxusers", 0)
-	if err != nil {
-		t.Errorf("error making room public: %v", err)
-	}
-	_, err = roomForm.Set("muc#roomconfig_persistentroom", true)
-	if err != nil {
-		t.Errorf("error making room persistent: %v", err)
-	}
-	_, err = roomForm.Set("muc#roomconfig_passwordprotectedroom", true)
-	if err != nil {
-		t.Errorf("error locking room: %v", err)
-	}
-	_, err = roomForm.Set("muc#roomconfig_roomsecret", "cantjoinme")
-	if err != nil {
-		t.Errorf("error locking room: %v", err)
-	}
-	err = muc.SetConfig(ctx, roomJID.Bare(), roomForm, session)
-	if err != nil {
-		t.Fatalf("error setting room config: %v", err)
-	}
-	err = channel.Leave(ctx, "")
-	if err != nil {
-		t.Fatalf("error leaving the room: %v", err)
-	}
-
-	channel2, err := mucClient.Join(ctx, roomJID, session)
-	if channel2 != nil {
-		t.Errorf("expected nil channel when joining results in an error, got: %v", channel)
-	}
+	_, err = mucClient.Join(ctx, roomJID, session)
 	noAuth := stanza.Error{
 		Condition: stanza.NotAuthorized,
 	}
