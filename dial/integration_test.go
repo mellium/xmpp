@@ -52,11 +52,17 @@ var dialTests = []struct {
 func TestIntegrationDial(t *testing.T) {
 	for _, tc := range dialTests {
 		t.Run(tc.domain, func(t *testing.T) {
+			tries := 3
+		retry:
 			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
 			j := jid.MustParse("test@" + tc.domain)
-
 			_, err := tc.dialer.Dial(ctx, "tcp", j)
+			if dnsErr, ok := err.(*net.DNSError); tries > 0 && ok && (dnsErr.Temporary() || dnsErr.Timeout()) {
+				tries--
+				t.Logf("DNS lookup failed for %s, retries remaining %d: %v", tc.domain, tries, err)
+				goto retry
+			}
 			switch {
 			case tc.err != "" && err == nil:
 				t.Errorf("expected error if SRV record target is missing, got none")
