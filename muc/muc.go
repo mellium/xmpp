@@ -13,7 +13,6 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/form"
-	"mellium.im/xmpp/internal/attr"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
@@ -198,13 +197,6 @@ func (c *Client) Join(ctx context.Context, room jid.JID, s *xmpp.Session, opt ..
 // presence.
 // Changing the presence type has no effect.
 func (c *Client) JoinPresence(ctx context.Context, p stanza.Presence, s *xmpp.Session, opt ...Option) (*Channel, error) {
-	if p.Type != "" {
-		p.Type = ""
-	}
-	if p.ID == "" {
-		p.ID = attr.RandomID()
-	}
-
 	c.managedM.Lock()
 
 	channel := &Channel{
@@ -221,45 +213,6 @@ func (c *Client) JoinPresence(ctx context.Context, p stanza.Presence, s *xmpp.Se
 	c.managed[p.To.String()] = channel
 	c.managedM.Unlock()
 
-	conf := config{}
-	for _, o := range opt {
-		o(&conf)
-	}
-	channel.pass = conf.password
-
-	errChan := make(chan error)
-	go func(errChan chan<- error) {
-		resp, err := s.SendPresenceElement(ctx, conf.TokenReader(), p)
-		//err := s.Send(ctx, p.Wrap(conf.TokenReader()))
-		if err != nil {
-			errChan <- err
-			return
-		}
-		/* #nosec */
-		defer resp.Close()
-		// Pop the start presence token.
-		_, err = resp.Token()
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		stanzaError, err := stanza.UnmarshalError(resp)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		errChan <- stanzaError
-	}(errChan)
-
-	select {
-	case err := <-errChan:
-		return nil, err
-	case roomAddr := <-channel.join:
-		channel.addr = roomAddr
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-
-	return channel, nil
+	err := channel.JoinPresence(ctx, p, opt...)
+	return channel, err
 }

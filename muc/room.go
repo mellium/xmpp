@@ -155,3 +155,72 @@ func (c *Channel) SetAffiliation(ctx context.Context, a Affiliation, j jid.JID, 
 		To:   c.addr.Bare(),
 	}, nil)
 }
+
+// Join is like the Join function except that it joins or re-synchronizes the
+// current room.
+// It is useful if somehow the room has become unsyncronized with the server or
+// when you want to leave the room and join again later.
+func (c *Channel) Join(ctx context.Context, opt ...Option) error {
+	return c.JoinPresence(ctx, stanza.Presence{}, opt...)
+}
+
+// JoinPresence is like Join except that it gives you more control over the
+// presence.
+// Changing the presence type or to address has no effect.
+func (c *Channel) JoinPresence(ctx context.Context, p stanza.Presence, opt ...Option) error {
+	if p.Type != "" {
+		p.Type = ""
+	}
+	if p.ID == "" {
+		p.ID = attr.RandomID()
+	}
+	p.To = c.addr
+
+	conf := config{}
+	for _, o := range opt {
+		o(&conf)
+	}
+	c.pass = conf.password
+	if conf.newNick != "" {
+		newAddr, err := c.addr.WithResource(conf.newNick)
+		if err != nil {
+			return err
+		}
+		c.addr = newAddr
+	}
+
+	errChan := make(chan error)
+	go func(errChan chan<- error) {
+		resp, err := c.session.SendPresenceElement(ctx, conf.TokenReader(), p)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		/* #nosec */
+		defer resp.Close()
+		// Pop the start presence token.
+		_, err = resp.Token()
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		stanzaError, err := stanza.UnmarshalError(resp)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		errChan <- stanzaError
+	}(errChan)
+
+	select {
+	case err := <-errChan:
+		return err
+	case roomAddr := <-c.join:
+		c.addr = roomAddr
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	return nil
+}

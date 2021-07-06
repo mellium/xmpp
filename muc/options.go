@@ -72,6 +72,7 @@ func (h historyConfig) TokenReader() xml.TokenReader {
 type config struct {
 	history  historyConfig
 	password string
+	newNick  string
 }
 
 // TokenReader satisfies the xmlstream.Marshaler interface.
@@ -182,5 +183,19 @@ func Since(t time.Time) Option {
 func Password(p string) Option {
 	return func(c *config) {
 		c.password = p
+	}
+}
+
+// Nick overrides the resourcepart of the JID and sets a different nickname in
+// the room.
+//
+// This is mostly useful if you want to change the nickname when re-joining a
+// room (when the JID is already known and is not provided to the method) or
+// when the room JID is known and you want to let this package handle any errors
+// encountered when appending the nickname and reduce boilerplate in your own
+// code.
+func Nick(n string) Option {
+	return func(c *config) {
+		c.newNick = n
 	}
 }
