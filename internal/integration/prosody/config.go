@@ -23,10 +23,32 @@ type Config struct {
 	VHosts    []string
 	Options   map[string]interface{}
 	Component map[string]struct {
-		Name    string
-		Secret  string
-		Modules []string
+		Name        string
+		Secret      string
+		Modules     []string
+		MUCDefaults []ChannelConfig
 	}
+}
+
+// ChannelConfig configures a Multi-User Chat channel.
+type ChannelConfig struct {
+	Localpart          string
+	Admins             []string
+	Owners             []string
+	Visitors           []string
+	Name               string
+	Desc               string
+	AllowMemberInvites bool
+	ChangeSubject      bool
+	HistoryLen         int
+	Lang               string
+	Pass               string
+	Logging            bool
+	MembersOnly        bool
+	Moderated          bool
+	Persistent         bool
+	Public             bool
+	PublicJIDs         bool
 }
 
 const cfgBase = `daemonize = false
@@ -110,8 +132,37 @@ VirtualHost "{{ . }}"
 
 {{ range $domain, $cfg := .Component }}
 Component "{{$domain}}" {{if $cfg.Name}}"{{$cfg.Name}}"{{end}}
-				 {{if $cfg.Modules}}modules_enabled = { {{ luaList $cfg.Modules }} }{{end}}
-				 {{if $cfg.Secret}}component_secret = "{{$cfg.Secret}}"{{end}}
+	{{if $cfg.Modules}}modules_enabled = { {{ luaList $cfg.Modules }} }{{end}}
+	{{if $cfg.Secret}}component_secret = "{{$cfg.Secret}}"{{end}}
+	{{if $cfg.MUCDefaults }}
+	default_mucs = {
+	{{range $cfg.MUCDefaults}}
+			{
+				 jid_node = "{{.Localpart}}",
+				 affiliations = {
+									admin = { {{ joinQuote .Admins }} },
+									owner = { {{ joinQuote .Owners }} },
+									visitors = { {{ joinQuote .Visitors }} }
+				 },
+				 config = {
+									name = "{{.Name}}",
+									description = "{{.Desc}}",
+									allow_member_invites = {{.AllowMemberInvites}},
+									change_subject = {{.ChangeSubject}},
+									history_length = {{.HistoryLen}},
+									lang = "{{.Lang}}",
+									logging = {{.Logging}},
+									members_only = {{.MembersOnly}},
+									moderated = {{.Moderated}},
+									persistent = {{.Persistent}},
+									public = {{.Public}},
+									public_jids = {{.PublicJIDs}}
+									{{ if .Pass}}, pass = {{quoteOrPrint .Pass}}{{end}}
+				 }
+			}
+	{{end}}
+	}
+	{{end}}
 {{ end }}`
 
 var cfgTmpl = template.Must(template.New("cfg").Funcs(template.FuncMap{
