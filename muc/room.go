@@ -224,3 +224,21 @@ func (c *Channel) JoinPresence(ctx context.Context, p stanza.Presence, opt ...Op
 
 	return nil
 }
+
+// Subject attempts to change the room subject.
+// It returns immediately after the request has been sent and does not wait to
+// see if the request was successful or not.
+func (c *Channel) Subject(ctx context.Context, subject string) error {
+	return c.SubjectMessage(ctx, subject, stanza.Message{})
+}
+
+// SubjectMessage is like Subject except that it allows you to customize the
+// message stanza. Changing the receipient or type has no effect.
+func (c *Channel) SubjectMessage(ctx context.Context, subject string, m stanza.Message) error {
+	m.Type = stanza.GroupChatMessage
+	m.To = c.addr.Bare()
+	return c.session.Send(ctx, m.Wrap(xmlstream.Wrap(
+		xmlstream.Token(xml.CharData(subject)),
+		xml.StartElement{Name: xml.Name{Local: "subject"}},
+	)))
+}

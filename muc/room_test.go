@@ -171,3 +171,58 @@ func TestSetAffiliation(t *testing.T) {
 		})
 	}
 }
+
+func TestSetSubject(t *testing.T) {
+	j := jid.MustParse("room@example.net/me")
+	h := &muc.Client{}
+	handled := make(chan string, 1)
+	m := mux.New(muc.HandleClient(h))
+	server := mux.New(
+		mux.PresenceFunc("", xml.Name{Local: "x"}, func(p stanza.Presence, r xmlstream.TokenReadEncoder) error {
+			// Send back a self presence, indicating that the join is complete.
+			p.To, p.From = p.From, p.To
+			_, err := xmlstream.Copy(r, p.Wrap(xmlstream.Wrap(
+				nil,
+				xml.StartElement{Name: xml.Name{Space: muc.NSUser, Local: "x"}},
+			)))
+			return err
+		}),
+		mux.MessageFunc(stanza.GroupChatMessage, xml.Name{Local: "subject"}, func(_ stanza.Message, r xmlstream.TokenReadEncoder) error {
+			d := xml.NewTokenDecoder(r)
+			// Throw away the <message> token.
+			_, err := d.Token()
+			if err != nil {
+				return nil
+			}
+			s := struct {
+				XMLName xml.Name `xml:"subject"`
+				Subject string   `xml:",chardata"`
+			}{}
+			err = d.Decode(&s)
+			if err != nil {
+				return err
+			}
+			handled <- s.Subject
+			return nil
+		}),
+	)
+	s := xmpptest.NewClientServer(
+		xmpptest.ClientHandler(m),
+		xmpptest.ServerHandler(server),
+	)
+
+	channel, err := h.Join(context.Background(), j, s.Client)
+	if err != nil {
+		t.Fatalf("error joining: %v", err)
+	}
+
+	const expected = "test"
+	err = channel.Subject(context.Background(), expected)
+	if err != nil {
+		t.Fatalf("error setting subject: %v", err)
+	}
+	x := <-handled
+	if x != expected {
+		t.Fatalf("wrong output:\nwant=%s,\n got=%s", expected, x)
+	}
+}
