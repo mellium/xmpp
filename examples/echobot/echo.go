@@ -38,23 +38,20 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 		return fmt.Errorf("Error dialing sesion: %w", err)
 	}
 
-	s, err := xmpp.NewSession(ctx, j.Domain(), j, conn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
-		Lang: "en",
-		Features: func(_ *xmpp.Session, f ...xmpp.StreamFeature) []xmpp.StreamFeature {
-			if f != nil {
-				return f
-			}
-			return []xmpp.StreamFeature{
+	s, err := xmpp.NewSession(ctx, j.Domain(), j, conn, 0, xmpp.NewNegotiator(func(*xmpp.Session, xmpp.StreamConfig) xmpp.StreamConfig {
+		return xmpp.StreamConfig{
+			Lang: "en",
+			Features: []xmpp.StreamFeature{
 				xmpp.BindResource(),
 				xmpp.StartTLS(&tls.Config{
 					ServerName: j.Domain().String(),
 					MinVersion: tls.VersionTLS12,
 				}),
 				xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
-			}
-		},
-		TeeIn:  xmlIn,
-		TeeOut: xmlOut,
+			},
+			TeeIn:  xmlIn,
+			TeeOut: xmlOut,
+		}
 	}))
 	if err != nil {
 		return fmt.Errorf("Error establishing a session: %w", err)

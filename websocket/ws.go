@@ -25,11 +25,11 @@ import (
 // client on rw using the WebSocket subprotocol.
 // It does not perform the WebSocket handshake.
 func NewSession(ctx context.Context, addr jid.JID, rw io.ReadWriter, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
-	n := xmpp.NewNegotiator(xmpp.StreamConfig{
-		Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
-			return features
-		},
-		WebSocket: true,
+	n := xmpp.NewNegotiator(func(*xmpp.Session, xmpp.StreamConfig) xmpp.StreamConfig {
+		return xmpp.StreamConfig{
+			Features:  features,
+			WebSocket: true,
+		}
 	})
 	var mask xmpp.SessionState
 	if wsConn, ok := rw.(*websocket.Conn); ok && wsConn.LocalAddr().(*websocket.Addr).Scheme == "wss" {
@@ -42,11 +42,11 @@ func NewSession(ctx context.Context, addr jid.JID, rw io.ReadWriter, features ..
 // receiving server on rw using the WebSocket subprotocol.
 // It does not perform the WebSocket handshake.
 func ReceiveSession(ctx context.Context, rw io.ReadWriter, features ...xmpp.StreamFeature) (*xmpp.Session, error) {
-	n := xmpp.NewNegotiator(xmpp.StreamConfig{
-		Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
-			return features
-		},
-		WebSocket: true,
+	n := xmpp.NewNegotiator(func(*xmpp.Session, xmpp.StreamConfig) xmpp.StreamConfig {
+		return xmpp.StreamConfig{
+			Features:  features,
+			WebSocket: true,
+		}
 	})
 	var mask xmpp.SessionState
 	if wsConn, ok := rw.(*websocket.Conn); ok && wsConn.LocalAddr().(*websocket.Addr).Scheme == "wss" {

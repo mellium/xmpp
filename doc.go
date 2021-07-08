@@ -57,9 +57,11 @@
 //     …
 //     session, err := xmpp.NewSession(
 //         context.TODO(), addr.Domain(), addr, conn, xmpp.Secure,
-//         xmpp.NewNegotiator(xmpp.StreamConfig{
-//             Lang: "en",
-//             …
+//         xmpp.NewNegotiator(func(*xmpp.Session, xmpp.StreamConfig) xmpp.StreamConfig {
+//             return xmpp.StreamConfig{
+//                 Lang: "en",
+//                 …
+//             }
 //         }),
 //     )
 //
