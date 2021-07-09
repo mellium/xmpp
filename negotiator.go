@@ -42,10 +42,6 @@ type StreamConfig struct {
 	// A list of stream features to attempt to negotiate.
 	Features []StreamFeature
 
-	// WebSocket indicates that the negotiator should use the WebSocket
-	// subprotocol defined in RFC 7395.
-	WebSocket bool
-
 	// If set a copy of any reads from the session will be written to TeeIn and
 	// any writes to the session will be written to TeeOut (similar to the tee(1)
 	// command).
@@ -81,7 +77,13 @@ type StreamConfig struct {
 // re-used or the stream features may be appended to if desired (however, this
 // is not required).
 func NewNegotiator(cfg func(*Session, StreamConfig) StreamConfig) Negotiator {
-	return negotiator(cfg)
+	return negotiator(false, cfg)
+}
+
+// NewWebSocketNegotiator is like NewNegotiator except that it uses the
+// WebSocket subprotocol defined in RFC 7395.
+func NewWebSocketNegotiator(cfg func(*Session, StreamConfig) StreamConfig) Negotiator {
+	return negotiator(true, cfg)
 }
 
 type negotiatorState struct {
@@ -89,7 +91,7 @@ type negotiatorState struct {
 	cancelTee context.CancelFunc
 }
 
-func negotiator(cf func(*Session, StreamConfig) StreamConfig) Negotiator {
+func negotiator(websocket bool, cf func(*Session, StreamConfig) StreamConfig) Negotiator {
 	var cfg StreamConfig
 	return func(ctx context.Context, in, out *stream.Info, s *Session, data interface{}) (mask SessionState, rw io.ReadWriter, restartNext interface{}, err error) {
 		cfg = cf(s, cfg)
@@ -130,7 +132,7 @@ func negotiator(cf func(*Session, StreamConfig) StreamConfig) Negotiator {
 
 				location := s.LocalAddr()
 				origin := s.RemoteAddr()
-				err = intstream.Expect(ctx, in, s.in.d, s.State()&Received == Received, cfg.WebSocket)
+				err = intstream.Expect(ctx, in, s.in.d, s.State()&Received == Received, websocket)
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -156,7 +158,7 @@ func negotiator(cf func(*Session, StreamConfig) StreamConfig) Negotiator {
 				location = in.To
 				origin = in.From
 
-				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, origin.String(), location.String(), attr.RandomID())
+				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, websocket, stream.DefaultVersion, cfg.Lang, origin.String(), location.String(), attr.RandomID())
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -166,12 +168,12 @@ func negotiator(cf func(*Session, StreamConfig) StreamConfig) Negotiator {
 				// one in response.
 				origin := s.LocalAddr()
 				location := s.RemoteAddr()
-				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, cfg.WebSocket, stream.DefaultVersion, cfg.Lang, location.String(), origin.String(), "")
+				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, websocket, stream.DefaultVersion, cfg.Lang, location.String(), origin.String(), "")
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
 				}
-				err = intstream.Expect(ctx, in, s.in.d, s.State()&Received == Received, cfg.WebSocket)
+				err = intstream.Expect(ctx, in, s.in.d, s.State()&Received == Received, websocket)
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -190,7 +192,7 @@ func negotiator(cf func(*Session, StreamConfig) StreamConfig) Negotiator {
 			}
 		}
 
-		mask, rw, err = negotiateFeatures(ctx, s, data == nil, cfg.WebSocket, cfg.Features)
+		mask, rw, err = negotiateFeatures(ctx, s, data == nil, websocket, cfg.Features)
 		nState.doRestart = rw != nil
 		return mask, rw, nState, err
 	}
