@@ -2,12 +2,19 @@ image: alpine/edge
 secrets:
   - d66b1d1c-77da-4c7c-bd7a-afe0f83f34ed
   - cfc0975b-ca64-48e2-ae20-43767e03ab51
+  - 08b6747f-7fff-4f23-acfe-0eaf7a8b21a6
+  - 9229a412-3c0c-4a6d-9149-b5ae7dde32dd
 tasks:
   - info: |
       [ -z "$GITHUB_EVENT" ] || complete-build
       git version
-  - sync: |
+  - clone:
       git clone --reference ./xmpp --mirror https://git.sr.ht/~samwhited/xmpp xmpp.git
+  - github: |
       cd xmpp.git/
       cat ~/.ssh/github >> ~/.ssh/known_hosts
-      git push --mirror git@github.com:mellium/xmpp.git
+      GIT_SSH_COMMAND="ssh -i ~/.ssh/cfc0975b-ca64-48e2-ae20-43767e03ab51" git push --mirror git@github.com:mellium/xmpp.git
+  - codeberg: |
+      cd xmpp.git/
+      cat ~/.ssh/codeberg >> ~/.ssh/known_hosts
+      GIT_SSH_COMMAND="ssh -i ~/.ssh/08b6747f-7fff-4f23-acfe-0eaf7a8b21a6" git push --mirror git@codeberg.org:mellium/xmpp.git
