@@ -3,6 +3,34 @@
 // license that can be found in the LICENSE file.
 
 // Package muc implements Multi-User Chat.
+//
+// Unlike many Multi-User Chat (MUC) implementations, the muc package tries to
+// be as stateless as possible.
+// It allows you to receive chat messages and invites sent through a channel,
+// for example, but does not keep track of what users are joined to the channel
+// at any given time.
+// This is best left up to the user who may want to use a distributed datastore
+// to keep track of users in a large system for searching many public channels,
+// or may want a simple in-memory map for a small client.
+//
+// The main entrypoint into the muc package (for clients) is the Client type.
+// It can be used to join MUCs and has callbacks for receiving MUC events such
+// as presence or mediated invites to a new channel.
+// It is normally registered with a multiplexer such as the one found in the mux
+// package:
+//
+//     mucClient := muc.Client{}
+//     m := mux.New(
+//         muc.HandleClient(mucClient),
+//     )
+//     channel, err := mucClient.Join(…)
+//
+// Once the Join method has been called the resulting channel type can be used
+// to perform actions on the channel such as setting the subject, rejoining (to
+// force syncronize state), or leaving the channel.
+//
+//     channel, err := mucClient.Join(…)
+//     channel.Subject(context.Background(), "Bridge operation and tactical readiness")
 package muc // import "mellium.im/xmpp/muc"
 
 import (
