@@ -4,9 +4,67 @@
 
 // Package integration contains helpers for integration testing.
 //
-// Normally users writing integration tests should not use this package
-// directly, instead they should use the packges in subdirectories of this
-// package.
+// The integration test package should normally be used from within a file that
+// does not build unless integration tests are being run:
+//
+//     //go:build integration
+//
+// It should also normally be used from within a test containing the term
+// "Integration".
+// The build constraint ensures that we don't run integration tests when we only
+// want to run unit tests and the test name ensures that we don't run unit tests
+// when we only want to run integration tests.
+// For example, a simple test of sending a ping might be called
+// TestIntegrationSendPing.
+//
+// Tests can be setup by importing the various packages under this package such
+// as "prosody" and "ejabberd".
+// To setup a test against a server the "Test" function should be used and
+// configured with the general options provided in this package and the server
+// specific options provided in the server's package.
+// This creates a SubtestRunner which can be called multiple times to spin up
+// servers with the provided configuration and run one or more subtests against
+// them.
+// For example, running two tests against prosody and one against ejabberd might
+// look like the following:
+//
+//     func TestIntegrationSendPing(t *testing.T) {
+//     	prosodyRun := prosody.Test(context.TODO(), t,
+//     		integration.Log(),
+//     		prosody.ListenC2S(),
+//     	)
+//     	prosodyRun(integrationSendPing)
+//     	prosodyRun(integrationRecvPing)
+//
+//     	ejabberdRun := ejabberd.Test(context.TODO(), t,
+//     		integration.Log(),
+//     		ejabberd.ListenC2S(),
+//     	)
+//     	ejabberdRun(integrationSendPing)
+//     }
+//
+// For more information see the SubtestRunner type and the various Option
+// functions.
+//
+// The SubtestRunner passes each call a Cmd.
+// This is a reprsentation of the command that is beingn run (ie. the server or
+// client we're testing against) and provides you with the information you'll
+// need to connect and communicate with the command.
+// For example, in the ping example above the subtest being run might use Cmd's
+// DialClient shortcut to quickly create a connection to the prosody server spun
+// up for the test.
+//
+//     func integrationSendPing(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
+//     	j, pass := cmd.User()
+//     	session, err := cmd.DialClient(ctx, j, t,
+//     		xmpp.StartTLS(&tls.Config{
+//     			InsecureSkipVerify: true,
+//     		}),
+//     		xmpp.SASL("", pass, sasl.Plain),
+//     		xmpp.BindResource(),
+//     	)
+//
+// For more information see the Cmd type.
 package integration // import "mellium.im/xmpp/internal/integration"
 
 import (
