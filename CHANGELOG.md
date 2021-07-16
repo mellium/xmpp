@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 - roster: rename `version` attribute to `ver`
 - styling: decoding tokens now uses an iterator pattern
+- xmpp: the `WebSocket` option on `StreamConfig` has been removed in favor of
+  `websocket.Negotiator`
 
 
 ### Security
@@ -23,6 +25,8 @@ All notable changes to this project will be documented in this file.
 - stanza: implement [XEP-0203: Delayed Delivery]
 - stanza: more general `UnmarshalError` function that doesn't focus on IQs
 - stanza: add `Error` method to `Presence` and `Message`
+- websocket: add `Negotiator` to replace the `WebSocket` option on the stream
+  config
 
 
 ### Fixed
