@@ -74,18 +74,18 @@
 // Handling Stanzas
 //
 // Unlike HTTP, the XMPP protocol is asynchronous, meaning that both clients and
-// servers can accept and send requests at any time and responses are not
+// servers can accept and send requests at any time and responses are not always
 // required or may be received out of order.
 // This is accomplished with two XML streams: an input stream and an output
 // stream.
-// To receive XML on the input stream, Session implements the xml.TokenReader
-// interface defined in encoding/xml; this allows session to be wrapped with
-// xml.NewTokenDecoder.
-// To send XML on the output stream, Session has a TokenEncoder method that
+// To receive XML on the input stream, Session provides the Serve method which
+// takes a handler that has the ability to read incoming XML.
+// If the full stream should be read it also provides the TokenReader method
+// which takes control of the stream (preventing Serve from calling its
+// handlers) and allows for full control over the incoming stream.
+// To send XML on the output stream, Session has a TokenWriter method that
 // returns a token encoder that holds a lock on the output stream until it is
 // closed.
-// The session may also buffer writes and has a Flush method which will write
-// any buffered XML to the underlying connection.
 //
 // Writing individual XML tokens can be tedious and error prone.
 // The stanza package contains functions and structs that aid in the
@@ -152,9 +152,4 @@
 // Packages that implement extensions to the core XMPP protocol will often
 // provide handlers that are compatible with types defined in the mux package,
 // and options for registering them with the multiplexer.
-//
-//
-// Be Advised
-//
-// This API is unstable and subject to change.
 package xmpp // import "mellium.im/xmpp"
