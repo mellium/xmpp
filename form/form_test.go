@@ -496,8 +496,17 @@ func TestUnmarshalChardata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error unmarshaling: %v", err)
 	}
+	if data.Len() != 1 {
+		t.Errorf("wrong length: want=1, got=%d", data.Len())
+	}
 	if b, ok := data.GetBool("foo"); !ok || !b {
-		t.Fatalf("expected form field 'foo' to be set, got %t, %t", b, ok)
+		t.Errorf("expected form field 'foo' to be set, got %t, %t", b, ok)
+	}
+	if v, ok := data.Raw("foo"); !ok || len(v) == 0 || v[0] != "true" {
+		t.Errorf("expected form field 'foo' to have raw value, got %s, %t", v, ok)
+	}
+	if v, ok := data.Raw("test"); v != nil || ok {
+		t.Errorf("did not expect raw values for unkonwn key, got %v, %t", v, ok)
 	}
 }
 
@@ -505,7 +514,20 @@ func TestUnmarshalInvalidToken(t *testing.T) {
 	const formData = `<x xmlns="jabber:x:data"><!-- Not allowed --></x>`
 	data := &form.Data{}
 	err := xml.Unmarshal([]byte(formData), data)
+	if data.Len() != 0 {
+		t.Errorf("wrong length: want=0, got=%d", data.Len())
+	}
 	if err == nil {
 		t.Fatalf("expected error when unmarshaling disallowed token type")
+	}
+}
+
+func TestNilLen(t *testing.T) {
+	var data *form.Data
+	if data.Len() != 0 {
+		t.Errorf("wrong length: want=0, got=%d", data.Len())
+	}
+	if v, ok := data.Raw("test"); v != nil || ok {
+		t.Errorf("did not expect raw values, got %v, %t", v, ok)
 	}
 }

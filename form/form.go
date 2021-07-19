@@ -165,6 +165,27 @@ func (d *Data) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error 
 	return decoder.Skip()
 }
 
+// Len returns the number of fields on the form.
+func (d *Data) Len() int {
+	if d == nil {
+		return 0
+	}
+	return len(d.fields)
+}
+
+// Raw looks up the value parsed for a form field as it appeared in the XML.
+func (d *Data) Raw(id string) (v []string, ok bool) {
+	if d == nil {
+		return nil, false
+	}
+	for _, field := range d.fields {
+		if field.varName == id {
+			return field.value, true
+		}
+	}
+	return nil, false
+}
+
 // Get looks up the value submitted for a form field.
 // If the value has not been set yet and no default value exists, ok will be
 // false.

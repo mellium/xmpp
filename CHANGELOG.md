@@ -29,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - carbons: new package implementing [XEP-0280: Message Carbons]
 - commands: new package implementing [XEP-0050: Ad-Hoc Commands]
 - history: implement [XEP-0313: Message Archive Management]
+- form: add `Len` and `Raw` methods to form data
 - muc: new package implementing [XEP-0045: Multi-User Chat] and [XEP-0249: Direct MUC Invitations]
 - mux: `mux.ServeMux` now implements `info.FeatureIter` and `items.Iter`
 - roster: the roster `Iter` now returns the roster version being iterated over
