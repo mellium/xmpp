@@ -95,10 +95,10 @@ func TestUnmarshal(t *testing.T) {
 		t.Errorf("form was not unmarshaled")
 	}
 	const serverInfo = "http://jabber.org/network/serverinfo"
-	if s, ok := info.Form.GetString("FORM_TYPE"); !ok || s != serverInfo {
+	if s, ok := info.Form[0].GetString("FORM_TYPE"); !ok || s != serverInfo {
 		t.Errorf("wrong value for FORM_TYPE: want=%s, got=%s", serverInfo, s)
 	}
-	if s, ok := info.Form.GetString("c2s_port"); !ok || s != "5222" {
+	if s, ok := info.Form[0].GetString("c2s_port"); !ok || s != "5222" {
 		t.Errorf("wrong value for FORM_TYPE: want=5222, got=%s", s)
 	}
 }

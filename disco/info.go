@@ -86,7 +86,7 @@ type Info struct {
 	InfoQuery
 	Identity []Identity     `xml:"identity"`
 	Features []info.Feature `xml:"feature"`
-	Form     *form.Data     `xml:"jabber:x:data x,omitempty"`
+	Form     []form.Data    `xml:"jabber:x:data x,omitempty"`
 }
 
 // TokenReader implements xmlstream.Marshaler.
