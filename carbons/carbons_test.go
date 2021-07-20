@@ -19,12 +19,8 @@ import (
 
 func TestEnableDisable(t *testing.T) {
 	var out bytes.Buffer
-	stop := make(chan struct{}, 2)
 	cs := xmpptest.NewClientServer(
 		xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-			defer func() {
-				stop <- struct{}{}
-			}()
 			e := xml.NewEncoder(&out)
 			err := e.EncodeToken(*start)
 			if err != nil {
@@ -52,7 +48,6 @@ func TestEnableDisable(t *testing.T) {
 		t.Fatalf("unexpected error disabling carbons: %v", err)
 	}
 
-	<-stop
 	output := out.String()
 	const expected = `<iq xmlns="jabber:client" xmlns="jabber:client" type="set" id="000"><enable xmlns="urn:xmpp:carbons:2" xmlns="urn:xmpp:carbons:2"></enable></iq><iq xmlns="jabber:client" xmlns="jabber:client" type="set" id="000"><disable xmlns="urn:xmpp:carbons:2" xmlns="urn:xmpp:carbons:2"></disable></iq>`
 	if output != expected {
