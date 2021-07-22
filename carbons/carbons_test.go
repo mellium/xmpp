@@ -9,6 +9,8 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
+	"strconv"
+	"strings"
 	"testing"
 
 	"mellium.im/xmlstream"
@@ -16,6 +18,65 @@ import (
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/stanza"
 )
+var disableCarbonTestCases = [...]struct {
+	in  string
+	out string
+}{
+	0: {},
+	1: {
+		in:  `<message xmlns="jabber:client"/>`,
+		out: `<message xmlns="jabber:client"><private xmlns="urn:xmpp:carbons:2"></private></message>`,
+	},
+	2: {
+		in:  `<message xmlns="jabber:client" type="error"/>`,
+		out: `<message xmlns="jabber:client" type="error"><private xmlns="urn:xmpp:carbons:2"></private></message>`,
+	},
+	3: {
+		in : `<message xmlns="jabber:client" type="error"><private xmlns="urn:xmpp:carbons:2"/></message>`,
+		out : `<message xmlns="jabber:client" type="error"><private xmlns="urn:xmpp:carbons:2"></private></message>`,
+	},
+	4: {
+		in:  `<message xmlns="jabber:badns"/>`,
+		out: `<message xmlns="jabber:badns"><private xmlns="urn:xmpp:carbons:2"></private></message>`,
+	},
+
+	5: {
+
+		in:  `<message xmlns="jabber:server" type="chat"><receipt xmlns="urn:xmpp:receipts"></receipt></message>`,
+		out: `<message xmlns="jabber:server" type="chat"><receipt xmlns="urn:xmpp:receipts"></receipt><private xmlns="urn:xmpp:carbons:2"></private></message>`,
+	},
+	6: {
+		in:  `<message xmlns="jabber:server" type="error"/>`,
+		out: `<message xmlns="jabber:server" type="error"><private xmlns="urn:xmpp:carbons:2"></private></message>`,
+
+	},
+}
+
+func TestDisableCarbon(t *testing.T) {
+	for i, tc := range disableCarbonTestCases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			r := carbons.DisableCarbon(xml.NewDecoder(strings.NewReader(tc.in)))
+			// Prevent duplicate xmlns attributes. See https://mellium.im/issue/75
+			r = xmlstream.RemoveAttr(func(start xml.StartElement, attr xml.Attr) bool {
+				return (start.Name.Local == "message" || start.Name.Local == "iq" || start.Name.Local == "private" || start.Name.Local == "receipt") && attr.Name.Local == "xmlns"
+			})(r)
+			var buf strings.Builder
+			e := xml.NewEncoder(&buf)
+			_, err := xmlstream.Copy(e, r)
+			if err != nil {
+				t.Fatalf("error encoding: %v", err)
+			}
+			if err = e.Flush(); err != nil {
+				t.Fatalf("error flushing: %v", err)
+			}
+
+			if out := buf.String(); tc.out != out {
+				t.Errorf("wrong output:\nwant=%s,\n got=%s", tc.out, out)
+			}
+		})
+	}
+}
+
 
 func TestEnableDisable(t *testing.T) {
 	var out bytes.Buffer
