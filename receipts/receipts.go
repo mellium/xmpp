@@ -103,7 +103,8 @@ func Request(r xml.TokenReader) xml.TokenReader {
 			switch {
 			case t.Name.Local == "receipt" && t.Name.Space == NS:
 				noWrite = true
-			case t.Name.Local == "message" && (t.Name.Space == ns.Client || t.Name.Space == ns.Server):
+			case t.Name.Local == "message" && (t.
+				Name.Space == ns.Client || t.Name.Space == ns.Server):
 				noWrite = false
 				for _, attr := range t.Attr {
 					if attr.Name.Local == "type" {
@@ -118,6 +119,7 @@ func Request(r xml.TokenReader) xml.TokenReader {
 					inner = xmlstream.MultiReader(xmlstream.Wrap(nil, xml.StartElement{
 						Name: xml.Name{Space: NS, Local: "request"},
 					}), xmlstream.Token(t))
+
 					goto start
 				}
 				noWrite = false

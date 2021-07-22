@@ -8,6 +8,7 @@ package carbons // import "mellium.im/xmpp/carbons"
 import (
 	"context"
 	"encoding/xml"
+	"io"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
@@ -60,4 +61,53 @@ func DisableIQ(ctx context.Context, s *xmpp.Session, iq stanza.IQ) error {
 		xml.StartElement{Name: xml.Name{Space: NS, Local: "disable"}},
 	)), &v)
 	return err
+}
+
+/*
+Write a wrapper that disables carbons for a particular message by inserting a
+<private xmlns='urn:xmpp:carbons:2'/> element similar to how receipts.Request works.
+ */
+
+
+//DisableCarbon is an xmlstream.Transformer that inserts <private xmlns='urn:xmpp:carbons:2'/>
+//into an individual message, which in turn disables carbons for that message
+
+func DisableCarbon(r xml.TokenReader) xml.TokenReader{
+	var(
+		disabled bool
+		inner xml.TokenReader
+	)
+	return xmlstream.ReaderFunc(func() (xml.Token, error){
+		start:
+			if inner != nil{
+				token, err := inner.Token()
+				if err == io.EOF {
+					inner = nil
+					err = nil
+				}
+
+				return token, err
+			}
+
+			token, err := r.Token()
+			switch err {
+			case io.EOF:
+				if token == nil{
+					return nil, err
+				}
+				err = nil
+			case nil:
+			default:
+				return token, err
+			}
+
+			switch t := token.(type) {
+			case xml.StartElement:
+				switch{
+				case t.Name.Local
+				}
+		
+			}
+		
+	})
 }
