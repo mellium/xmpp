@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -124,7 +123,7 @@ func defaultConfig(cmd *integration.Cmd) error {
 			for {
 				// Continue copying the rest of the stream directly into the output
 				// file.
-				_, err := io.Copy(ioutil.Discard, tr)
+				_, err := io.Copy(io.Discard, tr)
 				if err != nil {
 					return
 				}

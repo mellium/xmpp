@@ -15,7 +15,7 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -57,9 +57,9 @@ type messageBody struct {
 
 func main() {
 	logger := log.New(os.Stderr, "", log.LstdFlags)
-	debug := log.New(ioutil.Discard, "DEBUG ", log.LstdFlags)
-	sentXML := log.New(ioutil.Discard, "SENT ", log.LstdFlags)
-	recvXML := log.New(ioutil.Discard, "RECV ", log.LstdFlags)
+	debug := log.New(io.Discard, "DEBUG ", log.LstdFlags)
+	sentXML := log.New(io.Discard, "SENT ", log.LstdFlags)
+	recvXML := log.New(io.Discard, "RECV ", log.LstdFlags)
 
 	// Get and parse the XMPP address to send from.
 	addr := os.Getenv(envAddr)
@@ -250,7 +250,7 @@ func main() {
 	}
 
 	if rawMsg == "" {
-		rawMsgBuf, err := ioutil.ReadAll(os.Stdin)
+		rawMsgBuf, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			logger.Fatalf("error reading message from stdin: %v", err)
 		}

@@ -15,7 +15,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -39,7 +38,7 @@ func (lw logWriter) Write(p []byte) (int, error) {
 func main() {
 	// Setup logging and verbose logging that's disabled by default.
 	logger := log.New(os.Stderr, "", log.LstdFlags)
-	debug := log.New(ioutil.Discard, "DEBUG ", log.LstdFlags)
+	debug := log.New(io.Discard, "DEBUG ", log.LstdFlags)
 
 	// Configure behavior based on flags and environment variables.
 	var (
