@@ -8,7 +8,6 @@ package xmpptest // import "mellium.im/xmpp/internal/xmpptest"
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net"
 	"strings"
 
@@ -37,7 +36,7 @@ func NopNegotiator(state xmpp.SessionState) xmpp.Negotiator {
 			io.Reader
 			io.Writer
 		}{
-			Writer: ioutil.Discard,
+			Writer: io.Discard,
 		}, out, s.State()&xmpp.S2S == xmpp.S2S, false, stream.DefaultVersion, "", "example.net", "test@example.net", "123")
 
 		return state | xmpp.Ready, nil, nil, err

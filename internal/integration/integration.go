@@ -77,7 +77,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"os"
@@ -149,7 +148,7 @@ func New(ctx context.Context, name string, opts ...Option) (*Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
-	cmd.cfgDir, err = ioutil.TempDir("", filepath.Base(cmd.name))
+	cmd.cfgDir, err = os.MkdirTemp("", filepath.Base(cmd.name))
 	if err != nil {
 		return nil, err
 	}
