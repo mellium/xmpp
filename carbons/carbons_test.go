@@ -37,11 +37,9 @@ var disableCarbonTestCases = [...]struct {
 	},
 	4: {
 		in:  `<message xmlns="jabber:badns"/>`,
-		out: `<message xmlns="jabber:badns"><private xmlns="urn:xmpp:carbons:2"></private></message>`,
+		out: `<message xmlns="jabber:badns"></message>`,
 	},
-
 	5: {
-
 		in:  `<message xmlns="jabber:server" type="chat"><receipt xmlns="urn:xmpp:receipts"></receipt></message>`,
 		out: `<message xmlns="jabber:server" type="chat"><receipt xmlns="urn:xmpp:receipts"></receipt><private xmlns="urn:xmpp:carbons:2"></private></message>`,
 	},
@@ -55,7 +53,7 @@ var disableCarbonTestCases = [...]struct {
 func TestDisableCarbon(t *testing.T) {
 	for i, tc := range disableCarbonTestCases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			r := carbons.DisableCarbon(xml.NewDecoder(strings.NewReader(tc.in)))
+			r := carbons.Exclude(xml.NewDecoder(strings.NewReader(tc.in)))
 			// Prevent duplicate xmlns attributes. See https://mellium.im/issue/75
 			r = xmlstream.RemoveAttr(func(start xml.StartElement, attr xml.Attr) bool {
 				return (start.Name.Local == "message" || start.Name.Local == "iq" || start.Name.Local == "private" || start.Name.Local == "receipt") && attr.Name.Local == "xmlns"

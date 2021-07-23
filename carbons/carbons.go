@@ -11,6 +11,7 @@ import (
 	"io"
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -63,13 +64,13 @@ func DisableIQ(ctx context.Context, s *xmpp.Session, iq stanza.IQ) error {
 }
 
 
-//DisableCarbon is an xmlstream.Transformer that inserts <private xmlns='urn:xmpp:carbons:2'/>
-//into an individual message, which in turn disables carbons for that message. If a message contains
-//<private xmlns='urn:xmpp:carbons:2'/> already then we will not add it. Other we will add it to everything
-//for now and sort it out later
-
-
-func DisableCarbon(r xml.TokenReader) xml.TokenReader{
+// Exclude is an xmlstream.Transformer that inserts
+// <private xmlns='urn:xmpp:carbons:2'/> into an individual message.
+// Inserting <private xmlns='urn:xmpp:carbons:2'/> disables carbons for that
+// message.
+// If a message contains <private xmlns='urn:xmpp:carbons:2'/> already then
+// we will not add it, otherwise it will be added to all messages.
+func Exclude(r xml.TokenReader) xml.TokenReader{
 	var(
 		disabled bool
 		inner xml.TokenReader
@@ -82,10 +83,8 @@ func DisableCarbon(r xml.TokenReader) xml.TokenReader{
 					inner = nil
 					err = nil
 				}
-
 				return token, err
 			}
-
 			token, err := r.Token()
 			switch err {
 			case io.EOF:
@@ -97,7 +96,6 @@ func DisableCarbon(r xml.TokenReader) xml.TokenReader{
 			default:
 				return token, err
 			}
-
 			switch t := token.(type) {
 			case xml.StartElement:
 				switch{
@@ -105,12 +103,11 @@ func DisableCarbon(r xml.TokenReader) xml.TokenReader{
 				case t.Name.Local == "private" && t.Name.Space == NS:
 					disabled = true
 				//if we make it here,  we are disabling carbon for any message as long
-				case t.Name.Local == "message" :
+				case t.Name.Local == "message" && (t.Name.Space == ns.Client || t.Name.Space == ns.Server) :
 					disabled = false
 				}
-
 			case xml.EndElement:
-				if t.Name.Local == "message" {
+				if t.Name.Local == "message" && (t.Name.Space == ns.Client || t.Name.Space == ns.Server){
 					if !disabled {
 						inner = xmlstream.MultiReader(xmlstream.Wrap(nil, xml.StartElement{
 							Name: xml.Name{Space: NS, Local: "private"},

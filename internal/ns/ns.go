@@ -6,7 +6,7 @@
 // other internal packages.
 package ns // import "mellium.im/xmpp/internal/ns"
 
-// List of commonly used namespaces.
+// List of commonly used name spaces.
 const (
 	Bind     = "urn:ietf:params:xml:ns:xmpp-bind"
 	Client   = "jabber:client"
