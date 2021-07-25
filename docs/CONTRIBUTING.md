@@ -148,7 +148,7 @@ in the work by you shall be licensed as above, without any additional terms or
 conditions.
 
 
-[issues]: https://github.com/mellium/xmpp/issues
+[issues]: https://mellium.im/issue
 [including closed issues]: https://github.com/mellium/xmpp/issues?q=is%3Aissue
 [pull request]: https://github.com/mellium/xmpp/pulls
 [`good first issue`]: https://github.com/mellium/xmpp/labels/good%20first%20issue
