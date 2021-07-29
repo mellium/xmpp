@@ -204,6 +204,71 @@ func TestEncodeIQ(t *testing.T) {
 			t.Errorf("Expected response, but got none")
 		}
 	})
+	t.Run("UnmarshalIQ", func(t *testing.T) {
+		testName := xml.Name{Space: "space", Local: "local"}
+		s := xmpptest.NewClientServer(xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(t, stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(xmlstream.Wrap(
+				nil,
+				xml.StartElement{Name: testName},
+			)))
+			return err
+		}))
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		v := struct {
+			XMLName xml.Name
+		}{}
+		err := s.Client.UnmarshalIQ(ctx, stanza.IQ{
+			ID:   testIQID,
+			Type: stanza.GetIQ,
+		}.Wrap(nil), &v)
+		if err != nil {
+			t.Errorf("got unexpected error encoding: %v", err)
+		}
+		if v.XMLName != testName {
+			t.Errorf("wrong payload: want=%v, got=%v", testName, v.XMLName)
+		}
+	})
+	t.Run("UnmarshalIQErr", func(t *testing.T) {
+		s := xmpptest.NewClientServer()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		err := s.Client.UnmarshalIQ(ctx, stanza.IQ{
+			ID:   testIQID,
+			Type: stanza.GetIQ,
+		}.Wrap(nil), nil)
+		if !errors.Is(err, stanza.Error{Condition: stanza.ServiceUnavailable}) {
+			t.Errorf("got unexpected error encoding: %v", err)
+		}
+	})
+	t.Run("UnmarshalIQEmpty", func(t *testing.T) {
+		s := xmpptest.NewClientServer(xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+			_, err := xmlstream.Copy(t, stanza.IQ{ID: testIQID, Type: stanza.ResultIQ}.Wrap(nil))
+			return err
+		}))
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		v := struct {
+			XMLName xml.Name
+		}{}
+		err := s.Client.UnmarshalIQ(ctx, stanza.IQ{
+			ID:   testIQID,
+			Type: stanza.GetIQ,
+		}.Wrap(nil), &v)
+		if err != nil {
+			t.Errorf("got unexpected error encoding: %v", err)
+		}
+		emptyName := xml.Name{}
+		if v.XMLName != emptyName {
+			t.Errorf("wrong payload: want=%v, got=%v", emptyName, v.XMLName)
+		}
+	})
 }
 
 // zeroID will be the ID of stanzas that have an empty ID in the send tests.

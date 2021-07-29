@@ -201,9 +201,19 @@ func unmarshalIQ(ctx context.Context, iq xml.TokenReader, v interface{}, s *Sess
 	if err != nil {
 		return err
 	}
-	d := xml.NewTokenDecoder(resp)
 	if v == nil {
 		return nil
 	}
-	return d.Decode(v)
+	payload := xmlstream.Inner(resp)
+	d := xml.NewTokenDecoder(payload)
+	startTok, err := d.Token()
+	switch err {
+	case io.EOF:
+		return nil
+	case nil:
+	default:
+		return err
+	}
+	start = startTok.(xml.StartElement)
+	return d.DecodeElement(v, &start)
 }

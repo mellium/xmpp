@@ -40,6 +40,8 @@ All notable changes to this project will be documented in this file.
   child in the payload
 - styling: pre-block start tokens with no newline had nonsensical formatting
 - xmpp: empty IQ iters no longer return EOF when there is no payload
+- xmpp: `UnmarshalIQ` and `UnmarshalIQElement` no longer return an XML error
+  on responses with no payload
 
 
 [XEP-0045: Multi-User Chat]: https://xmpp.org/extensions/xep-0045.html
