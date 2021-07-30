@@ -151,9 +151,12 @@ func Handle(h *Handler) mux.Option {
 
 // Handler listens for incoming message receipts and matches them to outgoing
 // messages sent with SendMessage or SendMessageElement.
+// If Unhandled is set it is called for every receipt that cannot be matched to
+// a message sent through the handler.
 type Handler struct {
-	sent map[string]chan struct{}
-	m    sync.Mutex
+	Unhandled func(string)
+	sent      map[string]chan struct{}
+	m         sync.Mutex
 }
 
 // HandleMessage implements mux.MessageHandler and responds to requests and
@@ -181,6 +184,9 @@ func (h *Handler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder
 				h.m.Unlock()
 			} else {
 				h.m.Unlock()
+				if h.Unhandled != nil {
+					h.Unhandled(id)
+				}
 				return nil
 			}
 
