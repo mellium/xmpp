@@ -98,7 +98,7 @@ func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) *Iter {
 	if iq.Type != stanza.GetIQ {
 		iq.Type = stanza.GetIQ
 	}
-	iter, err := s.IterIQ(ctx, iq.Wrap(xmlstream.Wrap(nil, xml.StartElement{
+	iter, _, err := s.IterIQ(ctx, iq.Wrap(xmlstream.Wrap(nil, xml.StartElement{
 		Name: xml.Name{Space: NS, Local: "blocklist"},
 	})))
 	if err != nil {

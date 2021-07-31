@@ -167,7 +167,7 @@ func FetchItemsIQ(ctx context.Context, node string, iq stanza.IQ, s *xmpp.Sessio
 	query := ItemsQuery{
 		Node: node,
 	}
-	iter, err := s.IterIQ(ctx, iq.Wrap(query.TokenReader()))
+	iter, _, err := s.IterIQ(ctx, iq.Wrap(query.TokenReader()))
 	if err != nil {
 		return &ItemIter{err: err}
 	}

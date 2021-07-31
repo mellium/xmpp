@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - styling: decoding tokens now uses an iterator pattern
 - xmpp: the `WebSocket` option on `StreamConfig` has been removed in favor of
   `websocket.Negotiator`
+- xmpp: the `IterIQ` and `IterIQElement` methods on `Session` now return the
+  start element token associated with the IQ payload
 
 
 ### Security

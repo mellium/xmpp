@@ -130,7 +130,7 @@ func (s *Session) UnmarshalIQElement(ctx context.Context, payload xml.TokenReade
 // For more information see SendIQ.
 //
 // IterIQ is safe for concurrent use by multiple goroutines.
-func (s *Session) IterIQ(ctx context.Context, iq xml.TokenReader) (*xmlstream.Iter, error) {
+func (s *Session) IterIQ(ctx context.Context, iq xml.TokenReader) (*xmlstream.Iter, *xml.StartElement, error) {
 	return iterIQ(ctx, iq, s)
 }
 
@@ -138,14 +138,14 @@ func (s *Session) IterIQ(ctx context.Context, iq xml.TokenReader) (*xmlstream.It
 // For more information see SendIQ.
 //
 // IterIQElement is safe for concurrent use by multiple goroutines.
-func (s *Session) IterIQElement(ctx context.Context, payload xml.TokenReader, iq stanza.IQ) (*xmlstream.Iter, error) {
+func (s *Session) IterIQElement(ctx context.Context, payload xml.TokenReader, iq stanza.IQ) (*xmlstream.Iter, *xml.StartElement, error) {
 	return iterIQ(ctx, iq.Wrap(payload), s)
 }
 
-func iterIQ(ctx context.Context, iq xml.TokenReader, s *Session) (_ *xmlstream.Iter, e error) {
+func iterIQ(ctx context.Context, iq xml.TokenReader, s *Session) (_ *xmlstream.Iter, _ *xml.StartElement, e error) {
 	resp, err := s.SendIQ(ctx, iq)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer func() {
 		if e != nil {
@@ -156,24 +156,27 @@ func iterIQ(ctx context.Context, iq xml.TokenReader, s *Session) (_ *xmlstream.I
 
 	tok, err := resp.Token()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
 	start, ok := tok.(xml.StartElement)
 	if !ok {
-		return nil, fmt.Errorf("stanza: expected IQ start token, got %T %[1]v", tok)
+		return nil, nil, fmt.Errorf("stanza: expected IQ start token, got %T %[1]v", tok)
 	}
 	_, err = stanza.UnmarshalIQError(resp, start)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Pop the payload start token, we want to iterate over its children.
-	_, err = resp.Token()
+	tok, err = resp.Token()
+	start, _ = tok.(xml.StartElement)
+
 	// Discard early EOF so that the iterator doesn't end up returning it.
 	if err != nil && err != io.EOF {
-		return nil, err
+		return nil, nil, err
 	}
-	return xmlstream.NewIter(resp), nil
+	return xmlstream.NewIter(resp), &start, nil
 }
 
 func unmarshalIQ(ctx context.Context, iq xml.TokenReader, v interface{}, s *Session) (e error) {
