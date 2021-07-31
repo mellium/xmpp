@@ -30,7 +30,7 @@ func Handle(h Handler) mux.Option {
 
 // Handler responds to roster pushes.
 type Handler struct {
-	Push func(Item) error
+	Push func(ver string, item Item) error
 }
 
 // HandleIQ responds to roster push IQs.
@@ -40,7 +40,14 @@ func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml
 	if err != nil {
 		return err
 	}
-	return h.Push(item)
+	var ver string
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "ver" {
+			ver = attr.Value
+			break
+		}
+	}
+	return h.Push(ver, item)
 }
 
 // Iter is an iterator over roster items.
@@ -48,6 +55,7 @@ type Iter struct {
 	iter    *xmlstream.Iter
 	current Item
 	err     error
+	ver     string
 }
 
 // Next returns true if there are more items to decode.
@@ -70,6 +78,12 @@ func (i *Iter) Next() bool {
 	}
 	i.current = item
 	return true
+}
+
+// Version returns the roster version being iterated over or the empty string if
+// roster versioning is not enabled.
+func (i *Iter) Version() string {
+	return i.ver
 }
 
 // Err returns the last error encountered by the iterator (if any).
@@ -104,24 +118,33 @@ func (i *Iter) Close() error {
 // Any errors encountered while creating the iter are deferred until the iter is
 // used.
 func Fetch(ctx context.Context, s *xmpp.Session) *Iter {
-	return FetchIQ(ctx, stanza.IQ{}, s)
+	return FetchIQ(ctx, IQ{}, s)
 }
 
 // FetchIQ is like Fetch but it allows you to customize the IQ.
-// Changing the type of the provided IQ has no effect.
-func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) *Iter {
-	if iq.Type != stanza.GetIQ {
-		iq.Type = stanza.GetIQ
-	}
-	rosterIQ := IQ{IQ: iq}
-	iter, err := s.IterIQ(ctx, rosterIQ.TokenReader())
+// Changing the type of the provided IQ or adding items has no effect.
+func FetchIQ(ctx context.Context, iq IQ, s *xmpp.Session) *Iter {
+	iq.Query.Item = nil
+	iq.Type = stanza.GetIQ
+	iter, start, err := s.IterIQ(ctx, iq.TokenReader())
 	if err != nil {
 		return &Iter{err: err}
+	}
+	var ver string
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "ver" {
+			ver = attr.Value
+			break
+		}
+	}
+	if ver == "" {
+		ver = iq.Query.Ver
 	}
 
 	// Return the iterator which will parse the rest of the payload incrementally.
 	return &Iter{
 		iter: iter,
+		ver:  ver,
 	}
 }
 
@@ -173,10 +196,7 @@ func (iq IQ) TokenReader() xml.TokenReader {
 // Payload returns a stream of XML tokekns that match the roster query payload
 // without the IQ wrapper.
 func (iq IQ) payload() xml.TokenReader {
-	attrs := []xml.Attr{}
-	if iq.Query.Ver != "" {
-		attrs = append(attrs, xml.Attr{Name: xml.Name{Local: "ver"}, Value: iq.Query.Ver})
-	}
+	attrs := []xml.Attr{{Name: xml.Name{Local: "ver"}, Value: iq.Query.Ver}}
 
 	return xmlstream.Wrap(
 		&itemMarshaler{items: iq.Query.Item[:]},

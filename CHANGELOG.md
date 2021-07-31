@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 ### Breaking
 
 - roster: rename `version` attribute to `ver`
+- roster: the `Push` callback now takes the roster version
+- roster: `FetchIQ` now takes a `roster.IQ` instead of a `stanza.IQ` so that the
+  version can be set
 - styling: decoding tokens now uses an iterator pattern
 - xmpp: the `WebSocket` option on `StreamConfig` has been removed in favor of
   `websocket.Negotiator`
@@ -25,6 +28,8 @@ All notable changes to this project will be documented in this file.
 - carbons: new package implementing [XEP-0280: Message Carbons]
 - commands: new package implementing [XEP-0050: Ad-Hoc Commands]
 - muc: new package implementing [XEP-0045: Multi-User Chat] and [XEP-0249: Direct MUC Invitations]
+- roster: the roster `Iter` now returns the roster version being iterated over
+  from the `Version` method
 - stanza: implement [XEP-0203: Delayed Delivery]
 - stanza: more general `UnmarshalError` function that doesn't focus on IQs
 - stanza: add `Error` method to `Presence` and `Message`
@@ -38,6 +43,8 @@ All notable changes to this project will be documented in this file.
   panics
 - form: unmarshaling into an existing form now resets the stored values to
   prevent data leaks across forms
+- roster: the roster version is now always included, even if empty, to signal
+  that we support roster versioning
 - stanza: unmarshaling error IQs now works even if the error is not the first
   child in the payload
 - styling: pre-block start tokens with no newline had nonsensical formatting

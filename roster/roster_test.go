@@ -59,13 +59,13 @@ func TestFetch(t *testing.T) {
 					return e.Encode(sendIQ)
 				}),
 			)
-			iter := roster.FetchIQ(context.Background(), IQ, cs.Client)
+			iter := roster.FetchIQ(context.Background(), roster.IQ{IQ: IQ}, cs.Client)
 			items := make([]roster.Item, 0, len(tc.items))
 			for iter.Next() {
 				items = append(items, iter.Item())
 			}
 			if err := iter.Err(); err != tc.err {
-				t.Errorf("Wrong error after iter: want=%q, got=%q", tc.err, err)
+				t.Errorf("wrong error after iter: want=%q, got=%q", tc.err, err)
 			}
 			iter.Close()
 
@@ -75,7 +75,7 @@ func TestFetch(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(items, tc.items) {
-				t.Errorf("Wrong items:\nwant=\n%+v,\ngot=\n%+v", tc.items, items)
+				t.Errorf("wrong items:\nwant=\n%+v,\ngot=\n%+v", tc.items, items)
 			}
 		})
 	}
@@ -89,7 +89,7 @@ func TestFetchNoStart(t *testing.T) {
 			return err
 		}),
 	)
-	iter := roster.FetchIQ(context.Background(), stanza.IQ{ID: "123"}, cs.Client)
+	iter := roster.FetchIQ(context.Background(), roster.IQ{IQ: stanza.IQ{ID: "123"}}, cs.Client)
 	for iter.Next() {
 		t.Fatalf("iterator should never have any items!")
 	}
@@ -107,7 +107,7 @@ func TestEmptyIQ(t *testing.T) {
 			return err
 		}),
 	)
-	iter := roster.FetchIQ(context.Background(), stanza.IQ{ID: "123"}, cs.Client)
+	iter := roster.FetchIQ(context.Background(), roster.IQ{IQ: stanza.IQ{ID: "123"}}, cs.Client)
 	for iter.Next() {
 		t.Fatalf("iterator should never have any items!")
 	}
@@ -119,7 +119,7 @@ func TestEmptyIQ(t *testing.T) {
 
 func TestReceivePush(t *testing.T) {
 	const itemJID = "nurse@example.com"
-	const x = `<iq xmlns='jabber:client' id='a78b4q6ha463' to='juliet@example.com/chamber' type='set'><query xmlns='jabber:iq:roster'><item jid='` + itemJID + `'/></query></iq>`
+	const x = `<iq xmlns='jabber:client' id='a78b4q6ha463' to='juliet@example.com/chamber' type='set'><query xmlns='jabber:iq:roster' ver='testver'><item jid='` + itemJID + `'/></query></iq>`
 
 	d := xml.NewDecoder(strings.NewReader(x))
 	var b strings.Builder
@@ -127,7 +127,10 @@ func TestReceivePush(t *testing.T) {
 
 	called := false
 	h := roster.Handler{
-		Push: func(item roster.Item) error {
+		Push: func(ver string, item roster.Item) error {
+			if ver != "testver" {
+				t.Errorf("wrong version: want=%q, got=%q", "testver", ver)
+			}
 			if item.JID.String() != itemJID {
 				t.Errorf("unexpected JID: want=%q, got=%q", itemJID, item.JID.String())
 			}
@@ -194,7 +197,7 @@ var marshalTests = [...]struct {
 }{
 	0: {
 		in:  roster.IQ{},
-		out: `<iq type=""><query xmlns="jabber:iq:roster"></query></iq>`,
+		out: `<iq type=""><query xmlns="jabber:iq:roster" ver=""></query></iq>`,
 	},
 	1: {
 		in: roster.IQ{
