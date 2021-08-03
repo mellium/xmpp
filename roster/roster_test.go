@@ -165,8 +165,52 @@ func TestReceivePush(t *testing.T) {
 	}
 
 	out := b.String()
-	if out != "" {
-		t.Errorf("want=%q, got=%q", "", out)
+	const expected = `<iq xmlns="jabber:client" type="result" from="juliet@example.com/chamber" id="a78b4q6ha463"></iq>`
+	if out != expected {
+		t.Errorf("wrong response: want=%q, got=%q", expected, out)
+	}
+}
+
+func TestReceivePushError(t *testing.T) {
+	const itemJID = "nurse@example.com"
+	const x = `<iq xmlns='jabber:client' id='a78b4q6ha463' to='juliet@example.com/chamber' type='set'><query xmlns='jabber:iq:roster' ver='testver'><item jid='` + itemJID + `'/></query></iq>`
+
+	d := xml.NewDecoder(strings.NewReader(x))
+	var b strings.Builder
+	e := xml.NewEncoder(&b)
+
+	h := roster.Handler{
+		Push: func(ver string, item roster.Item) error {
+			return stanza.Error{Condition: stanza.Forbidden}
+		},
+	}
+
+	tok, err := d.Token()
+	if err != nil {
+		t.Errorf("unexpected error popping start token: %v", err)
+	}
+	start := tok.(xml.StartElement)
+	m := mux.New(roster.Handle(h))
+	err = m.HandleXMPP(struct {
+		xml.TokenReader
+		xmlstream.Encoder
+	}{
+		TokenReader: d,
+		Encoder:     e,
+	}, &start)
+	if err != nil {
+		t.Errorf("unexpected error in handler: %v", err)
+	}
+	err = e.Flush()
+	if err != nil {
+		t.Errorf("unexpected error flushing encoder: %v", err)
+	}
+
+	out := b.String()
+
+	const expected = `<iq xmlns="jabber:client" type="error" from="juliet@example.com/chamber" id="a78b4q6ha463"><error><forbidden xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></forbidden></error></iq>`
+	if out != expected {
+		t.Errorf("wrong response: want=%q, got=%q", expected, out)
 	}
 }
 

@@ -30,6 +30,8 @@ All notable changes to this project will be documented in this file.
 - muc: new package implementing [XEP-0045: Multi-User Chat] and [XEP-0249: Direct MUC Invitations]
 - roster: the roster `Iter` now returns the roster version being iterated over
   from the `Version` method
+- roster: if a `stanza.Error` is returned from the `Push` handler it is now sent
+  in response to the original roster push.
 - stanza: implement [XEP-0203: Delayed Delivery]
 - stanza: more general `UnmarshalError` function that doesn't focus on IQs
 - stanza: add `Error` method to `Presence` and `Message`
@@ -45,6 +47,8 @@ All notable changes to this project will be documented in this file.
   prevent data leaks across forms
 - roster: the roster version is now always included, even if empty, to signal
   that we support roster versioning
+- roster: the handler now responds with an IQ result if the roster `Push`
+  handler does not return an error
 - stanza: unmarshaling error IQs now works even if the error is not the first
   child in the payload
 - styling: pre-block start tokens with no newline had nonsensical formatting

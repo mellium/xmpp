@@ -8,6 +8,7 @@ package roster // import "mellium.im/xmpp/roster"
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"io"
 
 	"mellium.im/xmlstream"
@@ -29,6 +30,8 @@ func Handle(h Handler) mux.Option {
 }
 
 // Handler responds to roster pushes.
+// If Push returns a stanza.Error it is sent as an error response to the IQ
+// push, otherwise it is passed through and returned from HandleIQ.
 type Handler struct {
 	Push func(ver string, item Item) error
 }
@@ -47,7 +50,18 @@ func (h Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml
 			break
 		}
 	}
-	return h.Push(ver, item)
+	err = h.Push(ver, item)
+	var stanzaErr stanza.Error
+	isStanzaErr := errors.As(err, &stanzaErr)
+	if isStanzaErr {
+		_, err = xmlstream.Copy(t, iq.Error(stanzaErr))
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	_, err = xmlstream.Copy(t, iq.Result(nil))
+	return err
 }
 
 // Iter is an iterator over roster items.
