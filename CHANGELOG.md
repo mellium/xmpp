@@ -4,8 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Security
+
+- all: update the default TLS config to disable TLS < 1.2
+
 ### Breaking
 
+- disco: the `Feature` type moved to `info.Feature`
 - roster: rename `version` attribute to `ver`
 - roster: the `Push` callback now takes the roster version
 - roster: `FetchIQ` now takes a `roster.IQ` instead of a `stanza.IQ` so that the
@@ -17,21 +22,13 @@ All notable changes to this project will be documented in this file.
   start element token associated with the IQ payload
 
 
-### Security
-
-- all: update the default TLS config to disable TLS < 1.2
-
-### Breaking
-
-- disco: the `Feature` type moved to `info.Feature`
-
-
 ### Added
 
 - blocklist: new package implementing [XEP-0191: Blocking Command]
 - carbons: new package implementing [XEP-0280: Message Carbons]
 - commands: new package implementing [XEP-0050: Ad-Hoc Commands]
 - muc: new package implementing [XEP-0045: Multi-User Chat] and [XEP-0249: Direct MUC Invitations]
+- mux: `mux.ServeMux` now implements `info.FeatureIter`
 - roster: the roster `Iter` now returns the roster version being iterated over
   from the `Version` method
 - roster: if a `stanza.Error` is returned from the `Push` handler it is now sent
@@ -41,6 +38,8 @@ All notable changes to this project will be documented in this file.
 - stanza: add `Error` method to `Presence` and `Message`
 - websocket: add `Negotiator` to replace the `WebSocket` option on the stream
   config
+- disco: new `disco.Handler` option to configure a `mux.ServeMux` to respond to
+  disco#info requests
 - disco/info: new package containing the former `disco.Feature` type
 
 
