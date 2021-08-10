@@ -93,36 +93,20 @@ And configure your project to use it as the default commit message:
 
     git config commit.template ~/.config/git/gitmessage
 
+
 ## Submitting Patches
 
-Patches may be submitted in two ways: using the mailing list (preferred) and
-using a GitHub [pull request].
+Patches may be submitted by opening a [pull request].
+Please use the same formatting for your PR title and body as you did for the
+commit message.
 
-To submit a patch to the mailing list, first learn to use `git send-email` by
-reading [git-send-email.io], then read the SourceHut [mailing list etiquette]
-guide.
+Once your patch set is submitted, you will hear back from a maintainer within 5
+days.
+If you haven't heard back by then, feel free to reply to the patch to ping the
+maintainers and move it back to the top of peoples inboxes.
 
-When you're ready, patches may be sent to the [`mellium-devel`] list.
-
-Please prefix the subject with `[PATCH projectname]` (where project name is the
-name of the module or repo you are contributing to).
-For example, to configure your checkout of this repo to always use the correct
-prefix and send to the correct list run:
-
-    git config sendemail.to ~samwhited/mellium-devel@lists.sr.ht
-    git config format.subjectPrefix 'PATCH xmpp'
-
-If you're configuring another repo, be sure to change the name from "xmpp" to
-whatever repo you're updating!
-
-Once your patch set or pull request is submitted, you will hear back from a
-maintainer within 5 days.
-If you haven't heard back by then, feel free to reply to the patch or comment on
-the pull request to ping the maintainers and move it back to the top of peoples
-inboxes.
-
-To update an existing patch set or pull request you may add more commits on top
-of the first commit or amend and push the existing commit.
+To update an existing patch set you may add more commits on top of the first
+commit or amend and force push the branch.
 Once your change is accepted your reviewer may ask you to rebase your branch
 on top of the base branch and squash it into a single commit that can be merged,
 or they may handle this for you.
@@ -155,9 +139,6 @@ conditions.
 [`security@mellium.im`]: mailto:security@mellium.im
 [`dial`]: https://pkg.go.dev/mellium.im/xmpp/dial
 [benchstat]: https://godoc.org/golang.org/x/perf/cmd/benchstat
-[git-send-email.io]: https://git-send-email.io/
-[mailing list etiquette]: https://man.sr.ht/lists.sr.ht/etiquette.md
-[`mellium-devel`]: https://lists.sr.ht/~samwhited/mellium-devel
 [developercertificate.org]: https://developercertificate.org/
 [DCO]: https://github.com/mellium/xmpp/blob/main/DCO
 [LICENSE]: https://github.com/mellium/xmpp/blob/main/LICENSE
