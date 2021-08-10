@@ -15,7 +15,7 @@ import (
 
 // Handle returns an option that configures a multiplexer to handle service
 // discovery requests by iterating over its own handlers and checking if they
-// implement the interfaces from the info package.
+// implement info.FeatureIter.
 func Handle() mux.Option {
 	return func(m *mux.ServeMux) {
 		h := &discoHandler{ServeMux: m}

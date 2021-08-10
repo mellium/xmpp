@@ -15,12 +15,15 @@ import (
 	"testing"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/disco/info"
 	"mellium.im/xmpp/internal/marshal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 )
+
+var _ info.FeatureIter = (*mux.ServeMux)(nil)
 
 var (
 	errPassTest = errors.New("mux_test: PASSED")
@@ -576,4 +579,148 @@ func TestLazyServeMuxMapInitialization(t *testing.T) {
 	mux.IQ(stanza.GetIQ, xml.Name{}, failHandler{})(m)
 	mux.Message(stanza.NormalMessage, xml.Name{}, failHandler{})(m)
 	mux.Presence(stanza.SubscribePresence, xml.Name{}, failHandler{})(m)
+}
+
+const (
+	testFeature         = "urn:example"
+	iqTestFeature       = "urn:example:iq"
+	msgTestFeature      = "urn:example:message"
+	presenceTestFeature = "urn:example:presence"
+)
+
+type handleFeature struct{}
+
+func (handleFeature) HandleXMPP(xmlstream.TokenReadEncoder, *xml.StartElement) error {
+	panic("should not be called")
+}
+
+func (handleFeature) ForFeatures(node string, f func(info.Feature) error) error {
+	return f(info.Feature{
+		Var: testFeature,
+	})
+}
+
+type iqFeature struct{}
+
+func (iqFeature) HandleIQ(stanza.IQ, xmlstream.TokenReadEncoder, *xml.StartElement) error {
+	panic("should not be called")
+}
+
+func (iqFeature) ForFeatures(node string, f func(info.Feature) error) error {
+	return f(info.Feature{
+		Var: iqTestFeature,
+	})
+}
+
+type messageFeature struct{}
+
+func (messageFeature) HandleMessage(stanza.Message, xmlstream.TokenReadEncoder) error {
+	panic("should not be called")
+}
+
+func (messageFeature) ForFeatures(node string, f func(info.Feature) error) error {
+	return f(info.Feature{
+		Var: msgTestFeature,
+	})
+}
+
+type presenceFeature struct{}
+
+func (presenceFeature) HandlePresence(stanza.Presence, xmlstream.TokenReadEncoder) error {
+	panic("should not be called")
+}
+
+func (presenceFeature) ForFeatures(node string, f func(info.Feature) error) error {
+	return f(info.Feature{
+		Var: presenceTestFeature,
+	})
+}
+
+func TestFeatures(t *testing.T) {
+	m := mux.New(
+		mux.Handle(xml.Name{}, handleFeature{}),
+		mux.IQ("", xml.Name{}, iqFeature{}),
+		mux.Message("", xml.Name{}, messageFeature{}),
+		mux.Presence("", xml.Name{}, presenceFeature{}),
+	)
+	var (
+		foundHandler  bool
+		foundIQ       bool
+		foundPresence bool
+		foundMsg      bool
+	)
+	err := m.ForFeatures("", func(i info.Feature) error {
+		switch i.Var {
+		case testFeature:
+			foundHandler = true
+		case iqTestFeature:
+			foundIQ = true
+		case msgTestFeature:
+			foundMsg = true
+		case presenceTestFeature:
+			foundPresence = true
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("unexpected error while iterating over features: %v", err)
+	}
+	if !foundHandler {
+		t.Errorf("features iter did not find plain handler feature")
+	}
+	if !foundIQ {
+		t.Errorf("features iter did not find IQ feature")
+	}
+	if !foundMsg {
+		t.Errorf("features iter did not find message feature")
+	}
+	if !foundPresence {
+		t.Errorf("features iter did not find presence feature")
+	}
+}
+
+func TestFeaturesHandlerErr(t *testing.T) {
+	m := mux.New(
+		mux.Handle(xml.Name{}, handleFeature{}),
+	)
+	err := m.ForFeatures("", func(i info.Feature) error {
+		return io.EOF
+	})
+	if err != io.EOF {
+		t.Fatalf("wrong error: want=%v, got=%v", io.EOF, err)
+	}
+}
+
+func TestFeaturesHandleIQErr(t *testing.T) {
+	m := mux.New(
+		mux.IQ("", xml.Name{}, iqFeature{}),
+	)
+	err := m.ForFeatures("", func(i info.Feature) error {
+		return io.EOF
+	})
+	if err != io.EOF {
+		t.Fatalf("wrong error: want=%v, got=%v", io.EOF, err)
+	}
+}
+func TestFeaturesHandleMsgErr(t *testing.T) {
+	m := mux.New(
+		mux.Message("", xml.Name{}, messageFeature{}),
+	)
+	err := m.ForFeatures("", func(i info.Feature) error {
+		return io.EOF
+	})
+	if err != io.EOF {
+		t.Fatalf("wrong error: want=%v, got=%v", io.EOF, err)
+	}
+}
+func TestFeaturesHandlePresenceErr(t *testing.T) {
+	m := mux.New(
+		mux.Presence("", xml.Name{}, presenceFeature{}),
+	)
+	err := m.ForFeatures("", func(i info.Feature) error {
+		return io.EOF
+	})
+	if err != io.EOF {
+		t.Fatalf("wrong error: want=%v, got=%v", io.EOF, err)
+	}
 }
