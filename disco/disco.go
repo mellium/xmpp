@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 //go:generate go run gen.go
+//go:generate go run ../internal/genfeature -filename features.go -receiver "h *discoHandler" -vars Feature:NSInfo
 
 // Package disco implements service discovery.
 package disco // import "mellium.im/xmpp/disco"

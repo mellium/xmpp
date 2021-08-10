@@ -17,6 +17,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/disco/info"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stanza"
 )
@@ -207,6 +208,44 @@ func (m *ServeMux) PresenceHandler(typ stanza.PresenceType, payload xml.Name) (h
 func (m *ServeMux) HandleXMPP(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 	h, _ := m.Handler(start.Name)
 	return h.HandleXMPP(t, start)
+}
+
+// ForFeatures implements info.FeatureIter for the mux by iterating over all
+// child features.
+func (m *ServeMux) ForFeatures(node string, f func(info.Feature) error) error {
+	for _, h := range m.patterns {
+		if featureIter, ok := h.(info.FeatureIter); ok {
+			err := featureIter.ForFeatures(node, f)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for _, h := range m.iqPatterns {
+		if featureIter, ok := h.(info.FeatureIter); ok {
+			err := featureIter.ForFeatures(node, f)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for _, h := range m.msgPatterns {
+		if featureIter, ok := h.(info.FeatureIter); ok {
+			err := featureIter.ForFeatures(node, f)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	for _, h := range m.presencePatterns {
+		if featureIter, ok := h.(info.FeatureIter); ok {
+			err := featureIter.ForFeatures(node, f)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 type nopHandler struct{}
