@@ -36,6 +36,8 @@ All notable changes to this project will be documented in this file.
 - stanza: implement [XEP-0203: Delayed Delivery]
 - stanza: more general `UnmarshalError` function that doesn't focus on IQs
 - stanza: add `Error` method to `Presence` and `Message`
+- stanza: errors now return text if present instead of condition when converting
+  to a string
 - websocket: add `Negotiator` to replace the `WebSocket` option on the stream
   config
 - disco: new `disco.Handler` option to configure a `mux.ServeMux` to respond to

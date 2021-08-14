@@ -108,13 +108,14 @@ func TestCmp(t *testing.T) {
 func TestErrorReturnsCondition(t *testing.T) {
 	s := stanza.Error{Condition: "leprosy"}
 	if string(s.Condition) != s.Error() {
-		t.Errorf("Expected stanza error to return condition `leprosy` but got %s", s.Error())
+		t.Errorf("expected stanza error to return condition `leprosy` but got %s", s.Error())
 	}
+	const expected = "Text"
 	s = stanza.Error{Condition: "nope", Text: map[string]string{
-		"": "Text",
+		"": expected,
 	}}
-	if string(s.Condition) != s.Error() {
-		t.Errorf("Expected stanza error to return text `Text` but got %s", s.Error())
+	if expected != s.Error() {
+		t.Errorf("expected stanza error to return text %q but got %q", expected, s.Error())
 	}
 }
 

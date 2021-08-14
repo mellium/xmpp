@@ -49,7 +49,7 @@ func ExampleError_UnmarshalXML() {
 		panic(err)
 	}
 
-	fmt.Printf("%s: %s", se, se.Text[""])
+	fmt.Printf("%s: %s", se.Condition, se.Text[""])
 	// Output:
 	// bad-request: Malformed XML
 }

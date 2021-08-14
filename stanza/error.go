@@ -346,7 +346,20 @@ func (se Error) Is(target error) bool {
 
 // Error satisfies the error interface by returning the condition.
 func (se Error) Error() string {
-	return string(se.Condition)
+	// If there is no error message, just return the condition.
+	if len(se.Text) == 0 {
+		return string(se.Condition)
+	}
+
+	// Return the default language, or a different one at random if multiple were
+	// provided.
+	var lang, txt string
+	for lang, txt = range se.Text {
+		if lang == "" {
+			break
+		}
+	}
+	return txt
 }
 
 // TokenReader satisfies the xmlstream.Marshaler interface for Error.
