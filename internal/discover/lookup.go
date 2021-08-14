@@ -108,20 +108,11 @@ func FallbackRecords(service, domain string) []*net.SRV {
 		return []*net.SRV{{
 			Target: domain,
 			Port:   5222,
-		}, {
-			Target: domain,
-			Port:   80,
 		}}
 	case "xmpps-client":
 		return []*net.SRV{{
 			Target: domain,
 			Port:   5223,
-		}, {
-			Target: domain,
-			Port:   443,
-		}, {
-			Target: domain,
-			Port:   5222,
 		}}
 	case "xmpp-server":
 		return []*net.SRV{{
@@ -132,9 +123,6 @@ func FallbackRecords(service, domain string) []*net.SRV {
 		return []*net.SRV{{
 			Target: domain,
 			Port:   5270,
-		}, {
-			Target: domain,
-			Port:   5269,
 		}}
 	}
 	return nil
