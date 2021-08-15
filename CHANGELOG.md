@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - blocklist: new package implementing [XEP-0191: Blocking Command]
 - carbons: new package implementing [XEP-0280: Message Carbons]
 - commands: new package implementing [XEP-0050: Ad-Hoc Commands]
+- history: implement [XEP-0313: Message Archive Management]
 - muc: new package implementing [XEP-0045: Multi-User Chat] and [XEP-0249: Direct MUC Invitations]
 - mux: `mux.ServeMux` now implements `info.FeatureIter`
 - roster: the roster `Iter` now returns the roster version being iterated over
@@ -69,6 +70,7 @@ All notable changes to this project will be documented in this file.
 [XEP-0203: Delayed Delivery]: https://xmpp.org/extensions/xep-0203.html
 [XEP-0249: Direct MUC Invitations]: https://xmpp.org/extensions/xep-0249.html
 [XEP-0280: Message Carbons]: https://xmpp.org/extensions/xep-0280.html
+[XEP-0313: Message Archive Management]: https://xmpp.org/extensions/xep-0313.html
 
 
 ## v0.19.0 — 2021-05-02
