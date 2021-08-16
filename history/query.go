@@ -49,7 +49,7 @@ const (
 )
 
 // TokenReader implements xmlstream.Marshaler.
-func (f Query) TokenReader() xml.TokenReader {
+func (f *Query) TokenReader() xml.TokenReader {
 	dataForm := form.New(
 		form.Hidden("FORM_TYPE", form.Value(NS)),
 		form.JID(fieldWith),
@@ -121,4 +121,54 @@ func (f *Query) WriteXML(w xmlstream.TokenWriter) (int, error) {
 func (f *Query) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 	_, err := f.WriteXML(e)
 	return err
+}
+
+// UnmarshalXML implements xml.Unmarshaler.
+func (f *Query) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	s := struct {
+		XMLName xml.Name   `xml:"urn:xmpp:mam:2 query"`
+		ID      string     `xml:"queryid,attr"`
+		Form    *form.Data `xml:"jabber:x:data x"`
+		Flip    struct {
+			XMLName xml.Name `xml:"flip-page"`
+		}
+		Set struct {
+			XMLName xml.Name `xml:"http://jabber.org/protocol/rsm set"`
+			Max     uint64   `xml:"max"`
+			After   string   `xml:"after"`
+			Before  struct {
+				XMLName xml.Name `xml:"before"`
+			}
+		}
+	}{}
+	err := d.DecodeElement(&s, &start)
+	if err != nil {
+		return err
+	}
+
+	f.ID = s.ID
+	f.With, _ = s.Form.GetJID(fieldWith)
+	startTime, ok := s.Form.GetString(fieldStart)
+	if ok {
+		//panic(startTime)
+		f.Start, err = time.Parse(time.RFC3339, startTime)
+		if err != nil {
+			return err
+		}
+	}
+	endTime, ok := s.Form.GetString(fieldEnd)
+	if ok {
+		f.End, err = time.Parse(time.RFC3339, endTime)
+		if err != nil {
+			return err
+		}
+	}
+	f.BeforeID, _ = s.Form.GetString(fieldBefore)
+	f.AfterID, _ = s.Form.GetString(fieldAfter)
+	f.IDs, _ = s.Form.GetStrings(fieldIDs)
+	f.Limit = s.Set.Max
+
+	f.Last = s.Set.Before.XMLName.Local == "before"
+	f.Reverse = s.Flip.XMLName.Local == "flip-page"
+	return nil
 }
