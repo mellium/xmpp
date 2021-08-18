@@ -155,7 +155,7 @@ type Set struct {
 	XMLName xml.Name `xml:"http://jabber.org/protocol/rsm set"`
 	First   struct {
 		ID    string  `xml:",cdata"`
-		Index *uint64 `xml:"index,omitempty"`
+		Index *uint64 `xml:"index,attr,omitempty"`
 	} `xml:"first"`
 	Last  string  `xml:"last"`
 	Count *uint64 `xml:"count,omitempty"`

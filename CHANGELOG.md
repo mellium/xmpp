@@ -52,6 +52,7 @@ All notable changes to this project will be documented in this file.
   panics
 - form: unmarshaling into an existing form now resets the stored values to
   prevent data leaks across forms
+- paging: when unmarshaling sets, index is an attribute, not a child element
 - roster: the roster version is now always included, even if empty, to signal
   that we support roster versioning
 - roster: the handler now responds with an IQ result if the roster `Push`
