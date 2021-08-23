@@ -32,8 +32,15 @@ type Query struct {
 	// Limit limits the total number of messages returned.
 	Limit uint64
 
-	// Last starts fetching from the last page.
+	// Last starts fetching from the last page (or before PageID if set).
 	Last bool
+
+	// PageID is the ID of a message within the existing query that we should
+	// start paging after (or before, if Last is set).
+	// This lets us skip over the redundant message when querying with Start/End,
+	// or skip to a later page within the query if we abandoned it and need to
+	// start over (but don't want to fetch all the pages we've already processed).
+	PageID string
 
 	// Reverse flips messages returned within a page.
 	Reverse bool
@@ -90,11 +97,13 @@ func (f *Query) TokenReader() xml.TokenReader {
 	}
 	if f.Last {
 		inner = append(inner, (&paging.RequestPrev{
-			Max: f.Limit,
+			Max:    f.Limit,
+			Before: f.PageID,
 		}).TokenReader())
 	} else {
 		inner = append(inner, (&paging.RequestNext{
-			Max: f.Limit,
+			Max:   f.Limit,
+			After: f.PageID,
 		}).TokenReader())
 	}
 	if f.Reverse {
