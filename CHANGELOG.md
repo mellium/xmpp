@@ -30,7 +30,7 @@ All notable changes to this project will be documented in this file.
 - commands: new package implementing [XEP-0050: Ad-Hoc Commands]
 - history: implement [XEP-0313: Message Archive Management]
 - muc: new package implementing [XEP-0045: Multi-User Chat] and [XEP-0249: Direct MUC Invitations]
-- mux: `mux.ServeMux` now implements `info.FeatureIter`
+- mux: `mux.ServeMux` now implements `info.FeatureIter` and `items.Iter`
 - roster: the roster `Iter` now returns the roster version being iterated over
   from the `Version` method
 - roster: if a `stanza.Error` is returned from the `Push` handler it is now sent

@@ -9,17 +9,19 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/disco/info"
+	"mellium.im/xmpp/disco/items"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 )
 
 // Handle returns an option that configures a multiplexer to handle service
 // discovery requests by iterating over its own handlers and checking if they
-// implement info.FeatureIter.
+// implement info.FeatureIter or items.Iter.
 func Handle() mux.Option {
 	return func(m *mux.ServeMux) {
 		h := &discoHandler{ServeMux: m}
 		mux.IQ(stanza.GetIQ, xml.Name{Space: NSInfo, Local: "query"}, h)(m)
+		mux.IQ(stanza.GetIQ, xml.Name{Space: NSItems, Local: "query"}, h)(m)
 	}
 }
 
@@ -35,15 +37,15 @@ func (h *discoHandler) HandleIQ(iq stanza.IQ, r xmlstream.TokenReadEncoder, star
 	seen := make(map[string]struct{})
 	pr, pw := xmlstream.Pipe()
 	go func() {
+		var node string
+		for _, attr := range start.Attr {
+			if attr.Name.Local == "node" {
+				node = attr.Value
+				break
+			}
+		}
 		switch start.Name.Space {
 		case NSInfo:
-			var node string
-			for _, attr := range start.Attr {
-				if attr.Name.Local == "node" {
-					node = attr.Value
-					break
-				}
-			}
 			pw.CloseWithError(h.ServeMux.ForFeatures(node, func(f info.Feature) error {
 				_, ok := seen[f.Var]
 				if ok {
@@ -51,6 +53,16 @@ func (h *discoHandler) HandleIQ(iq stanza.IQ, r xmlstream.TokenReadEncoder, star
 				}
 				seen[f.Var] = struct{}{}
 				_, err := xmlstream.Copy(pw, f.TokenReader())
+				return err
+			}))
+		case NSItems:
+			pw.CloseWithError(h.ServeMux.ForItems(node, func(i items.Item) error {
+				_, ok := seen[i.Node]
+				if ok {
+					return nil
+				}
+				seen[i.Node] = struct{}{}
+				_, err := xmlstream.Copy(pw, i.TokenReader())
 				return err
 			}))
 		}
@@ -61,4 +73,8 @@ func (h *discoHandler) HandleIQ(iq stanza.IQ, r xmlstream.TokenReadEncoder, star
 		*start,
 	)))
 	return err
+}
+
+func (*discoHandler) ForItems(string, func(items.Item) error) error {
+	return nil
 }

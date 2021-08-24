@@ -16,6 +16,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/disco/info"
+	"mellium.im/xmpp/disco/items"
 	"mellium.im/xmpp/internal/marshal"
 	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
@@ -600,6 +601,12 @@ func (handleFeature) ForFeatures(node string, f func(info.Feature) error) error 
 	})
 }
 
+func (handleFeature) ForItems(node string, f func(items.Item) error) error {
+	return f(items.Item{
+		Name: testFeature,
+	})
+}
+
 type iqFeature struct{}
 
 func (iqFeature) HandleIQ(stanza.IQ, xmlstream.TokenReadEncoder, *xml.StartElement) error {
@@ -609,6 +616,12 @@ func (iqFeature) HandleIQ(stanza.IQ, xmlstream.TokenReadEncoder, *xml.StartEleme
 func (iqFeature) ForFeatures(node string, f func(info.Feature) error) error {
 	return f(info.Feature{
 		Var: iqTestFeature,
+	})
+}
+
+func (iqFeature) ForItems(node string, f func(items.Item) error) error {
+	return f(items.Item{
+		Name: iqTestFeature,
 	})
 }
 
@@ -624,6 +637,12 @@ func (messageFeature) ForFeatures(node string, f func(info.Feature) error) error
 	})
 }
 
+func (messageFeature) ForItems(node string, f func(items.Item) error) error {
+	return f(items.Item{
+		Name: msgTestFeature,
+	})
+}
+
 type presenceFeature struct{}
 
 func (presenceFeature) HandlePresence(stanza.Presence, xmlstream.TokenReadEncoder) error {
@@ -633,6 +652,12 @@ func (presenceFeature) HandlePresence(stanza.Presence, xmlstream.TokenReadEncode
 func (presenceFeature) ForFeatures(node string, f func(info.Feature) error) error {
 	return f(info.Feature{
 		Var: presenceTestFeature,
+	})
+}
+
+func (presenceFeature) ForItems(node string, f func(items.Item) error) error {
+	return f(items.Item{
+		Name: presenceTestFeature,
 	})
 }
 
@@ -679,6 +704,49 @@ func TestFeatures(t *testing.T) {
 	}
 }
 
+func TestItems(t *testing.T) {
+	m := mux.New(
+		mux.Handle(xml.Name{}, handleFeature{}),
+		mux.IQ("", xml.Name{}, iqFeature{}),
+		mux.Message("", xml.Name{}, messageFeature{}),
+		mux.Presence("", xml.Name{}, presenceFeature{}),
+	)
+	var (
+		foundHandler  bool
+		foundIQ       bool
+		foundPresence bool
+		foundMsg      bool
+	)
+	err := m.ForItems("", func(i items.Item) error {
+		switch i.Name {
+		case testFeature:
+			foundHandler = true
+		case iqTestFeature:
+			foundIQ = true
+		case msgTestFeature:
+			foundMsg = true
+		case presenceTestFeature:
+			foundPresence = true
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("unexpected error while iterating over features: %v", err)
+	}
+	if !foundHandler {
+		t.Errorf("items iter did not find plain handler item")
+	}
+	if !foundIQ {
+		t.Errorf("items iter did not find IQ item")
+	}
+	if !foundMsg {
+		t.Errorf("items iter did not find message item")
+	}
+	if !foundPresence {
+		t.Errorf("items iter did not find presence item")
+	}
+}
+
 func TestFeaturesHandlerErr(t *testing.T) {
 	m := mux.New(
 		mux.Handle(xml.Name{}, handleFeature{}),
@@ -718,6 +786,51 @@ func TestFeaturesHandlePresenceErr(t *testing.T) {
 		mux.Presence("", xml.Name{}, presenceFeature{}),
 	)
 	err := m.ForFeatures("", func(i info.Feature) error {
+		return io.EOF
+	})
+	if err != io.EOF {
+		t.Fatalf("wrong error: want=%v, got=%v", io.EOF, err)
+	}
+}
+
+func TestItemsHandlerErr(t *testing.T) {
+	m := mux.New(
+		mux.Handle(xml.Name{}, handleFeature{}),
+	)
+	err := m.ForItems("", func(i items.Item) error {
+		return io.EOF
+	})
+	if err != io.EOF {
+		t.Fatalf("wrong error: want=%v, got=%v", io.EOF, err)
+	}
+}
+func TestItemsHandleIQErr(t *testing.T) {
+	m := mux.New(
+		mux.IQ("", xml.Name{}, iqFeature{}),
+	)
+	err := m.ForItems("", func(i items.Item) error {
+		return io.EOF
+	})
+	if err != io.EOF {
+		t.Fatalf("wrong error: want=%v, got=%v", io.EOF, err)
+	}
+}
+func TestItemsHandleMsgErr(t *testing.T) {
+	m := mux.New(
+		mux.Message("", xml.Name{}, messageFeature{}),
+	)
+	err := m.ForItems("", func(i items.Item) error {
+		return io.EOF
+	})
+	if err != io.EOF {
+		t.Fatalf("wrong error: want=%v, got=%v", io.EOF, err)
+	}
+}
+func TestItemsHandlePresenceErr(t *testing.T) {
+	m := mux.New(
+		mux.Presence("", xml.Name{}, presenceFeature{}),
+	)
+	err := m.ForItems("", func(i items.Item) error {
 		return io.EOF
 	})
 	if err != io.EOF {
