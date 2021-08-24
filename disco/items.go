@@ -11,7 +11,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
-	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/disco/items"
 	"mellium.im/xmpp/paging"
 	"mellium.im/xmpp/stanza"
 )
@@ -40,42 +40,11 @@ func (q ItemsQuery) WriteXML(w xmlstream.TokenWriter) (int, error) {
 	return xmlstream.Copy(w, q.TokenReader())
 }
 
-// Item represents a discovered item.
-type Item struct {
-	XMLName xml.Name `xml:"http://jabber.org/protocol/disco#items item"`
-	JID     jid.JID  `xml:"jid,attr"`
-	Name    string   `xml:"name,attr,omitempty"`
-	Node    string   `xml:"node,attr,omitempty"`
-}
-
-// TokenReader implements xmlstream.Marshaler.
-func (i Item) TokenReader() xml.TokenReader {
-	start := xml.StartElement{
-		Name: xml.Name{Space: NSItems, Local: "item"},
-		Attr: []xml.Attr{{
-			Name:  xml.Name{Local: "jid"},
-			Value: i.JID.String(),
-		}},
-	}
-	if i.Node != "" {
-		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "node"}, Value: i.Node})
-	}
-	if i.Name != "" {
-		start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Local: "name"}, Value: i.Name})
-	}
-	return xmlstream.Wrap(nil, start)
-}
-
-// WriteXML implements xmlstream.WriterTo.
-func (i Item) WriteXML(w xmlstream.TokenWriter) (int, error) {
-	return xmlstream.Copy(w, i.TokenReader())
-}
-
 // ItemIter is an iterator over discovered items.
 // It supports paging
 type ItemIter struct {
 	iter    *paging.Iter
-	current Item
+	current items.Item
 	err     error
 	ctx     context.Context
 	session *xmpp.Session
@@ -102,7 +71,7 @@ func (i *ItemIter) Next() bool {
 			return i.Next()
 		}
 		d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*start), r))
-		item := Item{}
+		item := items.Item{}
 		i.err = d.Decode(&item)
 		if i.err != nil {
 			return false
@@ -131,7 +100,7 @@ func (i *ItemIter) Err() error {
 }
 
 // Item returns the last item parsed by the iterator.
-func (i *ItemIter) Item() Item {
+func (i *ItemIter) Item() items.Item {
 	return i.current
 }
 
@@ -154,7 +123,7 @@ func (i *ItemIter) Close() error {
 // The iterator must be closed before anything else is done on the session.
 // Any errors encountered while creating the iter are deferred until the iter is
 // used.
-func FetchItems(ctx context.Context, item Item, s *xmpp.Session) *ItemIter {
+func FetchItems(ctx context.Context, item items.Item, s *xmpp.Session) *ItemIter {
 	return FetchItemsIQ(ctx, item.Node, stanza.IQ{To: item.JID}, s)
 }
 
@@ -199,7 +168,7 @@ var ErrSkipItem = errors.New("skip this item")
 // bypass the query entirely.
 // If an error occurs while making the query, the function will be called again
 // with the same item to report the error.
-type WalkItemFunc func(level int, item Item, err error) error
+type WalkItemFunc func(level int, item items.Item, err error) error
 
 // WalkItem walks the tree rooted at the JID, calling fn for each item in the
 // tree, including root.
@@ -211,15 +180,15 @@ type WalkItemFunc func(level int, item Item, err error) error
 //
 // The items are walked in wire order which may make the output
 // non-deterministic.
-func WalkItem(ctx context.Context, item Item, s *xmpp.Session, fn WalkItemFunc) error {
-	return walkItem(ctx, 0, 0, []Item{item}, s, fn)
+func WalkItem(ctx context.Context, item items.Item, s *xmpp.Session, fn WalkItemFunc) error {
+	return walkItem(ctx, 0, 0, []items.Item{item}, s, fn)
 }
 
 func ignoredErr(err error) bool {
 	return errors.Is(err, stanza.Error{Condition: stanza.FeatureNotImplemented}) || errors.Is(err, stanza.Error{Condition: stanza.ServiceUnavailable})
 }
 
-func walkItem(ctx context.Context, level, itemIdx int, items []Item, s *xmpp.Session, fn WalkItemFunc) error {
+func walkItem(ctx context.Context, level, itemIdx int, items []items.Item, s *xmpp.Session, fn WalkItemFunc) error {
 	last := len(items) - 1
 	item := items[itemIdx]
 	err := fn(level, item, nil)
@@ -264,7 +233,7 @@ func walkItem(ctx context.Context, level, itemIdx int, items []Item, s *xmpp.Ses
 	return nil
 }
 
-func appendItems(ctx context.Context, s *xmpp.Session, itemIdx int, items []Item) (i []Item, err error) {
+func appendItems(ctx context.Context, s *xmpp.Session, itemIdx int, items []items.Item) (i []items.Item, err error) {
 	iter := FetchItems(ctx, items[itemIdx], s)
 	defer func() {
 		e := iter.Close()

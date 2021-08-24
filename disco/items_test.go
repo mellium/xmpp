@@ -14,6 +14,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/disco"
+	"mellium.im/xmpp/disco/items"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
@@ -21,12 +22,12 @@ import (
 
 var testFetchItems = [...]struct {
 	node  string
-	items map[string][]disco.Item
+	items map[string][]items.Item
 	err   error
 }{
 	0: {},
 	1: {
-		items: map[string][]disco.Item{
+		items: map[string][]items.Item{
 			"": {{
 				XMLName: xml.Name{Space: disco.NSItems, Local: "item"},
 				JID:     jid.MustParse("juliet@example.com"),
@@ -39,7 +40,7 @@ var testFetchItems = [...]struct {
 	},
 	2: {
 		node: "test",
-		items: map[string][]disco.Item{
+		items: map[string][]items.Item{
 			"test": {{
 				XMLName: xml.Name{Space: disco.NSItems, Local: "item"},
 				JID:     jid.MustParse("benvolio@example.org"),
@@ -50,7 +51,7 @@ var testFetchItems = [...]struct {
 
 type queryItems struct {
 	XMLName xml.Name     `xml:"http://jabber.org/protocol/disco#items query"`
-	Items   []disco.Item `xml:"item"`
+	Items   []items.Item `xml:"item"`
 }
 
 func TestFetchItems(t *testing.T) {
@@ -80,7 +81,7 @@ func TestFetchItems(t *testing.T) {
 				}),
 			)
 			iter := disco.FetchItemsIQ(context.Background(), tc.node, IQ, cs.Client)
-			items := make([]disco.Item, 0, len(tc.items))
+			items := make([]items.Item, 0, len(tc.items))
 			for iter.Next() {
 				items = append(items, iter.Item())
 			}
