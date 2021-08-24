@@ -54,3 +54,9 @@ func (i Item) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 	_, err := i.WriteXML(e)
 	return err
 }
+
+// Iter is the interface implemented by types that respond to service discovery
+// requests for items.
+type Iter interface {
+	ForItems(node string, f func(Item) error) error
+}
