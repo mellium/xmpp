@@ -79,6 +79,7 @@ func (d *Data) ForFields(f func(FieldData)) {
 			Label:    field.label,
 			Desc:     field.desc,
 			Required: field.required,
+			Raw:      field.value,
 		})
 	}
 }

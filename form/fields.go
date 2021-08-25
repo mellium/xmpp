@@ -69,6 +69,14 @@ type FieldData struct {
 	Label    string
 	Desc     string
 	Required bool
+
+	// Raw is the value of the field as it came over the wire with no type
+	// information.
+	// Generally speaking, Get methods on form should be used along with the field
+	// data's Var value to fetch fields and Raw should be ignored.
+	// Raw is mostly provided to access fixed type fields that do not have a
+	// variable name (and therefore cannot be referenced or set).
+	Raw []string
 }
 
 type field struct {
