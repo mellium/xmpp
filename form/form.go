@@ -71,7 +71,7 @@ func (d *Data) Instructions() string {
 
 // ForFields iterates over the fields of the form and calls a function for each
 // one, passing it information about the field.
-func (d *Data) ForFields(f func(FieldData)) {
+func (d *Data) ForFields(f func(data FieldData)) {
 	for _, field := range d.fields {
 		f(FieldData{
 			Type:     field.typ,
@@ -79,6 +79,7 @@ func (d *Data) ForFields(f func(FieldData)) {
 			Label:    field.label,
 			Desc:     field.desc,
 			Required: field.required,
+			Raw:      field.value,
 		})
 	}
 }
