@@ -2,318 +2,322 @@
 
 package disco
 
+import (
+	"mellium.im/xmpp/disco/info"
+)
+
 // Predefined identities generated from the Service Discovery Identities
 // Registry as registered with the XMPP Registrar.
 var (
 	// Category: The "account" category is to be used by a server when responding to a disco request sent to the bare JID (user@host addresss) of an account hosted by the server.
 	// Type: The user@host is an administrative account
-	AccountAdmin = Identity{Category: "account", Type: "admin"}
+	AccountAdmin = info.Identity{Category: "account", Type: "admin"}
 
 	// Category: The "account" category is to be used by a server when responding to a disco request sent to the bare JID (user@host addresss) of an account hosted by the server.
 	// Type: The user@host is a "guest" account that allows anonymous login by any user
-	AccountAnonymous = Identity{Category: "account", Type: "anonymous"}
+	AccountAnonymous = info.Identity{Category: "account", Type: "anonymous"}
 
 	// Category: The "account" category is to be used by a server when responding to a disco request sent to the bare JID (user@host addresss) of an account hosted by the server.
 	// Type: The user@host is a registered or provisioned account associated with a particular non-administrative user
-	AccountRegistered = Identity{Category: "account", Type: "registered"}
+	AccountRegistered = info.Identity{Category: "account", Type: "registered"}
 
 	// Category: The "auth" category consists of server components that provide authentication services within a server implementation.
 	// Type: A server component that authenticates based on external certificates
-	AuthCert = Identity{Category: "auth", Type: "cert"}
+	AuthCert = info.Identity{Category: "auth", Type: "cert"}
 
 	// Category: The "auth" category consists of server components that provide authentication services within a server implementation.
 	// Type: A server authentication component other than one of the registered types
-	AuthGeneric = Identity{Category: "auth", Type: "generic"}
+	AuthGeneric = info.Identity{Category: "auth", Type: "generic"}
 
 	// Category: The "auth" category consists of server components that provide authentication services within a server implementation.
 	// Type: A server component that authenticates against an LDAP database
-	AuthLDAP = Identity{Category: "auth", Type: "ldap"}
+	AuthLDAP = info.Identity{Category: "auth", Type: "ldap"}
 
 	// Category: The "auth" category consists of server components that provide authentication services within a server implementation.
 	// Type: A server component that authenticates against an NT domain
-	AuthNTLM = Identity{Category: "auth", Type: "ntlm"}
+	AuthNTLM = info.Identity{Category: "auth", Type: "ntlm"}
 
 	// Category: The "auth" category consists of server components that provide authentication services within a server implementation.
 	// Type: A server component that authenticates against a PAM system
-	AuthPAM = Identity{Category: "auth", Type: "pam"}
+	AuthPAM = info.Identity{Category: "auth", Type: "pam"}
 
 	// Category: The "auth" category consists of server components that provide authentication services within a server implementation.
 	// Type: A server component that authenticates against a Radius system
-	AuthRadius = Identity{Category: "auth", Type: "radius"}
+	AuthRadius = info.Identity{Category: "auth", Type: "radius"}
 
 	// Category: The "automation" category consists of entities and nodes that provide automated or programmed interaction.
 	// Type: The node for a list of commands; valid only for the node "http://jabber.org/protocol/commands"
-	AutomationCommandList = Identity{Category: "automation", Type: "command-list"}
+	AutomationCommandList = info.Identity{Category: "automation", Type: "command-list"}
 
 	// Category: The "automation" category consists of entities and nodes that provide automated or programmed interaction.
 	// Type: A node for a specific command; the "node" attribute uniquely identifies the command
-	AutomationCommandNode = Identity{Category: "automation", Type: "command-node"}
+	AutomationCommandNode = info.Identity{Category: "automation", Type: "command-node"}
 
 	// Category: The "automation" category consists of entities and nodes that provide automated or programmed interaction.
 	// Type: An entity that supports Jabber-RPC.
-	AutomationRpc = Identity{Category: "automation", Type: "rpc"}
+	AutomationRpc = info.Identity{Category: "automation", Type: "rpc"}
 
 	// Category: The "automation" category consists of entities and nodes that provide automated or programmed interaction.
 	// Type: An entity that supports the SOAP XMPP Binding.
-	AutomationSOAP = Identity{Category: "automation", Type: "soap"}
+	AutomationSOAP = info.Identity{Category: "automation", Type: "soap"}
 
 	// Category: The "automation" category consists of entities and nodes that provide automated or programmed interaction.
 	// Type: An entity that provides automated translation services.
-	AutomationTranslation = Identity{Category: "automation", Type: "translation"}
+	AutomationTranslation = info.Identity{Category: "automation", Type: "translation"}
 
 	// Category: The "client" category consists of different types of clients, mostly for instant messaging.
 	// Type: An automated client that is not controlled by a human user
-	ClientBot = Identity{Category: "client", Type: "bot"}
+	ClientBot = info.Identity{Category: "client", Type: "bot"}
 
 	// Category: The "client" category consists of different types of clients, mostly for instant messaging.
 	// Type: Minimal non-GUI client used on dumb terminals or text-only screens
-	ClientConsole = Identity{Category: "client", Type: "console"}
+	ClientConsole = info.Identity{Category: "client", Type: "console"}
 
 	// Category: The "client" category consists of different types of clients, mostly for instant messaging.
 	// Type: A client running on a gaming console
-	ClientGame = Identity{Category: "client", Type: "game"}
+	ClientGame = info.Identity{Category: "client", Type: "game"}
 
 	// Category: The "client" category consists of different types of clients, mostly for instant messaging.
 	// Type: A client running on a PDA, RIM device, or other handheld
-	ClientHandheld = Identity{Category: "client", Type: "handheld"}
+	ClientHandheld = info.Identity{Category: "client", Type: "handheld"}
 
 	// Category: The "client" category consists of different types of clients, mostly for instant messaging.
 	// Type: Standard full-GUI client used on desktops and laptops
-	ClientPC = Identity{Category: "client", Type: "pc"}
+	ClientPC = info.Identity{Category: "client", Type: "pc"}
 
 	// Category: The "client" category consists of different types of clients, mostly for instant messaging.
 	// Type: A client running on a mobile phone or other telephony device
-	ClientPhone = Identity{Category: "client", Type: "phone"}
+	ClientPhone = info.Identity{Category: "client", Type: "phone"}
 
 	// Category: The "client" category consists of different types of clients, mostly for instant messaging.
 	// Type: A client that is not actually using an instant messaging client; however, messages sent to this contact will be delivered as Short Message Service (SMS) messages
-	ClientSMS = Identity{Category: "client", Type: "sms"}
+	ClientSMS = info.Identity{Category: "client", Type: "sms"}
 
 	// Category: The "client" category consists of different types of clients, mostly for instant messaging.
 	// Type: A client operated from within a web browser
-	ClientWeb = Identity{Category: "client", Type: "web"}
+	ClientWeb = info.Identity{Category: "client", Type: "web"}
 
 	// Category: The "collaboration" category consists of services that enable multiple individuals to work together in real time.
 	// Type: Multi-user whiteboarding service
-	CollaborationWhiteboard = Identity{Category: "collaboration", Type: "whiteboard"}
+	CollaborationWhiteboard = info.Identity{Category: "collaboration", Type: "whiteboard"}
 
 	// Category: The "component" category consists of services that are internal to server implementations and not normally exposed outside a server.
 	// Type: A server component that archives traffic
-	ComponentArchive = Identity{Category: "component", Type: "archive"}
+	ComponentArchive = info.Identity{Category: "component", Type: "archive"}
 
 	// Category: The "component" category consists of services that are internal to server implementations and not normally exposed outside a server.
 	// Type: A server component that handles client connections
-	ComponentC2S = Identity{Category: "component", Type: "c2s"}
+	ComponentC2S = info.Identity{Category: "component", Type: "c2s"}
 
 	// Category: The "component" category consists of services that are internal to server implementations and not normally exposed outside a server.
 	// Type: A server component other than one of the registered types
-	ComponentGeneric = Identity{Category: "component", Type: "generic"}
+	ComponentGeneric = info.Identity{Category: "component", Type: "generic"}
 
 	// Category: The "component" category consists of services that are internal to server implementations and not normally exposed outside a server.
 	// Type: A server component that handles load balancing
-	ComponentLoad = Identity{Category: "component", Type: "load"}
+	ComponentLoad = info.Identity{Category: "component", Type: "load"}
 
 	// Category: The "component" category consists of services that are internal to server implementations and not normally exposed outside a server.
 	// Type: A server component that logs server information
-	ComponentLog = Identity{Category: "component", Type: "log"}
+	ComponentLog = info.Identity{Category: "component", Type: "log"}
 
 	// Category: The "component" category consists of services that are internal to server implementations and not normally exposed outside a server.
 	// Type: A server component that provides presence information
-	ComponentPresence = Identity{Category: "component", Type: "presence"}
+	ComponentPresence = info.Identity{Category: "component", Type: "presence"}
 
 	// Category: The "component" category consists of services that are internal to server implementations and not normally exposed outside a server.
 	// Type: A server component that handles core routing logic
-	ComponentRouter = Identity{Category: "component", Type: "router"}
+	ComponentRouter = info.Identity{Category: "component", Type: "router"}
 
 	// Category: The "component" category consists of services that are internal to server implementations and not normally exposed outside a server.
 	// Type: A server component that handles server connections
-	ComponentS2S = Identity{Category: "component", Type: "s2s"}
+	ComponentS2S = info.Identity{Category: "component", Type: "s2s"}
 
 	// Category: The "component" category consists of services that are internal to server implementations and not normally exposed outside a server.
 	// Type: A server component that manages user sessions
-	ComponentSM = Identity{Category: "component", Type: "sm"}
+	ComponentSM = info.Identity{Category: "component", Type: "sm"}
 
 	// Category: The "component" category consists of services that are internal to server implementations and not normally exposed outside a server.
 	// Type: A server component that provides server statistics
-	ComponentStats = Identity{Category: "component", Type: "stats"}
+	ComponentStats = info.Identity{Category: "component", Type: "stats"}
 
 	// Category: The "conference" category consists of online conference services such as multi-user chatroom services.
 	// Type: Internet Relay Chat service
-	ConferenceIRC = Identity{Category: "conference", Type: "irc"}
+	ConferenceIRC = info.Identity{Category: "conference", Type: "irc"}
 
 	// Category: The "conference" category consists of online conference services such as multi-user chatroom services.
 	// Type: Text conferencing service
-	ConferenceText = Identity{Category: "conference", Type: "text"}
+	ConferenceText = info.Identity{Category: "conference", Type: "text"}
 
 	// Category: The "directory" category consists of information retrieval services that enable users to search online directories or otherwise be informed about the existence of other XMPP entities.
 	// Type: A directory of chatrooms
-	DirectoryChatroom = Identity{Category: "directory", Type: "chatroom"}
+	DirectoryChatroom = info.Identity{Category: "directory", Type: "chatroom"}
 
 	// Category: The "directory" category consists of information retrieval services that enable users to search online directories or otherwise be informed about the existence of other XMPP entities.
 	// Type: A directory that provides shared roster groups
-	DirectoryGroup = Identity{Category: "directory", Type: "group"}
+	DirectoryGroup = info.Identity{Category: "directory", Type: "group"}
 
 	// Category: The "directory" category consists of information retrieval services that enable users to search online directories or otherwise be informed about the existence of other XMPP entities.
 	// Type: A directory of end users (e.g., JUD)
-	DirectoryUser = Identity{Category: "directory", Type: "user"}
+	DirectoryUser = info.Identity{Category: "directory", Type: "user"}
 
 	// Category: The "directory" category consists of information retrieval services that enable users to search online directories or otherwise be informed about the existence of other XMPP entities.
 	// Type: A directory of waiting list entries
-	DirectoryWaitinglist = Identity{Category: "directory", Type: "waitinglist"}
+	DirectoryWaitinglist = info.Identity{Category: "directory", Type: "waitinglist"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to AOL Instant Messenger
-	GatewayAIM = Identity{Category: "gateway", Type: "aim"}
+	GatewayAIM = info.Identity{Category: "gateway", Type: "aim"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to the Facebook IM service
-	GatewayFacebook = Identity{Category: "gateway", Type: "facebook"}
+	GatewayFacebook = info.Identity{Category: "gateway", Type: "facebook"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to the Gadu-Gadu IM service
-	GatewayGaduGadu = Identity{Category: "gateway", Type: "gadu-gadu"}
+	GatewayGaduGadu = info.Identity{Category: "gateway", Type: "gadu-gadu"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway that provides HTTP Web Services access
-	GatewayHTTPWS = Identity{Category: "gateway", Type: "http-ws"}
+	GatewayHTTPWS = info.Identity{Category: "gateway", Type: "http-ws"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to ICQ
-	GatewayICQ = Identity{Category: "gateway", Type: "icq"}
+	GatewayICQ = info.Identity{Category: "gateway", Type: "icq"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to IRC
-	GatewayIRC = Identity{Category: "gateway", Type: "irc"}
+	GatewayIRC = info.Identity{Category: "gateway", Type: "irc"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to Microsoft Live Communications Server
-	GatewayLCS = Identity{Category: "gateway", Type: "lcs"}
+	GatewayLCS = info.Identity{Category: "gateway", Type: "lcs"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to the mail.ru IM service
-	GatewayMRIM = Identity{Category: "gateway", Type: "mrim"}
+	GatewayMRIM = info.Identity{Category: "gateway", Type: "mrim"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to MSN Messenger
-	GatewayMSN = Identity{Category: "gateway", Type: "msn"}
+	GatewayMSN = info.Identity{Category: "gateway", Type: "msn"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to the MySpace IM service
-	GatewayMyspaceim = Identity{Category: "gateway", Type: "myspaceim"}
+	GatewayMyspaceim = info.Identity{Category: "gateway", Type: "myspaceim"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to Microsoft Office Communications Server
-	GatewayOCS = Identity{Category: "gateway", Type: "ocs"}
+	GatewayOCS = info.Identity{Category: "gateway", Type: "ocs"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to the QQ IM service
-	GatewayQQ = Identity{Category: "gateway", Type: "qq"}
+	GatewayQQ = info.Identity{Category: "gateway", Type: "qq"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to IBM Lotus Sametime
-	GatewaySametime = Identity{Category: "gateway", Type: "sametime"}
+	GatewaySametime = info.Identity{Category: "gateway", Type: "sametime"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to SIP for Instant Messaging and Presence Leveraging Extensions (SIMPLE)
-	GatewaySimple = Identity{Category: "gateway", Type: "simple"}
+	GatewaySimple = info.Identity{Category: "gateway", Type: "simple"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to the Skype service
-	GatewaySkype = Identity{Category: "gateway", Type: "skype"}
+	GatewaySkype = info.Identity{Category: "gateway", Type: "skype"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to Short Message Service
-	GatewaySMS = Identity{Category: "gateway", Type: "sms"}
+	GatewaySMS = info.Identity{Category: "gateway", Type: "sms"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to the SMTP (email) network
-	GatewaySMTP = Identity{Category: "gateway", Type: "smtp"}
+	GatewaySMTP = info.Identity{Category: "gateway", Type: "smtp"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to the Tlen IM service
-	GatewayTlen = Identity{Category: "gateway", Type: "tlen"}
+	GatewayTlen = info.Identity{Category: "gateway", Type: "tlen"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to the Xfire gaming and IM service
-	GatewayXfire = Identity{Category: "gateway", Type: "xfire"}
+	GatewayXfire = info.Identity{Category: "gateway", Type: "xfire"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to another XMPP service (NOT via native server-to-server communication)
-	GatewayXMPP = Identity{Category: "gateway", Type: "xmpp"}
+	GatewayXMPP = info.Identity{Category: "gateway", Type: "xmpp"}
 
 	// Category: The "gateway" category consists of translators between Jabber/XMPP services and non-XMPP services.
 	// Type: Gateway to Yahoo! Instant Messenger
-	GatewayYahoo = Identity{Category: "gateway", Type: "yahoo"}
+	GatewayYahoo = info.Identity{Category: "gateway", Type: "yahoo"}
 
 	// Category: The "headline" category consists of services that provide real-time news or information (often but not necessarily in a message of type "headline").
 	// Type: Service that notifies a user of new email messages.
-	HeadlineNewmail = Identity{Category: "headline", Type: "newmail"}
+	HeadlineNewmail = info.Identity{Category: "headline", Type: "newmail"}
 
 	// Category: The "headline" category consists of services that provide real-time news or information (often but not necessarily in a message of type "headline").
 	// Type: RSS notification service.
-	HeadlineRSS = Identity{Category: "headline", Type: "rss"}
+	HeadlineRSS = info.Identity{Category: "headline", Type: "rss"}
 
 	// Category: The "headline" category consists of services that provide real-time news or information (often but not necessarily in a message of type "headline").
 	// Type: Service that provides weather alerts.
-	HeadlineWeather = Identity{Category: "headline", Type: "weather"}
+	HeadlineWeather = info.Identity{Category: "headline", Type: "weather"}
 
 	// Category: The "hierarchy" category is used to describe nodes within a hierarchy of nodes; the "branch" and "leaf" types are exhaustive.
 	// Type: A service discovery node that contains further nodes in the hierarchy.
-	HierarchyBranch = Identity{Category: "hierarchy", Type: "branch"}
+	HierarchyBranch = info.Identity{Category: "hierarchy", Type: "branch"}
 
 	// Category: The "hierarchy" category is used to describe nodes within a hierarchy of nodes; the "branch" and "leaf" types are exhaustive.
 	// Type: A service discovery node that does not contain further nodes in the hierarchy.
-	HierarchyLeaf = Identity{Category: "hierarchy", Type: "leaf"}
+	HierarchyLeaf = info.Identity{Category: "hierarchy", Type: "leaf"}
 
 	// Category: The "proxy" category consists of servers or services that act as special-purpose proxies or intermediaries between two or more XMPP endpoints.
 	// Type: SOCKS5 bytestreams proxy service
-	ProxyBytestreams = Identity{Category: "proxy", Type: "bytestreams"}
+	ProxyBytestreams = info.Identity{Category: "proxy", Type: "bytestreams"}
 
 	// Category: Services and nodes that adhere to XEP-0060.
 	// Type: A pubsub node of the "collection" type.
-	PubsubCollection = Identity{Category: "pubsub", Type: "collection"}
+	PubsubCollection = info.Identity{Category: "pubsub", Type: "collection"}
 
 	// Category: Services and nodes that adhere to XEP-0060.
 	// Type: A pubsub node of the "leaf" type.
-	PubsubLeaf = Identity{Category: "pubsub", Type: "leaf"}
+	PubsubLeaf = info.Identity{Category: "pubsub", Type: "leaf"}
 
 	// Category: Services and nodes that adhere to XEP-0060.
 	// Type: A personal eventing service that supports the publish-subscribe subset defined in XEP-0163.
-	PubsubPEP = Identity{Category: "pubsub", Type: "pep"}
+	PubsubPEP = info.Identity{Category: "pubsub", Type: "pep"}
 
 	// Category: Services and nodes that adhere to XEP-0060.
 	// Type: A pubsub service that supports the functionality defined in XEP-0060.
-	PubsubService = Identity{Category: "pubsub", Type: "service"}
+	PubsubService = info.Identity{Category: "pubsub", Type: "service"}
 
 	// Category: The "server" category consists of any Jabber/XMPP server.
 	// Type: Standard Jabber/XMPP server used for instant messaging and presence
-	ServerIM = Identity{Category: "server", Type: "im"}
+	ServerIM = info.Identity{Category: "server", Type: "im"}
 
 	// Category: The "store" category consists of internal server components that provide data storage and retrieval services.
 	// Type: A server component that stores data in a Berkeley database
-	StoreBerkeley = Identity{Category: "store", Type: "berkeley"}
+	StoreBerkeley = info.Identity{Category: "store", Type: "berkeley"}
 
 	// Category: The "store" category consists of internal server components that provide data storage and retrieval services.
 	// Type: A server component that stores data on the file system
-	StoreFile = Identity{Category: "store", Type: "file"}
+	StoreFile = info.Identity{Category: "store", Type: "file"}
 
 	// Category: The "store" category consists of internal server components that provide data storage and retrieval services.
 	// Type: A server data storage component other than one of the registered types
-	StoreGeneric = Identity{Category: "store", Type: "generic"}
+	StoreGeneric = info.Identity{Category: "store", Type: "generic"}
 
 	// Category: The "store" category consists of internal server components that provide data storage and retrieval services.
 	// Type: A server component that stores data in an LDAP database
-	StoreLDAP = Identity{Category: "store", Type: "ldap"}
+	StoreLDAP = info.Identity{Category: "store", Type: "ldap"}
 
 	// Category: The "store" category consists of internal server components that provide data storage and retrieval services.
 	// Type: A server component that stores data in a MySQL database
-	StoreMysql = Identity{Category: "store", Type: "mysql"}
+	StoreMysql = info.Identity{Category: "store", Type: "mysql"}
 
 	// Category: The "store" category consists of internal server components that provide data storage and retrieval services.
 	// Type: A server component that stores data in an Oracle database
-	StoreOracle = Identity{Category: "store", Type: "oracle"}
+	StoreOracle = info.Identity{Category: "store", Type: "oracle"}
 
 	// Category: The "store" category consists of internal server components that provide data storage and retrieval services.
 	// Type: A server component that stores data in a PostgreSQL database
-	StorePostgres = Identity{Category: "store", Type: "postgres"}
+	StorePostgres = info.Identity{Category: "store", Type: "postgres"}
 )

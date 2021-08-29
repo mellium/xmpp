@@ -20,7 +20,7 @@ var (
 	_ xmlstream.WriterTo  = info.Feature{}
 )
 
-func TestEncode(t *testing.T) {
+func TestEncodeFeature(t *testing.T) {
 	xmpptest.RunEncodingTests(t, []xmpptest.EncodingTestCase{
 		0: {
 			Value:       &info.Feature{},

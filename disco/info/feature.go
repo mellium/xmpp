@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	ns = `http://jabber.org/protocol/disco#info`
+	nsInfo = `http://jabber.org/protocol/disco#info`
 )
 
 // Feature represents a feature supported by an entity on the network.
@@ -26,7 +26,7 @@ type Feature struct {
 // TokenReader implements xmlstream.Marshaler.
 func (f Feature) TokenReader() xml.TokenReader {
 	return xmlstream.Wrap(nil, xml.StartElement{
-		Name: xml.Name{Space: ns, Local: "feature"},
+		Name: xml.Name{Space: nsInfo, Local: "feature"},
 		Attr: []xml.Attr{{
 			Name:  xml.Name{Local: "var"},
 			Value: f.Var,

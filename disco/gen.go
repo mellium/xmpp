@@ -79,13 +79,17 @@ func main() {
 
 package disco
 
+import (
+	"mellium.im/xmpp/disco/info"
+)
+
 // Predefined identities generated from the Service Discovery Identities
 // Registry as registered with the XMPP Registrar.
 var (
 {{- range $cat := .Categories}}{{range .Type}}
 	// Category: {{$cat.Desc}}
 	// Type: {{.Desc}}
-	{{export  $cat.Name}}{{export .Name}} = Identity{Category: {{printf "%q" $cat.Name}}, Type: {{printf "%q" .Name}}}
+	{{export  $cat.Name}}{{export .Name}} = info.Identity{Category: {{printf "%q" $cat.Name}}, Type: {{printf "%q" .Name}}}
 {{end}}{{end}}
 )`))
 
