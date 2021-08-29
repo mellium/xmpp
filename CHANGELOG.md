@@ -31,7 +31,8 @@ All notable changes to this project will be documented in this file.
 - history: implement [XEP-0313: Message Archive Management]
 - form: add `Len` and `Raw` methods to form data
 - muc: new package implementing [XEP-0045: Multi-User Chat] and [XEP-0249: Direct MUC Invitations]
-- mux: `mux.ServeMux` now implements `info.FeatureIter` and `items.Iter`
+- mux: `mux.ServeMux` now implements `info.FeatureIter`, `info.IdentityIter`,
+  `form.Iter`, and `items.Iter`
 - roster: the roster `Iter` now returns the roster version being iterated over
   from the `Version` method
 - roster: if a `stanza.Error` is returned from the `Push` handler it is now sent
@@ -45,7 +46,8 @@ All notable changes to this project will be documented in this file.
   config
 - disco: new `disco.Handler` option to configure a `mux.ServeMux` to respond to
   disco#info requests
-- disco/info: new package containing the former `disco.Feature` type
+- disco/info: new package containing the former `disco.Feature` and
+  `disco.Identity` types
 
 
 ### Fixed
