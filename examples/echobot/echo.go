@@ -83,7 +83,8 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 	}
 
 	return s.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-		d := xml.NewTokenDecoder(t)
+		d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*start), t))
+		d.Token()
 
 		// Ignore anything that's not a message. In a real system we'd want to at
 		// least respond to IQs.
