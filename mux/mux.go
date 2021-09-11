@@ -20,7 +20,6 @@ import (
 	"mellium.im/xmpp/disco/info"
 	"mellium.im/xmpp/disco/items"
 	"mellium.im/xmpp/form"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -90,15 +89,13 @@ func (m *ServeMux) Handler(name xml.Name) (h xmpp.Handler, ok bool) {
 		return h, true
 	}
 
-	if name.Space == ns.Client || name.Space == ns.Server {
-		switch name.Local {
-		case iqStanza:
-			return xmpp.HandlerFunc(m.iqRouter), true
-		case msgStanza:
-			return xmpp.HandlerFunc(m.msgRouter), true
-		case presStanza:
-			return xmpp.HandlerFunc(m.presenceRouter), true
-		}
+	switch name.Local {
+	case iqStanza:
+		return xmpp.HandlerFunc(m.iqRouter), true
+	case msgStanza:
+		return xmpp.HandlerFunc(m.msgRouter), true
+	case presStanza:
+		return xmpp.HandlerFunc(m.presenceRouter), true
 	}
 
 	return nopHandler{}, false
