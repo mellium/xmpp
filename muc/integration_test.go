@@ -16,6 +16,7 @@ import (
 	"mellium.im/sasl"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/disco"
+	"mellium.im/xmpp/disco/items"
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/jid"
@@ -57,7 +58,7 @@ func integrationJoinRoom(ctx context.Context, t *testing.T, cmd *integration.Cmd
 
 	// Fetch rooms and make sure they're empty.
 	roomJID := jid.MustParse("bridgecrew@muc.localhost/Picard")
-	iter := disco.FetchItems(ctx, disco.Item{
+	iter := disco.FetchItems(ctx, items.Item{
 		JID: roomJID.Domain(),
 	}, session)
 	for iter.Next() {
@@ -76,7 +77,7 @@ func integrationJoinRoom(ctx context.Context, t *testing.T, cmd *integration.Cmd
 		t.Fatalf("error joining MUC: %v", err)
 	}
 
-	iter = disco.FetchItems(ctx, disco.Item{
+	iter = disco.FetchItems(ctx, items.Item{
 		JID: roomJID.Domain(),
 	}, session)
 	for iter.Next() {
@@ -105,12 +106,12 @@ func integrationJoinRoom(ctx context.Context, t *testing.T, cmd *integration.Cmd
 	}
 
 	// Fetch rooms again and make sure the new one was created.
-	var items []disco.Item
-	iter = disco.FetchItems(ctx, disco.Item{
+	var list []items.Item
+	iter = disco.FetchItems(ctx, items.Item{
 		JID: roomJID.Domain(),
 	}, session)
 	for iter.Next() {
-		items = append(items, iter.Item())
+		list = append(list, iter.Item())
 	}
 	if err = iter.Err(); err != nil {
 		t.Fatalf("error fetching rooms: %v", err)
@@ -119,8 +120,8 @@ func integrationJoinRoom(ctx context.Context, t *testing.T, cmd *integration.Cmd
 	if err != nil {
 		t.Fatalf("error closing final iter: %v", err)
 	}
-	if len(items) != 1 || !items[0].JID.Equal(roomJID.Bare()) {
-		t.Fatalf("wrong rooms created: want=%v, got=%v", roomJID.Bare(), items)
+	if len(list) != 1 || !list[0].JID.Equal(roomJID.Bare()) {
+		t.Fatalf("wrong rooms created: want=%v, got=%v", roomJID.Bare(), list)
 	}
 
 	err = channel.Leave(ctx, "")
@@ -130,7 +131,7 @@ func integrationJoinRoom(ctx context.Context, t *testing.T, cmd *integration.Cmd
 
 	// Fetch rooms and make sure they're empty (room was not persistent and was
 	// destroyed when we left, indicating that we did in fact leave correctly).
-	iter = disco.FetchItems(ctx, disco.Item{
+	iter = disco.FetchItems(ctx, items.Item{
 		JID: roomJID.Domain(),
 	}, session)
 	for iter.Next() {
