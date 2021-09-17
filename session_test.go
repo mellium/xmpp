@@ -114,26 +114,28 @@ var readyFeature = xmpp.StreamFeature{
 var negotiateTests = [...]negotiateTestCase{
 	0: {negotiator: errNegotiator, err: errTestNegotiate},
 	1: {
-		negotiator: xmpp.NewNegotiator(xmpp.StreamConfig{
-			Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
-				return []xmpp.StreamFeature{xmpp.StartTLS(nil)}
-			},
+		negotiator: xmpp.NewNegotiator(func(*xmpp.Session, *xmpp.StreamConfig) xmpp.StreamConfig {
+			return xmpp.StreamConfig{
+				Features: []xmpp.StreamFeature{xmpp.StartTLS(nil)},
+			}
 		}),
 		in:  `<stream:stream id='316732270768047465' version='1.0' xml:lang='en' xmlns:stream='http://etherx.jabber.org/streams' xmlns='jabber:client'><stream:features><other/></stream:features>`,
 		out: `<?xml version="1.0" encoding="UTF-8"?><stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'><starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`,
 		err: errors.New("XML syntax error on line 1: unexpected EOF"),
 	},
 	2: {
-		negotiator: xmpp.NewNegotiator(xmpp.StreamConfig{}),
-		in:         `<stream:stream id='316732270768047465' version='1.0' xml:lang='en' xmlns:stream='http://etherx.jabber.org/streams' xmlns='jabber:client'><stream:features><other/></stream:features>`,
-		out:        `<?xml version="1.0" encoding="UTF-8"?><stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>`,
-		err:        errors.New("xmpp: features advertised out of order"),
+		negotiator: xmpp.NewNegotiator(func(*xmpp.Session, *xmpp.StreamConfig) xmpp.StreamConfig {
+			return xmpp.StreamConfig{}
+		}),
+		in:  `<stream:stream id='316732270768047465' version='1.0' xml:lang='en' xmlns:stream='http://etherx.jabber.org/streams' xmlns='jabber:client'><stream:features><other/></stream:features>`,
+		out: `<?xml version="1.0" encoding="UTF-8"?><stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>`,
+		err: errors.New("xmpp: features advertised out of order"),
 	},
 	3: {
-		negotiator: xmpp.NewNegotiator(xmpp.StreamConfig{
-			Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
-				return []xmpp.StreamFeature{readyFeature}
-			},
+		negotiator: xmpp.NewNegotiator(func(*xmpp.Session, *xmpp.StreamConfig) xmpp.StreamConfig {
+			return xmpp.StreamConfig{
+				Features: []xmpp.StreamFeature{readyFeature},
+			}
 		}),
 		in:           `<stream:stream id='316732270768047465' version='1.0' xml:lang='en' xmlns:stream='http://etherx.jabber.org/streams' xmlns='jabber:server'><stream:features><ready xmlns='urn:example'/></stream:features>`,
 		out:          `<?xml version="1.0" encoding="UTF-8"?><stream:stream xmlns='jabber:server' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>`,
@@ -408,19 +410,20 @@ func TestNegotiateStreamError(t *testing.T) {
 	semaphore := make(chan struct{})
 	go func() {
 		defer close(semaphore)
-		_, err := xmpp.ReceiveSession(ctx, serverConn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
-			Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
-				return []xmpp.StreamFeature{errorStartTLS(stream.Conflict)}
-			},
+
+		_, err := xmpp.ReceiveSession(ctx, serverConn, 0, xmpp.NewNegotiator(func(*xmpp.Session, *xmpp.StreamConfig) xmpp.StreamConfig {
+			return xmpp.StreamConfig{
+				Features: []xmpp.StreamFeature{errorStartTLS(stream.Conflict)},
+			}
 		}))
 		if err != nil {
 			t.Logf("error receiving session: %v", err)
 		}
 	}()
-	_, err := xmpp.NewSession(ctx, clientJID, clientJID.Bare(), clientConn, 0, xmpp.NewNegotiator(xmpp.StreamConfig{
-		Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
-			return []xmpp.StreamFeature{xmpp.StartTLS(nil)}
-		},
+	_, err := xmpp.NewSession(ctx, clientJID, clientJID.Bare(), clientConn, 0, xmpp.NewNegotiator(func(*xmpp.Session, *xmpp.StreamConfig) xmpp.StreamConfig {
+		return xmpp.StreamConfig{
+			Features: []xmpp.StreamFeature{xmpp.StartTLS(nil)},
+		}
 	}))
 	if !errors.Is(err, stream.Conflict) {
 		t.Errorf("unexpected client err: want=%v, got=%v", stream.Conflict, err)

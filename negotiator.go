@@ -41,24 +41,7 @@ type StreamConfig struct {
 	Lang string
 
 	// A list of stream features to attempt to negotiate.
-	// Features will be called every time a new stream is started so that the user
-	// may look up required stream features based on information about an incoming
-	// stream such as the location and origin JID.
-	// Individual features still control whether or not they are listed at any
-	// given time, so all possible features should be returned on each step and
-	// new features only added to the list when we learn that they are possible
-	// eg. because the origin or location JID is set and we can look up that users
-	// configuration in the database.
-	// For example, you would not return StartTLS the first time this feature is
-	// called then return Auth once you see that the secure bit is set on the
-	// session state because the stream features themselves would handle this for
-	// you.
-	// Instead you would always return StartTLS and Auth, but you might only add
-	// the "password reset" feature once you see that the origin JID is one that
-	// has a backup email in the database.
-	// The previous stream features list is passed in at each step so that it can
-	// be re-used or appended to if desired (however, this is not required).
-	Features func(*Session, ...StreamFeature) []StreamFeature
+	Features []StreamFeature
 
 	// If set a copy of any reads from the session will be written to TeeIn and
 	// any writes to the session will be written to TeeOut (similar to the tee(1)
@@ -74,7 +57,26 @@ type StreamConfig struct {
 // session.
 // If StartTLS is one of the supported stream features, the Negotiator attempts
 // to negotiate it whether the server advertises support or not.
-func NewNegotiator(cfg StreamConfig) Negotiator {
+//
+// The cfg function will be called every time a new stream is started so that
+// the user may look up required stream features, the default language, and
+// other properties based on information about an incoming stream such as the
+// location and origin JID.
+// Individual features still control whether or not they are listed at any
+// given time, so all possible features should be returned on each step and
+// new features only added to the list when we learn that they are possible
+// eg. because the origin or location JID is set and we can look up that users
+// configuration in the database.
+// For example, you would not return StartTLS the first time this feature is
+// called then return Auth once you see that the secure bit is set on the
+// session state because the stream features themselves would handle this for
+// you.
+// Instead you would always return StartTLS and Auth, but you might only add
+// the "password reset" feature once you see that the origin JID is one that
+// has a backup email in the database.
+// The previous config is passed in at each step so that it can be re-used or
+// modified (however, this is not required).
+func NewNegotiator(cfg func(*Session, *StreamConfig) StreamConfig) Negotiator {
 	return negotiator(cfg)
 }
 
@@ -83,8 +85,8 @@ type negotiatorState struct {
 	cancelTee context.CancelFunc
 }
 
-func negotiator(cfg StreamConfig) Negotiator {
-	var features []StreamFeature
+func negotiator(f func(*Session, *StreamConfig) StreamConfig) Negotiator {
+	cfg := f(nil, nil)
 	return func(ctx context.Context, in, out *stream.Info, s *Session, data interface{}) (mask SessionState, rw io.ReadWriter, restartNext interface{}, err error) {
 		nState, ok := data.(negotiatorState)
 		// If no state was passed in, this is the first negotiate call so make up a
@@ -190,10 +192,8 @@ func negotiator(cfg StreamConfig) Negotiator {
 			}
 		}
 
-		if cfg.Features != nil {
-			features = cfg.Features(s, features...)
-		}
-		mask, rw, err = negotiateFeatures(ctx, s, data == nil, websocket, features)
+		cfg = f(s, &cfg)
+		mask, rw, err = negotiateFeatures(ctx, s, data == nil, websocket, cfg.Features)
 		nState.doRestart = rw != nil
 		return mask, rw, nState, err
 	}

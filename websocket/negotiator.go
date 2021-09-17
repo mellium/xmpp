@@ -15,7 +15,7 @@ import (
 
 // Negotiator is like xmpp.NewNegotiator except that it uses the websocket
 // subprotocol.
-func Negotiator(cfg xmpp.StreamConfig) xmpp.Negotiator {
+func Negotiator(cfg func(*xmpp.Session, *xmpp.StreamConfig) xmpp.StreamConfig) xmpp.Negotiator {
 	xmppNegotiator := xmpp.NewNegotiator(cfg)
 	return func(ctx context.Context, in, out *stream.Info, session *xmpp.Session, data interface{}) (xmpp.SessionState, io.ReadWriter, interface{}, error) {
 		ctx = context.WithValue(ctx, wskey.Key{}, struct{}{})

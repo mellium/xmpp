@@ -450,12 +450,12 @@ func (cmd *Cmd) dial(ctx context.Context, s2s bool, location, origin jid.JID, t 
 	if err != nil {
 		return nil, err
 	}
-	negotiator := xmpp.NewNegotiator(xmpp.StreamConfig{
-		Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
-			return features
-		},
-		TeeIn:  cmd.in,
-		TeeOut: cmd.out,
+	negotiator := xmpp.NewNegotiator(func(*xmpp.Session, *xmpp.StreamConfig) xmpp.StreamConfig {
+		return xmpp.StreamConfig{
+			Features: features,
+			TeeIn:    cmd.in,
+			TeeOut:   cmd.out,
+		}
 	})
 	var mask xmpp.SessionState
 	if s2s {

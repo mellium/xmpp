@@ -21,6 +21,8 @@ All notable changes to this project will be documented in this file.
   `websocket.Negotiator`
 - xmpp: the `IterIQ` and `IterIQElement` methods on `Session` now return the
   start element token associated with the IQ payload
+- xmpp: `Negotiator` now takes a stream config function instead of a
+  `StreamConfig` struct
 
 
 ### Added

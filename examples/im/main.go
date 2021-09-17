@@ -186,19 +186,19 @@ func main() {
 	if err != nil {
 		logger.Fatalf("error dialing connection: %v", err)
 	}
-	negotiator := xmpp.NewNegotiator(xmpp.StreamConfig{
-		Features: func(*xmpp.Session, ...xmpp.StreamFeature) []xmpp.StreamFeature {
-			return []xmpp.StreamFeature{
+	negotiator := xmpp.NewNegotiator(func(*xmpp.Session, *xmpp.StreamConfig) xmpp.StreamConfig {
+		return xmpp.StreamConfig{
+			Features: []xmpp.StreamFeature{
 				xmpp.BindResource(),
 				xmpp.StartTLS(&tls.Config{
 					ServerName: parsedAddr.Domain().String(),
 					MinVersion: tls.VersionTLS12,
 				}),
 				xmpp.SASL(parsedAuthAddr.String(), pass, sasl.ScramSha256Plus, sasl.ScramSha1Plus, sasl.ScramSha256, sasl.ScramSha1, sasl.Plain),
-			}
-		},
-		TeeIn:  logWriter{logger: recvXML},
-		TeeOut: logWriter{logger: sentXML},
+			},
+			TeeIn:  logWriter{logger: recvXML},
+			TeeOut: logWriter{logger: sentXML},
+		}
 	})
 	session, err := xmpp.NewSession(dialCtx, parsedAddr.Domain(), parsedAddr, conn, 0, negotiator)
 	dialCtxCancel()

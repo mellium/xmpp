@@ -174,7 +174,7 @@ type StreamConfig struct {
 // session.
 // If StartTLS is one of the supported stream features, the Negotiator attempts
 // to negotiate it whether the server advertises support or not.
-func NewNegotiator(cfg StreamConfig) Negotiator
+func NewNegotiator(func(*Session, *StreamConfig) StreamConfig) Negotiator
 ```
 
 It uses stream features as discussed in the previous
