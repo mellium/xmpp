@@ -1,13 +1,13 @@
 digraph {
 		label="Discovery and Connection"
 
-		dial[shape="oval", label="DialClient()"];
+		dial[shape="oval", label="dial.Client()"];
 
 		xmppssrv[shape="box", style=rounded, label="_xmpps SRV Lookup"];
 		xmppsifdot[shape="diamond", label="response = '.'?"];
 		xmppsdroprecord[shape="box", style=rounded, label="Drop '.' record"];
 		xmppsifempty[shape="diamond", label="len(response) = 0?"];
-		xmppsappenddomain[shape="box", style=rounded, label="Use domainpart:port"];
+		xmppsappenddomain[shape="box", style=rounded, label="Use domainpart:5223"];
 
 		xmppsrv[shape="box", style=rounded, label="_xmpp SRV Lookup"];
 		xmppifdot[shape="diamond", label="response = '.'?"];

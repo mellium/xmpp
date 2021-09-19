@@ -83,53 +83,53 @@ func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (net.Co
 }
 
 func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
-	// If we're not looking up SRV records, make up some fake ones.
-	var addrs []*net.SRV
-
 	domain := addr.Domainpart()
-	// If we're not looking up SRV records just do the domain fallback by making
-	// up a few fake records.
-	if d.NoLookup {
-		addrs = discover.FallbackRecords(connType(false, d.S2S), domain)
-		if !d.NoTLS {
-			addrs = append(addrs, discover.FallbackRecords(connType(true, d.S2S), domain)...)
+	cfg := d.TLSConfig
+	if cfg == nil {
+		cfg = &tls.Config{
+			ServerName: domain,
+			MinVersion: tls.VersionTLS12,
 		}
-	} else {
-		var xmppAddrs, xmppsAddrs []*net.SRV
-		var xmppErr, xmppsErr error
-		var wg sync.WaitGroup
-		wg.Add(1)
-		if !d.NoTLS {
-			wg.Add(1)
-			go func() {
-				// Lookup xmpps-(client|server)
-				defer wg.Done()
-				xmppsService := connType(true, d.S2S)
-				addrs, err := discover.LookupService(ctx, d.Resolver, xmppsService, addr)
-				if err != nil {
-					xmppsErr = err
-				}
-				xmppsAddrs = addrs
-			}()
-		}
-		go func() {
-			// Lookup xmpp-(client|server)
-			defer wg.Done()
-			xmppService := connType(false, d.S2S)
-			addrs, err := discover.LookupService(ctx, d.Resolver, xmppService, addr)
-			if err != nil {
-				xmppErr = err
-			}
-			xmppAddrs = addrs
-		}()
-		wg.Wait()
-
-		// If both lookups failed, return one of the errors.
-		if xmppsErr != nil && xmppErr != nil {
-			return nil, xmppsErr
-		}
-		addrs = append(xmppsAddrs, xmppAddrs...)
 	}
+	// If we're not looking up SRV records, use the A/AAAA fallback.
+	if d.NoLookup {
+		return d.legacy(ctx, network, addr, cfg)
+	}
+
+	var xmppAddrs, xmppsAddrs []*net.SRV
+	var xmppErr, xmppsErr error
+	var wg sync.WaitGroup
+	wg.Add(1)
+	if !d.NoTLS {
+		wg.Add(1)
+		go func() {
+			// Lookup xmpps-(client|server)
+			defer wg.Done()
+			xmppsService := connType(true, d.S2S)
+			addrs, err := discover.LookupService(ctx, d.Resolver, xmppsService, addr)
+			if err != nil {
+				xmppsErr = err
+			}
+			xmppsAddrs = addrs
+		}()
+	}
+	go func() {
+		// Lookup xmpp-(client|server)
+		defer wg.Done()
+		xmppService := connType(false, d.S2S)
+		addrs, err := discover.LookupService(ctx, d.Resolver, xmppService, addr)
+		if err != nil {
+			xmppErr = err
+		}
+		xmppAddrs = addrs
+	}()
+	wg.Wait()
+
+	// If both lookups failed, return one of the errors.
+	if xmppsErr != nil && xmppErr != nil {
+		return nil, xmppsErr
+	}
+	addrs := append(xmppsAddrs, xmppAddrs...)
 	if len(addrs) == 0 {
 		return nil, fmt.Errorf("no xmpp service found at address %s", domain)
 	}
@@ -146,20 +146,10 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 				strconv.FormatUint(uint64(addr.Port), 10),
 			))
 		} else {
-			if d.TLSConfig == nil {
-				c, e = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
-					addr.Target,
-					strconv.FormatUint(uint64(addr.Port), 10),
-				), &tls.Config{
-					ServerName: domain,
-					MinVersion: tls.VersionTLS12,
-				})
-			} else {
-				c, e = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
-					addr.Target,
-					strconv.FormatUint(uint64(addr.Port), 10),
-				), d.TLSConfig)
-			}
+			c, e = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
+				addr.Target,
+				strconv.FormatUint(uint64(addr.Port), 10),
+			), cfg)
 		}
 		if e != nil {
 			err = e
@@ -169,6 +159,19 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 		return c, nil
 	}
 	return nil, err
+}
+
+func (d *Dialer) legacy(ctx context.Context, network string, addr jid.JID, cfg *tls.Config) (net.Conn, error) {
+	domain := addr.Domainpart()
+	if !d.NoTLS {
+		conn, err := tls.DialWithDialer(&d.Dialer, network,
+			net.JoinHostPort(domain, "5223"), cfg)
+		if err == nil {
+			return conn, nil
+		}
+	}
+
+	return d.Dialer.DialContext(ctx, network, net.JoinHostPort(domain, "5222"))
 }
 
 func connType(useTLS, s2s bool) string {
