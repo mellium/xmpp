@@ -50,6 +50,7 @@ All notable changes to this project will be documented in this file.
   disco#info requests
 - disco/info: new package containing the former `disco.Feature` and
   `disco.Identity` types
+- xmpp: add `In()` and `Out()` methods to `Session` for fetching stream info
 
 
 ### Fixed
@@ -69,6 +70,11 @@ All notable changes to this project will be documented in this file.
 - xmpp: empty IQ iters no longer return EOF when there is no payload
 - xmpp: `UnmarshalIQ` and `UnmarshalIQElement` no longer return an XML error
   on responses with no payload
+
+
+### Deprecated
+
+- xmpp: the `InSID` and `OutSID` methods on `Session`
 
 
 [XEP-0045: Multi-User Chat]: https://xmpp.org/extensions/xep-0045.html
