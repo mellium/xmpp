@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"mellium.im/xmpp/internal/decl"
+	"mellium.im/xmpp/internal/ns"
 	intstream "mellium.im/xmpp/internal/stream"
 	"mellium.im/xmpp/stream"
 )
@@ -36,7 +37,12 @@ func TestSendNewS2S(t *testing.T) {
 				ids = "abc"
 			}
 			out := stream.Info{}
-			err := intstream.Send(&b, &out, tc.s2s, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
+			if tc.s2s {
+				out.XMLNS = ns.Server
+			} else {
+				out.XMLNS = ns.Client
+			}
+			err := intstream.Send(&b, &out, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
 
 			str := b.String()
 			if !strings.HasPrefix(str, decl.XMLHeader) {
@@ -86,7 +92,7 @@ func TestSendNewS2SReturnsWriteErr(t *testing.T) {
 	}{
 		nopReader{},
 		errWriter{},
-	}, &out, true, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", "abc")
+	}, &out, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", "abc")
 	if err != io.ErrUnexpectedEOF {
 		t.Errorf("Expected errWriterErr (%s) but got `%s`", io.ErrUnexpectedEOF, err)
 	}

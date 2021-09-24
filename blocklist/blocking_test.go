@@ -190,7 +190,7 @@ func (errReadWriter) Read([]byte) (int, error) {
 }
 
 func TestErroredDoesNotPanic(t *testing.T) {
-	s := xmpptest.NewSession(0, errReadWriter{})
+	s := xmpptest.NewClientSession(0, errReadWriter{})
 	iter := blocklist.Fetch(context.Background(), s)
 	if iter.Next() {
 		t.Errorf("expected false from call to next")

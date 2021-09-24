@@ -66,7 +66,7 @@ func RunFeatureTests(t *testing.T, tcs []FeatureTestCase) {
 			}
 
 			buf.Reset()
-			s := NewSession(tc.State, struct {
+			s := NewClientSession(tc.State, struct {
 				io.Reader
 				io.Writer
 			}{

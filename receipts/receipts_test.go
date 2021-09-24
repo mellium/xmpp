@@ -147,7 +147,7 @@ func TestClosedDoesNotPanic(t *testing.T) {
 	h := &receipts.Handler{}
 
 	bw := &bytes.Buffer{}
-	s := xmpptest.NewSession(0, bw)
+	s := xmpptest.NewClientSession(0, bw)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	err := h.SendMessageElement(ctx, s, nil, stanza.Message{
@@ -188,7 +188,7 @@ func TestRoundTrip(t *testing.T) {
 	h := &receipts.Handler{}
 
 	var req bytes.Buffer
-	s := xmpptest.NewSession(0, &req)
+	s := xmpptest.NewClientSession(0, &req)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

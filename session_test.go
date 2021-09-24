@@ -33,7 +33,7 @@ func TestClosedInputStream(t *testing.T) {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			mask := xmpp.SessionState(i)
 			buf := new(bytes.Buffer)
-			s := xmpptest.NewSession(mask, buf)
+			s := xmpptest.NewClientSession(mask, buf)
 			r := s.TokenReader()
 			defer r.Close()
 
@@ -53,7 +53,7 @@ func TestClosedOutputStream(t *testing.T) {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			mask := xmpp.SessionState(i)
 			buf := new(bytes.Buffer)
-			s := xmpptest.NewSession(mask, buf)
+			s := xmpptest.NewClientSession(mask, buf)
 			w := s.TokenWriter()
 			defer w.Close()
 
@@ -368,7 +368,7 @@ func TestServe(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			out := &bytes.Buffer{}
 			in := strings.NewReader(tc.in)
-			s := xmpptest.NewSession(tc.state, struct {
+			s := xmpptest.NewClientSession(tc.state, struct {
 				io.Reader
 				io.Writer
 			}{

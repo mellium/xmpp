@@ -544,7 +544,7 @@ func TestFallback(t *testing.T) {
 		Reader: strings.NewReader(`<iq xmlns="jabber:client" to="romeo@example.com" from="juliet@example.com" id="123"><test/></iq>`),
 		Writer: buf,
 	}
-	s := xmpptest.NewSession(0, rw)
+	s := xmpptest.NewClientSession(0, rw)
 
 	r := s.TokenReader()
 	defer r.Close()

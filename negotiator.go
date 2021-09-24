@@ -10,6 +10,7 @@ import (
 	"io"
 
 	"mellium.im/xmpp/internal/attr"
+	"mellium.im/xmpp/internal/ns"
 	intstream "mellium.im/xmpp/internal/stream"
 	"mellium.im/xmpp/internal/wskey"
 	"mellium.im/xmpp/jid"
@@ -158,7 +159,12 @@ func negotiator(f func(*Session, *StreamConfig) StreamConfig) Negotiator {
 				location = in.To
 				origin = in.From
 
-				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, websocket, stream.DefaultVersion, cfg.Lang, origin.String(), location.String(), attr.RandomID())
+				if s.State()&S2S == S2S {
+					out.XMLNS = ns.Server
+				} else {
+					out.XMLNS = ns.Client
+				}
+				err = intstream.Send(s.Conn(), out, websocket, stream.DefaultVersion, cfg.Lang, origin.String(), location.String(), attr.RandomID())
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
@@ -168,7 +174,12 @@ func negotiator(f func(*Session, *StreamConfig) StreamConfig) Negotiator {
 				// one in response.
 				origin := s.LocalAddr()
 				location := s.RemoteAddr()
-				err = intstream.Send(s.Conn(), out, s.State()&S2S == S2S, websocket, stream.DefaultVersion, cfg.Lang, location.String(), origin.String(), "")
+				if s.State()&S2S == S2S {
+					out.XMLNS = ns.Server
+				} else {
+					out.XMLNS = ns.Client
+				}
+				err = intstream.Send(s.Conn(), out, websocket, stream.DefaultVersion, cfg.Lang, location.String(), origin.String(), "")
 				if err != nil {
 					nState.doRestart = false
 					return mask, nil, nState, err
