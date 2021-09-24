@@ -13,6 +13,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/delay"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 )
 
@@ -27,34 +28,45 @@ var insertTestCases = [...]struct {
 	in     string
 	out    string
 	stanza bool
+	ns     string
 }{
 	0: {},
 	1: {
 		stanza: true,
 		in:     `<message xmlns="jabber:client"/>`,
 		out:    `<message xmlns="jabber:client"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message>`,
+		ns:     ns.Client,
 	},
 	2: {
 		stanza: true,
-		in:     `<message xmlns="jabber:server"/><message xmlns="jabber:client"><body>test</body></message>`,
-		out:    `<message xmlns="jabber:server"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message><message xmlns="jabber:client"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay><body xmlns="jabber:client">test</body></message>`,
+		in:     `<message xmlns="jabber:server"/><message xmlns="jabber:server"><body>test</body></message><message xmlns="jabber:client"/>`,
+		out:    `<message xmlns="jabber:server"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message><message xmlns="jabber:server"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay><body xmlns="jabber:server">test</body></message><message xmlns="jabber:client"></message>`,
+		ns:     ns.Server,
 	},
 	3: {
 		stanza: true,
 		in:     `<message xmlns="jabber:badns"/>`,
 		out:    `<message xmlns="jabber:badns"></message>`,
+		ns:     ns.Client,
 	},
 	4: {
 		in:  `<message xmlns="jabber:client"/>`,
 		out: `<message xmlns="jabber:client"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message>`,
+		ns:  ns.Client,
 	},
 	5: {
 		in:  `<message xmlns="jabber:server"/><message xmlns="jabber:client"><body>test</body></message>`,
 		out: `<message xmlns="jabber:server"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message><message xmlns="jabber:client"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay><body xmlns="jabber:client">test</body></message>`,
+		ns:  ns.Server,
 	},
 	6: {
 		in:  `<message xmlns="jabber:badns"/>`,
 		out: `<message xmlns="jabber:badns"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message>`,
+		ns:  ns.Client,
+	},
+	7: {
+		in:  `<message xmlns="jabber:anyns"/>`,
+		out: `<message xmlns="jabber:anyns"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message>`,
 	},
 }
 
@@ -64,7 +76,7 @@ func TestInsert(t *testing.T) {
 			d := delay.Delay{From: jid.MustParse("me@example.net"), Time: time.Time{}, Reason: "foo"}
 			var r xml.TokenReader
 			if tc.stanza {
-				stanzaDelayer := delay.Stanza(d)
+				stanzaDelayer := delay.Stanza(d, tc.ns)
 				r = stanzaDelayer(xml.NewDecoder(strings.NewReader(tc.in)))
 			} else {
 				r = delay.Insert(d)(xml.NewDecoder(strings.NewReader(tc.in)))

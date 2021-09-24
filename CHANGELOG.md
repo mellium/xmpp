@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - roster: `FetchIQ` now takes a `roster.IQ` instead of a `stanza.IQ` so that the
   version can be set
 - styling: decoding tokens now uses an iterator pattern
+- stanza: added stanza namespace argument to `Is`, `AddID`, and `AddOriginID`
 - xmpp: the `WebSocket` option on `StreamConfig` has been removed in favor of
   `websocket.Negotiator`
 - xmpp: the `IterIQ` and `IterIQElement` methods on `Session` now return the

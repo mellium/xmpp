@@ -258,12 +258,8 @@ func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	}
 
 	s.in.d = intstream.Reader(s.in.d)
-	streamNS := ns.Client
-	if s.state&S2S == S2S {
-		streamNS = ns.Server
-	}
-	se := &stanzaEncoder{TokenWriteFlusher: s.out.e, ns: streamNS}
-	if s.state&S2S == S2S {
+	se := &stanzaEncoder{TokenWriteFlusher: s.out.e, ns: s.out.Info.XMLNS}
+	if s.out.Info.XMLNS == ns.Server {
 		se.from = s.LocalAddr()
 	}
 	s.out.e = se
@@ -517,7 +513,7 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 	}
 
 	// If this is a stanza, normalize the "from" attribute.
-	if stanza.Is(start.Name) {
+	if stanza.Is(start.Name, s.in.XMLNS) {
 		for i, attr := range start.Attr {
 			if attr.Name.Local == "from" /*&& attr.Name.Space == start.Name.Space*/ {
 				local := s.LocalAddr().Bare().String()

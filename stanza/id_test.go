@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
@@ -25,56 +26,73 @@ var idTestCases = [...]struct {
 	in     string
 	origin string
 	id     string
+	ns     string
 }{
 	0: {
 		in:     `<message xmlns="jabber:client"></message>`,
 		origin: `<message xmlns="jabber:client">` + testOrigin + `</message>`,
 		id:     `<message xmlns="jabber:client">` + testStanza + `</message>`,
+		ns:     ns.Client,
 	},
 	1: {
 		in:     `<iq xmlns="jabber:client"></iq>`,
 		origin: `<iq xmlns="jabber:client">` + testOrigin + `</iq>`,
 		id:     `<iq xmlns="jabber:client">` + testStanza + `</iq>`,
+		ns:     ns.Client,
 	},
 	2: {
 		in:     `<presence xmlns="jabber:client"></presence>`,
 		origin: `<presence xmlns="jabber:client">` + testOrigin + `</presence>`,
 		id:     `<presence xmlns="jabber:client">` + testStanza + `</presence>`,
+		ns:     ns.Client,
 	},
 	3: {
 		in:     `<message xmlns="jabber:server"></message>`,
 		origin: `<message xmlns="jabber:server">` + testOrigin + `</message>`,
 		id:     `<message xmlns="jabber:server">` + testStanza + `</message>`,
+		ns:     ns.Server,
 	},
 	4: {
 		in:     `<iq xmlns="jabber:server"></iq>`,
 		origin: `<iq xmlns="jabber:server">` + testOrigin + `</iq>`,
 		id:     `<iq xmlns="jabber:server">` + testStanza + `</iq>`,
+		ns:     ns.Server,
 	},
 	5: {
 		in:     `<presence xmlns="jabber:server"></presence>`,
 		origin: `<presence xmlns="jabber:server">` + testOrigin + `</presence>`,
 		id:     `<presence xmlns="jabber:server">` + testStanza + `</presence>`,
+		ns:     ns.Server,
 	},
 	6: {
 		in:     `<not-stanza><message xmlns="jabber:client"></message></not-stanza>`,
 		origin: `<not-stanza><message xmlns="jabber:client"></message></not-stanza>`,
 		id:     `<not-stanza><message xmlns="jabber:client"></message></not-stanza>`,
+		ns:     ns.Client,
 	},
 	7: {
 		in:     `<not-stanza><iq xmlns="jabber:client"></iq></not-stanza>`,
 		origin: `<not-stanza><iq xmlns="jabber:client"></iq></not-stanza>`,
 		id:     `<not-stanza><iq xmlns="jabber:client"></iq></not-stanza>`,
+		ns:     ns.Client,
 	},
 	8: {
 		in:     `<not-stanza><presence xmlns="jabber:client"></presence></not-stanza>`,
 		origin: `<not-stanza><presence xmlns="jabber:client"></presence></not-stanza>`,
 		id:     `<not-stanza><presence xmlns="jabber:client"></presence></not-stanza>`,
+		ns:     ns.Client,
 	},
 	9: {
 		in:     `<presence xmlns="jabber:badns"></presence>`,
 		origin: `<presence xmlns="jabber:badns"></presence>`,
 		id:     `<presence xmlns="jabber:badns"></presence>`,
+		ns:     ns.Client,
+	},
+	10: {
+		in:     `<presence xmlns="jabber:badns"></presence>`,
+		origin: `<presence xmlns="jabber:badns">` + testOrigin + `</presence>`,
+		id:     `<presence xmlns="jabber:badns">` + testStanza + `</presence>`,
+		ns:     "jabber:badns",
 	},
 }
 
@@ -82,12 +100,12 @@ func TestAddID(t *testing.T) {
 	idReplacer := regexp.MustCompile(`id="(.*?)"`)
 
 	by := jid.MustParse("test@example.net")
-	addID := stanza.AddID(by)
 
 	for i, tc := range idTestCases {
+		addID := stanza.AddID(by, tc.ns)
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Run("origin", func(t *testing.T) {
-				r := stanza.AddOriginID(xml.NewDecoder(strings.NewReader(tc.in)))
+				r := stanza.AddOriginID(xml.NewDecoder(strings.NewReader(tc.in)), tc.ns)
 				// Prevent duplicate xmlns attributes. See https://mellium.im/issue/75
 				r = xmlstream.RemoveAttr(func(start xml.StartElement, attr xml.Attr) bool {
 					return attr.Name.Local == "xmlns"

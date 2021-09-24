@@ -506,7 +506,10 @@ func TestMux(t *testing.T) {
 			m := mux.New(tc.m...)
 			d := xml.NewDecoder(strings.NewReader(tc.x))
 			tok, _ := d.Token()
-			start := tok.(xml.StartElement)
+			start, ok := tok.(xml.StartElement)
+			if !ok {
+				t.Fatalf("did not get start element, got token %v of type %[1]T", tok)
+			}
 
 			err := m.HandleXMPP(nopEncoder{TokenReader: d}, &start)
 			switch {

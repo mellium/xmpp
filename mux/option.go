@@ -92,7 +92,7 @@ func Handle(n xml.Name, h xmpp.Handler) Option {
 		if h == nil {
 			panic("mux: nil handler")
 		}
-		if stanza.Is(n) {
+		if stanza.Is(n, "") {
 			panic("mux: tried to register stanza handler with Handle, use HandleIQ, HandleMessage, or HandlePresence instead")
 		}
 		if _, ok := m.patterns[n]; ok {

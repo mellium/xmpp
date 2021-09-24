@@ -102,9 +102,9 @@ func (d *Delay) UnmarshalXML(decoder *xml.Decoder, start xml.StartElement) error
 }
 
 // Stanza inserts a delay into any stanza read through the stream.
-func Stanza(d Delay) xmlstream.Transformer {
+func Stanza(d Delay, stanzaNS string) xmlstream.Transformer {
 	return xmlstream.InsertFunc(func(start xml.StartElement, level uint64, w xmlstream.TokenWriter) error {
-		if !stanza.Is(start.Name) || level != 1 {
+		if !stanza.Is(start.Name, stanzaNS) || level != 1 {
 			return nil
 		}
 

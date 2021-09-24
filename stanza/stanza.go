@@ -9,7 +9,6 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/attr"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 )
 
@@ -70,16 +69,16 @@ func (id OriginID) WriteXML(w xmlstream.TokenWriter) (int, error) {
 }
 
 // Is tests whether name is a valid stanza based on the localname and namespace.
-func Is(name xml.Name) bool {
-	return (name.Local == "iq" || name.Local == "message" || name.Local == "presence") &&
-		(name.Space == ns.Client || name.Space == ns.Server)
+// If stanzaNS is the empty string, Is matches any namespace.
+func Is(name xml.Name, stanzaNS string) bool {
+	return (name.Local == "iq" || name.Local == "message" || name.Local == "presence") && (stanzaNS == "" || name.Space == stanzaNS)
 }
 
 // AddID returns an transformer that adds a random stanza ID to any stanzas that
 // does not already have one.
-func AddID(by jid.JID) xmlstream.Transformer {
+func AddID(by jid.JID, stanzaNS string) xmlstream.Transformer {
 	return xmlstream.InsertFunc(func(start xml.StartElement, level uint64, w xmlstream.TokenWriter) error {
-		if Is(start.Name) && level == 1 {
+		if Is(start.Name, stanzaNS) && level == 1 {
 			_, err := ID{
 				ID: attr.RandomLen(idLen),
 				By: by,
@@ -90,20 +89,16 @@ func AddID(by jid.JID) xmlstream.Transformer {
 	})
 }
 
-var (
-	addOriginID = xmlstream.InsertFunc(func(start xml.StartElement, level uint64, w xmlstream.TokenWriter) error {
-		if Is(start.Name) && level == 1 {
+// AddOriginID is an xmlstream.Transformer that adds an origin ID to any stanzas
+// found in the input stream.
+func AddOriginID(r xml.TokenReader, stanzaNS string) xml.TokenReader {
+	return xmlstream.InsertFunc(func(start xml.StartElement, level uint64, w xmlstream.TokenWriter) error {
+		if Is(start.Name, stanzaNS) && level == 1 {
 			_, err := OriginID{
 				ID: attr.RandomLen(idLen),
 			}.WriteXML(w)
 			return err
 		}
 		return nil
-	})
-)
-
-// AddOriginID is an xmlstream.Transformer that adds an origin ID to any stanzas
-// found in the input stream.
-func AddOriginID(r xml.TokenReader) xml.TokenReader {
-	return addOriginID(r)
+	})(r)
 }
