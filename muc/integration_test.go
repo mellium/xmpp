@@ -19,6 +19,7 @@ import (
 	"mellium.im/xmpp/disco/items"
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/prosody"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/muc"
 	"mellium.im/xmpp/mux"
@@ -49,7 +50,7 @@ func integrationJoinRoom(ctx context.Context, t *testing.T, cmd *integration.Cmd
 	}
 	mucClient := &muc.Client{}
 	go func() {
-		m := mux.New(muc.HandleClient(mucClient))
+		m := mux.New(ns.Client, muc.HandleClient(mucClient))
 		err := session.Serve(m)
 		if err != nil {
 			t.Logf("error from serve: %v", err)
@@ -178,7 +179,7 @@ func integrationJoinErr(ctx context.Context, t *testing.T, cmd *integration.Cmd)
 	}
 	mucClient := &muc.Client{}
 	go func() {
-		m := mux.New(muc.HandleClient(mucClient))
+		m := mux.New(ns.Client, muc.HandleClient(mucClient))
 		err := session.Serve(m)
 		if err != nil {
 			t.Logf("error from serve: %v", err)

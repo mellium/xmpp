@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/xtime"
@@ -33,7 +34,7 @@ func TestRoundTrip(t *testing.T) {
 			return serverTime
 		},
 	}
-	m := mux.New(xtime.Handle(h))
+	m := mux.New(ns.Client, xtime.Handle(h))
 	cs := xmpptest.NewClientServer(
 		xmpptest.ServerHandler(m),
 	)

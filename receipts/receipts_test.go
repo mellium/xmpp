@@ -206,7 +206,7 @@ func TestRoundTrip(t *testing.T) {
 	var b strings.Builder
 	e := xml.NewEncoder(&b)
 
-	m := mux.New(receipts.Handle(h))
+	m := mux.New(ns.Client, receipts.Handle(h))
 	err = m.HandleXMPP(struct {
 		xml.TokenReader
 		xmlstream.Encoder

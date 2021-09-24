@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"mellium.im/xmpp/carbons"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
@@ -34,7 +35,7 @@ func TestHandler(t *testing.T) {
 			return nil
 		},
 	}
-	m := mux.New(carbons.Handle(h))
+	m := mux.New(ns.Client, carbons.Handle(h))
 	s := xmpptest.NewClientServer(xmpptest.ClientHandler(m))
 	defer s.Close()
 	const recv = `<message xmlns='jabber:client'

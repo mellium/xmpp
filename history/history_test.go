@@ -27,6 +27,7 @@ func TestRoundTrip(t *testing.T) {
 		return nil
 	}))
 	m := mux.New(
+		"",
 		mux.IQFunc(stanza.SetIQ, xml.Name{Space: history.NS, Local: "query"}, func(iq stanza.IQ, e xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 			xmlstream.Copy(e, stanza.Message{}.Wrap(xmlstream.Wrap(
 				nil,

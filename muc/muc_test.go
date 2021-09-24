@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/muc"
@@ -22,7 +23,7 @@ import (
 func TestJoinPartMuc(t *testing.T) {
 	j := jid.MustParse("room@example.net/me")
 	h := &muc.Client{}
-	m := mux.New(muc.HandleClient(h))
+	m := mux.New(ns.Client, muc.HandleClient(h))
 	s := xmpptest.NewClientServer(
 		xmpptest.ClientHandler(m),
 		xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
@@ -64,7 +65,7 @@ func TestJoinPartMuc(t *testing.T) {
 func TestJoinError(t *testing.T) {
 	j := jid.MustParse("room@example.net/me")
 	h := &muc.Client{}
-	m := mux.New(muc.HandleClient(h))
+	m := mux.New(ns.Client, muc.HandleClient(h))
 	s := xmpptest.NewClientServer(
 		xmpptest.ClientHandler(m),
 		xmpptest.ServerHandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
@@ -100,7 +101,7 @@ func TestJoinError(t *testing.T) {
 func TestPartError(t *testing.T) {
 	j := jid.MustParse("room@example.net/me")
 	h := &muc.Client{}
-	m := mux.New(muc.HandleClient(h))
+	m := mux.New(ns.Client, muc.HandleClient(h))
 	errHotelCalifornia := stanza.Error{
 		Type:      stanza.Auth,
 		Condition: stanza.NotAllowed,

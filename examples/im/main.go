@@ -207,7 +207,7 @@ func main() {
 	}
 
 	mucClient := &muc.Client{}
-	mux := mux.New(muc.HandleClient(mucClient))
+	mux := mux.New("jabber:client", muc.HandleClient(mucClient))
 	go func() {
 		err := session.Serve(mux)
 		if err != nil {

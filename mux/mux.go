@@ -54,11 +54,12 @@ type ServeMux struct {
 	iqPatterns       map[pattern]IQHandler
 	msgPatterns      map[pattern]MessageHandler
 	presencePatterns map[pattern]PresenceHandler
+	stanzaNS         string
 }
 
 // New allocates and returns a new ServeMux.
-func New(opt ...Option) *ServeMux {
-	m := &ServeMux{}
+func New(stanzaNS string, opt ...Option) *ServeMux {
+	m := &ServeMux{stanzaNS: stanzaNS}
 	for _, o := range opt {
 		o(m)
 	}
@@ -89,13 +90,15 @@ func (m *ServeMux) Handler(name xml.Name) (h xmpp.Handler, ok bool) {
 		return h, true
 	}
 
-	switch name.Local {
-	case iqStanza:
-		return xmpp.HandlerFunc(m.iqRouter), true
-	case msgStanza:
-		return xmpp.HandlerFunc(m.msgRouter), true
-	case presStanza:
-		return xmpp.HandlerFunc(m.presenceRouter), true
+	if stanza.Is(name, m.stanzaNS) {
+		switch name.Local {
+		case iqStanza:
+			return xmpp.HandlerFunc(m.iqRouter), true
+		case msgStanza:
+			return xmpp.HandlerFunc(m.msgRouter), true
+		case presStanza:
+			return xmpp.HandlerFunc(m.presenceRouter), true
+		}
 	}
 
 	return nopHandler{}, false

@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 
 - disco: the `Feature`, `Identity`, and `Item` types have been moved to the
   `info` and `items` packages
+- mux: make namespace checking stricter by adding argument to `New`
 - roster: rename `version` attribute to `ver`
 - roster: the `Push` callback now takes the roster version
 - roster: `FetchIQ` now takes a `roster.IQ` instead of a `stanza.IQ` so that the

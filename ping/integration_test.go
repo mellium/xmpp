@@ -22,6 +22,7 @@ import (
 	"mellium.im/xmpp/internal/integration/mcabber"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/internal/integration/sendxmpp"
+	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/ping"
 	"mellium.im/xmpp/stanza"
@@ -57,7 +58,7 @@ func integrationRecvPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 		t.Fatalf("error connecting: %v", err)
 	}
 	go func() {
-		m := mux.New(mux.IQFunc(stanza.GetIQ, xml.Name{Local: "ping", Space: ping.NS},
+		m := mux.New(ns.Client, mux.IQFunc(stanza.GetIQ, xml.Name{Local: "ping", Space: ping.NS},
 			func(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 				err := ping.Handler{}.HandleIQ(iq, t, start)
 				gotPing <- struct{}{}
