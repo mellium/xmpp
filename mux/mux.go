@@ -322,7 +322,7 @@ func (m *ServeMux) ForIdentities(node string, f func(info.Identity) error) error
 	return nil
 }
 
-// ForIdentities implements form.Iter for the mux by iterating over all child
+// ForForms implements form.Iter for the mux by iterating over all child
 // handlers.
 func (m *ServeMux) ForForms(node string, f func(*form.Data) error) error {
 	for _, h := range m.patterns {

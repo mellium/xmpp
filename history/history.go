@@ -55,6 +55,7 @@ func (h *Handler) remove(id string) {
 	}
 }
 
+// HandleMessage implements mux.MessageHandler.
 func (h *Handler) HandleMessage(msg stanza.Message, r xmlstream.TokenReadEncoder) error {
 	// TODO: iterate through and find result.
 	msgTok, err := r.Token()

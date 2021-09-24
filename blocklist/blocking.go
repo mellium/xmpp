@@ -2,7 +2,7 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-// Package blocking implements blocking and unblocking of contacts.
+// Package blocklist implements blocking and unblocking of contacts.
 package blocklist // import "mellium.im/xmpp/blocklist"
 
 import (
