@@ -26,14 +26,7 @@ import (
 // is much faster than encoding.
 // Afterwards, clear the StreamRestartRequired bit and set the output stream
 // information.
-func Send(rw io.ReadWriter, streamData *stream.Info, s2s, ws bool, version stream.Version, lang string, to, from, id string) error {
-	switch s2s {
-	case true:
-		streamData.XMLNS = ns.Server
-	case false:
-		streamData.XMLNS = ns.Client
-	}
-
+func Send(rw io.ReadWriter, streamData *stream.Info, ws bool, version stream.Version, lang, to, from, id string) error {
 	streamData.ID = id
 	b := bufio.NewWriter(rw)
 	var err error

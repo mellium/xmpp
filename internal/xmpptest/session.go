@@ -22,7 +22,7 @@ import (
 // pops the first token (likely <stream:stream>) but does not perform any
 // validation on the token, transmit any data over the wire, or perform any
 // other session negotiation.
-func NopNegotiator(state xmpp.SessionState) xmpp.Negotiator {
+func NopNegotiator(state xmpp.SessionState, streamNS string) xmpp.Negotiator {
 	return func(ctx context.Context, in, out *stream.Info, s *xmpp.Session, data interface{}) (xmpp.SessionState, io.ReadWriter, interface{}, error) {
 		// Pop the stream start token.
 		rc := s.TokenReader()
@@ -32,24 +32,35 @@ func NopNegotiator(state xmpp.SessionState) xmpp.Negotiator {
 		if err != nil {
 			return state | xmpp.Ready, nil, nil, err
 		}
+		out.XMLNS = streamNS
 		err = intstream.Send(struct {
 			io.Reader
 			io.Writer
 		}{
 			Writer: io.Discard,
-		}, out, s.State()&xmpp.S2S == xmpp.S2S, false, stream.DefaultVersion, "", "example.net", "test@example.net", "123")
+		}, out, false, stream.DefaultVersion, "", "example.net", "test@example.net", "123")
 
 		return state | xmpp.Ready, nil, nil, err
 	}
 }
 
-// NewSession returns a new client-to-client XMPP session with the state bits
-// set to finalState|xmpp.Ready, the origin JID set to "test@example.net" and
-// the location JID set to "example.net".
+// NewClientSession returns a new client-to-client XMPP session with the state
+// bits set to finalState|xmpp.Ready, the origin JID set to "test@example.net"
+// and the location JID set to "example.net".
 //
-// NewSession panics on error for ease of use in testing, where a panic is
+// NewClientSession panics on error for ease of use in testing, where a panic is
 // acceptable.
-func NewSession(finalState xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
+func NewClientSession(finalState xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
+	return newSession(finalState, rw, ns.Client)
+}
+
+// NewServerSession is like NewClientSession except that the stream uses the
+// server-to-server namespace.
+func NewServerSession(finalState xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
+	return newSession(finalState, rw, ns.Server)
+}
+
+func newSession(finalState xmpp.SessionState, rw io.ReadWriter, streamNS string) *xmpp.Session {
 	location := jid.MustParse("example.net")
 	origin := jid.MustParse("test@example.net")
 
@@ -65,14 +76,14 @@ func NewSession(finalState xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
 			io.Writer
 		}{
 			Reader: io.MultiReader(
-				strings.NewReader(`<stream:stream from="`+from.String()+`" to="`+to.String()+`" id="123" version="1.0" xmlns="`+ns.Client+`" xmlns:stream="`+stream.NS+`">`),
+				strings.NewReader(`<stream:stream from="`+from.String()+`" to="`+to.String()+`" id="123" version="1.0" xmlns="`+streamNS+`" xmlns:stream="`+stream.NS+`">`),
 				rw,
 				strings.NewReader(`</stream:stream>`),
 			),
 			Writer: rw,
 		},
 		0,
-		NopNegotiator(finalState),
+		NopNegotiator(finalState, streamNS),
 	)
 	if err != nil {
 		panic(err)
@@ -148,8 +159,8 @@ func NewClientServer(opts ...Option) *ClientServer {
 	}
 
 	clientConn, serverConn := net.Pipe()
-	cs.Client = NewSession(cs.clientState, clientConn)
-	cs.Server = NewSession(cs.serverState, serverConn)
+	cs.Client = NewClientSession(cs.clientState, clientConn)
+	cs.Server = NewServerSession(cs.serverState, serverConn)
 	/* #nosec */
 	go cs.Client.Serve(cs.clientHandler)
 	/* #nosec */

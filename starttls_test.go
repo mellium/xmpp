@@ -123,7 +123,7 @@ func (nopRWC) Close() error {
 func TestNegotiateServer(t *testing.T) {
 	stls := xmpp.StartTLS(&tls.Config{})
 	var b bytes.Buffer
-	c := xmpptest.NewSession(xmpp.Received, nopRWC{&b, &b})
+	c := xmpptest.NewClientSession(xmpp.Received, nopRWC{&b, &b})
 	_, rw, err := stls.Negotiate(context.Background(), c, nil)
 	switch {
 	case err != nil:
@@ -162,7 +162,7 @@ func TestNegotiateClient(t *testing.T) {
 			stls := xmpp.StartTLS(&tls.Config{})
 			r := strings.NewReader(strings.Join(test.responses, "\n"))
 			var b bytes.Buffer
-			c := xmpptest.NewSession(0, nopRWC{r, &b})
+			c := xmpptest.NewClientSession(0, nopRWC{r, &b})
 			mask, rw, err := stls.Negotiate(context.Background(), c, nil)
 			switch {
 			case test.err && err == nil:

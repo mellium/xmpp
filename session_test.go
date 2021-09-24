@@ -33,7 +33,7 @@ func TestClosedInputStream(t *testing.T) {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			mask := xmpp.SessionState(i)
 			buf := new(bytes.Buffer)
-			s := xmpptest.NewSession(mask, buf)
+			s := xmpptest.NewClientSession(mask, buf)
 			r := s.TokenReader()
 			defer r.Close()
 
@@ -53,7 +53,7 @@ func TestClosedOutputStream(t *testing.T) {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			mask := xmpp.SessionState(i)
 			buf := new(bytes.Buffer)
-			s := xmpptest.NewSession(mask, buf)
+			s := xmpptest.NewClientSession(mask, buf)
 			w := s.TokenWriter()
 			defer w.Close()
 
@@ -182,6 +182,7 @@ var serveTests = [...]struct {
 	err          error
 	errStringCmp bool
 	state        xmpp.SessionState
+	serverNS     bool
 }{
 	0: {
 		in:  `<test></test>`,
@@ -343,9 +344,10 @@ var serveTests = [...]struct {
 			}.Wrap(nil))
 			return err
 		}),
-		in:    `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
-		out:   `<iq xmlns="jabber:server" type="result" id="1234" from="test@example.net"></iq></stream:stream>`,
-		state: xmpp.S2S,
+		in:       `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
+		out:      `<iq xmlns="jabber:server" type="result" id="1234" from="test@example.net"></iq></stream:stream>`,
+		state:    xmpp.S2S,
+		serverNS: true,
 	},
 	16: {
 		// S2S stanzas always have "from" set, unless it was already set.
@@ -357,9 +359,10 @@ var serveTests = [...]struct {
 			}.Wrap(nil))
 			return err
 		}),
-		in:    `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
-		out:   `<iq xmlns="jabber:server" type="result" from="from@example.net" id="1234"></iq></stream:stream>`,
-		state: xmpp.S2S,
+		in:       `<iq type="get" id="1234"><unknownpayload xmlns="unknown"/></iq>`,
+		out:      `<iq xmlns="jabber:server" type="result" from="from@example.net" id="1234"></iq></stream:stream>`,
+		state:    xmpp.S2S,
+		serverNS: true,
 	},
 }
 
@@ -368,13 +371,24 @@ func TestServe(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			out := &bytes.Buffer{}
 			in := strings.NewReader(tc.in)
-			s := xmpptest.NewSession(tc.state, struct {
-				io.Reader
-				io.Writer
-			}{
-				Reader: in,
-				Writer: out,
-			})
+			var s *xmpp.Session
+			if tc.serverNS {
+				s = xmpptest.NewServerSession(tc.state, struct {
+					io.Reader
+					io.Writer
+				}{
+					Reader: in,
+					Writer: out,
+				})
+			} else {
+				s = xmpptest.NewClientSession(tc.state, struct {
+					io.Reader
+					io.Writer
+				}{
+					Reader: in,
+					Writer: out,
+				})
+			}
 
 			err := s.Serve(tc.handler)
 			switch {
