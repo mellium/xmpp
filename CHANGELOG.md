@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## v0.20.0 — 2021-09-26
 
 ### Security
 
