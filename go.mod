@@ -1,6 +1,6 @@
 module mellium.im/xmpp
 
-go 1.15
+go 1.16
 
 require (
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
@@ -10,5 +10,5 @@ require (
 	golang.org/x/text v0.3.2
 	golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e
 	mellium.im/sasl v0.2.1
-	mellium.im/xmlstream v0.15.3-0.20210221202126-7cc1407dad4c
+	mellium.im/xmlstream v0.15.3
 )
