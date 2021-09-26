@@ -1,7 +1,7 @@
 # XMPP
 
 [![GoDoc](https://godoc.org/mellium.im/xmpp?status.svg)][docs]
-[![Chat](https://inverse.chat/badge.svg?room=users@mellium.chat)](https://mellium.chat)
+[![Chat](https://img.shields.io/badge/XMPP-users@mellium.chat-orange.svg)](https://mellium.chat)
 [![License](https://img.shields.io/badge/license-FreeBSD-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![Build Status](https://builds.sr.ht/~samwhited/xmpp.svg)](https://builds.sr.ht/~samwhited/xmpp?)
 
