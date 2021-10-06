@@ -812,22 +812,6 @@ func (s *Session) State() SessionState {
 	return s.state
 }
 
-// InSID returns the stream ID for the input stream.
-//
-// Deprecated: InSID exists for historical compatibility and will be removed in
-// a future version off this library. Use In instead.
-func (s *Session) InSID() string {
-	return s.in.ID
-}
-
-// OutSID returns the stream ID for the output stream.
-//
-// Deprecated: OutSID exists for historical compatibility and will be removed in
-// a future version off this library. Use Out instead.
-func (s *Session) OutSID() string {
-	return s.out.ID
-}
-
 // In returns information about the input stream.
 func (s *Session) In() stream.Info {
 	return s.in.Info
