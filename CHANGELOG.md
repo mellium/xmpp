@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Breaking
+
+- xmpp: the deprecated methods `InSID` and `OutSID` have been dropped in favor
+  of `In` and `Out`
+
+
 ## v0.20.0 — 2021-09-26
 
 ### Security
