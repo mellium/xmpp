@@ -12,4 +12,5 @@ package disco // import "mellium.im/xmpp/disco"
 const (
 	NSInfo  = `http://jabber.org/protocol/disco#info`
 	NSItems = `http://jabber.org/protocol/disco#items`
+	NSCaps  = `http://jabber.org/protocol/caps`
 )
