@@ -6,7 +6,12 @@ package disco
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/xml"
+	"fmt"
+	"hash"
+	"io"
+	"sort"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
@@ -40,6 +45,12 @@ func (q InfoQuery) WriteXML(w xmlstream.TokenWriter) (int, error) {
 	return xmlstream.Copy(w, q.TokenReader())
 }
 
+// MarshalXML implements xml.Marshaler.
+func (q InfoQuery) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	_, err := q.WriteXML(e)
+	return err
+}
+
 // Info is a response to a disco info query.
 type Info struct {
 	InfoQuery
@@ -63,6 +74,90 @@ func (i Info) TokenReader() xml.TokenReader {
 // WriteXML implements xmlstream.WriterTo.
 func (i Info) WriteXML(w xmlstream.TokenWriter) (int, error) {
 	return xmlstream.Copy(w, i.TokenReader())
+}
+
+// MarshalXML implements xml.Marshaler.
+func (i Info) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	_, err := i.WriteXML(e)
+	return err
+}
+
+// Hash generates the entity capabilities verification string.
+// Its output is suitable for use as a cache key.
+func (i Info) Hash(h hash.Hash) string {
+	return string(i.AppendHash(nil, h))
+}
+
+// AppendHash is like Hash except that it appends the output string to the
+// provided byte slice.
+func (i Info) AppendHash(dst []byte, h hash.Hash) []byte {
+	// Hash identities
+	// TODO: does this match RFC 4790 § 9.3?
+	sort.Slice(i.Identity, func(a, b int) bool {
+		identI, identJ := i.Identity[a], i.Identity[b]
+		if identI.Category != identJ.Category {
+			return identI.Category < identJ.Category
+		}
+		if identI.Type != identJ.Type {
+			return identI.Type < identJ.Type
+		}
+		if identI.Lang != identJ.Lang {
+			return identI.Lang < identJ.Lang
+		}
+		return false
+	})
+	for _, ident := range i.Identity {
+		/* #nosec */
+		fmt.Fprintf(h, "%s/%s/%s/%s<", ident.Category, ident.Type, ident.Lang, ident.Name)
+	}
+
+	// Hash features
+	sort.Slice(i.Features, func(a, b int) bool {
+		return i.Features[a].Var < i.Features[b].Var
+	})
+	for _, f := range i.Features {
+		/* #nosec */
+		io.WriteString(h, f.Var)
+		/* #nosec */
+		io.WriteString(h, "<")
+	}
+
+	// Hash forms
+	for _, infoForm := range i.Form {
+		var formType string
+		fields := make([]string, 0, infoForm.Len()-1)
+		infoForm.ForFields(func(f form.FieldData) {
+			if f.Var == "FORM_TYPE" {
+				formType, _ = infoForm.GetString("FORM_TYPE")
+				return
+			}
+			fields = append(fields, f.Var)
+		})
+		sort.Strings(fields)
+		/* #nosec */
+		io.WriteString(h, formType)
+		/* #nosec */
+		io.WriteString(h, "<")
+		for _, f := range fields {
+			/* #nosec */
+			io.WriteString(h, f)
+			/* #nosec */
+			io.WriteString(h, "<")
+			vals, _ := infoForm.Raw(f)
+			sort.Strings(vals)
+			for _, val := range vals {
+				/* #nosec */
+				io.WriteString(h, val)
+				/* #nosec */
+				io.WriteString(h, "<")
+			}
+		}
+	}
+
+	dst = h.Sum(dst)
+	out := make([]byte, base64.StdEncoding.EncodedLen(len(dst)))
+	base64.StdEncoding.Encode(out, dst)
+	return out
 }
 
 // GetInfo discovers a set of features and identities associated with a JID and
