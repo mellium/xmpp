@@ -42,9 +42,7 @@ func Fetch(ctx context.Context, s *xmpp.Session, q Query) *Iter {
 // FetchIQ is like Fetch but it allows you to customize the IQ.
 // Changing the type of the provided IQ has no effect.
 func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session, q Query) *Iter {
-	if iq.Type != stanza.GetIQ {
-		iq.Type = stanza.GetIQ
-	}
+	iq.Type = stanza.GetIQ
 	queryAttrs := []xml.Attr{{
 		Name:  xml.Name{Local: "node"},
 		Value: q.Node,
