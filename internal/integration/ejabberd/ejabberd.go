@@ -246,6 +246,8 @@ func CreateUser(ctx context.Context, addr, pass string) integration.Option {
 // When all subtests have completed, the daemon is stopped.
 func Test(ctx context.Context, t *testing.T, opts ...integration.Option) integration.SubtestRunner {
 	opts = append(opts, defaultConfig, inetrcFile, foreground,
-		integration.Shutdown(ctlFunc(ctx, "stop")))
+		integration.Shutdown(ctlFunc(ctx, "stop")),
+		integration.Shutdown(ctlFunc(ctx, "stopped")),
+	)
 	return integration.Test(ctx, cmdName, t, opts...)
 }
