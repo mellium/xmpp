@@ -60,8 +60,11 @@ func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session, q Query) *Iter 
 		})
 	}
 	iter, _, err := s.IterIQElement(ctx, xmlstream.Wrap(
-		nil,
-		xml.StartElement{Name: xml.Name{Local: "items"}, Attr: queryAttrs},
+		xmlstream.Wrap(
+			nil,
+			xml.StartElement{Name: xml.Name{Local: "items"}, Attr: queryAttrs},
+		),
+		xml.StartElement{Name: xml.Name{Space: NS, Local: "pubsub"}},
 	), iq)
 	return &Iter{
 		iter: paging.WrapIter(iter, 0),
