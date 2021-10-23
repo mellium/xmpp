@@ -10,5 +10,5 @@ require (
 	golang.org/x/text v0.3.2
 	golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e
 	mellium.im/sasl v0.2.1
-	mellium.im/xmlstream v0.15.3
+	mellium.im/xmlstream v0.15.4-0.20211023152852-0ca80a938137
 )
