@@ -46,7 +46,9 @@ tasks:
       staticcheck ./...
       # gosec does not handle modules correctly.
       # See: https://github.com/securego/gosec/issues/622
-      gosec -exclude-dir=examples ./...
+      # It also does not handle deferred close statements correctly (G307).
+      # See: https://github.com/securego/gosec/issues/714
+      gosec -exclude=G307 -exclude-dir=examples ./...
 
       checkdoc -fileheader.pattern='-' ./... <<EOF
       Copyright \d\d\d\d The Mellium Contributors\.
