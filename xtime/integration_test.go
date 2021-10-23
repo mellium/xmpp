@@ -16,6 +16,7 @@ import (
 	"mellium.im/sasl"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/integration"
+	"mellium.im/xmpp/internal/integration/ejabberd"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/xtime"
 )
@@ -27,13 +28,11 @@ func TestIntegrationRequestTime(t *testing.T) {
 	)
 	prosodyRun(integrationRequestTime)
 
-	// See: https://github.com/processone/ejabberd/issues/3454
-	//
-	// ejabberdRun := ejabberd.Test(context.TODO(), t,
-	// 	integration.Log(),
-	// 	ejabberd.ListenC2S(),
-	// )
-	// ejabberdRun(integrationRequestTime)
+	ejabberdRun := ejabberd.Test(context.TODO(), t,
+		integration.Log(),
+		ejabberd.ListenC2S(),
+	)
+	ejabberdRun(integrationRequestTime)
 }
 
 func integrationRequestTime(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
