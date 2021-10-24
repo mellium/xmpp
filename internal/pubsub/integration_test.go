@@ -21,7 +21,6 @@ import (
 	"mellium.im/xmpp/internal/integration/ejabberd"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/internal/pubsub"
-	"mellium.im/xmpp/stanza"
 )
 
 func TestIntegrationPubFetch(t *testing.T) {
@@ -73,26 +72,53 @@ func integrationPubFetch(ctx context.Context, t *testing.T, cmd *integration.Cmd
 			t.Errorf("wrong ID for published value: want=%q, got=%q", strID, newID)
 		}
 	}
-	iter := pubsub.FetchIQ(ctx, stanza.IQ{ID: "0000"}, session, pubsub.Query{})
-	type Foo struct {
+	iter := pubsub.Fetch(ctx, session, pubsub.Query{
+		Node: t.Name(),
+	})
+
+	const strID = "9"
+	hasNext := iter.Next()
+	if !hasNext {
+		t.Fatalf("no item found")
+	}
+	id, r := iter.Item()
+	if id != strID {
+		t.Errorf("wrong ID for fetched value: want=%q, got=%q", strID, id)
+	}
+	foo := struct {
 		XMLName xml.Name `xml:"foo"`
 		ID      int      `xml:"id,attr"`
+	}{}
+	err = xml.NewTokenDecoder(r).Decode(&foo)
+	if err != nil {
+		t.Fatalf("error decoding %s foo: %v", id, err)
 	}
-	i := 0
-	for iter.Next() {
-		strID := strconv.Itoa(i)
-		id, r := iter.Item()
-		if id != strID {
-			t.Errorf("wrong ID for fetched value: want=%q, got=%q", strID, id)
-		}
-		foo := Foo{}
-		err := xml.NewTokenDecoder(r).Decode(&foo)
-		if err != nil {
-			t.Fatalf("error decoding %s foo: %v", id, err)
-		}
-		if foo.ID != i {
-			t.Errorf("wrong value for ID in element: want=%s, got=%d", strID, foo.ID)
-		}
-		i++
+	if foo.ID != 9 {
+		t.Errorf("wrong value for ID in element: want=%s, got=%d", strID, foo.ID)
+	}
+	hasNext = iter.Next()
+	if hasNext {
+		t.Fatalf("expected default pep to only store one item")
+	}
+
+	err = iter.Close()
+	if err != nil {
+		t.Fatalf("error closing iter: %v", err)
+	}
+
+	err = pubsub.Delete(ctx, session, t.Name(), "9", false)
+	if err != nil {
+		t.Fatalf("error retracting pubsub item: %v", err)
+	}
+
+	iter = pubsub.Fetch(ctx, session, pubsub.Query{
+		Node: t.Name(),
+	})
+	if iter.Next() {
+		t.Fatalf("expected node to be empty after deletion")
+	}
+	err = iter.Close()
+	if err != nil {
+		t.Fatalf("error closing second iter: %v", err)
 	}
 }

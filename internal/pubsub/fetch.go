@@ -59,15 +59,47 @@ func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session, q Query) *Iter 
 			Value: q.Item,
 		})
 	}
-	iter, _, err := s.IterIQElement(ctx, xmlstream.Wrap(
+	// We can't use IterIQElement because the IQ payload does not contain the
+	// items directly, instead there is another wrapper element.
+	resp, err := s.SendIQElement(ctx, xmlstream.Wrap(
 		xmlstream.Wrap(
 			nil,
 			xml.StartElement{Name: xml.Name{Local: "items"}, Attr: queryAttrs},
 		),
 		xml.StartElement{Name: xml.Name{Space: NS, Local: "pubsub"}},
 	), iq)
+	if err != nil {
+		return &Iter{err: err}
+	}
+
+	tok, err := resp.Token()
+	if err != nil {
+		/* #nosec */
+		resp.Close()
+		return &Iter{err: err}
+	}
+	start, ok := tok.(xml.StartElement)
+	if ok {
+		_, err := stanza.UnmarshalIQError(resp, start)
+		if err != nil {
+			/* #nosec */
+			resp.Close()
+			return &Iter{err: err}
+		}
+	}
+
+	// Pop pubsub, and items tokens.
+	for i := 0; i < 2; i++ {
+		_, err = resp.Token()
+		if err != nil {
+			/* #nosec */
+			resp.Close()
+			return &Iter{err: err}
+		}
+	}
+
 	return &Iter{
-		iter: paging.WrapIter(iter, 0),
+		iter: paging.WrapIter(xmlstream.NewIter(resp), 0),
 		err:  err,
 	}
 }
@@ -93,7 +125,7 @@ func (i *Iter) Next() bool {
 		return i.Next()
 	}
 	i.currID = ""
-	i.current = r
+	i.current = xmlstream.Inner(r)
 	for _, attr := range start.Attr {
 		if attr.Name.Local == "id" {
 			i.currID = attr.Value
