@@ -20,7 +20,7 @@ import (
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/ejabberd"
 	"mellium.im/xmpp/internal/integration/prosody"
-	"mellium.im/xmpp/internal/pubsub"
+	"mellium.im/xmpp/pubsub"
 )
 
 func TestIntegrationPubFetch(t *testing.T) {
