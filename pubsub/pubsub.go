@@ -53,9 +53,7 @@ func PublishIQ(ctx context.Context, s *xmpp.Session, iq stanza.IQ, node, id stri
 			xml.StartElement{Name: xml.Name{Local: "publish"}, Attr: []xml.Attr{{Name: xml.Name{Local: "node"}, Value: node}}},
 		),
 		xml.StartElement{Name: xml.Name{Space: NS, Local: "pubsub"}},
-	), stanza.IQ{
-		Type: stanza.SetIQ,
-	}, &resp)
+	), iq, &resp)
 	if resp.Publish.Item.ID == "" {
 		return id, err
 	}
