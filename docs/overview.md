@@ -16,12 +16,12 @@ There are a handful of libraries to handle XMPP already in existence, but most
 of them are small high-level libraries designed only to work with the legacy
 version of XMPP that was supported by Google Talk, or don't follow go idioms and
 best practices.
-When I started looking into a Go XMPP implementation around 5 years ago, there
-wasn't a low-level library meant to act as a building block from which higher
-level systems could be created, and that's what I wanted: the equivalent of the
-standard libraries [`net/http`] but for XMPP.
+When I started looking into a Go XMPP implementation around 2014, there wasn't a
+low-level library meant to act as a building block from which higher level
+systems could be created.
+I wanted the equivalent of the standard library's [`net/http`] but for XMPP.
 This is why I created [`mellium.im/xmpp`].
-This post will be about some of the design decisions I made while building the
+This document is about some of the design decisions I made while building the
 library, and about some of the trade offs made along the way.
 
 (1): XMPP is sometimes referred to as "Jabber" for historical reasons. I prefer
@@ -150,13 +150,10 @@ various options such as setting the stream language and copying the input and
 output streams somewhere else (such as an XML console):
 
 ```
-// StreamConfig contains options for configuring the default Negotiator. 
+// StreamConfig contains options for configuring the default Negotiator.
 type StreamConfig struct {
 	// The native language of the stream.
 	Lang string
-
-	// S2S causes the negotiator to negotiate a server-to-server (s2s) connection.
-	S2S bool
 
 	// A list of stream features to attempt to negotiate.
 	Features []StreamFeature
@@ -165,16 +162,15 @@ type StreamConfig struct {
 	// any writes to the session will be written to TeeOut (similar to the tee(1)
 	// command).
 	// This can be used to build an "XML console", but users should be careful
-	// since this bypasses TLS and could expose passwords and other sensitve data.
+	// since this bypasses TLS and could expose passwords and other sensitive
+	// data.
 	TeeIn, TeeOut io.Writer
 }
 
 // NewNegotiator creates a Negotiator that uses a collection of StreamFeatures
 // to negotiate an XMPP client-to-server (c2s) or server-to-server (s2s)
 // session.
-// If StartTLS is one of the supported stream features, the Negotiator attempts
-// to negotiate it whether the server advertises support or not.
-func NewNegotiator(func(*Session, *StreamConfig) StreamConfig) Negotiator
+func NewNegotiator(cfg func(*Session, *StreamConfig) StreamConfig) Negotiator
 ```
 
 It uses stream features as discussed in the previous
@@ -248,8 +244,8 @@ be reused by third party multiplexers.
 
 Naturally, receiving data isn't enough.
 We also need to send it.
-This happens by calling methods directly on the `Session`, the full list of
-methods for sending data is:
+This happens by calling methods directly on the `Session`.
+For example, some of these methods are:
 
 - [`Encode`]`(v interface{}) error`
 - [`EncodeElement`]`(v interface{}, start xml.StartElement) error`
