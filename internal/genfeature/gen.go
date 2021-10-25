@@ -89,13 +89,13 @@ func main() {
 
 	parsedTmpl, err := template.New("out").Parse(tmpl)
 	if err != nil {
-		log.Fatalf("erro parsing template: %v", err)
+		log.Fatalf("error parsing template: %v", err)
 	}
 
 	var buf bytes.Buffer
 	fd, err := os.Create(outFile)
 	if err != nil {
-		log.Fatalf("error creatng file %q: %v", outFile, err)
+		log.Fatalf("error creating file %q: %v", outFile, err)
 	}
 	err = parsedTmpl.Execute(&buf, struct {
 		Args     string
