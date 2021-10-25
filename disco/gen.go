@@ -110,7 +110,7 @@ func genFile(regURL, tmpDir, outFile string, tmpl *template.Template) error {
 	if err != nil {
 		return err
 	}
-	defer fd.Close()
+	defer out.Close()
 
 	reg := registry{}
 	d := xml.NewDecoder(fd)
@@ -128,15 +128,6 @@ func genFile(regURL, tmpDir, outFile string, tmpl *template.Template) error {
 	}
 	_, err = io.Copy(out, bytes.NewReader(b))
 	return err
-}
-
-type writeCloser struct {
-	io.Writer
-	closer func() error
-}
-
-func (f writeCloser) Close() error {
-	return f.closer()
 }
 
 // opens the provided registry URL (downloading it if it doesn't exist).
