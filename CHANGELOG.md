@@ -6,12 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- bookmarks: new package implementing [XEP-0402: PEP Native Bookmarks]
 - disco: add support for calculating and receiving [XEP-0115: Entity
   Capabilities] hashes
 - xmpp: ability to create informational-only stream features
 
 
 [XEP-0115: Entity Capabilities]: https://xmpp.org/extensions/xep-0115.html
+[XEP-0402: PEP Native Bookmarks]: https://xmpp.org/extensions/xep-0402.html
 
 
 ## v0.21.1 — 2022-02-11
