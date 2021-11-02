@@ -10,9 +10,12 @@ package carbons // import "mellium.im/xmpp/carbons"
 import (
 	"context"
 	"encoding/xml"
+	"time"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/delay"
+	"mellium.im/xmpp/forward"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -62,4 +65,46 @@ func DisableIQ(ctx context.Context, s *xmpp.Session, iq stanza.IQ) error {
 		xml.StartElement{Name: xml.Name{Space: NS, Local: "disable"}},
 	)), &v)
 	return err
+}
+
+type Received struct {
+	XMLName xml.Name `xml:"urn:xmpp:carbons:2 received"`
+}
+
+func (received Received) Wrap(r xml.TokenReader) xml.TokenReader {
+	return xmlstream.Wrap(
+		r,
+		xml.StartElement{Name: xml.Name{Space: NS, Local: "received"}},
+	)
+}
+
+func WrapReceived(received time.Time, r xml.TokenReader) xml.TokenReader {
+	return Received{}.Wrap(
+		forward.Forwarded{
+			Delay: delay.Delay{
+				Time: received,
+			},
+		}.Wrap(r),
+	)
+}
+
+type Sent struct {
+	XMLName xml.Name `xml:"urn:xmpp:carbons:2 sent"`
+}
+
+func (sent Sent) Wrap(r xml.TokenReader) xml.TokenReader {
+	return xmlstream.Wrap(
+		r,
+		xml.StartElement{Name: xml.Name{Space: NS, Local: "sent"}},
+	)
+}
+
+func WrapSent(received time.Time, r xml.TokenReader) xml.TokenReader {
+	return Sent{}.Wrap(
+		forward.Forwarded{
+			Delay: delay.Delay{
+				Time: received,
+			},
+		}.Wrap(r),
+	)
 }
