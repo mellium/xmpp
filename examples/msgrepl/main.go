@@ -97,8 +97,16 @@ func main() {
 	// Handle incoming messages.
 	go func() {
 		err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-			d := xml.NewTokenDecoder(t)
-			// Ignore anything that's not a message.
+
+			// This is a workaround for https://github.com/mellium/xmpp/issues/196
+			// until a cleaner permanent fix is devised (see https://github.com/mellium/xmpp/issues/197)
+			d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*start), t))
+			if _, err := d.Token(); err != nil {
+				return err
+			}
+
+			// Ignore anything that's not a message. In a real system we'd want to at
+			// least respond to IQs.
 			if start.Name.Local != "message" {
 				return nil
 			}
