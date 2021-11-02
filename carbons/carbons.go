@@ -13,6 +13,8 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/delay"
+	"mellium.im/xmpp/forward"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -62,4 +64,26 @@ func DisableIQ(ctx context.Context, s *xmpp.Session, iq stanza.IQ) error {
 		xml.StartElement{Name: xml.Name{Space: NS, Local: "disable"}},
 	)), &v)
 	return err
+}
+
+// WrapReceived wraps the provided token reader (which should be a message
+// stanza, but this is not enforced) in a received element.
+func WrapReceived(delay delay.Delay, r xml.TokenReader) xml.TokenReader {
+	return xmlstream.Wrap(
+		forward.Forwarded{
+			Delay: delay,
+		}.Wrap(r),
+		xml.StartElement{Name: xml.Name{Space: NS, Local: "received"}},
+	)
+}
+
+// WrapSent wraps the provided token reader (which should be a message stanza,
+// but this is not enforced) in a sent element.
+func WrapSent(delay delay.Delay, r xml.TokenReader) xml.TokenReader {
+	return xmlstream.Wrap(
+		forward.Forwarded{
+			Delay: delay,
+		}.Wrap(r),
+		xml.StartElement{Name: xml.Name{Space: NS, Local: "sent"}},
+	)
 }
