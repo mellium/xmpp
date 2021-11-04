@@ -15,6 +15,7 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/carbons"
+	"mellium.im/xmpp/delay"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/stanza"
 )
@@ -63,7 +64,7 @@ func TestWrapReceived(t *testing.T) {
 		expected = `<received xmlns="urn:xmpp:carbons:2"><forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z"></delay><message xmlns="jabber:client" xmlns="jabber:client" type="chat" to="romeo@montague.example/garden" from="juliet@capulet.example/balcony"><body xmlns="jabber:client">What man art thou that, thus bescreened in night, so stumblest on my counsel?</body><thread xmlns="jabber:client">0e3141cd80894871a68e6fe6b1ec56fa</thread></message></forwarded></received>`
 	)
 
-	received := carbons.WrapReceived(time.Time{}, xml.NewDecoder(strings.NewReader(msg)))
+	received := carbons.WrapReceived(delay.Delay{Time: time.Time{}}, xml.NewDecoder(strings.NewReader(msg)))
 
 	var buf strings.Builder
 	e := xml.NewEncoder(&buf)
@@ -87,7 +88,7 @@ func TestWrapSent(t *testing.T) {
 		expected = `<sent xmlns="urn:xmpp:carbons:2"><forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z"></delay><message xmlns="jabber:client" xmlns="jabber:client" from="romeo@montague.example/home" to="juliet@capulet.example/balcony" type="chat"><body xmlns="jabber:client">Neither, fair saint, if either thee dislike.</body><thread xmlns="jabber:client">0e3141cd80894871a68e6fe6b1ec56fa</thread></message></forwarded></sent>`
 	)
 
-	sent := carbons.WrapSent(time.Time{}, xml.NewDecoder(strings.NewReader(msg)))
+	sent := carbons.WrapSent(delay.Delay{Time: time.Time{}}, xml.NewDecoder(strings.NewReader(msg)))
 
 	var buf strings.Builder
 	e := xml.NewEncoder(&buf)
