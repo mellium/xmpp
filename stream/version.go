@@ -66,7 +66,7 @@ func (v Version) Less(b Version) bool {
 	return v.Major < b.Major || (v.Major == b.Major && v.Minor < b.Minor)
 }
 
-// Prints a string representation of the XMPP version in the form "Major.Minor".
+// String returns the XMPP version in the form "Major.Minor".
 func (v Version) String() string {
 	return fmt.Sprintf("%d.%d", v.Major, v.Minor)
 }
