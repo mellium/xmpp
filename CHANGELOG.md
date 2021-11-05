@@ -18,6 +18,8 @@ All notable changes to this project will be documented in this file.
 [XEP-0060: Publish-Subscribe]: https://xmpp.org/extensions/xep-0060.html
 [XEP-0163: Personal Eventing Protocol]: https://xmpp.org/extensions/xep-0163.html
 
+- carbons: add `WrapReceive` and `WrapSent` functions
+
 
 ## v0.20.0 — 2021-09-26
 
