@@ -66,8 +66,8 @@ func DisableIQ(ctx context.Context, s *xmpp.Session, iq stanza.IQ) error {
 	return err
 }
 
-// WrapReceived wraps the provided token reader (which should be a forwarded stanza, but this is
-// not enforced) within a <received/> element
+// WrapReceived wraps the provided token reader (which should be a forwarded message stanza, but this is
+// not enforced) in a <received/> element
 func WrapReceived(delay delay.Delay, r xml.TokenReader) xml.TokenReader {
 	return xmlstream.Wrap(
 		forward.Forwarded{
@@ -77,8 +77,8 @@ func WrapReceived(delay delay.Delay, r xml.TokenReader) xml.TokenReader {
 	)
 }
 
-// WrapSent wraps the provided token reader (which should be a forwarded stanza, but this is
-// not enforced) within a <sent/> element
+// WrapSent wraps the provided token reader (which should be a forwarded message stanza, but this is
+// not enforced) in a <sent/> element
 func WrapSent(delay delay.Delay, r xml.TokenReader) xml.TokenReader {
 	return xmlstream.Wrap(
 		forward.Forwarded{
