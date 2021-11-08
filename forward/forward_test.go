@@ -6,11 +6,13 @@ package forward_test
 
 import (
 	"encoding/xml"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/delay"
 	"mellium.im/xmpp/forward"
 	"mellium.im/xmpp/stanza"
 )
@@ -52,5 +54,59 @@ func TestMarshal(t *testing.T) {
 	const expected = `<forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z"></delay></forwarded>`
 	if out := buf.String(); out != expected {
 		t.Fatalf("wrong output:\nwant=%s,\n got=%s", expected, out)
+	}
+}
+
+var unwrapTestCases = [...]struct {
+	unwrappedXML string
+	reason       string
+	inXML        string
+	noDelay      bool
+}{
+	0: {
+		unwrappedXML: `<foo xmlns="urn:xmpp:forward:0"></foo>`,
+		reason:       "Test",
+		inXML:        `<forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><foo/></forwarded>`,
+	},
+	1: {
+		unwrappedXML: `<foo xmlns="urn:xmpp:forward:0"></foo>`,
+		inXML:        `<forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><foo/></forwarded>`,
+		noDelay:      true,
+	},
+	2: {
+		unwrappedXML: `<foo xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Inner</delay></foo>`,
+		reason:       "Test",
+		inXML:        `<forwarded xmlns="urn:xmpp:forward:0"><foo><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Inner</delay></foo><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay></forwarded>`,
+	},
+}
+
+func TestUnwrapDelay(t *testing.T) {
+	for i, tc := range unwrapTestCases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			var del *delay.Delay
+			if !tc.noDelay {
+				del = &delay.Delay{}
+			}
+			r, err := forward.Unwrap(del, xml.NewDecoder(strings.NewReader(tc.inXML)))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			var buf strings.Builder
+			e := xml.NewEncoder(&buf)
+			_, err = xmlstream.Copy(e, r)
+			if err != nil {
+				t.Fatalf("error encoding: %v", err)
+			}
+			err = e.Flush()
+			if err != nil {
+				t.Fatalf("error flushing: %v", err)
+			}
+			if out := buf.String(); out != tc.unwrappedXML {
+				t.Errorf("wrong XML: want=%v, got=%v", tc.unwrappedXML, out)
+			}
+			if del != nil && del.Reason != tc.reason {
+				t.Errorf("did not unmarshal delay: want=%v, got=%v", "Test", tc.reason)
+			}
+		})
 	}
 }
