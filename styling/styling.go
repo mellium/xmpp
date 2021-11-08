@@ -122,7 +122,6 @@ const (
 // If the token is a preformatted text block start token, Info is a slice of the
 // bytes between the code fence (```) and the newline.
 type Token struct {
-	Mask Style
 	Data []byte
 	Info []byte
 }
@@ -208,7 +207,6 @@ func (d *Decoder) Next() bool {
 	if d.insertBlockClose {
 		d.insertBlockClose = false
 		d.bufferedToken = &Token{
-			Mask: d.Style(),
 			Data: d.s.Bytes(),
 		}
 		return true
@@ -225,7 +223,6 @@ func (d *Decoder) Next() bool {
 	}
 
 	t := &Token{
-		Mask: d.Style(),
 		Data: d.s.Bytes(),
 	}
 
@@ -233,7 +230,7 @@ func (d *Decoder) Next() bool {
 	if len(t.Data) > 0 && t.Data[len(t.Data)-1] == '\n' {
 		newlineLen = 1
 	}
-	if t.Mask&BlockPreStart == BlockPreStart && len(t.Data) > len(fence)+newlineLen {
+	if d.Style()&BlockPreStart == BlockPreStart && len(t.Data) > len(fence)+newlineLen {
 		t.Info = t.Data[len(fence) : len(t.Data)-newlineLen]
 	}
 
@@ -242,7 +239,7 @@ func (d *Decoder) Next() bool {
 	currLevel := d.Quote()
 	if currLevel < prevLevel {
 		d.insertBlockClose = true
-		d.bufferedToken = &Token{Mask: d.Style()}
+		d.bufferedToken = &Token{}
 		return true
 	}
 
@@ -264,14 +261,15 @@ func (d *Decoder) Err() error {
 // Err should be consulted to check for errors.
 func (d *Decoder) SkipSpan() bool {
 	for prevLevel := d.Quote(); d.Next(); prevLevel = d.Quote() {
-		tok := d.Token()
+		d.Token()
+		style := d.Style()
 
 		switch {
-		case tok.Mask&StartDirective&^BlockQuoteStart > 0 || (tok.Mask&BlockQuoteStart == BlockQuoteStart && d.Quote() > prevLevel):
+		case style&StartDirective&^BlockQuoteStart > 0 || (style&BlockQuoteStart == BlockQuoteStart && d.Quote() > prevLevel):
 			if !d.SkipSpan() {
 				return false
 			}
-		case tok.Mask&EndDirective > 0 || (tok.Mask == 0 && d.lastNewline):
+		case style&EndDirective > 0 || (style == 0 && d.lastNewline):
 			return true
 		}
 	}
@@ -291,9 +289,11 @@ func (d *Decoder) SkipSpan() bool {
 // input stream as if everything were contained in an imaginary "root" block.
 func (d *Decoder) SkipBlock() bool {
 	for prevLevel := d.Quote(); d.Next(); prevLevel = d.Quote() {
-		tok := d.Token()
+		d.Token()
+		style := d.Style()
+
 		switch {
-		case tok.Mask&BlockStartDirective&^BlockQuoteStart > 0 || (tok.Mask&BlockQuoteStart == BlockQuoteStart && d.Quote() > prevLevel):
+		case style&BlockStartDirective&^BlockQuoteStart > 0 || (style&BlockQuoteStart == BlockQuoteStart && d.Quote() > prevLevel):
 			// If we're a start directive (other than starting a block quote), or
 			// we're a block quote start directive that's deeper than the previous
 			// level of block quote (ie. starting a new blockquote, not continuing an
@@ -301,7 +301,7 @@ func (d *Decoder) SkipBlock() bool {
 			if !d.SkipBlock() {
 				return false
 			}
-		case tok.Mask&BlockEndDirective > 0 || (tok.Mask == 0 && d.lastNewline):
+		case style&BlockEndDirective > 0 || (style == 0 && d.lastNewline):
 			// If this is an end directive (or the end of a plain block), we're done
 			// with skipping the current level, so end the current level of recursion.
 			return true

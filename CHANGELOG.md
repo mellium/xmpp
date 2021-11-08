@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Breaking
+
+- styling: individual tokens no longer contains their own Style, use Decoder's
+  `Style()` method instead
+
 ### Fixed
 
 - muc: fix a race condition that could cause the loss of the nickname when
@@ -125,6 +130,7 @@ All notable changes to this project will be documented in this file.
 
 
 ## v0.21.2 — 2022-04-07
+
 
 ### Added
 

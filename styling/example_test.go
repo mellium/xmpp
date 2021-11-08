@@ -23,21 +23,22 @@ but *most* people shorten it.`)
 	out.WriteString("<!doctype HTML>\n")
 	for d.Next() {
 		tok := d.Token()
+		mask := d.Style()
 
 		switch {
-		case tok.Mask&styling.SpanEmphStart == styling.SpanEmphStart:
+		case mask&styling.SpanEmphStart == styling.SpanEmphStart:
 			out.WriteString("<em><code>")
 			out.Write(tok.Data)
 			out.WriteString("</code>")
-		case tok.Mask&styling.SpanStrongStart == styling.SpanStrongStart:
+		case mask&styling.SpanStrongStart == styling.SpanStrongStart:
 			out.WriteString("<strong><code>")
 			out.Write(tok.Data)
 			out.WriteString("</code>")
-		case tok.Mask&styling.SpanEmphEnd == styling.SpanEmphEnd:
+		case mask&styling.SpanEmphEnd == styling.SpanEmphEnd:
 			out.WriteString("<code>")
 			out.Write(tok.Data)
 			out.WriteString("</code></em>")
-		case tok.Mask&styling.SpanStrongEnd == styling.SpanStrongEnd:
+		case mask&styling.SpanStrongEnd == styling.SpanStrongEnd:
 			out.WriteString("<code>")
 			out.Write(tok.Data)
 			out.WriteString("</code></strong>")
