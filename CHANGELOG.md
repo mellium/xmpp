@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
 - compress: the compress package has been removed; users of this package can
   find a drop in replacement at [mellium.im/legacy/compress]
 - ibb: the `Listener` type is now a pointer type
+- styling: individual tokens no longer contains their own Style, use Decoder's
+  `Style()` method instead
 
 
 ### Deprecated
@@ -43,6 +45,7 @@ All notable changes to this project will be documented in this file.
 
 
 ## v0.21.2 — 2022-04-07
+
 
 ### Added
 

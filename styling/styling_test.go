@@ -37,6 +37,7 @@ func TestCopyToken(t *testing.T) {
 
 type tokenAndStyle struct {
 	styling.Token
+	Mask  styling.Style
 	Quote uint
 }
 
@@ -53,8 +54,8 @@ var decoderTestCases = []struct {
 				Token: styling.Token{
 					Data: []byte("````"),
 					Info: []byte("`"),
-					Mask: styling.BlockPre | styling.BlockPreStart,
 				},
+				Mask: styling.BlockPre | styling.BlockPreStart,
 			},
 		},
 	},
@@ -82,20 +83,20 @@ and two`,
 			{
 				Token: styling.Token{
 					Data: []byte("```\n"),
-					Mask: styling.BlockPre | styling.BlockPreStart,
 				},
+				Mask: styling.BlockPre | styling.BlockPreStart,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("pre *fmt* ```\n"),
-					Mask: styling.BlockPre,
 				},
+				Mask: styling.BlockPre,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("```\n"),
-					Mask: styling.BlockPre | styling.BlockPreEnd,
 				},
+				Mask: styling.BlockPre | styling.BlockPreEnd,
 			},
 			{
 				Token: styling.Token{
@@ -112,20 +113,20 @@ and two`,
 				Token: styling.Token{
 					Data: []byte("````\n"),
 					Info: []byte("`"),
-					Mask: styling.BlockPre | styling.BlockPreStart,
 				},
+				Mask: styling.BlockPre | styling.BlockPreStart,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("a\n"),
-					Mask: styling.BlockPre,
 				},
+				Mask: styling.BlockPre,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("```"),
-					Mask: styling.BlockPre | styling.BlockPreEnd,
 				},
+				Mask: styling.BlockPre | styling.BlockPreEnd,
 			},
 		},
 	},
@@ -136,14 +137,14 @@ and two`,
 			{
 				Token: styling.Token{
 					Data: []byte("```\n"),
-					Mask: styling.BlockPre | styling.BlockPreStart,
 				},
+				Mask: styling.BlockPre | styling.BlockPreStart,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("a```"),
-					Mask: styling.BlockPre,
 				},
+				Mask: styling.BlockPre,
 			},
 		},
 	},
@@ -155,8 +156,8 @@ and two`,
 				Token: styling.Token{
 					Data: []byte("```newtoken\n"),
 					Info: []byte("newtoken"),
-					Mask: styling.BlockPre | styling.BlockPreStart,
 				},
+				Mask: styling.BlockPre | styling.BlockPreStart,
 			},
 		},
 	},
@@ -168,21 +169,20 @@ not quoted`,
 			{
 				Token: styling.Token{
 					Data: []byte(">  "),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("quoted\n"),
-					Mask: styling.BlockQuote,
 				},
+				Mask:  styling.BlockQuote,
 				Quote: 1,
 			},
 			{
-				Token: styling.Token{
-					Mask: styling.BlockQuote | styling.BlockQuoteEnd,
-				},
+				Token: styling.Token{},
+				Mask:  styling.BlockQuote | styling.BlockQuoteEnd,
 				Quote: 1,
 			},
 			{
@@ -203,62 +203,60 @@ not quoted`,
 			{
 				Token: styling.Token{
 					Data: []byte(">  "),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("quoted\n"),
-					Mask: styling.BlockQuote,
 				},
+				Mask:  styling.BlockQuote,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte(">"),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte(">   "),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 2,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("quote > 2\n"),
-					Mask: styling.BlockQuote,
 				},
+				Mask:  styling.BlockQuote,
 				Quote: 2,
 			},
 			{
-				Token: styling.Token{
-					Mask: styling.BlockQuote | styling.BlockQuoteEnd,
-				},
+				Token: styling.Token{},
+				Mask:  styling.BlockQuote | styling.BlockQuoteEnd,
 				Quote: 2,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte(">"),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("quote 1\n"),
-					Mask: styling.BlockQuote,
 				},
+				Mask:  styling.BlockQuote,
 				Quote: 1,
 			},
 			{
-				Token: styling.Token{
-					Mask: styling.BlockQuote | styling.BlockQuoteEnd,
-				},
+				Token: styling.Token{},
+				Mask:  styling.BlockQuote | styling.BlockQuoteEnd,
 				Quote: 1,
 			},
 			{
@@ -280,8 +278,8 @@ not quoted`,
 			{
 				Token: styling.Token{
 					Data: []byte("> "),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 1,
 			},
 		},
@@ -296,57 +294,57 @@ not quoted`,
 			{
 				Token: styling.Token{
 					Data: []byte("> "),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("```\n"),
-					Mask: styling.BlockQuote | styling.BlockPre | styling.BlockPreStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockPre | styling.BlockPreStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("> "),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("pre\n"),
-					Mask: styling.BlockQuote | styling.BlockPre,
 				},
+				Mask:  styling.BlockQuote | styling.BlockPre,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("> "),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("```\n"),
-					Mask: styling.BlockQuote | styling.BlockPre | styling.BlockPreEnd,
 				},
+				Mask:  styling.BlockQuote | styling.BlockPre | styling.BlockPreEnd,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("> "),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("not pre"),
-					Mask: styling.BlockQuote,
 				},
+				Mask:  styling.BlockQuote,
 				Quote: 1,
 			},
 		},
@@ -360,36 +358,35 @@ plain`,
 			{
 				Token: styling.Token{
 					Data: []byte("> "),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("``` \n"),
 					Info: []byte(" "),
-					Mask: styling.BlockQuote | styling.BlockPre | styling.BlockPreStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockPre | styling.BlockPreStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("> "),
-					Mask: styling.BlockQuote | styling.BlockQuoteStart,
 				},
+				Mask:  styling.BlockQuote | styling.BlockQuoteStart,
 				Quote: 1,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("pre\n"),
-					Mask: styling.BlockQuote | styling.BlockPre,
 				},
+				Mask:  styling.BlockQuote | styling.BlockPre,
 				Quote: 1,
 			},
 			{
-				Token: styling.Token{
-					Mask: styling.BlockQuote | styling.BlockQuoteEnd,
-				},
+				Token: styling.Token{},
+				Mask:  styling.BlockQuote | styling.BlockQuoteEnd,
 				Quote: 1,
 			},
 			{
@@ -406,20 +403,20 @@ plain`,
 			{
 				Token: styling.Token{
 					Data: []byte("*"),
-					Mask: styling.SpanStrong | styling.SpanStrongStart,
 				},
+				Mask: styling.SpanStrong | styling.SpanStrongStart,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("strong"),
-					Mask: styling.SpanStrong,
 				},
+				Mask: styling.SpanStrong,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("*"),
-					Mask: styling.SpanStrong | styling.SpanStrongEnd,
 				},
+				Mask: styling.SpanStrong | styling.SpanStrongEnd,
 			},
 			{
 				Token: styling.Token{
@@ -429,38 +426,38 @@ plain`,
 			{
 				Token: styling.Token{
 					Data: []byte("_"),
-					Mask: styling.SpanEmph | styling.SpanEmphStart,
 				},
+				Mask: styling.SpanEmph | styling.SpanEmphStart,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("emph"),
-					Mask: styling.SpanEmph,
 				},
+				Mask: styling.SpanEmph,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("_"),
-					Mask: styling.SpanEmph | styling.SpanEmphEnd,
 				},
+				Mask: styling.SpanEmph | styling.SpanEmphEnd,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("~"),
-					Mask: styling.SpanStrike | styling.SpanStrikeStart,
 				},
+				Mask: styling.SpanStrike | styling.SpanStrikeStart,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("strike"),
-					Mask: styling.SpanStrike,
 				},
+				Mask: styling.SpanStrike,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("~"),
-					Mask: styling.SpanStrike | styling.SpanStrikeEnd,
 				},
+				Mask: styling.SpanStrike | styling.SpanStrikeEnd,
 			},
 			{
 				Token: styling.Token{
@@ -470,20 +467,20 @@ plain`,
 			{
 				Token: styling.Token{
 					Data: []byte("`"),
-					Mask: styling.SpanPre | styling.SpanPreStart,
 				},
+				Mask: styling.SpanPre | styling.SpanPreStart,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("pre"),
-					Mask: styling.SpanPre,
 				},
+				Mask: styling.SpanPre,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("`"),
-					Mask: styling.SpanPre | styling.SpanPreEnd,
 				},
+				Mask: styling.SpanPre | styling.SpanPreEnd,
 			},
 		},
 	},
@@ -494,20 +491,20 @@ plain`,
 			{
 				Token: styling.Token{
 					Data: []byte("*"),
-					Mask: styling.SpanStrong | styling.SpanStrongStart,
 				},
+				Mask: styling.SpanStrong | styling.SpanStrongStart,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("strong"),
-					Mask: styling.SpanStrong,
 				},
+				Mask: styling.SpanStrong,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("*"),
-					Mask: styling.SpanStrong | styling.SpanStrongEnd,
 				},
+				Mask: styling.SpanStrong | styling.SpanStrongEnd,
 			},
 			{
 				Token: styling.Token{
@@ -528,20 +525,20 @@ plain`,
 			{
 				Token: styling.Token{
 					Data: []byte("*"),
-					Mask: styling.SpanStrong | styling.SpanStrongStart,
 				},
+				Mask: styling.SpanStrong | styling.SpanStrongStart,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("strong"),
-					Mask: styling.SpanStrong,
 				},
+				Mask: styling.SpanStrong,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("*"),
-					Mask: styling.SpanStrong | styling.SpanStrongEnd,
 				},
+				Mask: styling.SpanStrong | styling.SpanStrongEnd,
 			},
 		},
 	},
@@ -634,20 +631,20 @@ plain`,
 			{
 				Token: styling.Token{
 					Data: []byte("*"),
-					Mask: styling.SpanStrong | styling.SpanStrongStart,
 				},
+				Mask: styling.SpanStrong | styling.SpanStrongStart,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("this cannot _overlap"),
-					Mask: styling.SpanStrong,
 				},
+				Mask: styling.SpanStrong,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("*"),
-					Mask: styling.SpanStrong | styling.SpanStrongEnd,
 				},
+				Mask: styling.SpanStrong | styling.SpanStrongEnd,
 			},
 			{
 				Token: styling.Token{
@@ -663,38 +660,38 @@ plain`,
 			{
 				Token: styling.Token{
 					Data: []byte("_"),
-					Mask: styling.SpanEmph | styling.SpanEmphStart,
 				},
+				Mask: styling.SpanEmph | styling.SpanEmphStart,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("no pre "),
-					Mask: styling.SpanEmph,
 				},
+				Mask: styling.SpanEmph,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("`"),
-					Mask: styling.SpanPre | styling.SpanPreStart | styling.SpanEmph,
 				},
+				Mask: styling.SpanPre | styling.SpanPreStart | styling.SpanEmph,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("with *children*"),
-					Mask: styling.SpanPre | styling.SpanEmph,
 				},
+				Mask: styling.SpanPre | styling.SpanEmph,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("`"),
-					Mask: styling.SpanPre | styling.SpanPreEnd | styling.SpanEmph,
 				},
+				Mask: styling.SpanPre | styling.SpanPreEnd | styling.SpanEmph,
 			},
 			{
 				Token: styling.Token{
 					Data: []byte("_"),
-					Mask: styling.SpanEmph | styling.SpanEmphEnd,
 				},
+				Mask: styling.SpanEmph | styling.SpanEmphEnd,
 			},
 		},
 	},
@@ -719,8 +716,8 @@ func TestToken(t *testing.T) {
 
 				var expectedTok tokenAndStyle
 				expectedTok, toks = toks[0], toks[1:]
-				if expectedTok.Mask != tok.Mask {
-					t.Errorf("Unexpected mask for token %d: want=%#b, got=%#b", n, expectedTok.Mask, tok.Mask)
+				if style := d.Style(); expectedTok.Mask != style {
+					t.Errorf("Unexpected mask for token %d: want=%#b, got=%#b", n, expectedTok.Mask, style)
 				}
 				if !bytes.Equal(expectedTok.Data, tok.Data) {
 					t.Errorf("Unexpected data for token %d: want=%q, got=%q", n, expectedTok.Data, tok.Data)
