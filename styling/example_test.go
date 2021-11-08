@@ -24,20 +24,20 @@ but *most* people shorten it.`)
 	for d.Next() {
 		tok := d.Token()
 
-		switch {
-		case tok.Mask&styling.SpanEmphStart == styling.SpanEmphStart:
+		switch style := d.Style(); {
+		case style&styling.SpanEmphStart == styling.SpanEmphStart:
 			out.WriteString("<em><code>")
 			out.Write(tok.Data)
 			out.WriteString("</code>")
-		case tok.Mask&styling.SpanStrongStart == styling.SpanStrongStart:
+		case style&styling.SpanStrongStart == styling.SpanStrongStart:
 			out.WriteString("<strong><code>")
 			out.Write(tok.Data)
 			out.WriteString("</code>")
-		case tok.Mask&styling.SpanEmphEnd == styling.SpanEmphEnd:
+		case style&styling.SpanEmphEnd == styling.SpanEmphEnd:
 			out.WriteString("<code>")
 			out.Write(tok.Data)
 			out.WriteString("</code></em>")
-		case tok.Mask&styling.SpanStrongEnd == styling.SpanStrongEnd:
+		case style&styling.SpanStrongEnd == styling.SpanStrongEnd:
 			out.WriteString("<code>")
 			out.Write(tok.Data)
 			out.WriteString("</code></strong>")

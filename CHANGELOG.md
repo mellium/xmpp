@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Breaking
+
+- styling: individual tokens no longer contains their own Style, use Decoder's
+  `Style()` method instead
+
+
 ### Added
 
 - bookmarks: new package implementing [XEP-0402: PEP Native Bookmarks]
