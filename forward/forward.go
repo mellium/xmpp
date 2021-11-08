@@ -9,6 +9,8 @@ package forward // import "mellium.im/xmpp/forward"
 
 import (
 	"encoding/xml"
+	"fmt"
+	"io"
 	"time"
 
 	"mellium.im/xmlstream"
@@ -65,4 +67,80 @@ func Wrap(msg stanza.Message, body string, received time.Time, r xml.TokenReader
 			},
 		}.Wrap(r),
 	))
+}
+
+type forwardUnwrapper struct {
+	r         xml.TokenReader
+	stanzaXML xml.TokenReader
+	del       *delay.Delay
+}
+
+// Token implements xml.TokenReader
+func (f *forwardUnwrapper) Token() (xml.Token, error) {
+	if f.stanzaXML != nil {
+		token, err := f.stanzaXML.Token()
+		if err != nil && err != io.EOF {
+			// something bad happened
+			return nil, err
+		}
+		if err == io.EOF {
+			// we have reached the end of the stanza xml stream
+			f.stanzaXML = nil
+		}
+		if token != nil {
+			return token, nil
+		}
+	}
+
+	for {
+		token, err := f.r.Token()
+		if err != nil {
+			return nil, err
+		}
+		se, ok := token.(xml.StartElement)
+		if !ok {
+			return se, fmt.Errorf("expected a startElement, found %T", token)
+		}
+
+		if se.Name.Local == "delay" && se.Name.Space == delay.NS {
+			if f.del == nil {
+				// The delay element is skipped if the provided del is nil
+				err = xmlstream.Skip(f.r)
+				if err != nil {
+					return nil, fmt.Errorf("could not unmarshal delay element: %v", err)
+				}
+				continue
+			}
+			err = xml.NewTokenDecoder(
+				xmlstream.MultiReader(xmlstream.Token(se), xmlstream.Inner(f.r), xmlstream.Token(se.End())),
+			).Decode(f.del)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			f.stanzaXML = xmlstream.MultiReader(xmlstream.Inner(f.r), xmlstream.Token(se.End()))
+			return se, nil
+		}
+	}
+}
+
+// Unwrap returns the contents of the forwarded data as a new token stream.
+// If a delay element is encountered it is unmarshaled into the provided delay
+// and not returned as part of the token stream.
+// If a nil delay is provided the delay will be skipped if present.
+// The delay is unmarshaled lazily (i.e. when encountered during stream consumption), the user should not use
+// the delay before consuming the returned stream entirely.
+func Unwrap(del *delay.Delay, r xml.TokenReader) (xml.TokenReader, error) {
+	token, err := r.Token()
+	if err != nil {
+		return nil, err
+	}
+	se, ok := token.(xml.StartElement)
+	if !ok {
+		return nil, fmt.Errorf("expected a startElement, found %T", token)
+	}
+	if se.Name.Local != "forwarded" || se.Name.Space != NS {
+		return nil, fmt.Errorf("unexpected name for the forwarded element: %+v", se.Name)
+	}
+	return &forwardUnwrapper{r: xmlstream.Inner(r), del: del}, nil
 }
