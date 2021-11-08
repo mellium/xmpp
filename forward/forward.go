@@ -9,6 +9,7 @@ package forward // import "mellium.im/xmpp/forward"
 
 import (
 	"encoding/xml"
+	"fmt"
 	"time"
 
 	"mellium.im/xmlstream"
@@ -65,4 +66,58 @@ func Wrap(msg stanza.Message, body string, received time.Time, r xml.TokenReader
 			},
 		}.Wrap(r),
 	))
+}
+
+type forwardUnwrapper struct {
+	d                *xml.Decoder
+	del              *delay.Delay
+	currentLevel     int
+	delayEncountered bool
+}
+
+// Token implements xml.TokenReader
+func (f *forwardUnwrapper) Token() (xml.Token, error) {
+	token, err := f.d.Token()
+	switch v := token.(type) {
+	case xml.StartElement:
+		f.currentLevel++
+		// If we are consuming a top level delay element and
+		// didn't already encountered one
+		if f.currentLevel == 1 && v.Name.Local == "delay" && v.Name.Space == delay.NS && !f.delayEncountered {
+			f.delayEncountered = true
+			if f.del == nil {
+				if err := xmlstream.Skip(f.d); err != nil {
+					return nil, err
+				}
+			} else if err := f.d.DecodeElement(f.del, &v); err != nil {
+				return nil, err
+			}
+			return f.d.Token()
+		}
+	case xml.EndElement:
+		f.currentLevel--
+	}
+	return token, err
+}
+
+// Unwrap returns the contents of the forwarded data as a new token stream.
+// If a delay element is encountered it is unmarshaled into the provided delay
+// and not returned as part of the token stream.
+// If a nil delay is provided the delay will be skipped if present.
+// In case there are multiple delay elements at the top level, only the first
+// one is considered and the others will be included in the returned stream
+// (i.e. only the first encountered delay is unmarshalled/skipped).
+func Unwrap(del *delay.Delay, r xml.TokenReader) (xml.TokenReader, error) {
+	token, err := r.Token()
+	if err != nil {
+		return nil, err
+	}
+	se, ok := token.(xml.StartElement)
+	if !ok {
+		return nil, fmt.Errorf("expected a startElement, found %T", token)
+	}
+	if se.Name.Local != "forwarded" || se.Name.Space != NS {
+		return nil, fmt.Errorf("unexpected name for the forwarded element: %+v", se.Name)
+	}
+	return &forwardUnwrapper{d: xml.NewTokenDecoder(xmlstream.Inner(r)), del: del}, nil
 }

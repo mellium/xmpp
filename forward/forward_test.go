@@ -78,6 +78,25 @@ var unwrapTestCases = [...]struct {
 		reason:       "Test",
 		inXML:        `<forwarded xmlns="urn:xmpp:forward:0"><foo><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Inner</delay></foo><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay></forwarded>`,
 	},
+	3: {
+		unwrappedXML: `<foo xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Inner</delay></foo><delay xmlns="urn:xmpp:delay" xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test2</delay>`,
+		reason:       "Test1",
+		inXML:        `<forwarded xmlns="urn:xmpp:forward:0"><foo><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Inner</delay></foo><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test1</delay><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test2</delay></forwarded>`,
+	},
+	4: {
+		unwrappedXML: `<foo xmlns="urn:xmpp:forward:0"></foo><delay xmlns="urn:xmpp:delay" xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test2</delay>`,
+		reason:       "Test1",
+		inXML:        `<forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test1</delay><foo/><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test2</delay></forwarded>`,
+	},
+	5: {
+		unwrappedXML: `<foo xmlns="urn:xmpp:forward:0"></foo><delay xmlns="urn:xmpp:delay" xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test2</delay>`,
+		inXML:        `<forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test1</delay><foo/><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test2</delay></forwarded>`,
+		noDelay:      true,
+	},
+	6: {
+		unwrappedXML: `<foo xmlns="urn:xmpp:forward:0"></foo>`,
+		inXML:        `<forwarded xmlns="urn:xmpp:forward:0"><foo/></forwarded>`,
+	},
 }
 
 func TestUnwrapDelay(t *testing.T) {
