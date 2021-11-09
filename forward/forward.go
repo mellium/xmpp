@@ -107,7 +107,7 @@ func (f *forwardUnwrapper) Token() (xml.Token, error) {
 				// The delay element is skipped if the provided del is nil
 				err = xmlstream.Skip(f.r)
 				if err != nil {
-					return nil, fmt.Errorf("could not unmarshal delay element: %v", err)
+					return nil, err
 				}
 				continue
 			}
@@ -115,7 +115,7 @@ func (f *forwardUnwrapper) Token() (xml.Token, error) {
 				xmlstream.MultiReader(xmlstream.Token(se), xmlstream.Inner(f.r), xmlstream.Token(se.End())),
 			).Decode(f.del)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("could not unmarshal delay element: %v", err)
 			}
 		} else {
 			f.stanzaXML = xmlstream.MultiReader(xmlstream.Inner(f.r), xmlstream.Token(se.End()))
