@@ -18,7 +18,6 @@ import (
 	"mellium.im/xmpp/disco/info"
 	"mellium.im/xmpp/disco/items"
 	"mellium.im/xmpp/internal/marshal"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
@@ -154,7 +153,7 @@ var testCases = [...]struct {
 		},
 		x:        `<iq type="set" xmlns="jabber:server"><b/></iq>`,
 		err:      errPassTest,
-		stanzaNS: ns.Server,
+		stanzaNS: stanza.NSServer,
 	},
 	2: {
 		// The message option works with a client namespace.
@@ -173,7 +172,7 @@ var testCases = [...]struct {
 		},
 		x:        `<message to="feste@example.net" from="olivia@example.net" type="chat" xmlns="jabber:server"></message>`,
 		err:      errPassTest,
-		stanzaNS: ns.Server,
+		stanzaNS: stanza.NSServer,
 	},
 	4: {
 		// The presence option works with a client namespace and no type attribute.
@@ -195,7 +194,7 @@ var testCases = [...]struct {
 		},
 		x:        `<presence type="" xmlns="jabber:server"></presence>`,
 		err:      errPassTest,
-		stanzaNS: ns.Server,
+		stanzaNS: stanza.NSServer,
 	},
 	6: {
 		// Other top level elements can be routed with a wildcard namespace.
@@ -338,14 +337,14 @@ var testCases = [...]struct {
 	25: {
 		// Expect {jabber:server}message registration with Handle to panic
 		m: []mux.Option{
-			mux.Handle(xml.Name{Space: ns.Server, Local: "message"}, failHandler{}),
+			mux.Handle(xml.Name{Space: stanza.NSServer, Local: "message"}, failHandler{}),
 		},
 		expectPanic: true,
 	},
 	26: {
 		// Expect {jabber:server}message registration with Handle to panic
 		m: []mux.Option{
-			mux.Handle(xml.Name{Space: ns.Client, Local: "message"}, failHandler{}),
+			mux.Handle(xml.Name{Space: stanza.NSClient, Local: "message"}, failHandler{}),
 		},
 		expectPanic: true,
 	},
@@ -359,14 +358,14 @@ var testCases = [...]struct {
 	28: {
 		// Expect {jabber:server}presence registration with Handle to panic
 		m: []mux.Option{
-			mux.Handle(xml.Name{Space: ns.Server, Local: "presence"}, failHandler{}),
+			mux.Handle(xml.Name{Space: stanza.NSServer, Local: "presence"}, failHandler{}),
 		},
 		expectPanic: true,
 	},
 	29: {
 		// Expect {jabber:server}presence registration with Handle to panic
 		m: []mux.Option{
-			mux.Handle(xml.Name{Space: ns.Client, Local: "presence"}, failHandler{}),
+			mux.Handle(xml.Name{Space: stanza.NSClient, Local: "presence"}, failHandler{}),
 		},
 		expectPanic: true,
 	},
@@ -380,14 +379,14 @@ var testCases = [...]struct {
 	31: {
 		// Expect {jabber:server}iq registration with Handle to panic
 		m: []mux.Option{
-			mux.Handle(xml.Name{Space: ns.Server, Local: "iq"}, failHandler{}),
+			mux.Handle(xml.Name{Space: stanza.NSServer, Local: "iq"}, failHandler{}),
 		},
 		expectPanic: true,
 	},
 	32: {
 		// Expect {jabber:server}iq registration with Handle to panic
 		m: []mux.Option{
-			mux.Handle(xml.Name{Space: ns.Client, Local: "iq"}, failHandler{}),
+			mux.Handle(xml.Name{Space: stanza.NSClient, Local: "iq"}, failHandler{}),
 		},
 		expectPanic: true,
 	},
@@ -468,7 +467,7 @@ var testCases = [...]struct {
 		},
 		x:        `<message type="normal" xmlns="jabber:server"><test xmlns="com.example">test</test><example xmlns="com.example">example</example></message>`,
 		err:      errors.New("mux_test: PASSED, mux_test: PASSED"),
-		stanzaNS: ns.Server,
+		stanzaNS: stanza.NSServer,
 	},
 	41: {
 		m: []mux.Option{
@@ -510,7 +509,7 @@ func TestMux(t *testing.T) {
 			}
 			stanzaNS := tc.stanzaNS
 			if stanzaNS == "" {
-				stanzaNS = ns.Client
+				stanzaNS = stanza.NSClient
 			}
 			m := mux.New(stanzaNS, tc.m...)
 			d := xml.NewDecoder(strings.NewReader(tc.x))
@@ -567,7 +566,7 @@ func TestFallback(t *testing.T) {
 	start := tok.(xml.StartElement)
 	w := s.TokenWriter()
 	defer w.Close()
-	err = mux.New(ns.Client).HandleXMPP(testEncoder{
+	err = mux.New(stanza.NSClient).HandleXMPP(testEncoder{
 		TokenReader: r,
 		TokenWriter: w,
 	}, &start)
@@ -675,7 +674,7 @@ func (presenceFeature) ForItems(node string, f func(items.Item) error) error {
 
 func TestFeatures(t *testing.T) {
 	m := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.Handle(xml.Name{}, handleFeature{}),
 		mux.IQ("", xml.Name{}, iqFeature{}),
 		mux.Message("", xml.Name{}, messageFeature{}),
@@ -719,7 +718,7 @@ func TestFeatures(t *testing.T) {
 
 func TestItems(t *testing.T) {
 	m := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.Handle(xml.Name{}, handleFeature{}),
 		mux.IQ("", xml.Name{}, iqFeature{}),
 		mux.Message("", xml.Name{}, messageFeature{}),
@@ -763,7 +762,7 @@ func TestItems(t *testing.T) {
 
 func TestFeaturesHandlerErr(t *testing.T) {
 	m := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.Handle(xml.Name{}, handleFeature{}),
 	)
 	err := m.ForFeatures("", func(i info.Feature) error {
@@ -776,7 +775,7 @@ func TestFeaturesHandlerErr(t *testing.T) {
 
 func TestFeaturesHandleIQErr(t *testing.T) {
 	m := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.IQ("", xml.Name{}, iqFeature{}),
 	)
 	err := m.ForFeatures("", func(i info.Feature) error {
@@ -788,7 +787,7 @@ func TestFeaturesHandleIQErr(t *testing.T) {
 }
 func TestFeaturesHandleMsgErr(t *testing.T) {
 	m := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.Message("", xml.Name{}, messageFeature{}),
 	)
 	err := m.ForFeatures("", func(i info.Feature) error {
@@ -800,7 +799,7 @@ func TestFeaturesHandleMsgErr(t *testing.T) {
 }
 func TestFeaturesHandlePresenceErr(t *testing.T) {
 	m := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.Presence("", xml.Name{}, presenceFeature{}),
 	)
 	err := m.ForFeatures("", func(i info.Feature) error {
@@ -813,7 +812,7 @@ func TestFeaturesHandlePresenceErr(t *testing.T) {
 
 func TestItemsHandlerErr(t *testing.T) {
 	m := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.Handle(xml.Name{}, handleFeature{}),
 	)
 	err := m.ForItems("", func(i items.Item) error {
@@ -825,7 +824,7 @@ func TestItemsHandlerErr(t *testing.T) {
 }
 func TestItemsHandleIQErr(t *testing.T) {
 	m := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.IQ("", xml.Name{}, iqFeature{}),
 	)
 	err := m.ForItems("", func(i items.Item) error {
@@ -837,7 +836,7 @@ func TestItemsHandleIQErr(t *testing.T) {
 }
 func TestItemsHandleMsgErr(t *testing.T) {
 	m := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.Message("", xml.Name{}, messageFeature{}),
 	)
 	err := m.ForItems("", func(i items.Item) error {
@@ -849,7 +848,7 @@ func TestItemsHandleMsgErr(t *testing.T) {
 }
 func TestItemsHandlePresenceErr(t *testing.T) {
 	m := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.Presence("", xml.Name{}, presenceFeature{}),
 	)
 	err := m.ForItems("", func(i items.Item) error {

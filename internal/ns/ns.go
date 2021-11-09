@@ -9,9 +9,7 @@ package ns // import "mellium.im/xmpp/internal/ns"
 // List of commonly used namespaces.
 const (
 	Bind     = "urn:ietf:params:xml:ns:xmpp-bind"
-	Client   = "jabber:client"
 	SASL     = "urn:ietf:params:xml:ns:xmpp-sasl"
-	Server   = "jabber:server"
 	StartTLS = "urn:ietf:params:xml:ns:xmpp-tls"
 	WS       = "urn:ietf:params:xml:ns:xmpp-framing"
 	XML      = "http://www.w3.org/XML/1998/namespace"

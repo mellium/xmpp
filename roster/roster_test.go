@@ -14,7 +14,6 @@ import (
 	"testing"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
@@ -145,7 +144,7 @@ func TestReceivePush(t *testing.T) {
 		t.Errorf("unexpected error popping start token: %v", err)
 	}
 	start := tok.(xml.StartElement)
-	m := mux.New(ns.Client, roster.Handle(h))
+	m := mux.New(stanza.NSClient, roster.Handle(h))
 	err = m.HandleXMPP(struct {
 		xml.TokenReader
 		xmlstream.Encoder
@@ -191,7 +190,7 @@ func TestReceivePushError(t *testing.T) {
 		t.Errorf("unexpected error popping start token: %v", err)
 	}
 	start := tok.(xml.StartElement)
-	m := mux.New(ns.Client, roster.Handle(h))
+	m := mux.New(stanza.NSClient, roster.Handle(h))
 	err = m.HandleXMPP(struct {
 		xml.TokenReader
 		xmlstream.Encoder

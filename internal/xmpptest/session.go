@@ -12,9 +12,9 @@ import (
 	"strings"
 
 	"mellium.im/xmpp"
-	"mellium.im/xmpp/internal/ns"
 	intstream "mellium.im/xmpp/internal/stream"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
 )
 
@@ -51,13 +51,13 @@ func NopNegotiator(state xmpp.SessionState, streamNS string) xmpp.Negotiator {
 // NewClientSession panics on error for ease of use in testing, where a panic is
 // acceptable.
 func NewClientSession(finalState xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
-	return newSession(finalState, rw, ns.Client)
+	return newSession(finalState, rw, stanza.NSClient)
 }
 
 // NewServerSession is like NewClientSession except that the stream uses the
 // server-to-server namespace.
 func NewServerSession(finalState xmpp.SessionState, rw io.ReadWriter) *xmpp.Session {
-	return newSession(finalState, rw, ns.Server)
+	return newSession(finalState, rw, stanza.NSServer)
 }
 
 func newSession(finalState xmpp.SessionState, rw io.ReadWriter, streamNS string) *xmpp.Session {

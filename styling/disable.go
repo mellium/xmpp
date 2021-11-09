@@ -8,7 +8,7 @@ import (
 	"encoding/xml"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp/internal/ns"
+	"mellium.im/xmpp/stanza"
 )
 
 const (
@@ -51,8 +51,8 @@ func (u *Unstyled) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 }
 
 var (
-	clientInserter = xmlstream.Insert(xml.Name{Space: ns.Client, Local: "message"}, Unstyled{Value: true})
-	serverInserter = xmlstream.Insert(xml.Name{Space: ns.Server, Local: "message"}, Unstyled{Value: true})
+	clientInserter = xmlstream.Insert(xml.Name{Space: stanza.NSClient, Local: "message"}, Unstyled{Value: true})
+	serverInserter = xmlstream.Insert(xml.Name{Space: stanza.NSServer, Local: "message"}, Unstyled{Value: true})
 )
 
 // Disable is an xmlstream.Transformer that inserts a hint into any message read

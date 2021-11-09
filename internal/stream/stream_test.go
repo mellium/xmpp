@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	"mellium.im/xmpp/internal/decl"
-	"mellium.im/xmpp/internal/ns"
 	intstream "mellium.im/xmpp/internal/stream"
+	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
 )
 
@@ -38,9 +38,9 @@ func TestSendNewS2S(t *testing.T) {
 			}
 			out := stream.Info{}
 			if tc.s2s {
-				out.XMLNS = ns.Server
+				out.XMLNS = stanza.NSServer
 			} else {
-				out.XMLNS = ns.Client
+				out.XMLNS = stanza.NSClient
 			}
 			err := intstream.Send(&b, &out, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", ids)
 

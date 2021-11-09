@@ -12,12 +12,11 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/attr"
 	"mellium.im/xmpp/internal/marshal"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stanza"
 )
 
 func isMessageEmptySpace(name xml.Name) bool {
-	return name.Local == "message" && (name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
+	return name.Local == "message" && (name.Space == "" || name.Space == stanza.NSClient || name.Space == stanza.NSServer)
 }
 
 // SendMessage is like Send except that it returns an error if the first token

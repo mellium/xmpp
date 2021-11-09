@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file.
 - pubsub: new package implementing parts of [XEP-0060: Publish-Subscribe] and
   [XEP-0163: Personal Eventing Protocol]
 - carbons: add `WrapReceived` and `WrapSent` functions
-- stanza: add `NSError` constant
+- stanza: add `NSError`, `NSClient`, and `NSServer` constants
 
 [XEP-0060: Publish-Subscribe]: https://xmpp.org/extensions/xep-0060.html
 [XEP-0163: Personal Eventing Protocol]: https://xmpp.org/extensions/xep-0163.html

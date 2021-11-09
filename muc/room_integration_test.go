@@ -87,7 +87,7 @@ func integrationMediatedInvite(ctx context.Context, t *testing.T, cmd *integrati
 
 	mucClient := &muc.Client{}
 	go func() {
-		m := mux.New(ns.Client, muc.HandleClient(mucClient))
+		m := mux.New(stanza.NSClient, muc.HandleClient(mucClient))
 		err := userOneSession.Serve(m)
 		if err != nil {
 			t.Logf("error from %s serve: %v", userOne, err)
@@ -100,7 +100,7 @@ func integrationMediatedInvite(ctx context.Context, t *testing.T, cmd *integrati
 				errChan <- nil
 			},
 		}
-		m := mux.New(ns.Client, muc.HandleClient(inviteClient))
+		m := mux.New(stanza.NSClient, muc.HandleClient(inviteClient))
 		err := userTwoSession.Serve(m)
 		if err != nil {
 			t.Logf("error from %s serve: %v", userTwo, err)
@@ -155,7 +155,7 @@ func integrationSetAffiliation(ctx context.Context, t *testing.T, cmd *integrati
 
 	mucClientOne := &muc.Client{}
 	go func() {
-		m := mux.New(ns.Client, muc.HandleClient(mucClientOne))
+		m := mux.New(stanza.NSClient, muc.HandleClient(mucClientOne))
 		err := userOneSession.Serve(m)
 		if err != nil {
 			t.Logf("error from %s serve: %v", userOne, err)
@@ -169,7 +169,7 @@ func integrationSetAffiliation(ctx context.Context, t *testing.T, cmd *integrati
 		},
 	}
 	go func(itemChan chan<- muc.Item) {
-		m := mux.New(ns.Client, muc.HandleClient(mucClientTwo))
+		m := mux.New(stanza.NSClient, muc.HandleClient(mucClientTwo))
 		err := userTwoSession.Serve(m)
 		if err != nil {
 			t.Logf("error from %s serve: %v", userTwo, err)

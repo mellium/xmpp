@@ -22,6 +22,12 @@ const (
 
 	// The namespace used by stanza errors.
 	NSError = "urn:ietf:params:xml:ns:xmpp-stanzas"
+
+	// The namespace used by stanzas in the client-to-server protocol.
+	NSClient = "jabber:client"
+
+	// The namespace used by stanzas in the server-to-server protocol.
+	NSServer = "jabber:server"
 )
 
 const idLen = 32

@@ -58,7 +58,7 @@ func integrationRecvPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 		t.Fatalf("error connecting: %v", err)
 	}
 	go func() {
-		m := mux.New(ns.Client, mux.IQFunc(stanza.GetIQ, xml.Name{Local: "ping", Space: ping.NS},
+		m := mux.New(stanza.NSClient, mux.IQFunc(stanza.GetIQ, xml.Name{Local: "ping", Space: ping.NS},
 			func(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 				err := ping.Handler{}.HandleIQ(iq, t, start)
 				gotPing <- struct{}{}

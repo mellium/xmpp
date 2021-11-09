@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
@@ -32,61 +31,61 @@ var idTestCases = [...]struct {
 		in:     `<message xmlns="jabber:client"></message>`,
 		origin: `<message xmlns="jabber:client">` + testOrigin + `</message>`,
 		id:     `<message xmlns="jabber:client">` + testStanza + `</message>`,
-		ns:     ns.Client,
+		ns:     stanza.NSClient,
 	},
 	1: {
 		in:     `<iq xmlns="jabber:client"></iq>`,
 		origin: `<iq xmlns="jabber:client">` + testOrigin + `</iq>`,
 		id:     `<iq xmlns="jabber:client">` + testStanza + `</iq>`,
-		ns:     ns.Client,
+		ns:     stanza.NSClient,
 	},
 	2: {
 		in:     `<presence xmlns="jabber:client"></presence>`,
 		origin: `<presence xmlns="jabber:client">` + testOrigin + `</presence>`,
 		id:     `<presence xmlns="jabber:client">` + testStanza + `</presence>`,
-		ns:     ns.Client,
+		ns:     stanza.NSClient,
 	},
 	3: {
 		in:     `<message xmlns="jabber:server"></message>`,
 		origin: `<message xmlns="jabber:server">` + testOrigin + `</message>`,
 		id:     `<message xmlns="jabber:server">` + testStanza + `</message>`,
-		ns:     ns.Server,
+		ns:     stanza.NSServer,
 	},
 	4: {
 		in:     `<iq xmlns="jabber:server"></iq>`,
 		origin: `<iq xmlns="jabber:server">` + testOrigin + `</iq>`,
 		id:     `<iq xmlns="jabber:server">` + testStanza + `</iq>`,
-		ns:     ns.Server,
+		ns:     stanza.NSServer,
 	},
 	5: {
 		in:     `<presence xmlns="jabber:server"></presence>`,
 		origin: `<presence xmlns="jabber:server">` + testOrigin + `</presence>`,
 		id:     `<presence xmlns="jabber:server">` + testStanza + `</presence>`,
-		ns:     ns.Server,
+		ns:     stanza.NSServer,
 	},
 	6: {
 		in:     `<not-stanza><message xmlns="jabber:client"></message></not-stanza>`,
 		origin: `<not-stanza><message xmlns="jabber:client"></message></not-stanza>`,
 		id:     `<not-stanza><message xmlns="jabber:client"></message></not-stanza>`,
-		ns:     ns.Client,
+		ns:     stanza.NSClient,
 	},
 	7: {
 		in:     `<not-stanza><iq xmlns="jabber:client"></iq></not-stanza>`,
 		origin: `<not-stanza><iq xmlns="jabber:client"></iq></not-stanza>`,
 		id:     `<not-stanza><iq xmlns="jabber:client"></iq></not-stanza>`,
-		ns:     ns.Client,
+		ns:     stanza.NSClient,
 	},
 	8: {
 		in:     `<not-stanza><presence xmlns="jabber:client"></presence></not-stanza>`,
 		origin: `<not-stanza><presence xmlns="jabber:client"></presence></not-stanza>`,
 		id:     `<not-stanza><presence xmlns="jabber:client"></presence></not-stanza>`,
-		ns:     ns.Client,
+		ns:     stanza.NSClient,
 	},
 	9: {
 		in:     `<presence xmlns="jabber:badns"></presence>`,
 		origin: `<presence xmlns="jabber:badns"></presence>`,
 		id:     `<presence xmlns="jabber:badns"></presence>`,
-		ns:     ns.Client,
+		ns:     stanza.NSClient,
 	},
 	10: {
 		in:     `<presence xmlns="jabber:badns"></presence>`,

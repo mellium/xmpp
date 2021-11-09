@@ -50,7 +50,7 @@ func integrationJoinRoom(ctx context.Context, t *testing.T, cmd *integration.Cmd
 	}
 	mucClient := &muc.Client{}
 	go func() {
-		m := mux.New(ns.Client, muc.HandleClient(mucClient))
+		m := mux.New(stanza.NSClient, muc.HandleClient(mucClient))
 		err := session.Serve(m)
 		if err != nil {
 			t.Logf("error from serve: %v", err)
@@ -179,7 +179,7 @@ func integrationJoinErr(ctx context.Context, t *testing.T, cmd *integration.Cmd)
 	}
 	mucClient := &muc.Client{}
 	go func() {
-		m := mux.New(ns.Client, muc.HandleClient(mucClient))
+		m := mux.New(stanza.NSClient, muc.HandleClient(mucClient))
 		err := session.Serve(m)
 		if err != nil {
 			t.Logf("error from serve: %v", err)

@@ -133,7 +133,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 				}
 				resReq := bindIQ{}
 				switch start.Name {
-				case xml.Name{Space: ns.Client, Local: "iq"}:
+				case xml.Name{Space: stanza.NSClient, Local: "iq"}:
 					if err = d.DecodeElement(&resReq, &start); err != nil {
 						return mask, nil, err
 					}
@@ -156,7 +156,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 
 				resp := bindIQ{
 					IQ: stanza.IQ{
-						XMLName: xml.Name{Space: ns.Server, Local: "iq"},
+						XMLName: xml.Name{Space: stanza.NSServer, Local: "iq"},
 						ID:      iqid,
 						From:    resReq.IQ.To,
 						To:      resReq.IQ.From,
@@ -182,7 +182,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			reqID := attr.RandomID()
 			req := &bindIQ{
 				IQ: stanza.IQ{
-					XMLName: xml.Name{Space: ns.Client, Local: "iq"},
+					XMLName: xml.Name{Space: stanza.NSClient, Local: "iq"},
 					ID:      reqID,
 					Type:    stanza.SetIQ,
 				},
@@ -215,7 +215,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			}
 			resp := bindIQ{}
 			switch start.Name {
-			case xml.Name{Space: ns.Client, Local: "iq"}:
+			case xml.Name{Space: stanza.NSClient, Local: "iq"}:
 				if err = d.DecodeElement(&resp, &start); err != nil {
 					return mask, nil, err
 				}

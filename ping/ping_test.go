@@ -12,7 +12,6 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/disco/info"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
@@ -57,7 +56,7 @@ type tokenReadEncoder struct {
 }
 
 func TestRoundTrip(t *testing.T) {
-	m := mux.New(ns.Client, ping.Handle())
+	m := mux.New(stanza.NSClient, ping.Handle())
 	cs := xmpptest.NewClientServer(
 		xmpptest.ServerHandler(m),
 	)
@@ -75,7 +74,7 @@ func TestWrongIQType(t *testing.T) {
 	tok, _ := d.Token()
 	start := tok.(xml.StartElement)
 
-	m := mux.New(ns.Client, mux.IQ(stanza.SetIQ, xml.Name{Local: "ping", Space: ping.NS}, ping.Handler{}))
+	m := mux.New(stanza.NSClient, mux.IQ(stanza.SetIQ, xml.Name{Local: "ping", Space: ping.NS}, ping.Handler{}))
 	err := m.HandleXMPP(tokenReadEncoder{
 		TokenReader: d,
 		Encoder:     e,
@@ -101,7 +100,7 @@ func TestBadPayloadLocalname(t *testing.T) {
 	tok, _ := d.Token()
 	start := tok.(xml.StartElement)
 
-	m := mux.New(ns.Client, mux.IQ(stanza.GetIQ, xml.Name{Local: "badlocal", Space: ping.NS}, ping.Handler{}))
+	m := mux.New(stanza.NSClient, mux.IQ(stanza.GetIQ, xml.Name{Local: "badlocal", Space: ping.NS}, ping.Handler{}))
 	err := m.HandleXMPP(tokenReadEncoder{
 		TokenReader: d,
 		Encoder:     e,
@@ -127,7 +126,7 @@ func TestBadPayloadNamespace(t *testing.T) {
 	tok, _ := d.Token()
 	start := tok.(xml.StartElement)
 
-	m := mux.New(ns.Client, mux.IQ(stanza.GetIQ, xml.Name{Local: "ping", Space: "badnamespace"}, ping.Handler{}))
+	m := mux.New(stanza.NSClient, mux.IQ(stanza.GetIQ, xml.Name{Local: "ping", Space: "badnamespace"}, ping.Handler{}))
 	err := m.HandleXMPP(tokenReadEncoder{
 		TokenReader: d,
 		Encoder:     e,

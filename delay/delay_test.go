@@ -13,8 +13,8 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/delay"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/stanza"
 )
 
 var (
@@ -35,34 +35,34 @@ var insertTestCases = [...]struct {
 		stanza: true,
 		in:     `<message xmlns="jabber:client"/>`,
 		out:    `<message xmlns="jabber:client"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message>`,
-		ns:     ns.Client,
+		ns:     stanza.NSClient,
 	},
 	2: {
 		stanza: true,
 		in:     `<message xmlns="jabber:server"/><message xmlns="jabber:server"><body>test</body></message><message xmlns="jabber:client"/>`,
 		out:    `<message xmlns="jabber:server"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message><message xmlns="jabber:server"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay><body xmlns="jabber:server">test</body></message><message xmlns="jabber:client"></message>`,
-		ns:     ns.Server,
+		ns:     stanza.NSServer,
 	},
 	3: {
 		stanza: true,
 		in:     `<message xmlns="jabber:badns"/>`,
 		out:    `<message xmlns="jabber:badns"></message>`,
-		ns:     ns.Client,
+		ns:     stanza.NSClient,
 	},
 	4: {
 		in:  `<message xmlns="jabber:client"/>`,
 		out: `<message xmlns="jabber:client"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message>`,
-		ns:  ns.Client,
+		ns:  stanza.NSClient,
 	},
 	5: {
 		in:  `<message xmlns="jabber:server"/><message xmlns="jabber:client"><body>test</body></message>`,
 		out: `<message xmlns="jabber:server"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message><message xmlns="jabber:client"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay><body xmlns="jabber:client">test</body></message>`,
-		ns:  ns.Server,
+		ns:  stanza.NSServer,
 	},
 	6: {
 		in:  `<message xmlns="jabber:badns"/>`,
 		out: `<message xmlns="jabber:badns"><delay xmlns="urn:xmpp:delay" stamp="0001-01-01T00:00:00Z" from="me@example.net">foo</delay></message>`,
-		ns:  ns.Client,
+		ns:  stanza.NSClient,
 	},
 	7: {
 		in:  `<message xmlns="jabber:anyns"/>`,

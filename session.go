@@ -259,7 +259,7 @@ func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 
 	s.in.d = intstream.Reader(s.in.d)
 	se := &stanzaEncoder{TokenWriteFlusher: s.out.e, ns: s.out.Info.XMLNS}
-	if s.out.Info.XMLNS == ns.Server {
+	if s.out.Info.XMLNS == stanza.NSServer {
 		se.from = s.LocalAddr()
 	}
 	s.out.e = se
@@ -922,16 +922,16 @@ func send(ctx context.Context, s *Session, r xml.TokenReader, start *xml.StartEl
 }
 
 func isIQ(name xml.Name) bool {
-	return name.Local == "iq" && (name.Space == ns.Client || name.Space == ns.Server)
+	return name.Local == "iq" && (name.Space == stanza.NSClient || name.Space == stanza.NSServer)
 }
 
 func isIQEmptySpace(name xml.Name) bool {
-	return name.Local == "iq" && (name.Space == "" || name.Space == ns.Client || name.Space == ns.Server)
+	return name.Local == "iq" && (name.Space == "" || name.Space == stanza.NSClient || name.Space == stanza.NSServer)
 }
 
 func isStanzaEmptySpace(name xml.Name) bool {
 	return (name.Local == "iq" || name.Local == "message" || name.Local == "presence") &&
-		(name.Space == ns.Client || name.Space == ns.Server || name.Space == "")
+		(name.Space == stanza.NSClient || name.Space == stanza.NSServer || name.Space == "")
 }
 
 func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenReader, start xml.StartElement) (xmlstream.TokenReadCloser, error) {

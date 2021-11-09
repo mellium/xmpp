@@ -15,7 +15,6 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/blocklist"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
@@ -112,7 +111,7 @@ func TestFetch(t *testing.T) {
 					}
 				},
 			}
-			m := mux.New(ns.Client, blocklist.Handle(h))
+			m := mux.New(stanza.NSClient, blocklist.Handle(h))
 			cs := xmpptest.NewClientServer(xmpptest.ServerHandler(m))
 
 			err := blocklist.AddIQ(context.Background(), IQ, cs.Client, tc.items...)

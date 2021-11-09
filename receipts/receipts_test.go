@@ -13,7 +13,6 @@ import (
 	"testing"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/receipts"
@@ -158,7 +157,7 @@ func TestClosedDoesNotPanic(t *testing.T) {
 	}
 
 	msg := stanza.Message{
-		XMLName: xml.Name{Space: ns.Client, Local: "message"},
+		XMLName: xml.Name{Space: stanza.NSClient, Local: "message"},
 		Type:    stanza.ChatMessage,
 	}
 	r := msg.Wrap(xmlstream.Wrap(nil, xml.StartElement{
@@ -206,7 +205,7 @@ func TestRoundTrip(t *testing.T) {
 	var b strings.Builder
 	e := xml.NewEncoder(&b)
 
-	m := mux.New(ns.Client, receipts.Handle(h))
+	m := mux.New(stanza.NSClient, receipts.Handle(h))
 	err = m.HandleXMPP(struct {
 		xml.TokenReader
 		xmlstream.Encoder

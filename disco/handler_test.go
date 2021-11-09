@@ -12,14 +12,13 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/disco"
 	"mellium.im/xmpp/disco/items"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 )
 
 func TestFeaturesRoundTrip(t *testing.T) {
-	m := mux.New(ns.Client, disco.Handle())
+	m := mux.New(stanza.NSClient, disco.Handle())
 	cs := xmpptest.NewClientServer(
 		xmpptest.ServerHandler(m),
 	)
@@ -59,7 +58,7 @@ func (itemHandler) ForItems(node string, f func(items.Item) error) error {
 
 func TestItemsRoundTrip(t *testing.T) {
 	m := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		disco.Handle(),
 		mux.Handle(xml.Name{}, itemHandler{}),
 	)

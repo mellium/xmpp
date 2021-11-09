@@ -10,10 +10,10 @@ import (
 	"io"
 
 	"mellium.im/xmpp/internal/attr"
-	"mellium.im/xmpp/internal/ns"
 	intstream "mellium.im/xmpp/internal/stream"
 	"mellium.im/xmpp/internal/wskey"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
 )
 
@@ -160,9 +160,9 @@ func negotiator(f func(*Session, *StreamConfig) StreamConfig) Negotiator {
 				origin = in.From
 
 				if s.State()&S2S == S2S {
-					out.XMLNS = ns.Server
+					out.XMLNS = stanza.NSServer
 				} else {
-					out.XMLNS = ns.Client
+					out.XMLNS = stanza.NSClient
 				}
 				err = intstream.Send(s.Conn(), out, websocket, stream.DefaultVersion, cfg.Lang, origin.String(), location.String(), attr.RandomID())
 				if err != nil {
@@ -175,9 +175,9 @@ func negotiator(f func(*Session, *StreamConfig) StreamConfig) Negotiator {
 				origin := s.LocalAddr()
 				location := s.RemoteAddr()
 				if s.State()&S2S == S2S {
-					out.XMLNS = ns.Server
+					out.XMLNS = stanza.NSServer
 				} else {
-					out.XMLNS = ns.Client
+					out.XMLNS = stanza.NSClient
 				}
 				err = intstream.Send(s.Conn(), out, websocket, stream.DefaultVersion, cfg.Lang, location.String(), origin.String(), "")
 				if err != nil {

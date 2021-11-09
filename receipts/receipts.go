@@ -17,7 +17,6 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/attr"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 )
@@ -105,7 +104,7 @@ func Request(r xml.TokenReader) xml.TokenReader {
 			switch {
 			case t.Name.Local == "receipt" && t.Name.Space == NS:
 				noWrite = true
-			case t.Name.Local == "message" && (t.Name.Space == ns.Client || t.Name.Space == ns.Server):
+			case t.Name.Local == "message" && (t.Name.Space == stanza.NSClient || t.Name.Space == stanza.NSServer):
 				noWrite = false
 				for _, attr := range t.Attr {
 					if attr.Name.Local == "type" {
@@ -115,7 +114,7 @@ func Request(r xml.TokenReader) xml.TokenReader {
 				}
 			}
 		case xml.EndElement:
-			if t.Name.Local == "message" && (t.Name.Space == ns.Client || t.Name.Space == ns.Server) {
+			if t.Name.Local == "message" && (t.Name.Space == stanza.NSClient || t.Name.Space == stanza.NSServer) {
 				if !noWrite {
 					inner = xmlstream.MultiReader(xmlstream.Wrap(nil, xml.StartElement{
 						Name: xml.Name{Space: NS, Local: "request"},
@@ -229,7 +228,7 @@ func (h *Handler) SendMessage(ctx context.Context, s *xmpp.Session, r xml.TokenR
 		return err
 	}
 	start := tok.(xml.StartElement)
-	if start.Name.Local != "message" || (start.Name.Space != ns.Server && start.Name.Space != ns.Client) {
+	if start.Name.Local != "message" || (start.Name.Space != stanza.NSServer && start.Name.Space != stanza.NSClient) {
 		return fmt.Errorf("expected a message type, got %v", start.Name)
 	}
 	msg, err := stanza.NewMessage(start)

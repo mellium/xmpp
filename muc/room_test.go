@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"mellium.im/xmlstream"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/muc"
@@ -24,8 +23,8 @@ func TestMediatedInvite(t *testing.T) {
 	j := jid.MustParse("room@example.net/me")
 	h := &muc.Client{}
 	inviteChan := make(chan muc.Invitation, 1)
-	m := mux.New(ns.Client, muc.HandleClient(h))
-	server := mux.New(ns.Client,
+	m := mux.New(stanza.NSClient, muc.HandleClient(h))
+	server := mux.New(stanza.NSClient,
 		mux.PresenceFunc("", xml.Name{Local: "x"}, func(p stanza.Presence, r xmlstream.TokenReadEncoder) error {
 			// Send back a self presence, indicating that the join is complete.
 			p.To, p.From = p.From, p.To
@@ -74,7 +73,7 @@ func TestDirectInvite(t *testing.T) {
 	inviteChan := make(chan muc.Invitation, 1)
 	s := xmpptest.NewClientServer(
 		xmpptest.ServerHandler(mux.New(
-			ns.Client,
+			stanza.NSClient,
 			muc.HandleInvite(func(invite muc.Invitation) {
 				inviteChan <- invite
 			}),
@@ -121,9 +120,9 @@ func TestSetAffiliation(t *testing.T) {
 	j := jid.MustParse("room@example.net/me")
 	h := &muc.Client{}
 	handled := make(chan string, 1)
-	m := mux.New(ns.Client, muc.HandleClient(h))
+	m := mux.New(stanza.NSClient, muc.HandleClient(h))
 	server := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.PresenceFunc("", xml.Name{Local: "x"}, func(p stanza.Presence, r xmlstream.TokenReadEncoder) error {
 			// Send back a self presence, indicating that the join is complete.
 			p.To, p.From = p.From, p.To
@@ -179,9 +178,9 @@ func TestSetSubject(t *testing.T) {
 	j := jid.MustParse("room@example.net/me")
 	h := &muc.Client{}
 	handled := make(chan string, 1)
-	m := mux.New(ns.Client, muc.HandleClient(h))
+	m := mux.New(stanza.NSClient, muc.HandleClient(h))
 	server := mux.New(
-		ns.Client,
+		stanza.NSClient,
 		mux.PresenceFunc("", xml.Name{Local: "x"}, func(p stanza.Presence, r xmlstream.TokenReadEncoder) error {
 			// Send back a self presence, indicating that the join is complete.
 			p.To, p.From = p.From, p.To

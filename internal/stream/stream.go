@@ -15,6 +15,7 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/decl"
 	"mellium.im/xmpp/internal/ns"
+	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
 )
 
@@ -141,7 +142,7 @@ func Expect(ctx context.Context, in *stream.Info, d xml.TokenReader, recv, ws bo
 				return stream.UnsupportedVersion
 			}
 
-			if !ws && in.XMLNS != ns.Client && in.XMLNS != ns.Server {
+			if !ws && in.XMLNS != stanza.NSClient && in.XMLNS != stanza.NSServer {
 				return fmt.Errorf("expected jabber:client or jabber:server for default namespace, got %q: %w", in.XMLNS, stream.InvalidNamespace)
 			}
 
