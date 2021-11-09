@@ -12,7 +12,6 @@ const (
 	Client   = "jabber:client"
 	SASL     = "urn:ietf:params:xml:ns:xmpp-sasl"
 	Server   = "jabber:server"
-	Stanza   = "urn:ietf:params:xml:ns:xmpp-stanzas"
 	StartTLS = "urn:ietf:params:xml:ns:xmpp-tls"
 	WS       = "urn:ietf:params:xml:ns:xmpp-framing"
 	XML      = "http://www.w3.org/XML/1998/namespace"

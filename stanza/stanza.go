@@ -19,6 +19,9 @@ const (
 
 	// The namespace for delayed delivery.
 	NSDelay = "urn:xmpp:delay"
+
+	// The namespace used by stanza errors.
+	NSError = "urn:ietf:params:xml:ns:xmpp-stanzas"
 )
 
 const idLen = 32

@@ -296,7 +296,7 @@ func (se Error) Wrap(payload xml.TokenReader) xml.TokenReader {
 				return xml.CharData(data), io.EOF
 			}),
 			xml.StartElement{
-				Name: xml.Name{Space: ns.Stanza, Local: "text"},
+				Name: xml.Name{Space: NSError, Local: "text"},
 				Attr: attrs,
 			},
 		)
@@ -311,7 +311,7 @@ func (se Error) Wrap(payload xml.TokenReader) xml.TokenReader {
 			xmlstream.Wrap(
 				nil,
 				xml.StartElement{
-					Name: xml.Name{Space: ns.Stanza, Local: string(se.Condition)},
+					Name: xml.Name{Space: NSError, Local: string(se.Condition)},
 				},
 			),
 			text,
@@ -400,7 +400,7 @@ func (se *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	}
 	se.Type = decoded.Type
 	se.By = decoded.By
-	if decoded.Condition.XMLName.Space == ns.Stanza {
+	if decoded.Condition.XMLName.Space == NSError {
 		se.Condition = Condition(decoded.Condition.XMLName.Local)
 	}
 
