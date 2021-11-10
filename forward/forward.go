@@ -10,7 +10,6 @@ package forward // import "mellium.im/xmpp/forward"
 import (
 	"encoding/xml"
 	"fmt"
-	"io"
 	"time"
 
 	"mellium.im/xmlstream"
@@ -70,66 +69,43 @@ func Wrap(msg stanza.Message, body string, received time.Time, r xml.TokenReader
 }
 
 type forwardUnwrapper struct {
-	r         xml.TokenReader
-	stanzaXML xml.TokenReader
-	del       *delay.Delay
+	d                *xml.Decoder
+	del              *delay.Delay
+	currentLevel     int
+	delayEncountered bool
 }
 
 // Token implements xml.TokenReader
 func (f *forwardUnwrapper) Token() (xml.Token, error) {
-	if f.stanzaXML != nil {
-		token, err := f.stanzaXML.Token()
-		if err != nil && err != io.EOF {
-			// something bad happened
-			return nil, err
-		}
-		if err == io.EOF {
-			// we have reached the end of the stanza xml stream
-			f.stanzaXML = nil
-		}
-		if token != nil {
-			return token, nil
-		}
-	}
-
-	for {
-		token, err := f.r.Token()
-		if err != nil {
-			return nil, err
-		}
-		se, ok := token.(xml.StartElement)
-		if !ok {
-			return se, fmt.Errorf("expected a startElement, found %T", token)
-		}
-
-		if se.Name.Local == "delay" && se.Name.Space == delay.NS {
+	token, err := f.d.Token()
+	switch v := token.(type) {
+	case xml.StartElement:
+		f.currentLevel++
+		// If we are consuming a top level delay element and
+		// didn't already encountered one
+		if f.currentLevel == 1 && v.Name.Local == "delay" && v.Name.Space == delay.NS && !f.delayEncountered {
+			f.delayEncountered = true
 			if f.del == nil {
-				// The delay element is skipped if the provided del is nil
-				err = xmlstream.Skip(f.r)
-				if err != nil {
+				if err := xmlstream.Skip(f.d); err != nil {
 					return nil, err
 				}
-				continue
+			} else if err := f.d.DecodeElement(f.del, &v); err != nil {
+				return nil, err
 			}
-			err = xml.NewTokenDecoder(
-				xmlstream.MultiReader(xmlstream.Token(se), xmlstream.Inner(f.r), xmlstream.Token(se.End())),
-			).Decode(f.del)
-			if err != nil {
-				return nil, fmt.Errorf("could not unmarshal delay element: %v", err)
-			}
-		} else {
-			f.stanzaXML = xmlstream.MultiReader(xmlstream.Inner(f.r), xmlstream.Token(se.End()))
-			return se, nil
+			return f.d.Token()
 		}
+	case xml.EndElement:
+		f.currentLevel--
 	}
+	return token, err
 }
 
 // Unwrap returns the contents of the forwarded data as a new token stream.
 // If a delay element is encountered it is unmarshaled into the provided delay
 // and not returned as part of the token stream.
 // If a nil delay is provided the delay will be skipped if present.
-// The delay is unmarshaled lazily (i.e. when encountered during stream consumption), the user should not use
-// the delay before consuming the returned stream entirely.
+// In case there are multiple delay elements at the top level, only the first one is considered
+// and the others will be included in the returned stream (i.e. only the first encountered delay is unmarshalled/skipped)
 func Unwrap(del *delay.Delay, r xml.TokenReader) (xml.TokenReader, error) {
 	token, err := r.Token()
 	if err != nil {
@@ -142,5 +118,5 @@ func Unwrap(del *delay.Delay, r xml.TokenReader) (xml.TokenReader, error) {
 	if se.Name.Local != "forwarded" || se.Name.Space != NS {
 		return nil, fmt.Errorf("unexpected name for the forwarded element: %+v", se.Name)
 	}
-	return &forwardUnwrapper{r: xmlstream.Inner(r), del: del}, nil
+	return &forwardUnwrapper{d: xml.NewTokenDecoder(xmlstream.Inner(r)), del: del}, nil
 }
