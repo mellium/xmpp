@@ -44,7 +44,6 @@ var decoderTestCases = []struct {
 	name  string
 	input string
 	toks  []tokenAndStyle
-	Err   error
 }{
 	{
 		name:  "pre block start no newline backtick info string",
@@ -739,25 +738,8 @@ func TestToken(t *testing.T) {
 			}
 
 			err := d.Err()
-
-			switch err {
-			case nil:
-			case io.EOF:
-				if tc.Err != nil && tc.Err != io.EOF {
-					t.Errorf("Expected error but got io.EOF: %v", tc.Err)
-				}
-				if len(toks) != 0 {
-					var tokStrs []string
-					for _, tok := range toks {
-						tokStrs = append(tokStrs, string(tok.Data))
-					}
-					t.Fatalf("Reached EOF at token %d, but expected remaining tokens: %+v (%v)", n, tc.toks, tokStrs)
-				}
-				return
-			default:
-				if tc.Err != err {
-					t.Errorf("Unexpected error: want=%v, got=%v", tc.Err, err)
-				}
+			if err != io.EOF {
+				t.Errorf("unexpected error: want=%v, got=%v", io.EOF, err)
 			}
 		})
 	}
