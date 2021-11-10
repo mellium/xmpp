@@ -26,3 +26,7 @@ styling/styling_string.go: styling/styling.go
 
 sessionstate_string.go: session.go
 	go generate
+
+styling_tests.json: styling/styling_test.go styling/export_test.go
+	go test -tags export ./styling -args -export=$@
+	mv styling/$@ .
