@@ -124,7 +124,7 @@ func TestUnwrapDelay(t *testing.T) {
 				t.Errorf("wrong XML: want=%v, got=%v", tc.unwrappedXML, out)
 			}
 			if del != nil && del.Reason != tc.reason {
-				t.Errorf("did not unmarshal delay: want=%v, got=%v", "Test", tc.reason)
+				t.Errorf("did not unmarshal delay: want=%v, got=%v", tc.reason, del.Reason)
 			}
 		})
 	}
