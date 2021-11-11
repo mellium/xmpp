@@ -10,6 +10,7 @@ package carbons // import "mellium.im/xmpp/carbons"
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
@@ -86,4 +87,26 @@ func WrapSent(delay delay.Delay, r xml.TokenReader) xml.TokenReader {
 		}.Wrap(r),
 		xml.StartElement{Name: xml.Name{Space: NS, Local: "sent"}},
 	)
+}
+
+// Unwrap unwraps a carbon copied message, unmarshals the forwarding delay into
+// the provided delay, and returns a start element set to either sent or
+// received.
+// If the provided delay is nil, unmarshaling is skipped.
+func Unwrap(del *delay.Delay, r xml.TokenReader) (xml.TokenReader, xml.StartElement, error) {
+	token, err := r.Token()
+	if err != nil {
+		return nil, xml.StartElement{}, err
+	}
+
+	se, ok := token.(xml.StartElement)
+	if !ok {
+		return nil, se, fmt.Errorf("expected a startElement, found %T", token)
+	}
+	if se.Name.Local != "sent" && se.Name.Local != "received" || se.Name.Space != NS {
+		return nil, se, fmt.Errorf("unexpected name for the sent/received element: %+v", se.Name)
+	}
+
+	out, err := forward.Unwrap(del, xmlstream.Inner(r))
+	return out, se, err
 }

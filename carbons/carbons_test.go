@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -102,5 +103,72 @@ func TestWrapSent(t *testing.T) {
 
 	if out := buf.String(); out != expected {
 		t.Fatalf("wrong output:\nwant=%s,\n got=%s", expected, out)
+	}
+}
+
+var unwrapValidTestCases = [...]struct {
+	unwrappedXML string
+	inXML        string
+	se           xml.StartElement
+}{
+	0: {
+		unwrappedXML: `<message xmlns="jabber:client" xmlns="jabber:client"></message>`,
+		inXML:        `<received xmlns="urn:xmpp:carbons:2"><forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><message xmlns="jabber:client"></message></forwarded></received>`,
+		se:           xml.StartElement{Name: xml.Name{Local: "received", Space: "urn:xmpp:carbons:2"}},
+	},
+	1: {
+		unwrappedXML: `<message xmlns="jabber:client" xmlns="jabber:client"></message>`,
+		inXML:        `<sent xmlns="urn:xmpp:carbons:2"><forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><message xmlns="jabber:client"></message></forwarded></sent>`,
+		se:           xml.StartElement{Name: xml.Name{Local: "sent", Space: "urn:xmpp:carbons:2"}},
+	},
+}
+
+var unwrapInvalidTestCases = [...]struct {
+	inXML string
+}{
+	0: {
+		inXML: `<tag xmlns="urn:xmpp:carbons:2"><forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><message xmlns="jabber:client"></message></forwarded></tag>`,
+	},
+	1: {
+		inXML: `<sent xmlns="urn:xmpp:space:2"><forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><message xmlns="jabber:client"></message></forwarded></sent>`,
+	},
+	2: {
+		inXML: `<received xmlns="urn:xmpp:space:2"><forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><message xmlns="jabber:client"></message></forwarded></received>`,
+	},
+}
+
+func TestUnwrap(t *testing.T) {
+	for i, tc := range unwrapValidTestCases {
+		t.Run(fmt.Sprintf("valid:%d", i), func(t *testing.T) {
+			r, se, err := carbons.Unwrap(nil, xml.NewDecoder(strings.NewReader(tc.inXML)))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			var buf strings.Builder
+			e := xml.NewEncoder(&buf)
+			_, err = xmlstream.Copy(e, r)
+			if err != nil {
+				t.Fatalf("error encoding: %v", err)
+			}
+			err = e.Flush()
+			if err != nil {
+				t.Fatalf("error flushing: %v", err)
+			}
+			if out := buf.String(); out != tc.unwrappedXML {
+				t.Errorf("wrong XML: want=%v, got=%v", tc.unwrappedXML, out)
+			}
+			if se.Name != tc.se.Name {
+				t.Errorf("wrong name for StartElement: want=%+v, got=%+v", tc.se.Name, se.Name)
+			}
+		})
+	}
+
+	for i, tc := range unwrapInvalidTestCases {
+		t.Run(fmt.Sprintf("invalid:%d", i), func(t *testing.T) {
+			_, _, err := carbons.Unwrap(nil, xml.NewDecoder(strings.NewReader(tc.inXML)))
+			if err == nil {
+				t.Error("expected a non nil error")
+			}
+		})
 	}
 }
