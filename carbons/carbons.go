@@ -10,6 +10,7 @@ package carbons // import "mellium.im/xmpp/carbons"
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
@@ -86,4 +87,25 @@ func WrapSent(delay delay.Delay, r xml.TokenReader) xml.TokenReader {
 		}.Wrap(r),
 		xml.StartElement{Name: xml.Name{Space: NS, Local: "sent"}},
 	)
+}
+
+// Unwrap unwraps a carbon copied message and returns
+// a stream corresponding to the message.
+// A bool is returned and is set to true if the type of the carbon-copy
+// is "sent", otherwise it indicated that it's "received".
+func Unwrap(del *delay.Delay, r xml.TokenReader) (xml.TokenReader, bool, error) {
+	token, err := r.Token()
+	if err != nil {
+		return nil, false, err
+	}
+	se, ok := token.(xml.StartElement)
+	if !ok {
+		return nil, false, fmt.Errorf("expected a startElement, found %T", token)
+	}
+	if se.Name.Local != "sent" && se.Name.Local != "received" || se.Name.Space != NS {
+		return nil, false, fmt.Errorf("unexpected name for the sent/received element: %+v", se.Name)
+	}
+
+	stanzaXML, err := forward.Unwrap(del, xmlstream.Inner(r))
+	return stanzaXML, se.Name.Local == "sent", err
 }

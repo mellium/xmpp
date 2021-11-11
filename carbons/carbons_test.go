@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/xml"
 	"errors"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -102,5 +103,65 @@ func TestWrapSent(t *testing.T) {
 
 	if out := buf.String(); out != expected {
 		t.Fatalf("wrong output:\nwant=%s,\n got=%s", expected, out)
+	}
+}
+
+var unwrapTestCases = [...]struct {
+	unwrappedXML string
+	reason       string
+	inXML        string
+	sent         bool
+	noDelay      bool
+}{
+	0: {
+		unwrappedXML: `<message xmlns="jabber:client" xmlns="jabber:client"></message>`,
+		reason:       "Test",
+		inXML:        `<received xmlns='urn:xmpp:carbons:2'><forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><message xmlns='jabber:client'></message></forwarded></received>`,
+	},
+	1: {
+		unwrappedXML: `<message xmlns="jabber:client" xmlns="jabber:client"></message>`,
+		reason:       "Test",
+		inXML:        `<sent xmlns='urn:xmpp:carbons:2'><forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><message xmlns='jabber:client'></message></forwarded></sent>`,
+		sent:         true,
+	},
+	2: {
+		unwrappedXML: `<message xmlns="jabber:client" xmlns="jabber:client"></message>`,
+		inXML:        `<sent xmlns='urn:xmpp:carbons:2'><forwarded xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><message xmlns='jabber:client'></message></forwarded></sent>`,
+		sent:         true,
+		noDelay:      true,
+	},
+}
+
+func TestUnwrap(t *testing.T) {
+	for i, tc := range unwrapTestCases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			var del *delay.Delay
+			if !tc.noDelay {
+				del = &delay.Delay{}
+			}
+			r, sent, err := carbons.Unwrap(del, xml.NewDecoder(strings.NewReader(tc.inXML)))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			var buf strings.Builder
+			e := xml.NewEncoder(&buf)
+			_, err = xmlstream.Copy(e, r)
+			if err != nil {
+				t.Fatalf("error encoding: %v", err)
+			}
+			err = e.Flush()
+			if err != nil {
+				t.Fatalf("error flushing: %v", err)
+			}
+			if out := buf.String(); out != tc.unwrappedXML {
+				t.Errorf("wrong XML: want=%v, got=%v", tc.unwrappedXML, out)
+			}
+			if del != nil && del.Reason != tc.reason {
+				t.Errorf("did not unmarshal delay: want=%v, got=%v", tc.reason, del.Reason)
+			}
+			if sent != tc.sent {
+				t.Errorf("wrong cc type: want=%v, got=%v", tc.sent, sent)
+			}
+		})
 	}
 }
