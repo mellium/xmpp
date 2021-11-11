@@ -6,7 +6,7 @@ package forward_test
 
 import (
 	"encoding/xml"
-	"strconv"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -57,7 +57,7 @@ func TestMarshal(t *testing.T) {
 	}
 }
 
-var unwrapTestCases = [...]struct {
+var unwrapValidTestCases = [...]struct {
 	unwrappedXML string
 	reason       string
 	inXML        string
@@ -99,9 +99,20 @@ var unwrapTestCases = [...]struct {
 	},
 }
 
+var unwrapInvalidTestCases = [...]struct {
+	inXML string
+}{
+	0: {
+		inXML: `<tag xmlns="urn:xmpp:forward:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><foo/></tag>`,
+	},
+	1: {
+		inXML: `<forwarded xmlns="urn:xmpp:space:0"><delay xmlns="urn:xmpp:delay" stamp="0001-01-02T05:00:00Z">Test</delay><foo/></forwarded>`,
+	},
+}
+
 func TestUnwrapDelay(t *testing.T) {
-	for i, tc := range unwrapTestCases {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
+	for i, tc := range unwrapValidTestCases {
+		t.Run(fmt.Sprintf("valid:%d", i), func(t *testing.T) {
 			var del *delay.Delay
 			if !tc.noDelay {
 				del = &delay.Delay{}
@@ -125,6 +136,15 @@ func TestUnwrapDelay(t *testing.T) {
 			}
 			if del != nil && del.Reason != tc.reason {
 				t.Errorf("did not unmarshal delay: want=%v, got=%v", "Test", tc.reason)
+			}
+		})
+	}
+
+	for i, tc := range unwrapInvalidTestCases {
+		t.Run(fmt.Sprintf("invalid:%d", i), func(t *testing.T) {
+			_, err := forward.Unwrap(nil, xml.NewDecoder(strings.NewReader(tc.inXML)))
+			if err == nil {
+				t.Error("expected a non nil error")
 			}
 		})
 	}
