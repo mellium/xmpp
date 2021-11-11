@@ -90,22 +90,25 @@ func WrapSent(delay delay.Delay, r xml.TokenReader) xml.TokenReader {
 }
 
 // Unwrap unwraps a carbon copied message and returns
-// a stream corresponding to the message.
-// A bool is returned and is set to true if the type of the carbon-copy
-// is "sent", otherwise it indicated that it's "received".
-func Unwrap(del *delay.Delay, r xml.TokenReader) (xml.TokenReader, bool, error) {
+// a stream corresponding to the message and the start
+// element set to either sent or received (can be used to infer the direction of the cc).
+// NB: this function unwraps the <forwarded/> as well.
+func Unwrap(del *delay.Delay, r xml.TokenReader) (out xml.TokenReader, se xml.StartElement, err error) {
 	token, err := r.Token()
 	if err != nil {
-		return nil, false, err
-	}
-	se, ok := token.(xml.StartElement)
-	if !ok {
-		return nil, false, fmt.Errorf("expected a startElement, found %T", token)
-	}
-	if se.Name.Local != "sent" && se.Name.Local != "received" || se.Name.Space != NS {
-		return nil, false, fmt.Errorf("unexpected name for the sent/received element: %+v", se.Name)
+		return
 	}
 
-	stanzaXML, err := forward.Unwrap(del, xmlstream.Inner(r))
-	return stanzaXML, se.Name.Local == "sent", err
+	se, ok := token.(xml.StartElement)
+	if !ok {
+		err = fmt.Errorf("expected a startElement, found %T", token)
+		return
+	}
+	if se.Name.Local != "sent" && se.Name.Local != "received" || se.Name.Space != NS {
+		err = fmt.Errorf("unexpected name for the sent/received element: %+v", se.Name)
+		return
+	}
+
+	out, err = forward.Unwrap(del, xmlstream.Inner(r))
+	return out, se, err
 }
