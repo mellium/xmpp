@@ -80,7 +80,7 @@ tasks:
           make CONTRIBUTORS
 
       If you are already in the CONTRIBUTORS file, check that you comitted using
-      the correct name and password and if not fix your commits or (if they've
+      the correct name and email and if not fix your commits or (if they've
       already been merged) add a .mailmap entry for yourself.
       For more info see https://www.git-scm.com/docs/git-check-mailmap
       EOF
