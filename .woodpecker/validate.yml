@@ -1,0 +1,77 @@
+pipeline:
+  info: &info
+    image: golang:alpine
+    environment:
+      GO111MODULE: "on"
+      CGO_ENABLED: "0"
+    commands:
+      - go version
+      - go env
+  lint:
+    << : *info
+    commands:
+      - go install honnef.co/go/tools/cmd/staticcheck@latest
+      - go install github.com/securego/gosec/v2/cmd/gosec@latest
+      - go install mellium.im/checkmd@latest
+      - go install git.sr.ht/~samwhited/checkdoc@latest
+      - export PATH=$(go env GOPATH)/bin:$PATH
+      - go vet ./...
+      - gofmt -s -l . && [ -z "$(gofmt -s -l .)" ]
+      # See: https://staticcheck.io/docs/checks
+      - staticcheck -checks inherit,ST1000,ST1003,ST1016,ST1020,ST1021,ST1022,ST1023 ./...
+      # gosec does not handle modules correctly.
+      # See: https://github.com/securego/gosec/issues/622
+      # It also does not handle deferred close statements correctly (G307).
+      # See: https://github.com/securego/gosec/issues/714
+      - gosec -exclude=G307 -exclude-dir=examples ./...
+      - |
+        checkdoc -fileheader.pattern='-' ./... <<EOF
+        Copyright \d\d\d\d The Mellium Contributors\.
+        Use of this source code is governed by the BSD 2-clause
+        license that can be found in the LICENSE file\.
+        EOF
+      - checkmd .
+  validate:
+    << : *info
+    commands:
+      - apk add git
+      - go mod tidy
+      - |
+        git diff --exit-code -- go.mod go.sum
+        cd examples/
+        for d in ./*/; do
+          cd $d
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+          cd ..
+        done
+  contributors:
+    << : *info
+    commands:
+      - apk add git make
+      - |
+        set -e
+        function on_err {
+          [ $? -eq 0 ] && exit
+          cat <<EOF
+        We didn't find you in the CONTRIBUTORS file!
+        Please read the file "DCO" and then, if you agree, add yourself to the
+        CONTRIBUTORS file by running:
+
+            make CONTRIBUTORS
+
+        If you are already in the CONTRIBUTORS file, check that you comitted using
+        the correct name and email and if not fix your commits or (if they've
+        already been merged) add a .mailmap entry for yourself.
+        For more info see https://www.git-scm.com/docs/git-check-mailmap
+        EOF
+        exit 1
+        }
+        trap on_err EXIT
+
+        cat CONTRIBUTORS
+        rm -f CONTRIBUTORS && make CONTRIBUTORS
+        git diff --exit-code -- CONTRIBUTORS
+
+depends_on:
+  - dco

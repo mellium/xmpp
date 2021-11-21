@@ -1,0 +1,27 @@
+pipeline:
+  info: &info
+    image: golang:alpine
+    environment:
+      GO111MODULE: "on"
+      CGO_ENABLED: "0"
+    commands:
+      - go version
+      - go env
+  stable:
+    << : *info
+    commands:
+      - |
+        cat > /etc/apk/repositories << EOF; $$(echo)
+
+        http://dl-cdn.alpinelinux.org/alpine/v$$(cat /etc/alpine-release | cut -d'.' -f1,2)/main
+        http://dl-cdn.alpinelinux.org/alpine/v$$(cat /etc/alpine-release | cut -d'.' -f1,2)/community
+        http://dl-cdn.alpinelinux.org/alpine/edge/testing
+
+        EOF
+      - apk update
+      - apk add ejabberd lua-sec mcabber openssl prosody
+      - go test -v -tags "integration" -run Integration ./...
+
+depends_on:
+  - dco
+  - test

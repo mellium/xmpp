@@ -9,9 +9,6 @@ CONTRIBUTORS: FORCE
 	echo "// entry for yourself and regenerate this file by running make CONTRIBUTORS." >> $@
 	echo "// For more info see https://www.git-scm.com/docs/git-check-mailmap" >> $@
 	echo "" >> $@
-	# TODO: for some reason this always has no output in CI (but works fine in the
-	# same container run locally)
-	# git --no-pager shortlog --summary --email | cut -f2- >> $@
 	git --no-pager log --pretty="%an <%ae>" | sort -f | uniq >> $@
 
 FORCE:
