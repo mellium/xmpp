@@ -1,0 +1,29 @@
+pipeline:
+  dco:
+    image: alpine
+    commands:
+      - apk add git
+      - git version
+      - git fetch --no-tags origin +refs/heads/main
+      - |
+        set -e
+        function on_err {
+          [ $? -eq 0 ] && exit
+          cat <<EOF
+        Failed to sign the Developer Certificate of Origin (DCO)!
+        Please read the file "DCO" and then, if you agree, sign each of your commits
+        using:
+
+            git commit -s
+
+        Or quickly sign the previous commit with:
+
+            git commit --amend -s --no-edit
+        EOF
+        exit 1
+        }
+        trap on_err EXIT
+
+        # Check that all commits that aren't in main are signed off by the same
+        # committer (taken from the HEAD commit).
+        [[ ! "$(git log --pretty="%an <%ae>%n%(trailers:key=Signed-off-by,valueonly,separator=)" origin/main.. | uniq -u)" ]]

@@ -1,0 +1,31 @@
+pipeline:
+  info: &info
+    image: golang:${GO_VERSION}-alpine
+    environment:
+      GO111MODULE: "on"
+      CGO_ENABLED: "0"
+    commands:
+      - go version
+      - go env
+  test:
+    << : *info
+    commands: go test -v -cover ./...
+  examples:
+    << : *info
+    commands: |
+      cd examples/
+      for d in ./*/; do
+        cd $d
+        go build
+        cd ..
+      done
+    when:
+      path: "examples/**"
+
+matrix:
+  GO_VERSION:
+    - 1.18
+    - 1.17
+
+depends_on:
+  - dco
