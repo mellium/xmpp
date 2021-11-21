@@ -232,6 +232,7 @@ func main() {
 // opens the provided registry URL (downloading it if it doesn't exist).
 func openOrDownload(catURL, tmpDir string) (*os.File, error) {
 	registryXML := filepath.Join(tmpDir, filepath.Base(catURL))
+	/* #nosec */
 	fd, err := os.Open(registryXML)
 	if err != nil {
 		fd, err = os.Create(registryXML)
@@ -239,6 +240,7 @@ func openOrDownload(catURL, tmpDir string) (*os.File, error) {
 			return nil, err
 		}
 		// If we couldn't open it for reading, attempt to download it.
+		/* #nosec */
 		resp, err := http.Get(catURL)
 		if err != nil {
 			return nil, err
@@ -247,6 +249,7 @@ func openOrDownload(catURL, tmpDir string) (*os.File, error) {
 		if err != nil {
 			return nil, err
 		}
+		/* #nosec */
 		resp.Body.Close()
 		_, err = fd.Seek(0, 0)
 		if err != nil {
