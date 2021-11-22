@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -168,6 +169,49 @@ func TestUnwrap(t *testing.T) {
 			_, _, err := carbons.Unwrap(nil, xml.NewDecoder(strings.NewReader(tc.inXML)))
 			if err == nil {
 				t.Error("expected a non nil error")
+			}
+		})
+	}
+}
+
+var privateTestCases = [...]struct {
+	outXML string
+	inXML  string
+}{
+	0: {
+		outXML: `<message xmlns="jabber:client" xmlns="jabber:client"><private xmlns="urn:xmpp:carbons:2"></private><no-copy xmlns="urn:xmpp:hints"></no-copy><body xmlns="jabber:client">Neither, fair saint, if either thee dislike.</body><thread xmlns="jabber:client">0e3141cd80894871a68e6fe6b1ec56fa</thread></message>`,
+		inXML:  `<message xmlns="jabber:client"><body>Neither, fair saint, if either thee dislike.</body><thread>0e3141cd80894871a68e6fe6b1ec56fa</thread></message>`,
+	},
+	1: {
+		outXML: `<message xmlns="jabber:client" xmlns="jabber:client"><private xmlns="urn:xmpp:carbons:2"></private><no-copy xmlns="urn:xmpp:hints"></no-copy><message xmlns="jabber:client" xmlns="jabber:client"><!-- nothing new inserted here --></message></message>`,
+		inXML:  `<message xmlns="jabber:client"><message xmlns="jabber:client"><!-- nothing new inserted here --></message></message>`,
+	},
+	2: {
+		outXML: `<tag xmlns="jabber:client" xmlns="jabber:client"><body xmlns="jabber:client">Neither, fair saint, if either thee dislike.</body><thread xmlns="jabber:client">0e3141cd80894871a68e6fe6b1ec56fa</thread></tag>`,
+		inXML:  `<tag xmlns="jabber:client"><body>Neither, fair saint, if either thee dislike.</body><thread>0e3141cd80894871a68e6fe6b1ec56fa</thread></tag>`,
+	},
+	3: {
+		outXML: `<not-a-message></not-a-message><message xmlns="jabber:client" xmlns="jabber:client"><private xmlns="urn:xmpp:carbons:2"></private><no-copy xmlns="urn:xmpp:hints"></no-copy><body xmlns="jabber:client">msg1</body><message xmlns="jabber:client" xmlns="jabber:client"><!-- nothing new inserted here --></message></message><not-a-message></not-a-message><message xmlns="jabber:client" xmlns="jabber:client"><private xmlns="urn:xmpp:carbons:2"></private><no-copy xmlns="urn:xmpp:hints"></no-copy><body xmlns="jabber:client">msg2</body></message>`,
+		inXML:  `<not-a-message/><message xmlns="jabber:client"><body>msg1</body><message xmlns="jabber:client"><!-- nothing new inserted here --></message></message><not-a-message/><message xmlns="jabber:client"><body>msg2</body></message>`,
+	},
+}
+
+func TestPrivate(t *testing.T) {
+	for i, tc := range privateTestCases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			r := carbons.Private(xml.NewDecoder(strings.NewReader(tc.inXML)))
+			var buf strings.Builder
+			e := xml.NewEncoder(&buf)
+			_, err := xmlstream.Copy(e, r)
+			if err != nil {
+				t.Fatalf("error encoding: %v", err)
+			}
+			err = e.Flush()
+			if err != nil {
+				t.Fatalf("error flushing: %v", err)
+			}
+			if out := buf.String(); out != tc.outXML {
+				t.Errorf("wrong XML: want=%v, got=%v", tc.outXML, out)
 			}
 		})
 	}

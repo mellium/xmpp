@@ -110,3 +110,27 @@ func Unwrap(del *delay.Delay, r xml.TokenReader) (xml.TokenReader, xml.StartElem
 	out, err := forward.Unwrap(del, xmlstream.Inner(r))
 	return out, se, err
 }
+
+// Private is an xmlstream.Transformer that excludes all top level <message/> elements from
+// being forwarded to other Carbons-enabled resources, by adding a <private/> element
+// and a <no-copy/> hint.
+func Private(r xml.TokenReader) xml.TokenReader {
+	return xmlstream.InsertFunc(
+		func(start xml.StartElement, level uint64, w xmlstream.TokenWriter) error {
+			if level == 1 &&
+				start.Name.Local == "message" &&
+				(start.Name.Space == stanza.NSClient || start.Name.Space == stanza.NSServer) {
+				_, err := xmlstream.Copy(w, xmlstream.MultiReader(
+					xmlstream.Wrap(nil, xml.StartElement{
+						Name: xml.Name{Space: NS, Local: "private"},
+					}),
+					xmlstream.Wrap(nil, xml.StartElement{
+						Name: xml.Name{Space: "urn:xmpp:hints", Local: "no-copy"},
+					}),
+				))
+				return err
+			}
+			return nil
+		},
+	)(r)
+}
