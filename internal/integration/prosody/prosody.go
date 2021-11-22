@@ -104,7 +104,7 @@ func getConfig(cmd *integration.Cmd) Config {
 // ListenC2S listens for client-to-server (c2s) connections on a random port.
 func ListenC2S() integration.Option {
 	return func(cmd *integration.Cmd) error {
-		c2sListener, err := cmd.C2SListen("tcp", "127.0.0.1:0")
+		c2sListener, err := cmd.C2SListen("tcp4", "127.0.0.1:0")
 		if err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func ListenC2S() integration.Option {
 // ListenS2S listens for server-to-server (s2s) connections on a random port.
 func ListenS2S() integration.Option {
 	return func(cmd *integration.Cmd) error {
-		s2sListener, err := cmd.S2SListen("tcp", "127.0.0.1:0")
+		s2sListener, err := cmd.S2SListen("tcp4", "127.0.0.1:0")
 		if err != nil {
 			return err
 		}
@@ -291,7 +291,7 @@ func Component(domain, secret, name string, modules ...string) integration.Optio
 	return func(cmd *integration.Cmd) error {
 		cfg := getConfig(cmd)
 		if name == "" {
-			compListener, err := cmd.ComponentListen("tcp", "127.0.0.1:0")
+			compListener, err := cmd.ComponentListen("tcp4", "127.0.0.1:0")
 			if err != nil {
 				return err
 			}
@@ -332,11 +332,11 @@ func Component(domain, secret, name string, modules ...string) integration.Optio
 // ports and configures TLS certificates for localhost:https.
 func HTTPS() integration.Option {
 	return func(cmd *integration.Cmd) error {
-		httpsListener, err := cmd.HTTPSListen("tcp", "127.0.0.1:0")
+		httpsListener, err := cmd.HTTPSListen("tcp4", "127.0.0.1:0")
 		if err != nil {
 			return err
 		}
-		httpListener, err := cmd.HTTPListen("tcp", "127.0.0.1:0")
+		httpListener, err := cmd.HTTPListen("tcp4", "127.0.0.1:0")
 		if err != nil {
 			return err
 		}

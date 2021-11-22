@@ -229,7 +229,7 @@ func ConfigFile(cfg Config) integration.Option {
 		// Therefore if no c2s listener is passed, s2s listener will be fd 3,
 		// otherwise it will be fd 4.
 		if cfg.ListenC2S {
-			c2sListener, err := cmd.C2SListen("tcp", ":0")
+			c2sListener, err := cmd.C2SListen("tcp4", ":0")
 			if err != nil {
 				return err
 			}
@@ -242,7 +242,7 @@ func ConfigFile(cfg Config) integration.Option {
 			cmd.Cmd.ExtraFiles = append(cmd.Cmd.ExtraFiles, fd)
 		}
 		if cfg.ListenS2S {
-			s2sListener, err := cmd.S2SListen("tcp", ":0")
+			s2sListener, err := cmd.S2SListen("tcp4", ":0")
 			if err != nil {
 				return err
 			}
