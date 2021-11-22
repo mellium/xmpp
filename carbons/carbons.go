@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"io"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
@@ -109,4 +110,41 @@ func Unwrap(del *delay.Delay, r xml.TokenReader) (xml.TokenReader, xml.StartElem
 
 	out, err := forward.Unwrap(del, xmlstream.Inner(r))
 	return out, se, err
+}
+
+// Private is an xmlstream.Transformer that excludes a <message/> from being forwarded to
+// other Carbons-enabled resources, by adding a <private/> element and a <no-copy/> hint.
+// The first call to consume the output stream will return an error if the input stream
+// is not a message element with an appropriate namespace.
+func Private(r xml.TokenReader) xml.TokenReader {
+	token, err := r.Token()
+	if err != nil && err != io.EOF {
+		return xmlstream.ReaderFunc(func() (xml.Token, error) {
+			return token, err
+		})
+	}
+	se, ok := token.(xml.StartElement)
+	if !ok {
+		return xmlstream.ReaderFunc(func() (xml.Token, error) {
+			return token, fmt.Errorf("expected a startElement, found %T", token)
+		})
+	}
+	if se.Name.Local != "message" || (se.Name.Space != stanza.NSClient && se.Name.Space != stanza.NSServer) {
+		return xmlstream.ReaderFunc(func() (xml.Token, error) {
+			return token, fmt.Errorf("unexpected name for the message element: %+v", se.Name)
+		})
+	}
+
+	return xmlstream.Wrap(
+		xmlstream.MultiReader(
+			xmlstream.Inner(r),
+			xmlstream.Wrap(nil, xml.StartElement{
+				Name: xml.Name{Space: NS, Local: "private"},
+			}),
+			xmlstream.Wrap(nil, xml.StartElement{
+				Name: xml.Name{Space: "urn:xmpp:hints", Local: "no-copy"},
+			}),
+		),
+		se,
+	)
 }

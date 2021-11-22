@@ -172,3 +172,58 @@ func TestUnwrap(t *testing.T) {
 		})
 	}
 }
+
+var privateValidTestCases = [...]struct {
+	outXML string
+	inXML  string
+}{
+	0: {
+		outXML: `<message xmlns="jabber:client" xmlns="jabber:client"><body xmlns="jabber:client">Neither, fair saint, if either thee dislike.</body><thread xmlns="jabber:client">0e3141cd80894871a68e6fe6b1ec56fa</thread><private xmlns="urn:xmpp:carbons:2"></private><no-copy xmlns="urn:xmpp:hints"></no-copy></message>`,
+		inXML:  `<message xmlns="jabber:client"><body>Neither, fair saint, if either thee dislike.</body><thread>0e3141cd80894871a68e6fe6b1ec56fa</thread></message>`,
+	},
+}
+
+var privateInValidTestCases = [...]struct {
+	inXML string
+}{
+	0: {
+		inXML: `<tag xmlns="jabber:client"><body>Neither, fair saint, if either thee dislike.</body><thread>0e3141cd80894871a68e6fe6b1ec56fa</thread></tag>`,
+	},
+	1: {
+		inXML: `<message xmlns="jabber:space"><body>Neither, fair saint, if either thee dislike.</body><thread>0e3141cd80894871a68e6fe6b1ec56fa</thread></message>`,
+	},
+	2: {
+		inXML: `Hello</message>`,
+	},
+}
+
+func TestPrivate(t *testing.T) {
+	for i, tc := range privateValidTestCases {
+		t.Run(fmt.Sprintf("valid:%d", i), func(t *testing.T) {
+			r := carbons.Private(xml.NewDecoder(strings.NewReader(tc.inXML)))
+			var buf strings.Builder
+			e := xml.NewEncoder(&buf)
+			_, err := xmlstream.Copy(e, r)
+			if err != nil {
+				t.Fatalf("error encoding: %v", err)
+			}
+			err = e.Flush()
+			if err != nil {
+				t.Fatalf("error flushing: %v", err)
+			}
+			if out := buf.String(); out != tc.outXML {
+				t.Errorf("wrong XML: want=%v, got=%v", tc.outXML, out)
+			}
+		})
+	}
+
+	for i, tc := range privateInValidTestCases {
+		t.Run(fmt.Sprintf("invalid:%d", i), func(t *testing.T) {
+			r := carbons.Private(xml.NewDecoder(strings.NewReader(tc.inXML)))
+			_, err := r.Token()
+			if err == nil {
+				t.Error("expected a non nil error")
+			}
+		})
+	}
+}
