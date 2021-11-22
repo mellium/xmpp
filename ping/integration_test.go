@@ -22,7 +22,6 @@ import (
 	"mellium.im/xmpp/internal/integration/mcabber"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/internal/integration/sendxmpp"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/ping"
 	"mellium.im/xmpp/stanza"

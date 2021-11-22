@@ -17,7 +17,6 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/prosody"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/muc"
 	"mellium.im/xmpp/mux"
