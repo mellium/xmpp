@@ -42,7 +42,7 @@ listen:
 {{- if .C2SSocket }}
   -
     port: "unix:{{ .C2SSocket }}"
-    ip: "::1"
+    ip: "127.0.0.1"
     module: ejabberd_c2s
     max_stanza_size: 262144
     shaper: c2s_shaper
@@ -52,14 +52,14 @@ listen:
 {{- if .S2SSocket }}
   -
     port: "unix:{{ .S2SSocket }}"
-    ip: "::1"
+    ip: "127.0.0.1"
     module: ejabberd_s2s_in
     max_stanza_size: 524288
 {{- end }}
 {{- if .CompSocket }}
   -
     port: "unix:{{ $.CompSocket }}"
-    ip: "::1"
+    ip: "127.0.0.1"
     access: "all"
     module: ejabberd_service
     max_stanza_size: 524288
@@ -72,7 +72,7 @@ listen:
 {{- if .HTTPSocket }}
   -
     port: "unix:{{ .HTTPSocket }}"
-    ip: "::1"
+    ip: "127.0.0.1"
     module: ejabberd_http
     request_handlers:
       /xmpp: ejabberd_http_ws
@@ -86,7 +86,6 @@ acl:
   loopback:
     ip:
       - 127.0.0.0/8
-      - ::1/128
 
 access_rules:
   local:

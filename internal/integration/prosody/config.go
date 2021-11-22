@@ -55,9 +55,9 @@ const cfgBase = `daemonize = false
 pidfile = "{{ filepathJoin .ConfigDir "prosody.pid" }}"
 admins = { {{ joinQuote .Admins }} }
 data_path = "{{ .ConfigDir }}"
-interfaces = { "::1", "127.0.0.1" }
-http_interfaces = { "::1", "127.0.0.1" }
-https_interfaces = { "::1", "127.0.0.1" }
+interfaces = { "127.0.0.1" }
+http_interfaces = { "127.0.0.1" }
+https_interfaces = { "127.0.0.1" }
 {{ if .C2SPort }}c2s_ports = { {{ .C2SPort }} }{{ end }}
 {{ if .S2SPort }}s2s_ports = { {{ .S2SPort }} }{{ end }}
 {{ if .CompPort }}component_ports = { {{.CompPort}} }{{ end }}
