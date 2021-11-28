@@ -119,6 +119,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("error downloading (or opening) %s in %s: %v", regURL, tmpDir, err)
 	}
+	/* #nosec */
 	defer fd.Close()
 
 	reg := registry{}
