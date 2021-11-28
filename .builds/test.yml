@@ -22,7 +22,7 @@ tasks:
         popd
       done
   - tip: |
-      go get golang.org/dl/gotip
+      go install golang.org/dl/gotip@latest
       gotip download
       cd xmpp/
       gotip test -v -cover ./...
