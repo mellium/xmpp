@@ -16,6 +16,15 @@ styling_tests.json: styling/styling_test.go styling/export_test.go
 	go test -tags export ./styling -args -export=$@
 	mv styling/$@ .
 
+GOFILES!=find . -name '*.go'
+deps.svg: $(GOFILES)
+	hash dot 2>/dev/null || (echo "No 'dot' found, please install graphviz" && exit 1)
+	(   echo "digraph G {"; \
+	go list -f '{{range .Imports}}{{printf "\t%q -> %q;\n" $$.ImportPath .}}{{end}}' \
+		$$(go list -f '{{join .Deps " "}}' .) .; \
+	echo "}"; \
+	) | dot -Tsvg -o $@
+
 ######
 ##
 ## Code Gen
