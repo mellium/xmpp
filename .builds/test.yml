@@ -21,8 +21,3 @@ tasks:
         go build
         popd
       done
-  - tip: |
-      go install golang.org/dl/gotip@latest
-      gotip download
-      cd xmpp/
-      gotip test -v -cover ./...
