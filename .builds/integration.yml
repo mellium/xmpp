@@ -3,7 +3,9 @@ packages:
   - ejabberd
   - go
   - lua52-sec
-  - mcabber
+  # Temporarily disabled due to a bug.
+  # See: https://mellium.im/issue/222
+  # - mcabber
   - openssl
   - prosody
   - sendxmpp
