@@ -25,7 +25,7 @@
 // This creates a SubtestRunner which can be called multiple times to spin up
 // servers with the provided configuration and run one or more subtests against
 // them.
-// For example, running two tests against prosody and one against ejabberd might
+// For example, running two tests against Prosody and one against Ejabberd might
 // look like the following:
 //
 //     func TestIntegrationSendPing(t *testing.T) {
@@ -47,7 +47,7 @@
 // functions.
 //
 // The SubtestRunner passes each call a Cmd.
-// This is a reprsentation of the command that is beingn run (ie. the server or
+// This is a representation of the command that is being run (ie. the server or
 // client we're testing against) and provides you with the information you'll
 // need to connect and communicate with the command.
 // For example, in the ping example above the subtest being run might use Cmd's
