@@ -90,6 +90,12 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 			ServerName: domain,
 			MinVersion: tls.VersionTLS12,
 		}
+		// XEP-0368
+		if d.S2S {
+			cfg.NextProtos = []string{"xmpp-server"}
+		} else {
+			cfg.NextProtos = []string{"xmpp-client"}
+		}
 	}
 	// If we're not looking up SRV records, use the A/AAAA fallback.
 	if d.NoLookup {
