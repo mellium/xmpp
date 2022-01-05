@@ -110,7 +110,7 @@ func TestFetchItemsNoStart(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			const resp = `<iq id="123" type="result"><query xmlns='http://jabber.org/protocol/disco#items'><!-- comment --></query></iq>`
+			const resp = `<iq id="123" type="result"><query xmlns='http://jabber.org/protocol/disco#items'></query></iq>`
 			_, err = xmlstream.Copy(e, xml.NewDecoder(strings.NewReader(resp)))
 			return err
 		}),

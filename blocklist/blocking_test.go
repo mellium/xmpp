@@ -164,7 +164,7 @@ func TestFetch(t *testing.T) {
 func TestFetchNoStart(t *testing.T) {
 	cs := xmpptest.NewClientServer(
 		xmpptest.ServerHandlerFunc(func(e xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-			const resp = `<iq id="123" type="result"><blocklist xmlns='urn:xmpp:blocklist'><!-- comment --></blocklist></iq>`
+			const resp = `<iq id="123" type="result"><blocklist xmlns='urn:xmpp:blocklist'></blocklist></iq>`
 			_, err := xmlstream.Copy(e, xml.NewDecoder(strings.NewReader(resp)))
 			return err
 		}),

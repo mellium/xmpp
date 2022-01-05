@@ -148,7 +148,7 @@ var saslTestCases = [...]xmpptest.FeatureTestCase{
 	},
 	1: {
 		Feature: xmpp.SASL("", "", sasl.Plain),
-		In:      `<!-- not a start element -->`,
+		In:      "\t \n",
 		Out:     `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
 		Err:     xmpp.ErrUnexpectedPayload,
 	},
@@ -177,7 +177,7 @@ var saslTestCases = [...]xmpptest.FeatureTestCase{
 	5: {
 		State:   xmpp.Received,
 		Feature: xmpp.SASLServer(panicPerms, sasl.Plain),
-		In:      `<!-- not a start element -->`,
+		In:      "\t",
 		Err:     xmpp.ErrUnexpectedPayload,
 	},
 	6: {

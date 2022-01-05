@@ -7,7 +7,6 @@
 package xmpp
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/xml"
@@ -500,11 +499,6 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 	case xml.StartElement:
 		start = t
 	case xml.CharData:
-		if len(bytes.TrimLeft(t, " \t\r\n")) != 0 {
-			// Whitespace is allowed, but anything else at the top of the stream is
-			// disallowed.
-			return errors.New("xmpp: unexpected stream-level chardata")
-		}
 		return nil
 	default:
 		// If this isn't a start element or a whitespace keepalive, the stream is in

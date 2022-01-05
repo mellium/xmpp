@@ -5,6 +5,7 @@
 package stream
 
 import (
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"io"
@@ -19,17 +20,27 @@ var (
 )
 
 type reader struct {
-	r xml.TokenReader
+	r     xml.TokenReader
+	depth uint64
 }
 
-func (r reader) Token() (xml.Token, error) {
+func (r *reader) Token() (xml.Token, error) {
 	tok, err := r.r.Token()
 	if err != nil {
 		return nil, err
 	}
 
 	switch t := tok.(type) {
+	case xml.CharData:
+		if r.depth == 0 {
+			if len(bytes.TrimLeft(t, " \t\r\n")) != 0 {
+				// Whitespace is allowed, but anything else at the top of the stream is
+				// disallowed.
+				return t, errors.New("xmpp: unexpected stream-level chardata")
+			}
+		}
 	case xml.StartElement:
+		r.depth++
 		if t.Name.Space != stream.NS {
 			return tok, err
 		}
@@ -51,6 +62,7 @@ func (r reader) Token() (xml.Token, error) {
 			return nil, ErrUnknownStreamElement
 		}
 	case xml.EndElement:
+		r.depth--
 		if t.Name.Space != stream.NS {
 			return tok, err
 		}
@@ -63,6 +75,12 @@ func (r reader) Token() (xml.Token, error) {
 		// If this is a stream level end element but not </stream:stream>,
 		// something is really weird…
 		return nil, stream.BadFormat
+	case xml.ProcInst:
+		return nil, errors.New("disallowed XML proc inst encountered")
+	case xml.Comment:
+		return nil, errors.New("disallowed XML comment encountered")
+	case xml.Directive:
+		return nil, errors.New("disallowed XML directive encountered")
 	}
 	return tok, err
 }
@@ -70,5 +88,5 @@ func (r reader) Token() (xml.Token, error) {
 // Reader returns a token reader that handles stream level tokens on an already
 // established stream.
 func Reader(r xml.TokenReader) xml.TokenReader {
-	return reader{r: r}
+	return &reader{r: r}
 }

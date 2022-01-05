@@ -5,9 +5,9 @@
 package stream_test
 
 import (
-	"bytes"
 	"encoding/xml"
 	"errors"
+	"io"
 	"reflect"
 	"strconv"
 	"strings"
@@ -140,15 +140,28 @@ func TestBadFormat(t *testing.T) {
 }
 
 func TestDisallowedTokenType(t *testing.T) {
-	comment := xml.Comment("foo")
-	toks := &xmpptest.Tokens{comment}
-	r := stream.Reader(toks)
-	tok, err := r.Token()
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	toks := &xmpptest.Tokens{
+		xml.Comment("foo"),
+		xml.ProcInst{
+			Target: "test",
+			Inst:   []byte("test"),
+		},
+		xml.Directive("test"),
 	}
-
-	if c, ok := tok.(xml.Comment); !ok || !bytes.Equal(c, comment) {
-		t.Errorf("expected unknown token type to be passed through: want=%#v, got=%#v", comment, tok)
+	r := stream.Reader(toks)
+	for {
+		tok, err := r.Token()
+		if err == io.EOF {
+			if tok != nil {
+				t.Fatalf("got token %T(%[1]v) and io.EOF", t)
+			}
+			break
+		}
+		if err == nil {
+			t.Errorf("expected error when hitting disallowed %T token, got none", tok)
+		}
+		if tok != nil {
+			t.Errorf("expected no token to be returned, got %T(%[1]v)", tok)
+		}
 	}
 }

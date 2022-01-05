@@ -84,7 +84,7 @@ func TestFetch(t *testing.T) {
 func TestFetchNoStart(t *testing.T) {
 	cs := xmpptest.NewClientServer(
 		xmpptest.ServerHandlerFunc(func(e xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-			const resp = `<iq id="123" type="result"><query xmlns='jabber:iq:roster'><!-- comment --></query></iq>`
+			const resp = `<iq id="123" type="result"><query xmlns='jabber:iq:roster'></query></iq>`
 			_, err := xmlstream.Copy(e, xml.NewDecoder(strings.NewReader(resp)))
 			return err
 		}),
