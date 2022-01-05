@@ -363,6 +363,7 @@ func nextElementDecoder(r xml.TokenReader, start xml.StartElement) *xml.Decoder 
 	// underlying reader) to setup the internal state of the new decoder.
 	// This was the only way I could contrive to provide Parse calls with a
 	// Decoder that won't error when it reaches the end token.
+
 	/* #nosec */
 	d.Token()
 	return d

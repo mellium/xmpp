@@ -241,6 +241,7 @@ func openOrDownload(catURL, tmpDir string) (*os.File, error) {
 			return nil, err
 		}
 		// If we couldn't open it for reading, attempt to download it.
+
 		/* #nosec */
 		resp, err := http.Get(catURL)
 		if err != nil {
