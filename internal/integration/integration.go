@@ -122,6 +122,7 @@ type Cmd struct {
 	clientCrtKey  interface{}
 	stdinPipe     io.WriteCloser
 	closed        chan error
+	skip          bool
 
 	// Config is meant to be used by internal packages like prosody and ejabberd
 	// to store their internal representation of the config before writing it out.
@@ -656,6 +657,17 @@ func Log() Option {
 	}
 }
 
+// Skip calls t.Skip on the test before the command has been started (as opposed
+// to doing it in the test itself where you may still have log output from the
+// command).
+// It is useful to temporarily disable a broken test.
+func Skip() Option {
+	return func(cmd *Cmd) error {
+		cmd.skip = true
+		return nil
+	}
+}
+
 // LogFile reads the provided file into the log in the same way that the Log
 // option reads a commands standard output.
 // It can optionally copy the command to the provided io.Writer (if non-nil) as
@@ -729,9 +741,9 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
 
+	i := -1
 	_, err := exec.LookPath(name)
 	if err != nil {
-		i := -1
 		return func(f func(context.Context, *testing.T, *Cmd)) bool {
 			i++
 			return t.Run(fmt.Sprintf("%s/%d", filepath.Base(name), i), func(t *testing.T) {
@@ -743,6 +755,15 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 	cmd, err := New(ctx, name, opts...)
 	if err != nil {
 		t.Fatalf("error creating command: %v", err)
+	}
+
+	if cmd.skip {
+		return func(f func(context.Context, *testing.T, *Cmd)) bool {
+			i++
+			return t.Run(fmt.Sprintf("%s/%d", filepath.Base(name), i), func(t *testing.T) {
+				t.Skip("skipping due to developer provided option")
+			})
+		}
 	}
 
 	t.Cleanup(func() {
@@ -777,7 +798,6 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 		}
 	}
 
-	i := -1
 	return func(f func(context.Context, *testing.T, *Cmd)) bool {
 		i++
 		return t.Run(fmt.Sprintf("%s/%d", filepath.Base(name), i), func(t *testing.T) {
