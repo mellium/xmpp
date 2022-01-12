@@ -7,7 +7,6 @@ package aioxmpp
 import (
 	_ "embed"
 	"io"
-	"path/filepath"
 	"text/template"
 
 	"mellium.im/xmpp/internal/integration"
@@ -38,10 +37,7 @@ type Config struct {
 }
 
 // ConfigFile is an option that can be used to write a temporary config file.
-// This will overwrite the existing config file and make most of the other
-// options in this package noops.
-// This option only exists for the rare occasion that you need complete control
-// over the config file.
+// It is used
 func ConfigFile(cfg Config) integration.Option {
 	cfgTmpl := template.Must(template.New("cfg").Parse(cfgBase))
 
@@ -59,9 +55,6 @@ func ConfigFile(cfg Config) integration.Option {
 		if err != nil {
 			return err
 		}
-		_ = filepath.Join
-		//cfgFilePath := filepath.Join(cmd.ConfigDir(), cfgFileName)
-		//return integration.Args(cfgFlag, cfgFilePath)(cmd)
 		return nil
 	}
 }
