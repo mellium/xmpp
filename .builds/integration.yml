@@ -10,6 +10,7 @@ packages:
   # - mcabber
   - openssl
   - prosody
+  - python-pip
   - sendxmpp
 sources:
   - https://git.sr.ht/~samwhited/xmpp
@@ -19,6 +20,7 @@ tasks:
   - setup: |
       go version
       go env
+      pip --no-input install --no-warn-script-location aioxmpp
   - stable: |
       cd xmpp/
       go test -v -tags "integration" -run Integration ./...
