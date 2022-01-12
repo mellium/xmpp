@@ -10,6 +10,7 @@ package ping_test
 import (
 	"context"
 	"crypto/tls"
+	_ "embed"
 	"encoding/xml"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/integration"
+	"mellium.im/xmpp/internal/integration/aioxmpp"
 	"mellium.im/xmpp/internal/integration/ejabberd"
 	"mellium.im/xmpp/internal/integration/mcabber"
 	"mellium.im/xmpp/internal/integration/prosody"
@@ -26,6 +28,9 @@ import (
 	"mellium.im/xmpp/ping"
 	"mellium.im/xmpp/stanza"
 )
+
+//go:embed aioxmpp_integration_test.py
+var pingScript string
 
 func TestIntegrationSendPing(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
@@ -113,6 +118,31 @@ func integrationRecvPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 			if err != nil {
 				t.Errorf("command errored: %v", err)
 			}
+			t.Errorf("did not receive ping before command shutdown")
+		case <-gotPing:
+		}
+	})
+	aioxmppRun := aioxmpp.Test(ctx, t,
+		integration.Log(),
+		aioxmpp.ConfigFile(aioxmpp.Config{
+			JID:      j,
+			Password: pass,
+			Port:     p,
+		}),
+		aioxmpp.Import("Ping", pingScript),
+		aioxmpp.Args("-j", session.LocalAddr().String()),
+	)
+	aioxmppRun(func(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		select {
+		case <-ctx.Done():
+			t.Fatalf("context timed out: %v", ctx.Err())
+		case err := <-cmd.Done():
+			if err != nil {
+				t.Errorf("command errored: %v", err)
+			}
+			t.Errorf("did not receive ping before command shutdown")
 		case <-gotPing:
 		}
 	})
