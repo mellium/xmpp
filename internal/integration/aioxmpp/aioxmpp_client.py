@@ -72,8 +72,4 @@ if __name__ == "__main__":
         from {{ index $script 0 }} import {{ index $script 1 }}
         asyncio.run(run_test({{ index $script 1}}))
     runner()
-    def runner():
-        from {{ index $script 0 }} import {{ index $script 1 }}
-        asyncio.run(run_test({{ index $script 1}}))
-    runner()
 {{- end }}
