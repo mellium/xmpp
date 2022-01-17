@@ -560,10 +560,10 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 	iqNeedsResp := typ == string(stanza.GetIQ) || typ == string(stanza.SetIQ)
 	// If the user did not write a response to an IQ, send a default one.
 	if iqOk && iqNeedsResp && !rw.wroteResp {
-		_, toAttr := attr.Get(start.Attr, "to")
+		_, fromAttr := attr.Get(start.Attr, "from")
 		var to jid.JID
-		if toAttr != "" {
-			to, err = jid.Parse(toAttr)
+		if fromAttr != "" {
+			to, err = jid.Parse(fromAttr)
 			if err != nil {
 				return err
 			}
