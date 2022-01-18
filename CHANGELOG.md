@@ -24,6 +24,8 @@ All notable changes to this project will be documented in this file.
 - xmpp: IQ error responses are now sent to the original entity, not to
   ourselves
 - xmpp: the mux package no longer errors when encountering empty IQ stanzas
+- mux: responses are no longer sent for unhandled IQ result stanzas
+
 
 [XEP-0060: Publish-Subscribe]: https://xmpp.org/extensions/xep-0060.html
 [XEP-0163: Personal Eventing Protocol]: https://xmpp.org/extensions/xep-0163.html

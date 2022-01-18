@@ -536,7 +536,7 @@ func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncode
 }
 
 func iqFallback(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-	if iq.Type == stanza.ErrorIQ {
+	if iq.Type == stanza.ErrorIQ || iq.Type == stanza.ResultIQ {
 		return nil
 	}
 
