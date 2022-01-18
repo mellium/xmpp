@@ -13,6 +13,7 @@ package mux // import "mellium.im/xmpp/mux"
 import (
 	"encoding/xml"
 	"fmt"
+	"io"
 	"strings"
 
 	"mellium.im/xmlstream"
@@ -386,7 +387,9 @@ func (m *ServeMux) iqRouter(t xmlstream.TokenReadEncoder, start *xml.StartElemen
 		TokenReader: xmlstream.Inner(t),
 	}
 	tok, err := t.Token()
-	if err != nil {
+	// If we get any error return it, unless it's an EOF then don't return it if
+	// it's a result IQ (which may be empty).
+	if err != nil && (err != io.EOF || iq.Type != stanza.ResultIQ) {
 		return err
 	}
 	payloadStart, _ := tok.(xml.StartElement)
@@ -538,7 +541,7 @@ func iqFallback(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElem
 	}
 
 	iq.To, iq.From = iq.From, iq.To
-	iq.Type = "error"
+	iq.Type = stanza.ErrorIQ
 
 	e := stanza.Error{
 		Type:      stanza.Cancel,

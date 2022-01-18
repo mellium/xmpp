@@ -477,14 +477,28 @@ var testCases = [...]struct {
 		err: errPassTest,
 	},
 	42: {
-		// An empty IQ is illegal and should result in EOF.
+		// An empty IQ of type "get" is illegal and should result in an error.
 		m: []mux.Option{
 			mux.IQ(stanza.GetIQ, xml.Name{}, failHandler{}),
-			mux.IQ(stanza.SetIQ, xml.Name{}, failHandler{}),
-			mux.Presence(stanza.AvailablePresence, xml.Name{}, failHandler{}),
 		},
 		x:   `<iq xml:lang="en-us" type="get" xmlns="jabber:client"></iq>`,
 		err: io.EOF,
+	},
+	43: {
+		// An empty IQ of type "set" is illegal and should result in an error.
+		m: []mux.Option{
+			mux.IQ(stanza.SetIQ, xml.Name{}, failHandler{}),
+		},
+		x:   `<iq xml:lang="en-us" type="set" xmlns="jabber:client"></iq>`,
+		err: io.EOF,
+	},
+	44: {
+		// An empty IQ of type "result" is fine.
+		m: []mux.Option{
+			mux.IQ(stanza.ResultIQ, xml.Name{}, passHandler{}),
+		},
+		x:   `<iq xml:lang="en-us" type="result" xmlns="jabber:client"></iq>`,
+		err: errPassTest,
 	},
 }
 
