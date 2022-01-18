@@ -560,40 +560,67 @@ func (e testEncoder) EncodeElement(v interface{}, start xml.StartElement) error 
 	return marshal.EncodeXMLElement(e.TokenWriter, v, start)
 }
 
+var fallbackTestCases = [...]struct {
+	in  string
+	out string
+}{
+	0: {
+		in:  `<iq xmlns="jabber:client" to="romeo@example.com" from="juliet@example.com" id="123"><test/></iq>`,
+		out: `<iq xmlns="jabber:client" type="error" to="juliet@example.com" from="romeo@example.com" id="123"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`,
+	},
+	1: {
+		in:  `<iq xmlns="jabber:client" type="get" to="romeo@example.com" from="juliet@example.com" id="123"><test/></iq>`,
+		out: `<iq xmlns="jabber:client" type="error" to="juliet@example.com" from="romeo@example.com" id="123"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`,
+	},
+	2: {
+		in:  `<iq xmlns="jabber:client" type="set" to="romeo@example.com" from="juliet@example.com" id="123"><test/></iq>`,
+		out: `<iq xmlns="jabber:client" type="error" to="juliet@example.com" from="romeo@example.com" id="123"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`,
+	},
+	3: {
+		in: `<iq xmlns="jabber:client" type="error" to="romeo@example.com" from="juliet@example.com" id="123"><test/></iq>`,
+	},
+	4: {
+		in: `<iq xmlns="jabber:client" type="result" to="romeo@example.com" from="juliet@example.com" id="123"><test/></iq>`,
+	},
+}
+
 func TestFallback(t *testing.T) {
-	buf := &bytes.Buffer{}
-	rw := struct {
-		io.Reader
-		io.Writer
-	}{
-		Reader: strings.NewReader(`<iq xmlns="jabber:client" to="romeo@example.com" from="juliet@example.com" id="123"><test/></iq>`),
-		Writer: buf,
-	}
-	s := xmpptest.NewClientSession(0, rw)
+	for i, tc := range fallbackTestCases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			buf := &bytes.Buffer{}
+			rw := struct {
+				io.Reader
+				io.Writer
+			}{
+				Reader: strings.NewReader(tc.in),
+				Writer: buf,
+			}
+			s := xmpptest.NewClientSession(0, rw)
 
-	r := s.TokenReader()
-	defer r.Close()
-	tok, err := r.Token()
-	if err != nil {
-		t.Fatalf("Bad start token read: `%v'", err)
-	}
-	start := tok.(xml.StartElement)
-	w := s.TokenWriter()
-	defer w.Close()
-	err = mux.New(stanza.NSClient).HandleXMPP(testEncoder{
-		TokenReader: r,
-		TokenWriter: w,
-	}, &start)
-	if err != nil {
-		t.Errorf("Unexpected error: `%v'", err)
-	}
-	if err := w.Flush(); err != nil {
-		t.Errorf("Unexpected error flushing token writer: %q", err)
-	}
+			r := s.TokenReader()
+			defer r.Close()
+			tok, err := r.Token()
+			if err != nil {
+				t.Fatalf("Bad start token read: `%v'", err)
+			}
+			start := tok.(xml.StartElement)
+			w := s.TokenWriter()
+			defer w.Close()
+			err = mux.New(stanza.NSClient).HandleXMPP(testEncoder{
+				TokenReader: r,
+				TokenWriter: w,
+			}, &start)
+			if err != nil {
+				t.Errorf("Unexpected error: `%v'", err)
+			}
+			if err := w.Flush(); err != nil {
+				t.Errorf("Unexpected error flushing token writer: %q", err)
+			}
 
-	const expected = `<iq xmlns="jabber:client" type="error" to="juliet@example.com" from="romeo@example.com" id="123"><error type="cancel"><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable></error></iq>`
-	if buf.String() != expected {
-		t.Errorf("Bad output:\nwant=`%v'\n got=`%v'", expected, buf.String())
+			if out := buf.String(); out != tc.out {
+				t.Errorf("Bad output:\nwant=`%v'\n got=`%v'", tc.out, out)
+			}
+		})
 	}
 }
 
