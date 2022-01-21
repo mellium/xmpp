@@ -100,6 +100,7 @@ func defaultConfig(cmd *integration.Cmd) error {
 	if err != nil {
 		return err
 	}
+	/* #nosec */
 	fd, err := os.Create(logFilePath)
 	if err != nil {
 		return err

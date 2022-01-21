@@ -236,6 +236,7 @@ func openOrDownload(catURL, tmpDir string) (*os.File, error) {
 	/* #nosec */
 	fd, err := os.Open(registryXML)
 	if err != nil {
+		/* #nosec */
 		fd, err = os.Create(registryXML)
 		if err != nil {
 			return nil, err
