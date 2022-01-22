@@ -6,8 +6,8 @@ To negotiate commercial support, email [`support@mellium.im`].
 
 For best-effort community support, you can try the following chat rooms:
 
-- Mellium chat: [![Mellium Chat](https://inverse.chat/badge.svg?room=users@mellium.chat)](https://mellium.chat)
-- Go chat: [![Go Chat](https://inverse.chat/badge.svg?room=go@gopher.chat)](https://gopher.chat)
+- Mellium chat: [![Mellium Chat](https://img.shields.io/badge/XMPP-users@mellium.chat-orange.svg)](https://mellium.chat)
+- Go chat: [![Go Chat](https://img.shields.io/badge/XMPP-go@gopher.chat-orange.svg)](https://gopher.chat)
 
 
 [SECURITY.md]: https://mellium.im/docs/SECURITY
