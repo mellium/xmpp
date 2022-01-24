@@ -32,7 +32,6 @@ import (
 var ibbScript string
 
 func TestIntegrationIBB(t *testing.T) {
-
 	prosodyRun := prosody.Test(context.TODO(), t,
 		integration.Log(),
 		integration.LogXML(),

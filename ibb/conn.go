@@ -89,16 +89,15 @@ func (w *stanzaWriter) Write(p []byte) (int, error) {
 type Conn struct {
 	closeFlushFunc func() error
 	handler        *Handler
-	b64Reader      io.Reader
 	readBuf        *bytes.Buffer
-	readBufM       *sync.Mutex
+	readLock       sync.Mutex
+	readReady      chan struct{}
 	writeLock      sync.Mutex
 	readDeadline   time.Time
 	s              *xmpp.Session
 	writeBuf       *bufio.Writer
 	seq            uint16
 	closed         bool
-	recv           *io.PipeWriter
 	stanzaWriter   *stanzaWriter
 }
 
@@ -122,41 +121,14 @@ func newConn(h *Handler, s *xmpp.Session, iq openIQ, recv bool) *Conn {
 	if blockSize == 0 {
 		blockSize = BlockSize
 	}
-	w := bufio.NewWriterSize(b64Writer, int(blockSize))
-
-	// Setup a buffered reader to handle any incoming data that has been decoded
-	// by a handler (the handler will write it to the pipe).
-	pipeReader, pipeWriter := io.Pipe()
-	b64Reader := base64.NewDecoder(base64.StdEncoding, pipeReader)
-	r := bytes.NewBuffer(make([]byte, 0, blockSize))
-	readBufM := &sync.Mutex{}
-
-	// Constantly attempt to populate the buffer until it is closed.
-	// Without a buffer the read call would block and we wouldn't be able to
-	// perform any operations that require sending data (because the handler that
-	// handles incoming data stanzas would be blocking waiting to transmit that
-	// data to a call to Read)
-	go func() {
-		for {
-			readBufM.Lock()
-
-			_, err := r.ReadFrom(b64Reader)
-			readBufM.Unlock()
-			if err != nil {
-				return
-			}
-		}
-	}()
 
 	return &Conn{
-		b64Reader:      b64Reader,
-		readBuf:        r,
-		readBufM:       readBufM,
+		readBuf:        bytes.NewBuffer(make([]byte, 0, blockSize)),
+		readReady:      make(chan struct{}),
 		s:              s,
-		writeBuf:       w,
+		writeBuf:       bufio.NewWriterSize(b64Writer, int(blockSize)),
 		closeFlushFunc: b64Writer.Close,
 		handler:        h,
-		recv:           pipeWriter,
 		stanzaWriter:   stanzaWrite,
 	}
 }
@@ -179,12 +151,21 @@ func (c *Conn) Stanza() string {
 // Read can be made to time out and return an Error with Timeout() == true
 // after a fixed time limit; see SetDeadline and SetReadDeadline.
 func (c *Conn) Read(b []byte) (n int, err error) {
-	c.readBufM.Lock()
-	defer c.readBufM.Unlock()
+	c.readLock.Lock()
+	defer c.readLock.Unlock()
 
-	// Read first from the buffer, but if that is empty block and read directly
-	// from the pipe.
-	return io.MultiReader(c.readBuf, c.b64Reader).Read(b)
+	// If the buffer is empty and we would get io.EOF, nil this does not
+	// necessarily mean that the connection is closed.
+	// In this case wait for a signal that there is more data to read.
+	// When the connection is closed this same signal is sent and our final read
+	// from the empty buffer will result in 0, io.EOF as expected.
+	if c.readBuf.Len() == 0 {
+		c.readLock.Unlock()
+		<-c.readReady
+		c.readLock.Lock()
+	}
+
+	return c.readBuf.Read(b)
 }
 
 // Write writes data to the IBB stream.
@@ -252,19 +233,21 @@ func (c *Conn) Close() error {
 		return err
 	}
 
-	respReadCloser, err := c.s.SendIQElement(context.TODO(), closePayload(c.stanzaWriter.sid), stanza.IQ{
+	ctx := context.Background()
+	if !c.stanzaWriter.writeDeadline.IsZero() {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithDeadline(ctx, c.stanzaWriter.writeDeadline)
+		defer cancel()
+	}
+	respReadCloser, err := c.s.SendIQElement(ctx, closePayload(c.stanzaWriter.sid), stanza.IQ{
 		To:   c.stanzaWriter.to,
 		Type: stanza.SetIQ,
 	})
 	if err != nil {
 		return err
 	}
-	err = respReadCloser.Close()
-	if err != nil {
-		return err
-	}
-
-	return c.recv.Close()
+	close(c.readReady)
+	return respReadCloser.Close()
 }
 
 func (c *Conn) closeNoNotify(t xmlstream.Encoder) error {
@@ -281,26 +264,8 @@ func (c *Conn) closeNoNotify(t xmlstream.Encoder) error {
 		return err
 	}
 
-	err = c.closeFlushFunc()
-	if err != nil {
-		return err
-	}
-
-	return c.recv.Close()
-}
-
-// closeError is called when we close the connection due to an error, eg. the
-// other side sent invalid base64 and we don't want to continue.
-// It removes the connection from tracking without flushing any remaining data
-// and without communicating with the server.
-func (c *Conn) closeError() error {
-	if c.closed {
-		return nil
-	}
-	c.closed = true
-	c.handler.rmStream(c.stanzaWriter.sid)
-
-	return c.recv.Close()
+	close(c.readReady)
+	return c.closeFlushFunc()
 }
 
 // SetDeadline sets the read and write deadlines associated with the connection.

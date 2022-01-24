@@ -11,6 +11,7 @@
 package ibb // import "mellium.im/xmpp/ibb"
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/xml"
@@ -190,19 +191,28 @@ func handlePayload(h *Handler, errResp errorResponder, p dataPayload, e xmlstrea
 		}
 	}
 
-	_, err := conn.recv.Write(p.Data)
+	conn.readLock.Lock()
+	defer conn.readLock.Unlock()
 	var inputErr base64.CorruptInputError
+	b64Reader := base64.NewDecoder(base64.StdEncoding, bytes.NewReader(p.Data))
+	_, err := conn.readBuf.ReadFrom(b64Reader)
 	if errors.As(err, &inputErr) {
 		_, err := xmlstream.Copy(e, errResp.Error(stanza.Error{
 			Type:      stanza.Cancel,
 			Condition: stanza.BadRequest,
 		}))
-		if err != nil {
-			return err
-		}
-		return conn.closeError()
+		return err
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	// If a call to conn.Read was pending, signal it that it's okay to resume
+	// because there's data now.
+	select {
+	case conn.readReady <- struct{}{}:
+	default:
+	}
+	return nil
 }
 
 // Open attempts to create a new IBB stream on the provided session.
