@@ -34,6 +34,8 @@ func (l Listener) Accept() (net.Conn, error) {
 // return an error.
 // Already accepted connections are not closed.
 func (l Listener) Close() error {
+	l.h.lM.Lock()
+	defer l.h.lM.Unlock()
 	delete(l.h.l, l.s.LocalAddr().String())
 	close(l.c)
 	return nil

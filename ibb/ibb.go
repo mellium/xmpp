@@ -53,6 +53,7 @@ type Handler struct {
 	mu      sync.Mutex
 	streams map[string]*Conn
 	l       map[string]Listener
+	lM      sync.Mutex
 }
 
 // Listen creates a listener that accepts incoming IBB requests.
@@ -64,6 +65,8 @@ func (h *Handler) Listen(s *xmpp.Session) Listener {
 	if h.l == nil {
 		h.l = make(map[string]Listener)
 	}
+	h.lM.Lock()
+	defer h.lM.Unlock()
 	l, ok := h.l[addrStr]
 	if ok {
 		return l
@@ -104,6 +107,7 @@ func (h *Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xm
 		}, t)
 	case "close":
 		_, sid := attr.Get(start.Attr, "sid")
+
 		conn, ok := h.streams[sid]
 		if !ok {
 			_, err := xmlstream.Copy(t, iq.Error(stanza.Error{
@@ -139,10 +143,12 @@ func (h *Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xm
 
 func handleOpen(h *Handler, iq openIQ, e xmlstream.Encoder) error {
 	to := iq.To.String()
+	h.lM.Lock()
 	l, ok := h.l[to]
 	if !ok {
 		l, ok = h.l[""]
 	}
+	h.lM.Unlock()
 	if !ok {
 		_, err := xmlstream.Copy(e, iq.Error(stanza.Error{
 			Type:      stanza.Cancel,
