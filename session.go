@@ -41,6 +41,57 @@ const (
 	closeStreamWSTag = `<close xmlns="urn:ietf:params:xml:ns:xmpp-framing"/>`
 )
 
+// earlyCloser is a token reader that closes itself as soon as reading is
+// complete (io.EOF is reached). It is used to release the read lock as aquired
+// before starting a handler as soon as the handler finishes reading the element
+// it is given (if it doesn't read the entire element the lock will be released
+// after the handler returns).
+type earlyCloser struct {
+	r xml.TokenReader
+	c io.Closer
+}
+
+func (ec earlyCloser) Token() (xml.Token, error) {
+	tok, err := ec.r.Token()
+	if err == io.EOF {
+		e := ec.c.Close()
+		if e != nil {
+			err = e
+		}
+	}
+	return tok, err
+}
+
+// deferWriter is a token writer that only takes out a lock on the session
+// writer if EncodeToken is actually called. It is passed into handlers to defer
+// taking out the lock as late as possible (or not at all if the handler only
+// ever reads from the stream).
+type deferWriter struct {
+	s *Session
+	w xmlstream.TokenWriteFlushCloser
+}
+
+func (dw *deferWriter) EncodeToken(t xml.Token) error {
+	if dw.w == nil {
+		dw.w = dw.s.TokenWriter()
+	}
+	return dw.w.EncodeToken(t)
+}
+
+func (dw *deferWriter) Close() error {
+	if dw.w == nil {
+		return nil
+	}
+	return dw.w.Close()
+}
+
+func (dw *deferWriter) Flush() error {
+	if dw.w == nil {
+		return nil
+	}
+	return dw.w.Flush()
+}
+
 // aLongTimeAgo is a convenient way to cancel dials.
 var aLongTimeAgo = time.Unix(1, 0)
 
@@ -486,6 +537,7 @@ func (r iqResponder) Close() error {
 func handleInputStream(s *Session, handler Handler) (err error) {
 	discard := xmlstream.Discard()
 	rc := s.TokenReader()
+	/* #nosec */
 	defer rc.Close()
 	r := intstream.Reader(rc)
 
@@ -546,10 +598,13 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 		}
 	}
 
-	w := s.TokenWriter()
+	w := &deferWriter{s: s}
 	defer w.Close()
 	rw := &responseChecker{
-		TokenReader: xmlstream.MultiReader(xmlstream.Inner(r), xmlstream.Token(start.End())),
+		TokenReader: earlyCloser{
+			r: xmlstream.InnerElement(r),
+			c: rc,
+		},
 		TokenWriter: w,
 		id:          id,
 	}
