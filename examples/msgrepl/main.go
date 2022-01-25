@@ -144,7 +144,7 @@ func main() {
 
 		msg := userInput.Text()
 		if msg == "" {
-			return
+			continue
 		}
 
 		if msg == "help" {
