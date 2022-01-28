@@ -17,12 +17,15 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"mellium.im/sasl"
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/muc"
+	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -94,39 +97,17 @@ func main() {
 		logger.Fatalf("Error sending initial presence: %v", err)
 	}
 
+	mucClient := &muc.Client{}
+
 	// Handle incoming messages.
 	go func() {
-		err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-
-			// This is a workaround for https://mellium.im/issue/196
-			// until a cleaner permanent fix is devised (see https://mellium.im/issue/197)
-			d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*start), t))
-			if _, err := d.Token(); err != nil {
-				return err
-			}
-
-			// Ignore anything that's not a message. In a real system we'd want to at
-			// least respond to IQs.
-			if start.Name.Local != "message" {
-				return nil
-			}
-
-			msg := messageBody{}
-			err = d.DecodeElement(&msg, start)
-			if err != nil && err != io.EOF {
-				logger.Printf("Error decoding message: %q", err)
-				return nil
-			}
-
-			if msg.Body != "" {
-				if msg.Subject != "" {
-					fmt.Printf("\nFrom %s: [%s] %s\n"+prompt, msg.From.Bare(), msg.Subject, msg.Body)
-				} else {
-					fmt.Printf("\nFrom %s: %q\n"+prompt, msg.From.Bare(), msg.Body)
-				}
-			}
-			return nil
-		}))
+		m := mux.New(
+			stanza.NSClient,
+			mux.Message(stanza.ChatMessage, xml.Name{Local: "body"}, receiveMessage(logger)),
+			mux.Message(stanza.GroupChatMessage, xml.Name{Local: "body"}, receiveMessage(logger)),
+			muc.HandleClient(mucClient),
+		)
+		err := session.Serve(m)
 		if err != nil {
 			logger.Fatalf("Error handling incoming messages: %v", err)
 		}
@@ -135,6 +116,9 @@ func main() {
 	printHelp()
 
 	userInput := bufio.NewScanner(os.Stdin)
+	mucs := make(map[string]*muc.Channel)
+	var mucsM sync.Mutex
+	var parsedToAddr jid.JID
 	for {
 		fmt.Print(prompt)
 		scanned := userInput.Scan()
@@ -147,42 +131,137 @@ func main() {
 			continue
 		}
 
-		if msg == "help" {
+		const (
+			joinPrefix = "join:"
+			partPrefix = "part:"
+		)
+		switch {
+		case msg == "help":
 			printHelp()
+			continue
+		case strings.HasPrefix(msg, joinPrefix):
+			joinJID, err := jid.Parse(strings.TrimSpace(msg[len(joinPrefix):]))
+			if err != nil {
+				logger.Printf("error parsing MUC address to join: %v", err)
+				continue
+			}
+			c, err := mucClient.Join(context.TODO(), joinJID, session, muc.MaxHistory(0))
+			if err != nil {
+				logger.Printf("error joining %s: %v", joinJID, err)
+				continue
+			}
+			mucsM.Lock()
+			mucs[joinJID.Bare().String()] = c
+			mucsM.Unlock()
+
+			parsedToAddr = joinJID.Bare()
+			continue
+		case strings.HasPrefix(msg, partPrefix):
+			partJID, err := jid.Parse(strings.TrimSpace(msg[len(partPrefix):]))
+			if err != nil {
+				logger.Printf("error parsing MUC address to join: %v", err)
+				continue
+			}
+			bare := partJID.Bare().String()
+			mucsM.Lock()
+			c, ok := mucs[bare]
+			mucsM.Unlock()
+			if !ok {
+				logger.Printf("channel %s is not joined", partJID)
+				continue
+			}
+			err = c.Leave(context.TODO(), "")
+			if err != nil {
+				logger.Printf("failed to leave channel %s: %v", partJID, err)
+				continue
+			}
+			mucsM.Lock()
+			delete(mucs, bare)
+			mucsM.Unlock()
+
+			if partJID.Equal(parsedToAddr) {
+				parsedToAddr = jid.JID{}
+			}
 			continue
 		}
 
 		idx := strings.IndexByte(msg, ':')
-		if idx == -1 {
-			printHelp()
-			continue
+		if idx != -1 {
+			parsedToAddr, err = jid.Parse(msg[:idx])
+			if err != nil {
+				logger.Printf("error parsing address: %v", err)
+				continue
+			}
 		}
 
-		parsedToAddr, err := jid.Parse(msg[:idx])
-		if err != nil {
-			logger.Printf("Error parsing address: %v", err)
+		if parsedToAddr.Equal(jid.JID{}) {
+			printHelp()
 			continue
 		}
 
 		msg = strings.TrimSpace(msg[idx+1:])
 
+		mucsM.Lock()
+		_, ok := mucs[parsedToAddr.Bare().String()]
+		mucsM.Unlock()
+		stanzaType := stanza.ChatMessage
+		if ok {
+			stanzaType = stanza.GroupChatMessage
+		}
 		err = session.Encode(ctx, messageBody{
 			Message: stanza.Message{
 				To:   parsedToAddr,
 				From: parsedAddr,
-				Type: stanza.ChatMessage,
+				Type: stanzaType,
 			},
 			Body: msg,
 		})
 		if err != nil {
-			logger.Fatalf("Error sending message: %v", err)
+			logger.Fatalf("error sending message: %v", err)
 		}
 	}
 	if err := userInput.Err(); err != nil {
-		logger.Fatalf("Error reading user input: %v", err)
+		logger.Fatalf("error reading user input: %v", err)
 	}
 }
 
 func printHelp() {
-	fmt.Println("Enter a JID, a colon, and a message to send. eg. me@example.net: Test message")
+	fmt.Println(`Enter a JID, a colon, and a message to send. For example:
+
+	me@example.net: Test message
+
+Afterwards any future messages you type will be sent to the same JID until you
+enter a new one. You can also send messages to multi-user chat (MUC) channels:
+
+	join: foo@channels.example.net/nick
+	part: foo@channels.example.net
+
+Bare messages sent after joining a channel will go to the channel.
+`)
+}
+
+func receiveMessage(logger *log.Logger) mux.MessageHandlerFunc {
+	return func(m stanza.Message, t xmlstream.TokenReadEncoder) error {
+		d := xml.NewTokenDecoder(t)
+		from := m.From
+		if m.Type != stanza.GroupChatMessage {
+			from = m.From.Bare()
+		}
+
+		msg := messageBody{}
+		err := d.Decode(&msg)
+		if err != nil && err != io.EOF {
+			logger.Printf("error decoding message: %q", err)
+			return nil
+		}
+
+		if msg.Body != "" {
+			if msg.Subject != "" {
+				fmt.Printf("\nFrom %s: [%s] %s\n"+prompt, from, msg.Subject, msg.Body)
+			} else {
+				fmt.Printf("\nFrom %s: %q\n"+prompt, from, msg.Body)
+			}
+		}
+		return nil
+	}
 }
