@@ -61,13 +61,23 @@ func (w *stanzaWriter) Write(p []byte) (int, error) {
 
 	var err error
 	if w.acked {
-		err = e.Encode(ctx, dataIQ{
-			IQ: stanza.IQ{
-				Type: stanza.SetIQ,
-				To:   w.to,
-			},
-			Data: data,
-		})
+		if w.t == nil {
+			err = w.s.UnmarshalIQ(ctx, dataIQ{
+				IQ: stanza.IQ{
+					Type: stanza.SetIQ,
+					To:   w.to,
+				},
+				Data: data,
+			}.TokenReader(), nil)
+		} else {
+			err = e.Encode(ctx, dataIQ{
+				IQ: stanza.IQ{
+					Type: stanza.SetIQ,
+					To:   w.to,
+				},
+				Data: data,
+			})
+		}
 	} else {
 		err = e.Encode(ctx, dataMessage{
 			Message: stanza.Message{
@@ -99,9 +109,13 @@ type Conn struct {
 	seq            uint16
 	closed         bool
 	stanzaWriter   *stanzaWriter
+	maxBufSize     int
 }
 
-func newConn(h *Handler, s *xmpp.Session, iq openIQ, recv bool) *Conn {
+func newConn(h *Handler, s *xmpp.Session, iq openIQ, recv bool, maxBufSize int) *Conn {
+	if maxBufSize < int(iq.Open.BlockSize) && maxBufSize > 0 {
+		maxBufSize = 2 * int(iq.Open.BlockSize)
+	}
 	var to jid.JID
 	if recv {
 		to = iq.IQ.From
@@ -130,6 +144,7 @@ func newConn(h *Handler, s *xmpp.Session, iq openIQ, recv bool) *Conn {
 		closeFlushFunc: b64Writer.Close,
 		handler:        h,
 		stanzaWriter:   stanzaWrite,
+		maxBufSize:     maxBufSize,
 	}
 }
 
@@ -191,8 +206,9 @@ func (c *Conn) RemoteAddr() net.Addr {
 	return c.stanzaWriter.to
 }
 
-// Size returns the blocksize for the underlying buffer when writing to the IBB
-// stream.
+// Size returns the maximum blocksize for data transmitted over the stream.
+// Note that individual packets sent on the stream may be less than the block
+// size even if there is enough data to fill the block.
 func (c *Conn) Size() int {
 	return c.writeBuf.Size()
 }
@@ -266,6 +282,25 @@ func (c *Conn) closeNoNotify(t xmlstream.Encoder) error {
 
 	close(c.readReady)
 	return c.closeFlushFunc()
+}
+
+// SetReadBuffer sets the maximum size the internal buffer will be allowed to
+// grow to before sending back an error telling the other side to wait before
+// transmitting more data.
+// The actual buffer is never shrunk, even if a maximum size is set that is less
+// than the current length of the buffer.
+// Instead, errors will be returned for incoming data until enough data has been
+// read from the buffer to shrink it below the new max size.
+// If max is zero or less buffer growth is not limited.
+// If max is less than the block size it is ignored and the block size is used
+// instead.
+func (c *Conn) SetReadBuffer(max int) {
+	// c.writeBuf.Size() may look out of place here, but it's not about the write
+	// buffer itself, it's just the initial block size we negotiated.
+	if max < c.writeBuf.Size() && max > 0 {
+		max = c.writeBuf.Size()
+	}
+	c.maxBufSize = max
 }
 
 // SetDeadline sets the read and write deadlines associated with the connection.

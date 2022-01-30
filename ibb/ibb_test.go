@@ -6,6 +6,7 @@ package ibb_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"testing"
@@ -46,13 +47,13 @@ func TestSendSelf(t *testing.T) {
 			Err error
 		}{}
 
+		ln := serverIBB.Listen(s.Server)
 		for {
 			select {
 			case <-recv:
 				return
 			default:
 			}
-			ln := serverIBB.Listen(s.Server)
 			serverConn, err := ln.Accept()
 			if err != nil {
 				result.Err = fmt.Errorf("error listening for conn: %w", err)
@@ -113,4 +114,58 @@ func TestSendSelf(t *testing.T) {
 		}
 	})
 	close(recv)
+}
+
+func TestBufferFull(t *testing.T) {
+	clientIBB := &ibb.Handler{}
+	serverIBB := &ibb.Handler{}
+	clientM := mux.New(
+		stanza.NSClient,
+		ibb.Handle(clientIBB),
+	)
+	serverM := mux.New(
+		stanza.NSClient,
+		ibb.Handle(serverIBB),
+	)
+	s := xmpptest.NewClientServer(
+		xmpptest.ClientHandler(clientM),
+		xmpptest.ServerHandler(serverM),
+	)
+
+	accept := make(chan error)
+	go func() {
+		ln := serverIBB.Listen(s.Server)
+		serverConn, err := ln.Accept()
+		if err != nil {
+			accept <- err
+			return
+		}
+		serverConn.(*ibb.Conn).SetReadBuffer(10)
+		close(accept)
+	}()
+
+	clientConn, err := clientIBB.OpenIQ(context.Background(), stanza.IQ{To: s.Server.LocalAddr()}, s.Client, true, 20, "1234")
+	if err != nil {
+		t.Fatalf("error opening connection: %v", err)
+	}
+	if err := <-accept; err != nil {
+		t.Fatalf("error accepting connection: %v", err)
+	}
+	const payload = "One swallow does not make a summer, but one skein of geese, cleaving the murk of a March thaw, is the spring."
+	// The write *may* return a resource-constraint (if it actually writes and
+	// doesn't just buffer), flush and close however will definitely result in a
+	// resource constraint since the buffer size is smaller than the data size and
+	// we probably need to write less.
+	_, err = io.WriteString(clientConn, payload)
+	if err != nil && !errors.Is(err, stanza.Error{Type: stanza.Wait, Condition: stanza.ResourceConstraint}) {
+		t.Fatalf("write expected resource-constraint error, got: %v", err)
+	}
+	err = clientConn.Flush()
+	if !errors.Is(err, stanza.Error{Type: stanza.Wait, Condition: stanza.ResourceConstraint}) {
+		t.Fatalf("flush expected resource-constraint error, got: %v", err)
+	}
+	err = clientConn.Close()
+	if !errors.Is(err, stanza.Error{Type: stanza.Wait, Condition: stanza.ResourceConstraint}) {
+		t.Fatalf("close expected resource-constraint error, got: %v", err)
+	}
 }

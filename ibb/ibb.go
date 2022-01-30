@@ -29,11 +29,20 @@ import (
 // NS is the XML namespace used by IBB, provided as a convenience.
 const NS = `http://jabber.org/protocol/ibb`
 
-// BlockSize is the default block size used if an IBB stream is opened with no
-// block size set.
-// Because IBB base64 encodes the underlying data, the actual data transfered
-// per stanza will be roughly twice the blocksize.
-const BlockSize = 1 << 11
+const (
+	// BlockSize is the default block size used if an IBB stream is opened with no
+	// block size set.
+	// Because IBB base64 encodes the underlying data, the actual data transfered
+	// per stanza will be roughly twice the blocksize.
+	BlockSize = 1 << 11
+
+	// MaxBufferSize is the default maximum size the internal buffer will be
+	// allowed to grow before sending back an error telling the other side to wait
+	// before transmitting more data.
+	// if a block size that is larger than maxbuffersize is used the default
+	// maximum buffer size changes to be twice the block size.
+	MaxBufferSize = 1 << 18
+)
 
 // Handle is an option that registers a handler for all the correct stanza
 // types and payloads.
@@ -88,7 +97,7 @@ func (h *Handler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder
 	if err != nil {
 		return err
 	}
-	return handlePayload(h, msg, p.Data, nil)
+	return handlePayload(h, msg, p.Data, t)
 }
 
 // HandleIQ implements mux.IQHandler.
@@ -116,7 +125,13 @@ func (h *Handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xm
 			}))
 			return err
 		}
-		err := conn.closeNoNotify(t)
+		// Make sure the read side of the stream gets closed so that we can send IQs
+		// without them being blocked.
+		_, err := xmlstream.Copy(xmlstream.Discard(), t)
+		if err != nil {
+			return err
+		}
+		err = conn.closeNoNotify(t)
 		if err != nil {
 			return err
 		}
@@ -160,7 +175,7 @@ func handleOpen(h *Handler, iq openIQ, e xmlstream.Encoder) error {
 	if err != nil {
 		return err
 	}
-	conn := newConn(h, l.s, iq, true)
+	conn := newConn(h, l.s, iq, true, MaxBufferSize)
 	h.addStream(iq.Open.SID, conn)
 	l.c <- conn
 	return nil
@@ -189,17 +204,19 @@ func handlePayload(h *Handler, errResp errorResponder, p dataPayload, e xmlstrea
 	}
 	conn.seq++
 
-	iq, ok := errResp.(stanza.IQ)
-	if e != nil && ok {
-		_, err := xmlstream.Copy(e, iq.Result(nil))
-		if err != nil {
-			return err
-		}
-	}
-
 	conn.readLock.Lock()
 	defer conn.readLock.Unlock()
 	var inputErr base64.CorruptInputError
+	dataLen := base64.StdEncoding.DecodedLen(len(p.Data))
+	// If this would cause the buffer to grow beyond the maximum size, send back
+	// an error.
+	if conn.maxBufSize > 0 && conn.readBuf.Len()+dataLen > conn.maxBufSize {
+		_, err := xmlstream.Copy(e, errResp.Error(stanza.Error{
+			Type:      stanza.Wait,
+			Condition: stanza.ResourceConstraint,
+		}))
+		return err
+	}
 	b64Reader := base64.NewDecoder(base64.StdEncoding, bytes.NewReader(p.Data))
 	_, err := conn.readBuf.ReadFrom(b64Reader)
 	if errors.As(err, &inputErr) {
@@ -212,6 +229,15 @@ func handlePayload(h *Handler, errResp errorResponder, p dataPayload, e xmlstrea
 	if err != nil {
 		return err
 	}
+
+	iq, ok := errResp.(stanza.IQ)
+	if e != nil && ok {
+		_, err := xmlstream.Copy(e, iq.Result(nil))
+		if err != nil {
+			return err
+		}
+	}
+
 	// If a call to conn.Read was pending, signal it that it's okay to resume
 	// because there's data now.
 	select {
@@ -258,7 +284,7 @@ func open(ctx context.Context, h *Handler, acked bool, s *xmpp.Session, start st
 	/* #nosec */
 	defer resp.Close()
 
-	conn, err := newConn(h, s, iq, false), nil
+	conn, err := newConn(h, s, iq, false, MaxBufferSize), nil
 	if err != nil {
 		return nil, err
 	}

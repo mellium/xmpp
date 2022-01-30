@@ -71,10 +71,27 @@ type dataPayload struct {
 	Data    []byte   `xml:",chardata"`
 }
 
+func (p dataPayload) TokenReader() xml.TokenReader {
+	return xmlstream.Wrap(
+		xmlstream.Token(xml.CharData(p.Data)),
+		xml.StartElement{
+			Name: xml.Name{Space: NS, Local: "data"},
+			Attr: []xml.Attr{
+				{Name: xml.Name{Local: "seq"}, Value: strconv.FormatUint(uint64(p.Seq), 10)},
+				{Name: xml.Name{Local: "sid"}, Value: p.SID},
+			},
+		},
+	)
+}
+
 type dataIQ struct {
 	stanza.IQ
 
 	Data dataPayload `xml:"http://jabber.org/protocol/ibb data"`
+}
+
+func (iq dataIQ) TokenReader() xml.TokenReader {
+	return iq.IQ.Wrap(iq.Data.TokenReader())
 }
 
 type dataMessage struct {
