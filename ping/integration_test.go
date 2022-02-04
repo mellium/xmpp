@@ -25,17 +25,24 @@ import (
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/internal/integration/python"
 	"mellium.im/xmpp/internal/integration/sendxmpp"
+	"mellium.im/xmpp/internal/integration/slixmpp"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/ping"
 	"mellium.im/xmpp/stanza"
 )
 
-//go:embed aioxmpp_integration_test.py
-var aioxmppPingScript string
+var (
+	//go:embed aioxmpp_integration_test.py
+	aioxmppPingScript string
+
+	//go:embed slixmpp_integration_test.py
+	slixmppPingScript string
+)
 
 func TestIntegrationSendPing(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
 		integration.Log(),
+		integration.LogXML(),
 		prosody.ListenC2S(),
 	)
 	prosodyRun(integrationSendPing)
@@ -134,6 +141,31 @@ func integrationRecvPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 		python.Args("-j", session.LocalAddr().String()),
 	)
 	aioxmppRun(func(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		select {
+		case <-ctx.Done():
+			t.Fatalf("context timed out: %v", ctx.Err())
+		case err := <-cmd.Done():
+			if err != nil {
+				t.Errorf("command errored: %v", err)
+			}
+			t.Errorf("did not receive ping before command shutdown")
+		case <-gotPing:
+		}
+	})
+
+	slixmppRun := slixmpp.Test(ctx, t,
+		integration.Log(),
+		python.ConfigFile(python.Config{
+			JID:      j,
+			Password: pass,
+			Port:     p,
+		}),
+		python.Import("Ping", slixmppPingScript),
+		python.Args("-j", session.LocalAddr().String()),
+	)
+	slixmppRun(func(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 		select {
