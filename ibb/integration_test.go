@@ -24,13 +24,19 @@ import (
 	"mellium.im/xmpp/internal/integration/aioxmpp"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/internal/integration/python"
+	"mellium.im/xmpp/internal/integration/slixmpp"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 )
 
-//go:embed aioxmpp_integration_test.py
-var ibbScript string
+var (
+	//go:embed aioxmpp_integration_test.py
+	aioxmppIBBScript string
+
+	//go:embed slixmpp_integration_test.py
+	slixmppIBBScript string
+)
 
 func TestIntegrationIBB(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
@@ -39,6 +45,62 @@ func TestIntegrationIBB(t *testing.T) {
 		prosody.ListenC2S(),
 	)
 	prosodyRun(integrationAioxmpp)
+	prosodyRun(integrationSlixmpp)
+}
+
+func integrationSlixmpp(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
+	p := cmd.C2SPort()
+	j, pass := cmd.User()
+
+	t.Run("send", func(t *testing.T) {
+		session, err := cmd.DialClient(ctx, j, t,
+			xmpp.StartTLS(&tls.Config{
+				InsecureSkipVerify: true,
+			}),
+			xmpp.SASL("", pass, sasl.Plain),
+			xmpp.BindResource(),
+		)
+		if err != nil {
+			t.Fatalf("error connecting: %v", err)
+		}
+		sid := attr.RandomID()
+		slixmppRun := slixmpp.Test(context.TODO(), t,
+			integration.Log(),
+			python.ConfigFile(python.Config{
+				JID:      j,
+				Password: pass,
+				Port:     p,
+			}),
+			python.Import("RecvIBB", slixmppIBBScript),
+			python.Args("-j", session.LocalAddr().String()),
+			python.Args("-sid", sid),
+		)
+		slixmppRun(integrationSend(session, sid))
+	})
+
+	t.Run("recv", func(t *testing.T) {
+		session, err := cmd.DialClient(ctx, j, t,
+			xmpp.StartTLS(&tls.Config{
+				InsecureSkipVerify: true,
+			}),
+			xmpp.SASL("", pass, sasl.Plain),
+			xmpp.BindResource(),
+		)
+		if err != nil {
+			t.Fatalf("error connecting: %v", err)
+		}
+		slixmppRun := slixmpp.Test(context.TODO(), t,
+			integration.Log(),
+			python.ConfigFile(python.Config{
+				JID:      j,
+				Password: pass,
+				Port:     p,
+			}),
+			python.Import("SendIBB", slixmppIBBScript),
+			python.Args("-j", session.LocalAddr().String()),
+		)
+		slixmppRun(integrationRecv(session))
+	})
 }
 
 func integrationAioxmpp(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
@@ -64,7 +126,7 @@ func integrationAioxmpp(ctx context.Context, t *testing.T, cmd *integration.Cmd)
 				Password: pass,
 				Port:     p,
 			}),
-			python.Import("RecvIBB", ibbScript),
+			python.Import("RecvIBB", aioxmppIBBScript),
 			python.Args("-j", session.LocalAddr().String()),
 			python.Args("-sid", sid),
 		)
@@ -89,7 +151,7 @@ func integrationAioxmpp(ctx context.Context, t *testing.T, cmd *integration.Cmd)
 				Password: pass,
 				Port:     p,
 			}),
-			python.Import("SendIBB", ibbScript),
+			python.Import("SendIBB", aioxmppIBBScript),
 			python.Args("-j", session.LocalAddr().String()),
 		)
 		aioxmppRun(integrationRecv(session))
@@ -144,7 +206,7 @@ func integrationRecv(session *xmpp.Session) func(context.Context, *testing.T, *i
 			t.Fatalf("error receiving data from IBB session: %v", err)
 		}
 		if string(recv) != recvData {
-			t.Fatalf("read wrong data from other end of IBB proxy: want=%s, got=%s", recvData, recv)
+			t.Errorf("read wrong data from other end of IBB proxy: want=%s, got=%s", recvData, recv)
 		}
 		sent := <-echo
 		if sent != sendData {
