@@ -10,7 +10,7 @@ class Ping(Daemon):
     def prepare_argparse(self) -> None:
         super().prepare_argparse()
 
-        def jid(s):
+        def jid(s) -> aioxmpp.JID:
             return aioxmpp.JID.fromstr(s)
         self.argparse.add_argument(
             "-j",

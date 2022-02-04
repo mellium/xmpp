@@ -23,6 +23,7 @@ import (
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/aioxmpp"
 	"mellium.im/xmpp/internal/integration/prosody"
+	"mellium.im/xmpp/internal/integration/python"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
@@ -58,14 +59,14 @@ func integrationAioxmpp(ctx context.Context, t *testing.T, cmd *integration.Cmd)
 		sid := attr.RandomID()
 		aioxmppRun := aioxmpp.Test(context.TODO(), t,
 			integration.Log(),
-			aioxmpp.ConfigFile(aioxmpp.Config{
+			python.ConfigFile(python.Config{
 				JID:      j,
 				Password: pass,
 				Port:     p,
 			}),
-			aioxmpp.Import("RecvIBB", ibbScript),
-			aioxmpp.Args("-j", session.LocalAddr().String()),
-			aioxmpp.Args("-sid", sid),
+			python.Import("RecvIBB", ibbScript),
+			python.Args("-j", session.LocalAddr().String()),
+			python.Args("-sid", sid),
 		)
 		aioxmppRun(integrationSend(session, sid))
 	})
@@ -83,13 +84,13 @@ func integrationAioxmpp(ctx context.Context, t *testing.T, cmd *integration.Cmd)
 		}
 		aioxmppRun := aioxmpp.Test(context.TODO(), t,
 			integration.Log(),
-			aioxmpp.ConfigFile(aioxmpp.Config{
+			python.ConfigFile(python.Config{
 				JID:      j,
 				Password: pass,
 				Port:     p,
 			}),
-			aioxmpp.Import("SendIBB", ibbScript),
-			aioxmpp.Args("-j", session.LocalAddr().String()),
+			python.Import("SendIBB", ibbScript),
+			python.Args("-j", session.LocalAddr().String()),
 		)
 		aioxmppRun(integrationRecv(session))
 	})

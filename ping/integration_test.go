@@ -23,6 +23,7 @@ import (
 	"mellium.im/xmpp/internal/integration/ejabberd"
 	"mellium.im/xmpp/internal/integration/mcabber"
 	"mellium.im/xmpp/internal/integration/prosody"
+	"mellium.im/xmpp/internal/integration/python"
 	"mellium.im/xmpp/internal/integration/sendxmpp"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/ping"
@@ -30,7 +31,7 @@ import (
 )
 
 //go:embed aioxmpp_integration_test.py
-var pingScript string
+var aioxmppPingScript string
 
 func TestIntegrationSendPing(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
@@ -124,13 +125,13 @@ func integrationRecvPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 	})
 	aioxmppRun := aioxmpp.Test(ctx, t,
 		integration.Log(),
-		aioxmpp.ConfigFile(aioxmpp.Config{
+		python.ConfigFile(python.Config{
 			JID:      j,
 			Password: pass,
 			Port:     p,
 		}),
-		aioxmpp.Import("Ping", pingScript),
-		aioxmpp.Args("-j", session.LocalAddr().String()),
+		python.Import("Ping", aioxmppPingScript),
+		python.Args("-j", session.LocalAddr().String()),
 	)
 	aioxmppRun(func(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)

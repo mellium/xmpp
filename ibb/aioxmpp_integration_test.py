@@ -5,20 +5,18 @@
 import asyncio
 import sys
 
-from aioxmpp_client import Daemon
 from aioxmpp import ibb, JID
 from aioxmpp import Message
 from aioxmpp import MessageType
 from aioxmpp import xso
-from aioxmpp import IQ
 from aioxmpp.utils import namespaces
 
-#import logging
-#logging.basicConfig(level=logging.DEBUG)
+import aioxmpp_client
+
 
 class TestProtocol(asyncio.Protocol):
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.data = b""
         self.transport = None
         self.closed_fut = asyncio.Future()
@@ -40,18 +38,24 @@ class TestProtocol(asyncio.Protocol):
 
 
 class StartIBB(xso.XSO):
-    # When we're ready for the Go side to send an IBB open request we send <startibb/> as a way to give the Go side the
-    # JID we negotiated and let it know that we're ready to receive it.
+    """
+    When we're ready for the Go side to send an IBB open request we send
+    <startibb/> as a way to give the Go side the JID we negotiated and let it
+    know that we're ready to receive it.
+    """
     TAG = (namespaces.client, "startibb")
 
 
 class DoneIBB(xso.XSO):
-    # When we finish receiving data over IBB we send it to the Go side via a message with the <doneibb/> payload and the
-    # data in the <body/>. This way the Go side can do the comparison and see if it matches what was expected.
+    """
+    When we finish receiving data over IBB we send it to the Go side via a
+    message with the <doneibb/> payload and the data in the <body/>. This way
+    the Go side can do the comparison and see if it matches what was expected.
+    """
     TAG = (namespaces.client, "doneibb")
 
 
-class SendIBB(Daemon):
+class SendIBB(aioxmpp_client.Daemon):
     def __init__(self) -> None:
         super().__init__()
 
@@ -71,21 +75,25 @@ class SendIBB(Daemon):
 
         transport: ibb.service.IBBTransport
         protocol: asyncio.Protocol
-        transport, protocol = await service.open_session(TestProtocol, self.args.j)
+        transport, protocol = await service.open_session(
+            TestProtocol,
+            self.args.j,
+        )
         transport.write("Warren snores through the night like a bear—a bass to the treble of the loons.".encode('utf-8'))
         transport.close()
         e = await protocol.closed_fut
         if e is not None:
             print(f'error awaiting connection close: {e}', file=sys.stderr)
             sys.exit(1)
-        # Echo the data we read back so that the other side can confirm that what it sent is what was received.
+        # Echo the data we read back so that the other side can confirm that
+        # what it sent is what was received.
         msg = Message(to=self.args.j, type_=MessageType.NORMAL)
         msg.body[None] = protocol.data.decode('utf-8')
         msg.doneibb = DoneIBB()
         await self.client.send(msg)
 
 
-class RecvIBB(Daemon):
+class RecvIBB(aioxmpp_client.Daemon):
     def __init__(self) -> None:
         super().__init__()
 
@@ -106,7 +114,8 @@ class RecvIBB(Daemon):
         )
 
     async def run(self) -> None:
-        # First send the other side of the connection our JID so that it knows what JID to use.
+        # First send the other side of the connection our JID so that it knows
+        # what JID to use.
         msg = Message(to=self.args.j, type_=MessageType.NORMAL)
         msg.startibb = StartIBB()
         await self.client.send(msg)
@@ -115,13 +124,18 @@ class RecvIBB(Daemon):
 
         transport: ibb.service.IBBTransport
         protocol: asyncio.Protocol
-        transport, protocol = await service.expect_session(TestProtocol, self.args.j, self.args.sid)
+        transport, protocol = await service.expect_session(
+            TestProtocol,
+            self.args.j,
+            self.args.sid,
+        )
         transport.write(b"I feel a deep security in the single-mindedness of freight trains.")
         e = await protocol.closed_fut
         if e is not None:
             print(f'error awaiting connection close: {e}', file=sys.stderr)
             sys.exit(1)
-        # Echo the data we read back so that the other side can confirm that what it sent is what was received.
+        # Echo the data we read back so that the other side can confirm that
+        # what it sent is what was received.
         msg = Message(to=self.args.j, type_=MessageType.NORMAL)
         msg.body[None] = protocol.data.decode('utf-8')
         msg.doneibb = DoneIBB()
