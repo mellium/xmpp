@@ -732,6 +732,19 @@ func Defer(f func(*Cmd) error) Option {
 	}
 }
 
+// Name sets the name of the test.
+// This defaults to the basename of the path to the binary (ie. if the testing
+// binary is /usr/local/sbin/prosody the name of the test will be "prosody").
+// It can be useful to override this when multiple tests run the same binary,
+// for example the aioxmpp and slixmpp package would both generate tests called
+// "python" if they did not provide this option.
+func Name(s string) Option {
+	return func(cmd *Cmd) error {
+		cmd.name = s
+		return nil
+	}
+}
+
 // Test starts a command and returns a function that runs tests as a subtest
 // using t.Run.
 // Multiple calls to the returned function will result in uniquely named
@@ -760,7 +773,7 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 	if cmd.skip {
 		return func(f func(context.Context, *testing.T, *Cmd)) bool {
 			i++
-			return t.Run(fmt.Sprintf("%s/%d", filepath.Base(name), i), func(t *testing.T) {
+			return t.Run(fmt.Sprintf("%s/%d", filepath.Base(cmd.name), i), func(t *testing.T) {
 				t.Skip("skipping due to developer provided option")
 			})
 		}
@@ -800,7 +813,7 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 
 	return func(f func(context.Context, *testing.T, *Cmd)) bool {
 		i++
-		return t.Run(fmt.Sprintf("%s/%d", filepath.Base(name), i), func(t *testing.T) {
+		return t.Run(fmt.Sprintf("%s/%d", filepath.Base(cmd.name), i), func(t *testing.T) {
 			if tw, ok := cmd.Cmd.Stdout.(*testWriter); ok {
 				tw.Update(t)
 			}

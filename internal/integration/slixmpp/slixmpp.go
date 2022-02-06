@@ -69,6 +69,11 @@ func defaultConfig(cmd *integration.Cmd) error {
 		return err
 	}
 
+	err = integration.Name("slixmpp")(cmd)
+	if err != nil {
+		return err
+	}
+
 	return integration.TempFile(baseFileName, func(cmd *integration.Cmd, w io.Writer) error {
 		cfg := getConfig(cmd)
 		return tmpl.Execute(w, cfg)
