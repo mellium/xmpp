@@ -40,7 +40,6 @@ var (
 
 func TestIntegrationIBB(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
-		integration.Log(),
 		prosody.ListenC2S(),
 	)
 	prosodyRun(integrationAioxmpp)
