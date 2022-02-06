@@ -12,11 +12,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added:
 
-- pubsub: new package implementing parts of [XEP-0060: Publish-Subscribe] and
-  [XEP-0163: Personal Eventing Protocol]
 - carbons: add `WrapReceived` and `WrapSent` functions
 - forward: add `Unwrap` function
 - ibb: new package implementing [XEP-0047: In-Band Bytestreams]
+- internal/integration/slixmpp: [Slixmpp] support for integration tests
+- pubsub: new package implementing parts of [XEP-0060: Publish-Subscribe] and
+  [XEP-0163: Personal Eventing Protocol]
 - stanza: add `NSError`, `NSClient`, and `NSServer` constants
 
 
@@ -30,6 +31,7 @@ All notable changes to this project will be documented in this file.
 [XEP-0047: In-Band Bytestreams]: https://xmpp.org/extensions/xep-0047.html
 [XEP-0060: Publish-Subscribe]: https://xmpp.org/extensions/xep-0060.html
 [XEP-0163: Personal Eventing Protocol]: https://xmpp.org/extensions/xep-0163.html
+[Slixmpp]: https://slixmpp.readthedocs.io/
 
 
 ## v0.20.0 — 2021-09-26
