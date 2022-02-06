@@ -71,12 +71,17 @@ class RecvIBB(Daemon):
 
     def configure(self) -> None:
         super().configure()
+        self.end = Future()
         self.client.register_plugin('xep_0047', {
             'auto_accept': True,
         })
         self.client.add_event_handler(
             "ibb_stream_data",
             lambda stream: self.data.extend(stream.recv_queue.get_nowait()),
+        )
+        self.client.add_event_handler(
+            "ibb_stream_end",
+            lambda stream: self.end.set_result(True)
         )
         self.client.add_event_handler("ibb_stream_start", lambda conn: self.conn.set_result(conn))
 
@@ -95,6 +100,7 @@ class RecvIBB(Daemon):
 
         conn = await self.conn
         await conn.sendall(b"I feel a deep security in the single-mindedness of freight trains.")
+        await self.end
 
         # Echo the data we read back so that the other side can confirm that
         # what it sent is what was received.
