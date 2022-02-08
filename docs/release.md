@@ -10,6 +10,9 @@ When making a release, remember to do the following:
 - Create a new release on GitHub (https://github.com/mellium/xmpp/releases)
   using the same annotation, making sure headers make sense (remove the top
   level one, GitHub will create that from the tag)
+- Do a `go get mellium.im/xmpp@release` (on a machine that has not disabled the
+  proxy) to trigger the docs being built
+- Write up a release announcement on https://opencollective.com/mellium
 - Announce the release
   - Post it in users@mellium.chat
   - Post it on https://fosstodon.org/@mellium
