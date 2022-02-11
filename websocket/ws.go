@@ -61,7 +61,7 @@ func NewClient(ctx context.Context, origin, location string, addr jid.JID, rwc i
 	d := Dialer{
 		Origin: origin,
 	}
-	cfg, err := d.config(location)
+	cfg, err := d.config(addr.Domain().String(), location)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func (d *Dialer) Dial(ctx context.Context, addr jid.JID) (net.Conn, error) {
 		if !d.InsecureNoTLS && strings.HasPrefix(u, "ws:") {
 			continue
 		}
-		cfg, err = d.config(u)
+		cfg, err = d.config(addr.Domain().String(), u)
 		if err != nil {
 			continue
 		}
@@ -209,14 +209,14 @@ func (d *Dialer) Dial(ctx context.Context, addr jid.JID) (net.Conn, error) {
 // implementation.
 // This may change in the future.
 func (d *Dialer) DialDirect(_ context.Context, addr string) (net.Conn, error) {
-	cfg, err := d.config(addr)
+	cfg, err := d.config(addr, addr)
 	if err != nil {
 		return nil, err
 	}
 	return websocket.DialConfig(cfg)
 }
 
-func (d *Dialer) config(addr string) (cfg *websocket.Config, err error) {
+func (d *Dialer) config(remoteAddr, addr string) (cfg *websocket.Config, err error) {
 	cfg, err = websocket.NewConfig(addr, d.Origin)
 	if err != nil {
 		return nil, err
@@ -225,7 +225,7 @@ func (d *Dialer) config(addr string) (cfg *websocket.Config, err error) {
 	cfg.TlsConfig = d.TLSConfig
 	if cfg.TlsConfig == nil {
 		cfg.TlsConfig = &tls.Config{
-			ServerName: cfg.Location.Host,
+			ServerName: remoteAddr,
 			MinVersion: tls.VersionTLS12,
 		}
 	}

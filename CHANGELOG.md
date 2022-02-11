@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Security
+
+- websocket: fix an issue where the wrong hostname was validated in connections
+             made after looking up DNS TXT records, resulting in a potential
+             MITM. A CVE has been issued with the id [CVE-2022-24968].
+
+[CVE-2022-24968]: https://mellium.im/cve/cve-2022-24968/
+
+
 ## v0.21.0 — 2022-02-08
 
 ### Breaking
