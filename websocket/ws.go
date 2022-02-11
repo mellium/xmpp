@@ -61,7 +61,7 @@ func NewClient(ctx context.Context, origin, location string, addr jid.JID, rwc i
 	d := Dialer{
 		Origin: origin,
 	}
-	cfg, err := d.config(addr.Domain().String(), location)
+	cfg, err := d.config(location)
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +98,8 @@ func Dial(ctx context.Context, origin string, addr jid.JID) (net.Conn, error) {
 	return d.Dial(ctx, addr)
 }
 
-// DialDirect dials the provided WebSocket endpoint without performing any TXT
-// or Web Host Metadata file lookup.
+// DialDirect dials the provided WebSocket endpoint without performing any Web
+// Host Metadata file lookup.
 //
 // Calling DialDirect is the equivalent of creating a Dialer type with only the
 // Origin option set and calling its DialDirect method.
@@ -138,32 +138,21 @@ type Dialer struct {
 	// Dialer used when opening websocket connections.
 	Dialer *net.Dialer
 
-	// Resolver to use when looking up TXT records.
-	Resolver *net.Resolver
-
 	// HTTP Client to use when looking up Web Host Metadata files.
 	Client *http.Client
 }
 
 // Dial opens a new client connection to a WebSocket.
-//
-// If addr is a hostname or has a scheme of "http" or "https" it will attempt to
-// look up TXT records and Web Host Metadata files to find WebSocket endpoints
-// to connect to.
-// If however addr is a complete URI with a scheme of "ws" or "wss" it will
-// attempt to connect to the provided endpoint directly with no other lookup.
+// It finds the WebSocket endpoint to connect to by looking up the XML Web Host
+// Metadata (XRD) file present on the https://domainpart.
 func (d *Dialer) Dial(ctx context.Context, addr jid.JID) (net.Conn, error) {
-	// Setup defaults for the underlying client and resolver.
+	// Setup defaults for the underlying client.
 	httpClient := d.Client
 	if httpClient == nil {
 		httpClient = &http.Client{}
 	}
-	netResolver := d.Resolver
-	if netResolver == nil {
-		netResolver = &net.Resolver{}
-	}
 
-	urls, err := discover.LookupWebSocket(ctx, netResolver, httpClient, addr)
+	urls, err := discover.LookupWebSocket(ctx, httpClient, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -175,9 +164,9 @@ func (d *Dialer) Dial(ctx context.Context, addr jid.JID) (net.Conn, error) {
 	sort.Slice(urls, func(i, j int) bool {
 		switch {
 		case strings.HasPrefix(urls[i], "wss:"):
-			return true
-		case strings.HasPrefix(urls[i], "wss:"):
 			return false
+		case strings.HasPrefix(urls[j], "wss:"):
+			return true
 		case strings.HasPrefix(urls[i], "ws:"):
 			return true
 		}
@@ -190,7 +179,7 @@ func (d *Dialer) Dial(ctx context.Context, addr jid.JID) (net.Conn, error) {
 		if !d.InsecureNoTLS && strings.HasPrefix(u, "ws:") {
 			continue
 		}
-		cfg, err = d.config(addr.Domain().String(), u)
+		cfg, err = d.config(u)
 		if err != nil {
 			continue
 		}
@@ -202,21 +191,21 @@ func (d *Dialer) Dial(ctx context.Context, addr jid.JID) (net.Conn, error) {
 	return conn, err
 }
 
-// DialDirect dials the websocket endpoint without performing any TXT or Web
-// Host Metadata file lookup.
+// DialDirect dials the websocket endpoint without performing any Web Host
+// Metadata file lookup.
 //
 // Context is currently not used due to restrictions in the underlying WebSocket
 // implementation.
 // This may change in the future.
 func (d *Dialer) DialDirect(_ context.Context, addr string) (net.Conn, error) {
-	cfg, err := d.config(addr, addr)
+	cfg, err := d.config(addr)
 	if err != nil {
 		return nil, err
 	}
 	return websocket.DialConfig(cfg)
 }
 
-func (d *Dialer) config(remoteAddr, addr string) (cfg *websocket.Config, err error) {
+func (d *Dialer) config(addr string) (cfg *websocket.Config, err error) {
 	cfg, err = websocket.NewConfig(addr, d.Origin)
 	if err != nil {
 		return nil, err
@@ -225,7 +214,7 @@ func (d *Dialer) config(remoteAddr, addr string) (cfg *websocket.Config, err err
 	cfg.TlsConfig = d.TLSConfig
 	if cfg.TlsConfig == nil {
 		cfg.TlsConfig = &tls.Config{
-			ServerName: remoteAddr,
+			ServerName: cfg.Location.Host,
 			MinVersion: tls.VersionTLS12,
 		}
 	}

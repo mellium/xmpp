@@ -13,16 +13,11 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"strings"
-	"sync"
 
-	"golang.org/x/net/context/ctxhttp"
 	"mellium.im/xmpp/jid"
 )
 
 const (
-	wsPrefix     = "_xmpp-client-websocket="
-	boshPrefix   = "_xmpp-client-xbosh="
 	wsRel        = "urn:xmpp:alt-connections:websocket"
 	boshRel      = "urn:xmpp:alt-connections:xbosh"
 	hostMetaXML  = "/.well-known/host-meta"
@@ -167,116 +162,26 @@ func LookupService(ctx context.Context, resolver *net.Resolver, service string, 
 }
 
 // LookupWebSocket discovers websocket endpoints that are valid for the given
-// address using DNS TXT records and Web Host Metadata as described in XEP-0156.
-// If client is nil, only DNS is queried.
-func LookupWebSocket(ctx context.Context, resolver *net.Resolver, client *http.Client, addr jid.JID) (urls []string, err error) {
-	return lookupEndpoint(ctx, resolver, client, addr, wsConnType)
+// address using Web Host Metadata as described in RFC7395.
+func LookupWebSocket(ctx context.Context, client *http.Client, addr jid.JID) (urls []string, err error) {
+	return lookupHostMeta(ctx, client, addr.Domain().String(), wsConnType)
 }
 
 // LookupBOSH discovers BOSH endpoints that are valid for the given address
-// using DNS TXT records and Web Host Metadata as described in XEP-0156.
-// If client is nil, only DNS is queried.
-func LookupBOSH(ctx context.Context, resolver *net.Resolver, client *http.Client, addr jid.JID) (urls []string, err error) {
-	return lookupEndpoint(ctx, resolver, client, addr, boshConnType)
+// using Web Host Metadata as described in XEP-0156.
+func LookupBOSH(ctx context.Context, client *http.Client, addr jid.JID) (urls []string, err error) {
+	return lookupHostMeta(ctx, client, addr.Domain().String(), boshConnType)
 }
-
-func lookupEndpoint(ctx context.Context, resolver *net.Resolver, client *http.Client, addr jid.JID, conntype string) (urls []string, err error) {
-	if conntype != wsConnType && conntype != boshConnType {
-		panic("xmpp.lookupEndpoint: Invalid conntype specified")
-	}
-
-	var (
-		u  []string
-		e  error
-		wg sync.WaitGroup
-
-		name = addr.Domainpart()
-	)
-
-	ctx, cancel := context.WithCancel(ctx)
-
-	wg.Add(1)
-	go func() {
-		defer func() {
-			if err == nil && len(urls) > 0 {
-				cancel()
-			}
-			wg.Done()
-		}()
-		urls, err = lookupDNS(ctx, resolver, name, conntype)
-	}()
-	if client != nil {
-		wg.Add(1)
-		go func() {
-			defer func() {
-				if e == nil && len(u) > 0 {
-					cancel()
-				}
-				wg.Done()
-			}()
-			u, e = lookupHostMeta(ctx, client, name, conntype)
-		}()
-	}
-	wg.Wait()
-
-	switch {
-	case err == nil && len(urls) > 0:
-		return urls, err
-	case e == nil && len(u) > 0:
-		return u, e
-	case err != nil:
-		return urls, err
-	case e != nil:
-		return u, e
-	}
-
-	return urls, err
-}
-
-func lookupDNS(ctx context.Context, resolver *net.Resolver, name, conntype string) (urls []string, err error) {
-	if conntype != wsConnType && conntype != boshConnType {
-		panic("xmpp.lookupEndpoint: Invalid conntype specified")
-	}
-
-	txts, err := resolver.LookupTXT(ctx, name)
-	if err != nil {
-		return urls, err
-	}
-
-	var s string
-	for _, txt := range txts {
-		select {
-		case <-ctx.Done():
-			return urls, ctx.Err()
-		default:
-		}
-		switch conntype {
-		case wsConnType:
-			if s = strings.TrimPrefix(txt, wsPrefix); s != txt {
-				urls = append(urls, s)
-			}
-		case boshConnType:
-			if s = strings.TrimPrefix(txt, boshPrefix); s != txt {
-				urls = append(urls, s)
-			}
-		}
-	}
-
-	return urls, err
-}
-
-// TODO(ssw): Memoize the following functions?
 
 func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype string) (urls []string, err error) {
 	if conntype != wsConnType && conntype != boshConnType {
 		panic("xmpp.lookupEndpoint: Invalid conntype specified")
 	}
 
-	url, err := url.Parse(name)
+	url, err := url.Parse("https://" + path.Join(name, hostMetaXML))
 	if err != nil {
 		return urls, err
 	}
-	url.Path = ""
 
 	xrd, err := getHostMetaXML(ctx, client, url.String())
 	if err != nil {
@@ -298,27 +203,18 @@ func lookupHostMeta(ctx context.Context, client *http.Client, name, conntype str
 	return urls, err
 }
 
-func getHostMetaXML(
-	ctx context.Context, client *http.Client, name string) (xrd XRD, err error) {
-	resp, err := ctxhttp.Get(ctx, client, path.Join(name, hostMetaXML))
+func getHostMetaXML(ctx context.Context, client *http.Client, name string) (xrd XRD, err error) {
+	req, err := http.NewRequest("GET", name, nil)
 	if err != nil {
 		return xrd, err
 	}
-	d := xml.NewDecoder(resp.Body)
-
-	t, err := d.Token()
+	if client == nil {
+		client = http.DefaultClient
+	}
+	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		return xrd, err
 	}
-	for {
-		select {
-		case <-ctx.Done():
-			return xrd, ctx.Err()
-		default:
-			if se, ok := t.(xml.StartElement); ok && se.Name == xrdName {
-				err = d.DecodeElement(&xrd, &se)
-				return xrd, err
-			}
-		}
-	}
+	err = xml.NewDecoder(resp.Body).Decode(&xrd)
+	return xrd, err
 }
