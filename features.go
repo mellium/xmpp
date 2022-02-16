@@ -198,10 +198,11 @@ func negotiateFeatures(ctx context.Context, s *Session, first, ws bool, features
 				}
 			}
 
-			// If the feature was not sent or was already negotiated, error.
+			// If the feature was not sent, was already negotiated, or is
+			// informational only and not meant to be negotiated: error.
 			_, negotiated := s.negotiated[start.Name.Space]
 			data, sent = list.cache[start.Name.Space]
-			if !sent || negotiated {
+			if !sent || negotiated || data.feature.Negotiate == nil {
 				// TODO: What should we return here?
 				return mask, rw, stream.PolicyViolation
 			}
@@ -233,8 +234,9 @@ func negotiateFeatures(ctx context.Context, s *Session, first, ws bool, features
 				// If we're the client, iterate through the cached features and select
 				// one to negotiate.
 				for _, v := range list.cache {
-					if _, ok := s.negotiated[v.feature.Name.Space]; ok {
-						// If this feature has already been negotiated, skip it.
+					if _, ok := s.negotiated[v.feature.Name.Space]; ok || v.feature.Negotiate == nil {
+						// If this feature has already been negotiated, or is informational
+						// only with no negotiation, skip it.
 						continue
 					}
 
