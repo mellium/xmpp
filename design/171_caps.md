@@ -1,7 +1,7 @@
 # Entity Capabilities
 
 **Author(s):** Sam Whited <sam@samwhited.com>  
-**Last updated:** 2021-09-01  
+**Last updated:** 2021-22-16  
 **Discussion:** https://mellium.im/issue/171
 
 ## Abstract
@@ -85,10 +85,44 @@ space it needs:
     // provided byte slice.
     func (Info) AppendHash(dst []byte, h hash.Hash) []byte { … }
 
+We will also likely want the ability to easily respond to incoming entity caps
+hashes, eg. by requesting the full disco#info if the hash is not in the cache.
+This will be accomplished by a simple handler that executes a callback for each
+caps hash:
+
+    func HandleCaps(f func(stanza.Presence, Caps)) mux.Option
+
+Finally, entity caps [provides a mechanism][stream] for servers (that wouldn't
+normally send a presence stanza) to provide their own caps hash during session
+negotiation.
+This will be supported using a stream feature and a function for easily pulling
+that information out of the already available stream feature cache:
+
+```go
+// ClientCaps is an informational stream feature that saves any entity caps
+// information that was published by the server during session negotiation.
+// The feature will never be negotiated and should not be used on the server
+// side of the connection (where it is a no-op).
+func ClientCaps() xmpp.StreamFeature { … }
+
+// StreamFeature returns any entity caps information advertised by the server
+// when we first connected.
+// If the ServerCaps feature was not used during the connection or no entity
+// caps was advertised when connecting, ok will be false.
+func StreamFeature(s *xmpp.Session) (c Caps, ok bool) { … }
+```
+
+The server side of this feature may be impossible without first knowing about
+the muxer, which results in an ugly API.
+Instead, it may be desirable to change the feature negotiation to include the
+session, but this is a major breaking change and will need careful
+consideration, even pre-1.0.
+
+[stream]: https://xmpp.org/extensions/xep-0115.html#stream
+
+
 ## Open Issues
 
 - Should the user be able to extend/remove hashes from the default list?
 - Should `Caps` have some sort of "Verify" method that takes a list of supported
   hashes?
-- Should (and "can") we provide a mechanism for advertising entity caps in all
-  outgoing presence stanzas?
