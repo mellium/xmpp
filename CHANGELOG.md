@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- xmpp: ability to create informational-only stream features
+
 ## v0.21.1 — 2022-02-11
 
 ### Security
