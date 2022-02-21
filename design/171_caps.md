@@ -1,7 +1,7 @@
 # Entity Capabilities
 
 **Author(s):** Sam Whited <sam@samwhited.com>  
-**Last updated:** 2021-22-16  
+**Last updated:** 2022-02-16  
 **Discussion:** https://mellium.im/issue/171
 
 ## Abstract
