@@ -1,12 +1,18 @@
 # Cryptographic Hash Functions
 
 **Author(s):** Sam Whited <sam@samwhited.com>  
-**Last updated:** 2022-02-20  
+**Last updated:** 2022-02-21  
 **Discussion:** https://mellium.im/issue/266
 
 ## Abstract
 
 An API for transmitting commonly used hashing algorithms and their sums.
+
+
+## Prior Art
+
+- [aioxmpp](https://docs.zombofant.net/aioxmpp/devel/api/public/hashes.html)
+- [slixmpp](https://slixmpp.readthedocs.io/en/latest/api/plugins/xep_0300.html)
 
 
 ## Background
@@ -63,25 +69,38 @@ the `crypto` package, but with added methods:
     	BLAKE2b_512 = Hash(crypto.BLAKE2b_512) // import golang.org/x/crypto/blake2b
     )
 
-    func (Hash) Namespace() string { … }
-    func (Hash) String() string { … }
-    func (Hash) MarshalXMLAttr(xml.Name) (xml.Attr, error) { … }
-    func (Hash) TokenReader() xml.TokenReader { … }
-    func (Hash) WriteXML(xmlstream.TokenWriter) (int, error) { … }
-    func (Hash) MarshalXML(*xml.Encoder, xml.StartElement) error {
-    func (h Hash) New() XMLHash { … }
+    func (Hash)  Namespace() (string, error) { … }
+    func (Hash)  String() string { … }
+    func (Hash)  MarshalXMLAttr(xml.Name) (xml.Attr, error) { … }
+    func (*Hash) UnmarshalXMLAttr(xml.Attr) error { … }
+    func (*Hash) UnmarshalXML(*xml.Decoder, xml.StartElement) error { … }
+    func (Hash)  TokenReader() xml.TokenReader { … }
+    func (Hash)  WriteXML(xmlstream.TokenWriter) (int, error) { … }
+    func (Hash)  MarshalXML(*xml.Encoder, xml.StartElement) error {
+    func (Hash)  Available() bool { … }
+    func (Hash)  HashFunc() crypto.Hash { … }
+    func (Hash)  New() crypto.Hash { … }
 
-Like the [`New` method] on `crypto.Hash` we provide a new method for actually
-getting a value that can be used to generate the final hash output.
-However, ours hash type also implements the various XML marshaling methods:
+This provides us with a mechanism for transmitting a hash itself, but not the
+output of a hash function.
+To do this, another type is proposed:
 
-    type XMLHash struct {
-      hash.Hash
+    type HashOutput struct {
+      Hash
+      Out []byte
     }
 
-    func (XMLHash) TokenReader() xml.TokenReader { … }
-    func (XMLHash) WriteXML(xmlstream.TokenWriter) (int, error) { … }
-    func (XMLHash) MarshalXML(*xml.Encoder, xml.StartElement) error { … }
+    func (HashOutput)  TokenReader() xml.TokenReader { … }
+    func (HashOutput)  WriteXML(xmlstream.TokenWriter) (int, error) { … }
+    func (HashOutput)  MarshalXML(*xml.Encoder, xml.StartElement) error { … }
+    func (*HashOutput) UnmarshalXML(*xml.Decoder, xml.StartElement) error { … }
+
+An alternative design was considered where the New method of Hash would return a
+concrete type, `XMLHash` or similar implementing `hash.hash` as well as the
+various XML marshaling methods (which would call the `Sum()` method to generate
+the final output when marshaled).
+However, this design was rejected because unmarshaling into it did not make any
+sense and a separate solution would be needed.
 
 
 ## Open Issues
@@ -96,6 +115,5 @@ However, ours hash type also implements the various XML marshaling methods:
 [XEP-0414]: https://xmpp.org/extensions/xep-0414.html
 [`hash`]: https://pkg.go.dev/hash
 [`crypto`]: https://pkg.go.dev/crypto
-[`New` method]: https://pkg.go.dev/crypto#Hash.New
 [`hash.Hash`]: https://pkg.go.dev/hash#Hash
 [`xtime`]: https://pkg.go.dev/mellium.im/xmpp/xtime
