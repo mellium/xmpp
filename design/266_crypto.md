@@ -1,7 +1,7 @@
 # Cryptographic Hash Functions
 
 **Author(s):** Sam Whited <sam@samwhited.com>  
-**Last updated:** 2022-02-21  
+**Last updated:** 2022-02-22  
 **Discussion:** https://mellium.im/issue/266
 
 ## Abstract
@@ -102,14 +102,17 @@ the final output when marshaled).
 However, this design was rejected because unmarshaling into it did not make any
 sense and a separate solution would be needed.
 
+We also need a way to advertise support for various hashes during service
+discovery.
+This will be done explicitly by converting a list of hashes into an iterator
+that can be passed to the multiplexer:
 
-## Open Issues
+    // Features returns an iter that can be registered against a mux to
+    // advertise support for the hash list.
+    // The iter will return an error for any hashes that are not available in
+    // the binary.
+    func Features(h ...Hash) info.FeatureIter { … }
 
-- Should this package be renamed to `xcrypto` similar to [`xtime`] to avoid the
-  name conflict with `crypto` in the standard library?
-- Should the service discovery feature handle all linked in hashes, or an
-  explicitly supplied list of hashes?
-- What does the service discovery feature look like?
 
 [XEP-0300]: https://xmpp.org/extensions/xep-0300.html
 [XEP-0414]: https://xmpp.org/extensions/xep-0414.html

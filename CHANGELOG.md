@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - bookmarks: new package implementing [XEP-0402: PEP Native Bookmarks]
+- crypto: new package implementing [XEP-0300: Use of Cryptographic Hash
+  Functions in XMPP] and [XEP-0414: Cryptographic Hash Function Recommendations
+  for XMPP]
 - disco: add support for calculating and receiving [XEP-0115: Entity
   Capabilities] hashes
 - mux: add ability to advertise features and identities that do not correspond
@@ -20,7 +23,9 @@ All notable changes to this project will be documented in this file.
   broken XRD file lookups.
 
 [XEP-0115: Entity Capabilities]: https://xmpp.org/extensions/xep-0115.html
+[XEP-0300: Use of Cryptographic Hash Functions in XMPP]: https://xmpp.org/extensions/xep-0300.html
 [XEP-0402: PEP Native Bookmarks]: https://xmpp.org/extensions/xep-0402.html
+[XEP-0414: Cryptographic Hash Function Recommendations for XMPP]: https://xmpp.org/extensions/xep-0414.html
 
 
 ## v0.21.1 — 2022-02-11
