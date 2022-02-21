@@ -55,6 +55,8 @@ type ServeMux struct {
 	iqPatterns       map[pattern]IQHandler
 	msgPatterns      map[pattern]MessageHandler
 	presencePatterns map[pattern]PresenceHandler
+	features         []info.FeatureIter
+	idents           []info.IdentityIter
 	stanzaNS         string
 }
 
@@ -285,6 +287,12 @@ func (m *ServeMux) ForFeatures(node string, f func(info.Feature) error) error {
 			}
 		}
 	}
+	for _, iter := range m.features {
+		err := iter.ForFeatures(node, f)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -321,6 +329,12 @@ func (m *ServeMux) ForIdentities(node string, f func(info.Identity) error) error
 			if err != nil {
 				return err
 			}
+		}
+	}
+	for _, iter := range m.idents {
+		err := iter.ForIdentities(node, f)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

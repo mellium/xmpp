@@ -639,6 +639,7 @@ const (
 	iqTestFeature       = "urn:example:iq"
 	msgTestFeature      = "urn:example:message"
 	presenceTestFeature = "urn:example:presence"
+	otherTestFeature    = "urn:example:other"
 )
 
 type handleFeature struct{}
@@ -713,6 +714,19 @@ func (presenceFeature) ForItems(node string, f func(items.Item) error) error {
 	})
 }
 
+type otherFeature struct{}
+
+func (otherFeature) ForFeatures(node string, f func(info.Feature) error) error {
+	return f(info.Feature{
+		Var: otherTestFeature,
+	})
+}
+func (otherFeature) ForIdentities(node string, f func(info.Identity) error) error {
+	return f(info.Identity{
+		Name: otherTestFeature,
+	})
+}
+
 func TestFeatures(t *testing.T) {
 	m := mux.New(
 		stanza.NSClient,
@@ -720,12 +734,15 @@ func TestFeatures(t *testing.T) {
 		mux.IQ("", xml.Name{}, iqFeature{}),
 		mux.Message("", xml.Name{}, messageFeature{}),
 		mux.Presence("", xml.Name{}, presenceFeature{}),
+		mux.Feature(otherFeature{}),
+		mux.Ident(otherFeature{}),
 	)
 	var (
 		foundHandler  bool
 		foundIQ       bool
 		foundPresence bool
 		foundMsg      bool
+		foundOther    bool
 	)
 	err := m.ForFeatures("", func(i info.Feature) error {
 		switch i.Var {
@@ -737,6 +754,8 @@ func TestFeatures(t *testing.T) {
 			foundMsg = true
 		case presenceTestFeature:
 			foundPresence = true
+		case otherTestFeature:
+			foundOther = true
 		}
 		return nil
 	})
@@ -754,6 +773,22 @@ func TestFeatures(t *testing.T) {
 	}
 	if !foundPresence {
 		t.Errorf("features iter did not find presence feature")
+	}
+	if !foundOther {
+		t.Errorf("features iter did not find other test feature")
+	}
+	var foundOtherIdent bool
+	err = m.ForIdentities("", func(i info.Identity) error {
+		if i.Name == otherTestFeature {
+			foundOtherIdent = true
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("unexpected error while iterating over identities: %v", err)
+	}
+	if !foundOtherIdent {
+		t.Errorf("ident iter did not find other test identity")
 	}
 }
 

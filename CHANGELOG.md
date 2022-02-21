@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 - bookmarks: new package implementing [XEP-0402: PEP Native Bookmarks]
 - disco: add support for calculating and receiving [XEP-0115: Entity
   Capabilities] hashes
+- mux: add ability to advertise features and identities that do not correspond
+  to a handler
 - xmpp: ability to create informational-only stream features
 
 

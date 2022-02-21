@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/disco/info"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -82,6 +83,34 @@ func Presence(typ stanza.PresenceType, payload xml.Name, h PresenceHandler) Opti
 // For more information see Presence.
 func PresenceFunc(typ stanza.PresenceType, payload xml.Name, h PresenceHandlerFunc) Option {
 	return Presence(typ, payload, h)
+}
+
+// Feature registers the provided features for service discovery.
+//
+// Most features will be implemented by Handlers and do not need to be
+// registered again, Feature is just for features that should be advertised but
+// do not have any corresponding handler.
+func Feature(iter info.FeatureIter) Option {
+	if iter == nil {
+		panic("mux: nil info.FeatureIter")
+	}
+	return func(m *ServeMux) {
+		m.features = append(m.features, iter)
+	}
+}
+
+// Ident registers the provided identities for service discovery.
+//
+// Most identities will be implemented by Handlers and do not need to be
+// registered again, Ident is just for features that should be advertised but do
+// not have any corresponding handler.
+func Ident(iter info.IdentityIter) Option {
+	if iter == nil {
+		panic("mux: nil info.IdentityIter")
+	}
+	return func(m *ServeMux) {
+		m.idents = append(m.idents, iter)
+	}
 }
 
 // Handle returns an option that matches on the provided XML name.
