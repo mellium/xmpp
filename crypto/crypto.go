@@ -91,30 +91,38 @@ func (h Hash) MarshalXMLAttr(name xml.Name) (xml.Attr, error) {
 	}, nil
 }
 
+// Parse creates a hash from the hash name as a string.
+func Parse(name string) (Hash, error) {
+	switch name {
+	case "sha-1":
+		return SHA1, nil
+	case "sha-224":
+		return SHA224, nil
+	case "sha-256":
+		return SHA256, nil
+	case "sha-384":
+		return SHA384, nil
+	case "sha-512":
+		return SHA512, nil
+	case "sha3-256":
+		return SHA3_256, nil
+	case "sha3-512":
+		return SHA3_512, nil
+	case "blake2b256":
+		return BLAKE2b_256, nil
+	case "blake2b512":
+		return BLAKE2b_512, nil
+	}
+	return 0, fmt.Errorf("%w %s", ErrUnknownAlgo, name)
+}
+
 // UnmarshalXMLAttr implements xml.UnmarshalerAttr.
 func (h *Hash) UnmarshalXMLAttr(attr xml.Attr) error {
-	switch attr.Value {
-	case "sha-1":
-		*h = SHA1
-	case "sha-224":
-		*h = SHA224
-	case "sha-256":
-		*h = SHA256
-	case "sha-384":
-		*h = SHA384
-	case "sha-512":
-		*h = SHA512
-	case "sha3-256":
-		*h = SHA3_256
-	case "sha3-512":
-		*h = SHA3_512
-	case "blake2b256":
-		*h = BLAKE2b_256
-	case "blake2b512":
-		*h = BLAKE2b_512
-	default:
-		return fmt.Errorf("%w %s", ErrUnknownAlgo, attr.Value)
+	newHash, err := Parse(attr.Value)
+	if err != nil {
+		return err
 	}
+	*h = newHash
 	return nil
 }
 
