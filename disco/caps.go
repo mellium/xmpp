@@ -6,12 +6,11 @@ package disco
 
 import (
 	"context"
-	"crypto"
 	"encoding/xml"
-	"strings"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/crypto"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 )
@@ -70,19 +69,30 @@ type Caps struct {
 
 // TokenReader implements xmlstream.Marshaler.
 func (c Caps) TokenReader() xml.TokenReader {
+	/* #nosec */
+	tr, _ := tokenReader(c)
+	return tr
+}
+
+func tokenReader(c Caps) (xml.TokenReader, error) {
+	hashAttr, err := c.Hash.MarshalXMLAttr(xml.Name{Local: "hash"})
 	return xmlstream.Wrap(nil, xml.StartElement{
 		Name: xml.Name{Space: NSCaps, Local: "c"},
 		Attr: []xml.Attr{
-			{Name: xml.Name{Local: "hash"}, Value: strings.ToLower(c.Hash.String())},
+			hashAttr,
 			{Name: xml.Name{Local: "node"}, Value: c.Node},
 			{Name: xml.Name{Local: "ver"}, Value: c.Ver},
 		},
-	})
+	}), err
 }
 
 // WriteXML implements xmlstream.WriterTo.
 func (c Caps) WriteXML(w xmlstream.TokenWriter) (int, error) {
-	return xmlstream.Copy(w, c.TokenReader())
+	tr, err := tokenReader(c)
+	if err != nil {
+		return 0, err
+	}
+	return xmlstream.Copy(w, tr)
 }
 
 // MarshalXML implements xml.Marshaler.
@@ -96,17 +106,9 @@ func (c *Caps) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	for _, attr := range start.Attr {
 		switch attr.Name.Local {
 		case "hash":
-			switch attr.Value {
-			case "sha-1":
-				c.Hash = crypto.SHA1
-			case "sha-224":
-				c.Hash = crypto.SHA224
-			case "sha-256":
-				c.Hash = crypto.SHA256
-			case "sha-384":
-				c.Hash = crypto.SHA384
-			case "sha-512":
-				c.Hash = crypto.SHA512
+			err := (&c.Hash).UnmarshalXMLAttr(attr)
+			if err != nil {
+				return err
 			}
 		case "node":
 			c.Node = attr.Value
