@@ -18,7 +18,6 @@ import (
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/ejabberd"
 	"mellium.im/xmpp/internal/integration/prosody"
-	"mellium.im/xmpp/jid"
 )
 
 func TestIntegrationFetch(t *testing.T) {
@@ -54,7 +53,7 @@ func integrationFetch(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
 		}
 	}()
 	err = bookmarks.Publish(ctx, session, bookmarks.Channel{
-		JID:      jid.MustParse("example.net"),
+		JID:      j,
 		Name:     "The Bookmark",
 		Autojoin: true,
 	})
@@ -68,7 +67,7 @@ func integrationFetch(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
 	}
 
 	bookmark := iter.Bookmark()
-	if !bookmark.JID.Equal(jid.MustParse("example.net")) {
+	if !bookmark.JID.Equal(j) {
 		t.Fatalf("wrong JID: want=example.net, got=%v", bookmark.JID)
 	}
 	if bookmark.Name != "The Bookmark" {
@@ -77,9 +76,26 @@ func integrationFetch(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
 	if !bookmark.Autojoin {
 		t.Fatalf("expected autojoin to be set")
 	}
-
 	hasNext = iter.Next()
 	if hasNext {
 		t.Fatalf("too many bookmarks")
+	}
+	err = iter.Close()
+	if err != nil {
+		t.Fatalf("error closing initial iterator: %v", err)
+	}
+
+	err = bookmarks.Delete(ctx, session, j)
+	if err != nil {
+		t.Fatalf("error deleting bookmark: %v", err)
+	}
+
+	iter = bookmarks.Fetch(ctx, session)
+	if iter.Next() {
+		t.Fatalf("did not expect there to be any bookmarks!")
+	}
+	err = iter.Err()
+	if err != nil {
+		t.Fatalf("bookmark iteration with no bookmarks errored: %v", err)
 	}
 }

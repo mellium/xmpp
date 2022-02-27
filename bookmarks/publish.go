@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/pubsub"
 	"mellium.im/xmpp/stanza"
 )
@@ -23,4 +24,15 @@ func PublishIQ(ctx context.Context, s *xmpp.Session, iq stanza.IQ, b Channel) er
 	iq.Type = stanza.SetIQ
 	_, err := pubsub.PublishIQ(ctx, s, iq, NS, b.JID.String(), b.TokenReader())
 	return err
+}
+
+// Delete removes the bookmark.
+func Delete(ctx context.Context, s *xmpp.Session, b jid.JID) error {
+	return DeleteIQ(ctx, s, stanza.IQ{}, b)
+}
+
+// DeleteIQ is like Delete except that it allows modifying the IQ.
+// Changes to the IQ type will have no effect.
+func DeleteIQ(ctx context.Context, s *xmpp.Session, iq stanza.IQ, b jid.JID) error {
+	return pubsub.DeleteIQ(ctx, s, iq, NS, b.String(), true)
 }
