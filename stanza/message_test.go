@@ -25,11 +25,12 @@ func TestMarshalMessageTypeAttr(t *testing.T) {
 		value       string
 		err         error
 	}{
-		0: {stanza.MessageType(""), "", nil},
+		0: {stanza.MessageType(""), "normal", nil},
 		1: {stanza.NormalMessage, "normal", nil},
 		2: {stanza.ChatMessage, "chat", nil},
 		3: {stanza.HeadlineMessage, "headline", nil},
 		4: {stanza.ErrorMessage, "error", nil},
+		5: {stanza.MessageType("foo"), "normal", nil},
 	} {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			b, err := xml.Marshal(stanza.Message{Type: tc.messagetype})
@@ -161,8 +162,12 @@ func TestMessageFromStartElement(t *testing.T) {
 			if langAttr.Value != msg.Lang {
 				t.Errorf("wrong value for xml:lang: want=%q, got=%q", langAttr.Value, msg.Lang)
 			}
-			if _, v := attr.Get(tc.Attr, "type"); v != string(msg.Type) {
-				t.Errorf("wrong value for type: want=%q, got=%q", v, msg.Type)
+			exists, typeAttr := attr.Get(tc.Attr, "type")
+			if exists == -1 {
+				typeAttr = "normal"
+			}
+			if typeAttr != string(msg.Type) {
+				t.Errorf("wrong value for type: want=%q, got=%q", typeAttr, msg.Type)
 			}
 		})
 	}

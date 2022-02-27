@@ -25,10 +25,31 @@ type Message struct {
 	Type    MessageType `xml:"type,attr,omitempty"`
 }
 
+// UnmarshalXMLAttr converts the provided XML attribute to a valid message type.
+// Falls back to normal message type, if an unknown, or empty value is passed.
+func (t *MessageType) UnmarshalXMLAttr(attr xml.Attr) error {
+	switch attr.Value {
+	case "normal":
+		*t = NormalMessage
+	case "chat":
+		*t = ChatMessage
+	case "error":
+		*t = ErrorMessage
+	case "groupchat":
+		*t = GroupChatMessage
+	case "headline":
+		*t = HeadlineMessage
+	default:
+		*t = NormalMessage
+	}
+	return nil
+}
+
 // NewMessage unmarshals an XML token into a Message.
 func NewMessage(start xml.StartElement) (Message, error) {
 	v := Message{
 		XMLName: start.Name,
+		Type:    "normal",
 	}
 	for _, attr := range start.Attr {
 		if attr.Name.Local == "lang" && attr.Name.Space == ns.XML {
@@ -58,7 +79,10 @@ func NewMessage(start xml.StartElement) (Message, error) {
 				}
 			}
 		case "type":
-			v.Type = MessageType(attr.Value)
+			err = (&v.Type).UnmarshalXMLAttr(attr)
+			if err != nil {
+				return v, err
+			}
 		}
 	}
 	return v, nil
@@ -145,3 +169,17 @@ const (
 	// to reply).
 	HeadlineMessage MessageType = "headline"
 )
+
+// MarshalText ensures that the default value for MessageType is marshaled to XML as a
+// valid normal Message type, as per RFC 6121 § 5.2.2
+// It satisfies the encoding.TextMarshaler interface for MessageType.
+func (t MessageType) MarshalText() ([]byte, error) {
+	if t != NormalMessage &&
+		t != ChatMessage &&
+		t != ErrorMessage &&
+		t != GroupChatMessage &&
+		t != HeadlineMessage {
+		t = NormalMessage
+	}
+	return []byte(t), nil
+}
