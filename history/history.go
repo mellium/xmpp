@@ -22,7 +22,7 @@ import (
 // results.
 func Handle(h *Handler) mux.Option {
 	return func(m *mux.ServeMux) {
-		mux.Message("", xml.Name{Space: NS, Local: "result"}, h)(m)
+		mux.Message(stanza.NormalMessage, xml.Name{Space: NS, Local: "result"}, h)(m)
 	}
 }
 
