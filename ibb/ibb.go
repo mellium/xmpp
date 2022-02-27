@@ -49,7 +49,7 @@ const (
 func Handle(h *Handler) mux.Option {
 	data := xml.Name{Space: NS, Local: "data"}
 	return func(m *mux.ServeMux) {
-		mux.Message("", data, h)(m)
+		mux.Message(stanza.NormalMessage, data, h)(m)
 		mux.IQ(stanza.SetIQ, data, h)(m)
 		mux.IQ(stanza.SetIQ, xml.Name{Space: NS, Local: "open"}, h)(m)
 		mux.IQ(stanza.SetIQ, xml.Name{Space: NS, Local: "close"}, h)(m)
