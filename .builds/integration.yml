@@ -11,11 +11,8 @@ packages:
   - openssl
   - prosody
   - python-pip
+  - python-slixmpp
   - sendxmpp
-  # We cannot use a released version of Slixmpp because no released version
-  # currently supports Python 3.10 or greater.
-  # See: https://lab.louiz.org/poezio/slixmpp/-/issues/3467
-  - python-slixmpp-git
 sources:
   - https://git.sr.ht/~samwhited/xmpp
 environment:
