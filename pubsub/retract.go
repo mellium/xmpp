@@ -38,7 +38,5 @@ func DeleteIQ(ctx context.Context, s *xmpp.Session, iq stanza.IQ, node, id strin
 			xml.StartElement{Name: xml.Name{Local: "retract"}, Attr: retractAttrs},
 		),
 		xml.StartElement{Name: xml.Name{Space: NS, Local: "pubsub"}},
-	), stanza.IQ{
-		Type: stanza.SetIQ,
-	}, nil)
+	), iq, nil)
 }
