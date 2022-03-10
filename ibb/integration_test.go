@@ -164,7 +164,7 @@ func integrationRecv(session *xmpp.Session) func(context.Context, *testing.T, *i
 			m := mux.New(
 				stanza.NSClient,
 				ibb.Handle(ibbHandler),
-				mux.MessageFunc("", xml.Name{Local: "doneibb"}, func(msg stanza.Message, r xmlstream.TokenReadEncoder) error {
+				mux.MessageFunc(stanza.NormalMessage, xml.Name{Local: "doneibb"}, func(msg stanza.Message, r xmlstream.TokenReadEncoder) error {
 					bodyMessage := struct {
 						stanza.Message
 						Body string `xml:"body"`
@@ -222,11 +222,11 @@ func integrationSend(session *xmpp.Session, sid string) func(context.Context, *t
 			m := mux.New(
 				stanza.NSClient,
 				ibb.Handle(ibbHandler),
-				mux.MessageFunc("", xml.Name{Local: "startibb"}, func(msg stanza.Message, _ xmlstream.TokenReadEncoder) error {
+				mux.MessageFunc(stanza.NormalMessage, xml.Name{Local: "startibb"}, func(msg stanza.Message, _ xmlstream.TokenReadEncoder) error {
 					j <- msg.From
 					return nil
 				}),
-				mux.MessageFunc("", xml.Name{Local: "doneibb"}, func(msg stanza.Message, r xmlstream.TokenReadEncoder) error {
+				mux.MessageFunc(stanza.NormalMessage, xml.Name{Local: "doneibb"}, func(msg stanza.Message, r xmlstream.TokenReadEncoder) error {
 					bodyMessage := struct {
 						stanza.Message
 						Body string `xml:"body"`
