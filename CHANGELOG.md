@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - websocket: rewrote WebSocket discovery to remove TXT record lookups and fix
   broken XRD file lookups
 - pubsub: the IQ passed in by the user was not respected in `DeleteIQ`
+- mux: fix a possible crash if a whitespace keepalive is encountered
 
 [XEP-0115: Entity Capabilities]: https://xmpp.org/extensions/xep-0115.html
 [XEP-0300: Use of Cryptographic Hash Functions in XMPP]: https://xmpp.org/extensions/xep-0300.html

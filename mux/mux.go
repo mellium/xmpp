@@ -485,6 +485,9 @@ func forChildren(m *ServeMux, stanzaVal interface{}, t xmlstream.TokenReadEncode
 
 	for iterator.Next() {
 		start, _ := iterator.Current()
+		if start == nil {
+			continue
+		}
 
 		var err error
 		switch s := stanzaVal.(type) {
