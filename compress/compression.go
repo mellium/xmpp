@@ -8,6 +8,10 @@
 // Be advised: stream compression has many of the same security considerations
 // as TLS compression (see RFC3749 §6) and may be difficult to implement safely
 // without special expertise.
+//
+// Deprecated: the stream compression implemented in this package is no longer
+// recommended by the XSF and will be removed in a future version of this
+// library.
 package compress // import "mellium.im/xmpp/compress"
 
 import (
