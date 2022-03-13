@@ -55,7 +55,8 @@ const (
 	TypeText FieldType = "text-single"
 )
 
-type fieldOpt struct {
+// FieldOpt is an option on a field with type List or ListMulti.
+type FieldOpt struct {
 	Label string `xml:"label,attr"`
 	Value string `xml:"value"`
 }
@@ -85,7 +86,7 @@ type field struct {
 	label    string
 	desc     string
 	value    []string
-	option   []fieldOpt
+	option   []FieldOpt
 	required bool
 }
 
@@ -97,7 +98,7 @@ func (f *field) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		Desc     string     `xml:"desc"`
 		Required *string    `xml:"required"`
 		Value    []string   `xml:"value"`
-		Option   []fieldOpt `xml:"option"`
+		Option   []FieldOpt `xml:"option"`
 	}{}
 
 	err := d.DecodeElement(&s, &start)

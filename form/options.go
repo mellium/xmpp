@@ -80,7 +80,7 @@ func Label(s string) Option {
 // It has no effect on any non-list field type.
 func ListItem(label, value string) Option {
 	return func(f *field) {
-		f.option = append(f.option, fieldOpt{
+		f.option = append(f.option, FieldOpt{
 			Label: label,
 			Value: value,
 		})

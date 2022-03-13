@@ -186,6 +186,21 @@ func (d *Data) Raw(id string) (v []string, ok bool) {
 	return nil, false
 }
 
+// GetOptions returns the list of options for a field of type List or ListMulti.
+func (d *Data) GetOptions(id string) (opts []FieldOpt, ok bool) {
+	var field *field
+	for _, f := range d.fields {
+		if f.varName == id {
+			field = &f
+			break
+		}
+	}
+	if field == nil {
+		return opts, false
+	}
+	return field.option, true
+}
+
 // Get looks up the value submitted for a form field.
 // If the value has not been set yet and no default value exists, ok will be
 // false.
