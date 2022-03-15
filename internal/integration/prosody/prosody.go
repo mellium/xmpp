@@ -337,6 +337,11 @@ func defaultConfig(cmd *integration.Cmd) error {
 	return ConfigFile(cfg)(cmd)
 }
 
+// Bidi enables bidirectional S2S connections.
+func Bidi() integration.Option {
+	return Modules("s2s_bidi")
+}
+
 // Test starts a Prosody instance and returns a function that runs subtests
 // using t.Run.
 // Multiple calls to the returned function will result in uniquely named
