@@ -189,9 +189,9 @@ func (d *Data) Raw(id string) (v []string, ok bool) {
 // GetOptions returns the list of options for a field of type List or ListMulti.
 func (d *Data) GetOptions(id string) (opts []FieldOpt, ok bool) {
 	var field *field
-	for _, f := range d.fields {
+	for i, f := range d.fields {
 		if f.varName == id {
-			field = &f
+			field = &d.fields[i]
 			break
 		}
 	}
