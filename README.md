@@ -8,7 +8,22 @@
 <a href="https://opencollective.com/mellium" alt="Donate on Open Collective"><img src="https://opencollective.com/mellium/donate/button@2x.png?color=blue" width="200"/></a>
 
 
-An XMPP library in Go.
+An Extensible Messaging and Presence Protocol (XMPP) library in Go.
+XMPP (sometimes known as "Jabber") is a protocol for near-real-time data
+transmission, most commonly used for instant messaging, video chat signaling,
+and related functionality.
+This library aims to provide general protocol support with additional packages
+that focus on modern instant messaging use cases.
+
+This library supports instant messaging features such as:
+
+- Individual and group chat,
+- Blocking and unblocking users,
+- Forms and commands (eg. for controlling bots and gateways),
+- Retrieving message history,
+- General publish-subscribe semantics for storing state and data,
+- Parsing simple text styling (eg. bold, italic, quotes, etc.),
+- and more!
 
 To use it in your project, import it (or any of its other packages) like so:
 
