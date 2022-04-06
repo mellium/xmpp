@@ -61,12 +61,8 @@ tasks:
       go mod tidy
       git diff --exit-code -- go.mod go.sum
       cd examples/
-      for d in ./*/; do
-        pushd $d
-        go mod tidy
-        git diff --exit-code -- go.mod go.sum
-        popd
-      done
+      go mod tidy
+      git diff --exit-code -- go.mod go.sum
   - contributors: |
       cd xmpp/
       function on_err {
