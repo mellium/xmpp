@@ -5,9 +5,7 @@ packages:
   # - ejabberd
   - go
   - lua52-sec
-  # Temporarily disabled due to a bug.
-  # See: https://mellium.im/issue/222
-  # - mcabber
+  - mcabber
   - openssl
   - prosody
   - python-pip
