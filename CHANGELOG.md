@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## v0.21.2 — 2022-04-07
 
 ### Added
 
@@ -17,6 +17,13 @@ All notable changes to this project will be documented in this file.
 - xmpp: ability to create informational-only stream features
 
 
+### Deprecated
+
+- compress: the `compress` package has been deprecated and copied to the
+  [`legacy`] module as [`legacy/compress`], it will be removed entirely in a
+  future release
+
+
 ### Fixed
 
 - websocket: rewrote WebSocket discovery to remove TXT record lookups and fix
@@ -24,6 +31,8 @@ All notable changes to this project will be documented in this file.
 - pubsub: the IQ passed in by the user was not respected in `DeleteIQ`
 - mux: fix a possible crash if a whitespace keepalive is encountered
 
+[`legacy`]: https://mellium.im/legacy/
+[`legacy/compress`]: https://mellium.im/legacy/compress/
 [XEP-0115: Entity Capabilities]: https://xmpp.org/extensions/xep-0115.html
 [XEP-0300: Use of Cryptographic Hash Functions in XMPP]: https://xmpp.org/extensions/xep-0300.html
 [XEP-0402: PEP Native Bookmarks]: https://xmpp.org/extensions/xep-0402.html
