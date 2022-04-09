@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Breaking
+
+- compress: the compress package has been removed; users of this package can
+  find a drop in replacement at [mellium.im/legacy/compress]
+
+
 ### Fixed
 
 - internal/discover: a resource leak where XRD response bodies were unlimited in
@@ -11,6 +17,8 @@ All notable changes to this project will be documented in this file.
   XRD files should never be large
 - internal/discover: a resource leak where the XRD response body was not closed
   until the context timed out
+
+[mellium.im/legacy/compress]: https://mellium.im/legacy/compress/
 
 
 ## v0.21.2 — 2022-04-07
