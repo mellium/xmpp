@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Fixed
+
+- internal/discover: a resource leak where XRD response bodies were unlimited in
+  size and could waste bandwidth until the context was canceled even though the
+  XRD files should never be large
+
+
 ## v0.21.2 — 2022-04-07
 
 ### Added
