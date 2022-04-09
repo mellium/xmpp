@@ -216,6 +216,8 @@ func getHostMetaXML(ctx context.Context, client *http.Client, name string) (xrd 
 	if err != nil {
 		return xrd, err
 	}
+	/* #nosec */
+	defer resp.Body.Close()
 	// If the server sends us a lot of data it's probably good to just error out.
 	body := io.LimitReader(resp.Body, http.DefaultMaxHeaderBytes)
 	err = xml.NewDecoder(body).Decode(&xrd)
