@@ -131,9 +131,15 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 				if !ok {
 					return mask, nil, fmt.Errorf("xmpp: bind expected IQ start but got %T", tok)
 				}
+
+				iqNamespace := stanza.NSClient
+				if session.State()&S2S == S2S {
+					iqNamespace = stanza.NSServer
+				}
+
 				resReq := bindIQ{}
 				switch start.Name {
-				case xml.Name{Space: stanza.NSClient, Local: "iq"}:
+				case xml.Name{Space: iqNamespace, Local: "iq"}:
 					if err = d.DecodeElement(&resReq, &start); err != nil {
 						return mask, nil, err
 					}
@@ -156,7 +162,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 
 				resp := bindIQ{
 					IQ: stanza.IQ{
-						XMLName: xml.Name{Space: stanza.NSServer, Local: "iq"},
+						XMLName: xml.Name{Space: iqNamespace, Local: "iq"},
 						ID:      iqid,
 						From:    resReq.IQ.To,
 						To:      resReq.IQ.From,
