@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
   XRD files should never be large
 - internal/discover: a resource leak where the XRD response body was not closed
   until the context timed out
+- xmpp: a bug where resource binding would respond as if it were a
+  client-to-server connection even on server-to-server streams
 
 [mellium.im/legacy/compress]: https://mellium.im/legacy/compress/
 
