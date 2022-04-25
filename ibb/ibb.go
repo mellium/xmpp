@@ -61,7 +61,7 @@ func Handle(h *Handler) mux.Option {
 type Handler struct {
 	mu      sync.Mutex
 	streams map[string]*Conn
-	l       map[string]Listener
+	l       map[string]*Listener
 	lM      sync.Mutex
 }
 
@@ -69,10 +69,10 @@ type Handler struct {
 //
 // If a listener has already been created for the given session it is returned
 // unaltered.
-func (h *Handler) Listen(s *xmpp.Session) Listener {
+func (h *Handler) Listen(s *xmpp.Session) *Listener {
 	addrStr := s.LocalAddr().String()
 	if h.l == nil {
-		h.l = make(map[string]Listener)
+		h.l = make(map[string]*Listener)
 	}
 	h.lM.Lock()
 	defer h.lM.Unlock()
@@ -80,7 +80,7 @@ func (h *Handler) Listen(s *xmpp.Session) Listener {
 	if ok {
 		return l
 	}
-	l = Listener{
+	l = &Listener{
 		s: s,
 		h: h,
 		c: make(chan *Conn),
@@ -177,6 +177,16 @@ func handleOpen(h *Handler, iq openIQ, e xmlstream.Encoder) error {
 	}
 	conn := newConn(h, l.s, iq, true, MaxBufferSize)
 	h.addStream(iq.Open.SID, conn)
+
+	l.eLock.Lock()
+	defer l.eLock.Unlock()
+	key := iq.From.String() + ":" + iq.Open.SID
+	expect, ok := l.expected[key]
+	if ok {
+		delete(l.expected, key)
+		expect.c <- conn
+		return nil
+	}
 	l.c <- conn
 	return nil
 }

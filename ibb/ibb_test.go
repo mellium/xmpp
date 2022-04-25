@@ -9,13 +9,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"testing"
 
 	"mellium.im/xmpp/ibb"
 	"mellium.im/xmpp/internal/xmpptest"
+	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 )
+
+var _ net.Listener = (*ibb.Listener)(nil)
 
 func TestSendSelf(t *testing.T) {
 	clientIBB := &ibb.Handler{}
@@ -167,5 +171,42 @@ func TestBufferFull(t *testing.T) {
 	err = clientConn.Close()
 	if !errors.Is(err, stanza.Error{Type: stanza.Wait, Condition: stanza.ResourceConstraint}) {
 		t.Fatalf("close expected resource-constraint error, got: %v", err)
+	}
+}
+
+func TestExpect(t *testing.T) {
+	clientIBB := &ibb.Handler{}
+	serverIBB := &ibb.Handler{}
+	clientM := mux.New(
+		stanza.NSClient,
+		ibb.Handle(clientIBB),
+	)
+	serverM := mux.New(
+		stanza.NSClient,
+		ibb.Handle(serverIBB),
+	)
+	s := xmpptest.NewClientServer(
+		xmpptest.ClientHandler(clientM),
+		xmpptest.ServerHandler(serverM),
+	)
+
+	accept := make(chan error)
+	const sid = "1234"
+	go func() {
+		ln := serverIBB.Listen(s.Server)
+		_, err := ln.Expect(context.Background(), jid.JID{}, sid)
+		if err != nil {
+			accept <- err
+			return
+		}
+		close(accept)
+	}()
+
+	_, err := clientIBB.OpenIQ(context.Background(), stanza.IQ{To: s.Server.LocalAddr()}, s.Client, true, 20, sid)
+	if err != nil {
+		t.Fatalf("error opening connection: %v", err)
+	}
+	if err := <-accept; err != nil {
+		t.Fatalf("error accepting connection: %v", err)
 	}
 }

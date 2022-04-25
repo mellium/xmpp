@@ -4,10 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- ibb: the `Expect` method can be used to accept only pre-negotiated IBB
+  sessions
+
+
 ### Breaking
 
 - compress: the compress package has been removed; users of this package can
   find a drop in replacement at [mellium.im/legacy/compress]
+- ibb: the `Listener` type is now a pointer type
 
 
 ### Fixed
