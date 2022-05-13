@@ -31,10 +31,6 @@ var componentClientTests = [...]componentClientTest{
 		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net'></stream:stream>`,
 		err:    errors.New("component: expected acknowledgement or error start token from server"),
 	},
-	//0: {
-	//	server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net'></stream:stream>`,
-	//	err:    errors.New("component: expected server stream to contain stream ID"),
-	//},
 	1: {
 		server: `<stream:stream xmlns='jabber:component:accept' xmlns:stream='http://etherx.jabber.org/streams' from='example.net' id='1234'>`,
 		err:    &xml.SyntaxError{Line: 1, Msg: "unexpected EOF"},

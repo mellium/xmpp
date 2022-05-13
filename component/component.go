@@ -46,7 +46,9 @@ func ReceiveSession(ctx context.Context, addr jid.JID, secret []byte, rw io.Read
 // side) the returned xmpp.Negotiator will panic.
 func Negotiator(addr jid.JID, secret []byte, recv bool) xmpp.Negotiator {
 	return func(ctx context.Context, in, out *stream.Info, s *xmpp.Session, _ interface{}) (mask xmpp.SessionState, _ io.ReadWriter, _ interface{}, err error) {
-		d := xml.NewDecoder(s.Conn())
+		r := s.TokenReader()
+		defer r.Close()
+		d := xml.NewTokenDecoder(r)
 
 		if recv {
 			// If we're the receiving entity wait for a new stream, then send one in

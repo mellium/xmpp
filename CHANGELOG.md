@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+- component: ensure that the stream namespace is set on the session so that the
+  `mux` package and anything else matching on namespaces can be used with
+  component connections
+
+
 ### Added
 
 - ibb: the `Expect` method can be used to accept only pre-negotiated IBB
