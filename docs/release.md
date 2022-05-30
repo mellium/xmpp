@@ -18,5 +18,6 @@ When making a release, remember to do the following:
   - Post it on https://fosstodon.org/@mellium
   - Add it to the XMPP newsletter https://yopad.eu/p/xmpp-newsletter-365days
   - Post it on Reddit https://www.reddit.com/r/xmpp/
+  - Post it on Lemmy https://community.xmpp.net/c/mellium
   - If there's anything worth demoing sign up for Office Hours
     https://wiki.xmpp.org/web/XMPP_Office_Hours
