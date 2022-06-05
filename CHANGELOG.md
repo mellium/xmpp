@@ -24,6 +24,11 @@ All notable changes to this project will be documented in this file.
 - ibb: the `Listener` type is now a pointer type
 
 
+### Deprecated
+
+- ibr2: deprecate legacy version of the extensible in-band registration protocol
+
+
 ### Fixed
 
 - internal/discover: a resource leak where XRD response bodies were unlimited in

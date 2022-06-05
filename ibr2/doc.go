@@ -6,7 +6,6 @@
 
 // Package ibr2 implements Extensible In-Band Registration.
 //
-// BE ADVISED: This API is incomplete and is subject to change.
-// Core functionality of this package is missing, and the entire package may be
-// removed at any time.
+// Deprecated: this package implements an old version of the ibr2 protocol and
+// should not be used.
 package ibr2 // import "mellium.im/xmpp/ibr2"
