@@ -10,7 +10,8 @@ package styling_test
 // This file is a tool that exports test data in JSON format for other libraries
 // and languages to use.
 // Running "go test -tags export" will cause the following TestMain function to
-// run which will spit out the tests to standard out.
+// run which will spit out the tests to the file "decoder_tests.json" or
+// whatever filename is specified with the "-export" flag.
 
 import (
 	"encoding/json"
