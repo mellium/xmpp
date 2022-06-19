@@ -15,12 +15,12 @@
 // for creating your own multiplexers, and the stanza package which provides
 // functionality for transmitting XMPP primitives and errors.
 //
-// Session Negotiation
+// # Session Negotiation
 //
 // There are 9 functions for establishing an XMPP session.
 // Their names are matched by the regular expression:
 //
-//     (New|Receive|Dial)(Client|Server)?Session
+//	(New|Receive|Dial)(Client|Server)?Session
 //
 // If "Dial" is present it means the function uses sane defaults to dial a TCP
 // connection before negotiating an XMPP session on it.
@@ -28,13 +28,13 @@
 // a client-to-server (c2s) or server-to-server (s2s) connection respectively.
 // These methods are the most convenient way to quickly start a connection.
 //
-//     session, err := xmpp.DialClientSession(
-//         context.TODO(),
-//         jid.MustParse("me@example.net"),
-//         xmpp.StartTLS(&tls.Config{…}),
-//         xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
-//         xmpp.BindResource(),
-//     )
+//	session, err := xmpp.DialClientSession(
+//	    context.TODO(),
+//	    jid.MustParse("me@example.net"),
+//	    xmpp.StartTLS(&tls.Config{…}),
+//	    xmpp.SASL("", pass, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
+//	    xmpp.BindResource(),
+//	)
 //
 // If control over DNS or HTTP-based service discovery is desired, the user can
 // use the dial package to create a connection and then use one of the other
@@ -53,17 +53,17 @@
 // such as the WebSocket subprotocol from the websocket package, or the Jabber
 // Component Protocol from the component package.
 //
-//     conn, err := dial.Client(context.TODO(), "tcp", addr)
-//     …
-//     session, err := xmpp.NewSession(
-//         context.TODO(), addr.Domain(), addr, conn, xmpp.Secure,
-//         xmpp.NewNegotiator(func(*xmpp.Session, *xmpp.StreamConfig) {
-//             return xmpp.StreamConfig{
-//                 Lang: "en",
-//                 …
-//             },
-//         }),
-//     )
+//	conn, err := dial.Client(context.TODO(), "tcp", addr)
+//	…
+//	session, err := xmpp.NewSession(
+//	    context.TODO(), addr.Domain(), addr, conn, xmpp.Secure,
+//	    xmpp.NewNegotiator(func(*xmpp.Session, *xmpp.StreamConfig) {
+//	        return xmpp.StreamConfig{
+//	            Lang: "en",
+//	            …
+//	        },
+//	    }),
+//	)
 //
 // The default Negotiator and related functions use a list of StreamFeature's to
 // negotiate the state of the session.
@@ -73,7 +73,7 @@
 // StreamFeatures defined in this module are safe for concurrent use by multiple
 // goroutines and may be created once and then re-used.
 //
-// Handling Stanzas
+// # Handling Stanzas
 //
 // Unlike HTTP, the XMPP protocol is asynchronous, meaning that both clients and
 // servers can accept and send requests at any time and responses are not always
@@ -97,13 +97,13 @@
 // events over the output stream.
 // Their names are matched by the regular expression:
 //
-//     (Send|Encode)(Message|Presence|IQ)?(Element)?
+//	(Send|Encode)(Message|Presence|IQ)?(Element)?
 //
 // There are also four methods specifically for sending IQs and handling their
 // responses.
 // Their names are matched by:
 //
-//     (Unmarshal|Iter)IQ(Element)?
+//	(Unmarshal|Iter)IQ(Element)?
 //
 // If "Send" is present it means that the method copies one XML token stream
 // into the output stream, while "Encode" indicates that it takes a value and
@@ -114,8 +114,8 @@
 // and not the full element to be transmitted and that it should be wrapped in
 // the provided start element token or stanza.
 //
-//     // Send initial presence to let the server know we want to receive messages.
-//     _, err = session.Send(context.TODO(), stanza.Presence{}.Wrap(nil))
+//	// Send initial presence to let the server know we want to receive messages.
+//	_, err = session.Send(context.TODO(), stanza.Presence{}.Wrap(nil))
 //
 // For SendIQ and related methods to correctly handle IQ responses, and to make
 // the common case of polling for incoming XML on the input stream—and possibly
@@ -128,24 +128,24 @@
 // stream to the end of the element when the handler returns (even if the
 // handler did not consume the entire element).
 //
-//     err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-//         d := xml.NewTokenDecoder(t)
+//	err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+//	    d := xml.NewTokenDecoder(t)
 //
-//         // Ignore anything that's not a message.
-//         if start.Name.Local != "message" {
-//             return nil
-//         }
+//	    // Ignore anything that's not a message.
+//	    if start.Name.Local != "message" {
+//	        return nil
+//	    }
 //
-//         msg := struct {
-//             stanza.Message
-//             Body string `xml:"body"`
-//         }{}
-//         err := d.DecodeElement(&msg, start)
-//         …
-//         if msg.Body != "" {
-//             log.Println("Got message: %q", msg.Body)
-//         }
-//     }))
+//	    msg := struct {
+//	        stanza.Message
+//	        Body string `xml:"body"`
+//	    }{}
+//	    err := d.DecodeElement(&msg, start)
+//	    …
+//	    if msg.Body != "" {
+//	        log.Println("Got message: %q", msg.Body)
+//	    }
+//	}))
 //
 // It isn't always practical to put all of your logic for handling elements into
 // a single function or method, so the mux package contains an XML multiplexer

@@ -290,14 +290,14 @@ func Modules(mod ...string) integration.Option {
 // As a special case, if v is nil the key is written to the file directly with
 // no equals sign.
 //
-//     -- Set("foo", "bar")
-//     foo = "bar"
+//	-- Set("foo", "bar")
+//	foo = "bar"
 //
-//     -- Set("foo", 123)
-//     foo = 123
+//	-- Set("foo", 123)
+//	foo = 123
 //
-//     -- Set(`Component "conference.example.org" "muc"`, nil)
-//     Component "conference.example.org" "muc"
+//	-- Set(`Component "conference.example.org" "muc"`, nil)
+//	Component "conference.example.org" "muc"
 func Set(key string, v interface{}) integration.Option {
 	return func(cmd *integration.Cmd) error {
 		cfg := getConfig(cmd)

@@ -13,7 +13,7 @@
 // input and provides you with a bitmask of styles that should be applied to
 // each token.
 //
-// Format
+// # Format
 //
 // Message Styling borrows several familiar formatting options from Markdown
 // (though it is much simpler and not compatible with Markdown parsers).
@@ -28,15 +28,15 @@
 //
 // There are also a few block formats such as a block quotation:
 //
-//     > A quotation
-//     >> Can be multi-level
+//	> A quotation
+//	>> Can be multi-level
 //
 // And a preformatted text block which can have no child blocks, should be
 // displayed in a monospace font, and which should not be re-wrapped:
 //
-//     ```an optional tag may go here.
-//     Lines of pre-formatted text go here.
-//     ```
+//	```an optional tag may go here.
+//	Lines of pre-formatted text go here.
+//	```
 package styling // import "mellium.im/xmpp/styling"
 
 import (

@@ -16,9 +16,9 @@
 // email with the resourcepart appended after a forward slash.
 // For example, the following are all valid JIDs:
 //
-//     shakespeare@example.net
-//     shakespeare@example.net/phone-b5c93ded
-//     example.net
+//	shakespeare@example.net
+//	shakespeare@example.net/phone-b5c93ded
+//	example.net
 //
 // The first represents the account "shakespeare" on the service "example.net",
 // the second represents a specific phone connected to that account, and the

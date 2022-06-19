@@ -21,18 +21,18 @@
 // It is normally registered with a multiplexer such as the one found in the mux
 // package:
 //
-//     mucClient := muc.Client{}
-//     m := mux.New(
-//         muc.HandleClient(mucClient),
-//     )
-//     channel, err := mucClient.Join(…)
+//	mucClient := muc.Client{}
+//	m := mux.New(
+//	    muc.HandleClient(mucClient),
+//	)
+//	channel, err := mucClient.Join(…)
 //
 // Once the Join method has been called the resulting channel type can be used
 // to perform actions on the channel such as setting the subject, rejoining (to
 // force syncronize state), or leaving the channel.
 //
-//     channel, err := mucClient.Join(…)
-//     channel.Subject(context.Background(), "Bridge operation and tactical readiness")
+//	channel, err := mucClient.Join(…)
+//	channel.Subject(context.Background(), "Bridge operation and tactical readiness")
 package muc // import "mellium.im/xmpp/muc"
 
 import (

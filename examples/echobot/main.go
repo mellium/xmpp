@@ -7,7 +7,7 @@
 //
 // For more information try running:
 //
-//     echobot -help
+//	echobot -help
 package main
 
 import (

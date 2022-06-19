@@ -11,26 +11,26 @@
 // method can be used to add command line arguments to the Python scripts.
 // For example:
 //
-//     from slixmpp_client import Daemon
-//     import slixmpp
+//	from slixmpp_client import Daemon
+//	import slixmpp
 //
 //
-//     class Ping(Daemon):
-//         def prepare_argparse(self) -> None:
-//             super().prepare_argparse()
+//	class Ping(Daemon):
+//	    def prepare_argparse(self) -> None:
+//	        super().prepare_argparse()
 //
-//             self.argparse.add_argument(
-//                 "-j",
-//                 type=slixmpp.jid.JID,
-//                 help="The JID to ping",
-//             )
+//	        self.argparse.add_argument(
+//	            "-j",
+//	            type=slixmpp.jid.JID,
+//	            help="The JID to ping",
+//	        )
 //
-//         def configure(self):
-//             super().configure()
-//             self.client.register_plugin('xep_0199') # Ping
+//	    def configure(self):
+//	        super().configure()
+//	        self.client.register_plugin('xep_0199') # Ping
 //
-//         async def run(self) -> None:
-//             await self.client.plugin['xep_0199'].ping(jid=self.args.j)
+//	    async def run(self) -> None:
+//	        await self.client.plugin['xep_0199'].ping(jid=self.args.j)
 //
 // For more information see slixmpp_client.py, python/xmpptest.py, and the
 // slixmpp documentation.

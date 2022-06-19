@@ -10,24 +10,24 @@
 // method can be used to add command line arguments to the Python scripts.
 // For example:
 //
-//     from aioxmpp_client import Daemon
-//     import aioxmpp
+//	from aioxmpp_client import Daemon
+//	import aioxmpp
 //
 //
-//     class Ping(Daemon):
-//         def prepare_argparse(self) -> None:
-//             super().prepare_argparse()
+//	class Ping(Daemon):
+//	    def prepare_argparse(self) -> None:
+//	        super().prepare_argparse()
 //
-//             def jid(s):
-//                 return aioxmpp.JID.fromstr(s)
-//             self.argparse.add_argument(
-//                 "-j",
-//                 type=jid,
-//                 help="The JID to ping",
-//             )
+//	        def jid(s):
+//	            return aioxmpp.JID.fromstr(s)
+//	        self.argparse.add_argument(
+//	            "-j",
+//	            type=jid,
+//	            help="The JID to ping",
+//	        )
 //
-//         async def run(self) -> None:
-//             await aioxmpp.ping.ping(self.client, self.args.j)
+//	    async def run(self) -> None:
+//	        await aioxmpp.ping.ping(self.client, self.args.j)
 //
 // For more information see aioxmpp_client.py, python/xmpptest.py, and the
 // aioxmpp documentation.

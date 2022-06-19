@@ -24,10 +24,10 @@ const NS = `urn:xmpp:blocklist`
 // The JID matches the blocklist JID if any of the following compare to the
 // blocklist JID (falling back in this order):
 //
-//  - Full JID (user@domain/resource)
-//  - Bare JID (user@domain)
-//  - Full domain (domain/resource)
-//  - Bare domain
+//   - Full JID (user@domain/resource)
+//   - Bare JID (user@domain)
+//   - Full domain (domain/resource)
+//   - Bare domain
 func Match(j1, j2 jid.JID) bool {
 	return j1.Equal(j2) ||
 		j1.Bare().Equal(j2) ||

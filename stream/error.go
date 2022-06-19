@@ -197,9 +197,9 @@ func (s Error) Is(err error) bool {
 // Error satisfies the builtin error interface and returns the name of the
 // StreamError. For instance, given the error:
 //
-//     <stream:error>
-//       <restricted-xml xmlns="urn:ietf:params:xml:ns:xmpp-streams"/>
-//     </stream:error>
+//	<stream:error>
+//	  <restricted-xml xmlns="urn:ietf:params:xml:ns:xmpp-streams"/>
+//	</stream:error>
 //
 // Error() would return "restricted-xml".
 func (s Error) Error() string {

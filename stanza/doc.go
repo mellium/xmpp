@@ -21,7 +21,7 @@
 // Stanzas created using either API are not guaranteed to be valid or enforce
 // specific stanza semantics.
 //
-// Custom Stanzas
+// # Custom Stanzas
 //
 // The stanza types in this package aren't very useful by themselves. To
 // transmit meaningful data our stanzas must contain a payload.
@@ -32,27 +32,26 @@
 // To implement this in our own code we might create a Ping struct similar to
 // the following:
 //
-//    // PingIQ is an IQ stanza with an XEP-0199: XMPP Ping payload.
-//    type PingIQ struct {
-//        stanza.IQ
+//	// PingIQ is an IQ stanza with an XEP-0199: XMPP Ping payload.
+//	type PingIQ struct {
+//	    stanza.IQ
 //
-//        Ping struct{} `xml:"urn:xmpp:ping ping"`
-//    }
-//
+//	    Ping struct{} `xml:"urn:xmpp:ping ping"`
+//	}
 //
 // For details on marshaling and the use of the xml tag, refer to the
 // encoding/xml package.
 //
 // We could also create a similar stanza with the token stream API:
 //
-//    // PingIQ returns an xml.TokenReader that outputs a new IQ stanza with a
-//    // ping payload.
-//    func PingIQ(id string, to jid.JID) xml.TokenReader {
-//        start := xml.StartElement{Name: xml.Name{Space: "urn:xmpp:ping", Local: "ping"}}
-//        return stanza.IQ{
-//            ID: id,
-//            To: to,
-//            Type: stanza.GetIQ,
-//        }.Wrap(start)
-//    }
+//	// PingIQ returns an xml.TokenReader that outputs a new IQ stanza with a
+//	// ping payload.
+//	func PingIQ(id string, to jid.JID) xml.TokenReader {
+//	    start := xml.StartElement{Name: xml.Name{Space: "urn:xmpp:ping", Local: "ping"}}
+//	    return stanza.IQ{
+//	        ID: id,
+//	        To: to,
+//	        Type: stanza.GetIQ,
+//	    }.Wrap(start)
+//	}
 package stanza // import "mellium.im/xmpp/stanza"

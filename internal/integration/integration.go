@@ -7,7 +7,7 @@
 // The integration test package should normally be used from within a file that
 // does not build unless integration tests are being run:
 //
-//     //go:build integration
+//	//go:build integration
 //
 // It should also normally be used from within a test containing the term
 // "Integration".
@@ -28,20 +28,20 @@
 // For example, running two tests against Prosody and one against Ejabberd might
 // look like the following:
 //
-//     func TestIntegrationSendPing(t *testing.T) {
-//     	prosodyRun := prosody.Test(context.TODO(), t,
-//     		integration.Log(),
-//     		prosody.ListenC2S(),
-//     	)
-//     	prosodyRun(integrationSendPing)
-//     	prosodyRun(integrationRecvPing)
+//	func TestIntegrationSendPing(t *testing.T) {
+//		prosodyRun := prosody.Test(context.TODO(), t,
+//			integration.Log(),
+//			prosody.ListenC2S(),
+//		)
+//		prosodyRun(integrationSendPing)
+//		prosodyRun(integrationRecvPing)
 //
-//     	ejabberdRun := ejabberd.Test(context.TODO(), t,
-//     		integration.Log(),
-//     		ejabberd.ListenC2S(),
-//     	)
-//     	ejabberdRun(integrationSendPing)
-//     }
+//		ejabberdRun := ejabberd.Test(context.TODO(), t,
+//			integration.Log(),
+//			ejabberd.ListenC2S(),
+//		)
+//		ejabberdRun(integrationSendPing)
+//	}
 //
 // For more information see the SubtestRunner type and the various Option
 // functions.
@@ -54,15 +54,15 @@
 // DialClient shortcut to quickly create a connection to the prosody server spun
 // up for the test.
 //
-//     func integrationSendPing(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
-//     	j, pass := cmd.User()
-//     	session, err := cmd.DialClient(ctx, j, t,
-//     		xmpp.StartTLS(&tls.Config{
-//     			InsecureSkipVerify: true,
-//     		}),
-//     		xmpp.SASL("", pass, sasl.Plain),
-//     		xmpp.BindResource(),
-//     	)
+//	func integrationSendPing(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
+//		j, pass := cmd.User()
+//		session, err := cmd.DialClient(ctx, j, t,
+//			xmpp.StartTLS(&tls.Config{
+//				InsecureSkipVerify: true,
+//			}),
+//			xmpp.SASL("", pass, sasl.Plain),
+//			xmpp.BindResource(),
+//		)
 //
 // For more information see the Cmd type.
 package integration // import "mellium.im/xmpp/internal/integration"

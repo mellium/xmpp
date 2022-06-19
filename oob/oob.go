@@ -22,15 +22,15 @@ const (
 
 // IQ represents an OOB data query; for instance:
 //
-//     <iq type='set'
-//         from='feste@example.net/asegasd'
-//         to='malvolio@jabber.org/apkjase'
-//         id='asiepjg'>
-//       <query xmlns='jabber:iq:oob'>
-//         <url>https://xmpp.org/images/promo/xmpp_server_guide_2017.pdf</url>
-//         <desc>XMPP Server Setup Guide 2017</desc>
-//       </query>
-//     </iq>
+//	<iq type='set'
+//	    from='feste@example.net/asegasd'
+//	    to='malvolio@jabber.org/apkjase'
+//	    id='asiepjg'>
+//	  <query xmlns='jabber:iq:oob'>
+//	    <url>https://xmpp.org/images/promo/xmpp_server_guide_2017.pdf</url>
+//	    <desc>XMPP Server Setup Guide 2017</desc>
+//	  </query>
+//	</iq>
 type IQ struct {
 	stanza.IQ
 	Query Query
