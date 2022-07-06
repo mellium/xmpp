@@ -1,4 +1,5 @@
-daemonize = false
+prosody_user = "prosody"
+run_as_root = true
 use_ipv6 = false
 pidfile = "{{ filepathJoin .ConfigDir "prosody.pid" }}"
 admins = { {{ joinQuote .Admins }} }

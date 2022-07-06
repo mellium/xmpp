@@ -349,6 +349,7 @@ func Bidi() integration.Option {
 // When all subtests have completed, the daemon is stopped.
 func Test(ctx context.Context, t *testing.T, opts ...integration.Option) integration.SubtestRunner {
 	opts = append(opts, defaultConfig,
+		integration.Args("-F"),
 		integration.Shutdown(ctlFunc(ctx, "stop")))
 	return integration.Test(ctx, cmdName, t, opts...)
 }
