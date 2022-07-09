@@ -11,7 +11,7 @@ it is a sensitive security issue, in which case keep reading).
 Always open an issue before submitting a patch unless the PR is trivial, all PRs
 should be linked to an issue and should generally only contain a single logical
 change.
-Don't forget to check the issue tracker ([including closed issues]) for existing
+Don't forget to check the issue tracker (including [closed issues]) for existing
 issues and changes before you start work.
 
 Once you file an issue or find an existing issue, make sure to mention that
@@ -133,14 +133,14 @@ conditions.
 
 
 [issues]: https://mellium.im/issue
-[including closed issues]: https://github.com/mellium/xmpp/issues?q=is%3Aissue
-[pull request]: https://github.com/mellium/xmpp/pulls
-[`good first issue`]: https://github.com/mellium/xmpp/labels/good%20first%20issue
+[closed issues]: https://codeberg.org/mellium/xmpp/issues?state=closed
+[pull request]: https://codeberg.org/mellium/xmpp/pulls
+[`good first issue`]: https://codeberg.org/mellium/xmpp/issues?labels=57316
 [`security@mellium.im`]: mailto:security@mellium.im
 [`dial`]: https://pkg.go.dev/mellium.im/xmpp/dial
 [benchstat]: https://godoc.org/golang.org/x/perf/cmd/benchstat
 [developercertificate.org]: https://developercertificate.org/
-[DCO]: https://github.com/mellium/xmpp/blob/main/DCO
-[LICENSE]: https://github.com/mellium/xmpp/blob/main/LICENSE
+[DCO]: https://codeberg.org/mellium/xmpp/src/branch/main/DCO
+[LICENSE]: https://codeberg.org/mellium/xmpp/src/branch/main/LICENSE
 [SECURITY.md]: https://mellium.im/docs/SECURITY
 [Code of Conduct]: https://mellium.im/docs/CODE_OF_CONDUCT

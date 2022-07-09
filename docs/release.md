@@ -7,9 +7,9 @@ When making a release, remember to do the following:
 - Tag the release with `git tag -a --cleanup=whitespace vX.Y.Z`
 - Copy the changelog for the release in as the annotation, making sure the
   headers are correct
-- Create a new release on GitHub (https://github.com/mellium/xmpp/releases)
+- Create a new release on Codeberg (https://codeberg.org/mellium/xmpp/releases)
   using the same annotation, making sure headers make sense (remove the top
-  level one, GitHub will create that from the tag)
+  level one, Codeberg will create that from the tag)
 - Do a `go get mellium.im/xmpp@release` (on a machine that has not disabled the
   proxy) to trigger the docs being built
 - Write up a release announcement on https://opencollective.com/mellium
