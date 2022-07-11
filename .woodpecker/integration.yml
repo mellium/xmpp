@@ -22,9 +22,7 @@ pipeline:
 
         EOF
       - apk update
-      - |
-        apk add py3-slixmpp py3-aioxmpp \
-                openssl prosody
+      - apk add py3-slixmpp py3-aioxmpp openssl prosody lua-unbound
       - python3 --version
       - go test -v -tags "integration" -run Integration ./...
 
