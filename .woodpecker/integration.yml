@@ -18,6 +18,9 @@ pipeline:
 
         http://dl-cdn.alpinelinux.org/alpine/v$$(cat /etc/alpine-release | cut -d'.' -f1,2)/main
         http://dl-cdn.alpinelinux.org/alpine/v$$(cat /etc/alpine-release | cut -d'.' -f1,2)/community
+        # Remove after py3-tzlocal is in the golang:alpine releases community
+        # channel.
+        http://dl-cdn.alpinelinux.org/alpine/edge/community
         http://dl-cdn.alpinelinux.org/alpine/edge/testing
 
         EOF
