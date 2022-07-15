@@ -25,7 +25,7 @@ pipeline:
 
         EOF
       - apk update
-      - apk add py3-slixmpp py3-aioxmpp openssl prosody lua-unbound
+      - apk add py3-slixmpp py3-aioxmpp openssl prosody lua-unbound mcabber
       - python3 --version
       - go test -v -tags "integration" -run Integration ./...
 
