@@ -34,7 +34,7 @@ tasks:
 
       go install honnef.co/go/tools/cmd/staticcheck@latest
       go install github.com/securego/gosec/v2/cmd/gosec@latest
-      go install git.sr.ht/~samwhited/checkdoc@latest
+      go install mellium.im/checkdoc@latest
       go install mellium.im/checkmd@latest
 
       echo 'export PATH=$(go env GOPATH)/bin:$PATH' >> ~/.buildenv
