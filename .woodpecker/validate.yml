@@ -13,7 +13,7 @@ pipeline:
       - go install honnef.co/go/tools/cmd/staticcheck@latest
       - go install github.com/securego/gosec/v2/cmd/gosec@latest
       - go install mellium.im/checkmd@latest
-      - go install git.sr.ht/~samwhited/checkdoc@latest
+      - go install mellium.im/checkdoc@latest
       - export PATH=$(go env GOPATH)/bin:$PATH
       - go vet ./...
       - gofmt -s -l . && [ -z "$(gofmt -s -l .)" ]
