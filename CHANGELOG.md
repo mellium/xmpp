@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- bin: package for sending and retrieving small snippets of binary data using
+  content identifier URLs
 - ibb: the `Expect` method can be used to accept only pre-negotiated IBB
   sessions
 - roster: the ability to set/delete roster items on entities other than the
