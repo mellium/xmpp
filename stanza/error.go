@@ -324,7 +324,7 @@ func (se Error) Wrap(payload xml.TokenReader) xml.TokenReader {
 // Is will be used by errors.Is when comparing errors.
 // It compares the condition and type fields.
 // If either is empty it is treated as a wildcard.
-// If both are empty the comparison is true if err is of type Error.
+// If both are empty the comparison is true if target is also of type Error.
 //
 // For more information see the errors package.
 func (se Error) Is(target error) bool {
