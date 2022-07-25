@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- bin: package for sending and retrieving small snippets of binary data using
+  content identifier URLs
 - dial: respect "service not supported" SRV records and do not attempt to dial
   fallback records if the server has indicated that they do not support a
   specific service.
