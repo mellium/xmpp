@@ -16,10 +16,13 @@ import (
 	"encoding/xml"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
+	"mellium.im/xmpp/crypto"
+	"mellium.im/xmpp/internal/cid"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
@@ -46,6 +49,27 @@ type Data struct {
 	NoCache bool
 	Type    string
 	Data    []byte
+}
+
+// ContentID returns the CID associated with the given data using the provided
+// hash function.
+func (d *Data) ContentID(h crypto.Hash) string {
+	hash := h.New()
+	// hash.Write never returns an error.
+	/* #nosec */
+	hash.Write(d.Data)
+	c := &cid.URL{
+		// TODO: the name of the hash functions is not specified in the XEP other
+		// than "sha1" which does not match the "sha-1" used by many other XEPs that
+		// follow the naming convention from XEP-0300 and the IANA Hash Function
+		// Textual Names registry.
+		// Here we make the big assumption that we can just remove "-" from those
+		// names and use it in BoB, but that's almost certainly a bad idea.
+		HashName: strings.ReplaceAll(h.String(), "-", ""),
+		Domain:   "bob.xmpp.org",
+		Hash:     hash.Sum(nil),
+	}
+	return c.String()
 }
 
 // TokenReader satisfies the xmlstream.Marshaler interface.
@@ -93,10 +117,11 @@ func (d *Data) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 // UnmarshalXML implements xml.Unmarshaler.
 func (d *Data) UnmarshalXML(dec *xml.Decoder, start xml.StartElement) error {
 	v := struct {
-		CID    string `xml:"cid,attr"`
-		MaxAge *int64 `xml:"max-age,attr"`
-		Type   string `xml:"type,attr"`
-		Data   []byte `xml:",cdata"`
+		XMLName xml.Name `xml:"urn:xmpp:bob data"`
+		CID     string   `xml:"cid,attr"`
+		MaxAge  *int64   `xml:"max-age,attr"`
+		Type    string   `xml:"type,attr"`
+		Data    []byte   `xml:",cdata"`
 	}{}
 	err := dec.DecodeElement(&v, &start)
 	if err != nil {
@@ -131,7 +156,13 @@ func Get(ctx context.Context, s *xmpp.Session, to jid.JID, cid string) (*Data, e
 		stanza.IQ{
 			Type: stanza.GetIQ,
 			To:   to,
-		}.Wrap((&Data{CID: cid}).TokenReader()),
+		}.Wrap(xmlstream.Wrap(
+			nil,
+			xml.StartElement{
+				Name: xml.Name{Space: NS, Local: "data"},
+				Attr: []xml.Attr{{Name: xml.Name{Local: "cid"}, Value: cid}},
+			},
+		)),
 		data,
 	)
 	return data, err
