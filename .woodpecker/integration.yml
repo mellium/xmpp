@@ -5,7 +5,6 @@ pipeline:
   info: &info
     image: alpine:edge
     environment:
-      GO111MODULE: "on"
       CGO_ENABLED: "0"
     commands:
       - apk update
@@ -23,7 +22,37 @@ pipeline:
 
         EOF
       - apk update
-      - apk add go python3 lua5.2 py3-slixmpp py3-aioxmpp openssl prosody lua-unbound jackal
+      - apk add py3-slixmpp py3-aioxmpp openssl lua-unbound
+      - apk add make gcc musl-dev lua-dev lua5.2 lua5.2-dev lua5.2-luaxml libxml2-dev openssl-dev icu-dev linux-headers libidn-dev
+      - apk add go python3 lua5.2 lua5.2-sec lua5.2-socket lua5.2-expat lua5.2-filesystem lua5.2-busted icu-data-full
+      # Build Prosody
+      - wget https://hg.prosody.im/trunk/archive/tip.tar.gz
+      - tar -xzf tip.tar.gz
+      - rm tip.tar.gz
+      - cd Prosody-IM-trunk-*
+      - |
+        ./configure \
+           --prefix=/usr \
+           --sysconfdir=/etc/prosody \
+           --ostype=linux \
+           --with-lua-lib=/usr/lib \
+           --with-lua-include=/usr/include/lua5.2 \
+           --lua-version=5.2 \
+           --no-example-certs \
+           --runwith=lua5.2
+      - make
+      - make install
+      - cd ..
+      # Build Jackal
+      - wget -O jackal-main.tar.gz https://github.com/ortuman/jackal/archive/main.tar.gz
+      - tar -xzf jackal-main.tar.gz
+      - rm jackal-main.tar.gz
+      - cd jackal-main
+      - go build -ldflags "-s -w" ./cmd/jackal
+      - go build -ldflags "-s -w" ./cmd/jackalctl
+      - mv jackal /usr/bin/
+      - mv jackalctl /usr/bin/
+      - cd ..
       - go test -v -tags "integration" -run Integration -integration.skip=ejabberd,sendxmpp,mcabber ./...
 depends_on:
   - dco
