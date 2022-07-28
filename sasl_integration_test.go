@@ -9,11 +9,16 @@ package xmpp_test
 
 import (
 	"context"
+	"crypto/tls"
 	"testing"
 
+	"mellium.im/sasl"
+	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/integration"
+	"mellium.im/xmpp/internal/integration/jackal"
 	"mellium.im/xmpp/internal/integration/mcabber"
 	"mellium.im/xmpp/internal/integration/mellium"
+	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/jid"
 )
 
@@ -21,7 +26,7 @@ func TestMain(m *testing.M) {
 	mellium.TestMain(m)
 }
 
-func TestIntegrationSASLClient(t *testing.T) {
+func TestIntegrationSASLServer(t *testing.T) {
 	const pass = "testpass"
 	melliumRun := mellium.Test(context.TODO(), t,
 		integration.Cert("localhost"),
@@ -30,10 +35,10 @@ func TestIntegrationSASLClient(t *testing.T) {
 		}),
 		integration.User(jid.MustParse("me@localhost"), pass),
 	)
-	melliumRun(integrationSASLClient)
+	melliumRun(integrationSASLServer)
 }
 
-func integrationSASLClient(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
+func integrationSASLServer(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
 	j, pass := cmd.User()
 	p := cmd.C2SPort()
 	mcabberRun := mcabber.Test(context.TODO(), t,
@@ -46,4 +51,34 @@ func integrationSASLClient(ctx context.Context, t *testing.T, cmd *integration.C
 	mcabberRun(func(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
 		t.Log("Connected successfully!")
 	})
+}
+
+func TestIntegrationSASLClient(t *testing.T) {
+	prosodyRun := prosody.Test(context.TODO(), t,
+		integration.Log(),
+		integration.LogXML(),
+		prosody.ListenC2S(),
+	)
+	prosodyRun(integrationSASLClient)
+
+	jackalRun := jackal.Test(context.TODO(), t,
+		integration.Log(),
+		jackal.ListenC2S(),
+	)
+	jackalRun(integrationSASLClient)
+}
+
+func integrationSASLClient(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
+	j, pass := cmd.User()
+	_, err := cmd.DialClient(ctx, j, t,
+		xmpp.StartTLS(&tls.Config{
+			MinVersion:         tls.VersionTLS13,
+			InsecureSkipVerify: true,
+		}),
+		xmpp.SASL("", pass, sasl.ScramSha1Plus),
+		xmpp.BindResource(),
+	)
+	if err != nil {
+		t.Fatalf("error connecting: %v", err)
+	}
 }
