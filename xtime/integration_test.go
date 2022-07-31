@@ -17,6 +17,7 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/ejabberd"
+	"mellium.im/xmpp/internal/integration/jackal"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/xtime"
 )
@@ -33,6 +34,12 @@ func TestIntegrationRequestTime(t *testing.T) {
 		ejabberd.ListenC2S(),
 	)
 	ejabberdRun(integrationRequestTime)
+
+	jackalRun := jackal.Test(context.TODO(), t,
+		integration.Log(),
+		jackal.ListenC2S(),
+	)
+	jackalRun(integrationRequestTime)
 }
 
 func integrationRequestTime(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
@@ -41,7 +48,7 @@ func integrationRequestTime(ctx context.Context, t *testing.T, cmd *integration.
 		xmpp.StartTLS(&tls.Config{
 			InsecureSkipVerify: true,
 		}),
-		xmpp.SASL("", pass, sasl.Plain),
+		xmpp.SASL("", pass, sasl.Plain, sasl.ScramSha256),
 		xmpp.BindResource(),
 	)
 	if err != nil {
@@ -57,7 +64,7 @@ func integrationRequestTime(ctx context.Context, t *testing.T, cmd *integration.
 	if err != nil {
 		t.Errorf("error getting time: %v", err)
 	}
-	if now := time.Now().UTC().Format(time.RFC3339); tt.Format(time.RFC3339) != now {
+	if now := time.Now().UTC().Format(time.RFC3339); tt.UTC().Format(time.RFC3339) != now {
 		t.Errorf("wrong time: want=%v, got=%v", now, tt)
 	}
 }
