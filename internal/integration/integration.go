@@ -65,6 +65,16 @@
 //		)
 //
 // For more information see the Cmd type.
+//
+// By default, all configuration for each subtest is stored in a temporary
+// directory and removed when the test completes successfully.
+// To keep all generated test files for debugging purposes, the integration
+// package registers the flag "integration.no-cleanup".
+// Passing this flag when running tests will prevent the files from being
+// removed.
+// For example:
+//
+//	go test -v -tags "integration" -run Integration --integration.no-cleanup .
 package integration // import "mellium.im/xmpp/internal/integration"
 
 import (
@@ -75,6 +85,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"math/big"
@@ -89,6 +100,12 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/jid"
 )
+
+var noCleanup bool
+
+func init() {
+	flag.BoolVar(&noCleanup, "integration.no-cleanup", noCleanup, "do not clean up generated files after tests run")
+}
 
 // Cmd is an external command being prepared or run.
 //
@@ -313,9 +330,11 @@ func (cmd *Cmd) Close() error {
 	if err != nil {
 		return fmt.Errorf("error waiting on command to exit: %v", err)
 	}
-	err = os.RemoveAll(cmd.cfgDir)
-	if err != nil {
-		return err
+	if !noCleanup {
+		err = os.RemoveAll(cmd.cfgDir)
+		if err != nil {
+			return err
+		}
 	}
 	return e
 }
