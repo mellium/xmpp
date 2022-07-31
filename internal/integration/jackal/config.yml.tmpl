@@ -1,0 +1,72 @@
+peppers:
+  keys:
+    v1: integration-tests-not-secret
+  use: v1
+
+logger:
+  level: "debug"
+
+storage:
+  type: boltdb
+  boltdb:
+    path: "jackal.db"
+
+admin:
+  port: {{ .AdminPort }}
+
+{{ range $idx, $vhost := .VHosts }}
+{{ if eq 0 $idx }}
+hosts:
+{{ end }}
+  - domain: {{ $vhost }}
+    tls:
+      cert_file: "{{ $vhost }}.crt"
+      privkey_file: "{{ $vhost }}.key"
+{{ end }}
+
+shapers:
+  - name: normal
+    max_sessions: 10
+    rate:
+      limit: 65536
+      burst: 32768
+
+{{ if .C2SPort }}
+c2s:
+  listeners:
+    - port: {{ .C2SPort }}
+      req_timeout: 60s
+      transport: socket
+      sasl:
+        mechanisms:
+        - scram_sha_1
+        - scram_sha_256
+{{ end }}
+
+modules:
+  enabled:
+    - roster
+    - offline
+    - last        # XEP-0012: Last Activity
+    - disco       # XEP-0030: Service Discovery
+    - private     # XEP-0049: Private XML Storage
+    - vcard       # XEP-0054: vcard-temp
+    - version     # XEP-0092: Software Version
+    - caps        # XEP-0115: Entity Capabilities
+    - blocklist   # XEP-0191: Blocking Command
+    - stream_mgmt # XEP-0198: Stream Management
+    - ping        # XEP-0199: XMPP Ping
+    - time        # XEP-0202: Entity Time
+    - carbons     # XEP-0280: Message Carbons
+
+  version:
+    show_os: true
+
+  offline:
+    queue_size: 300
+
+  ping:
+    ack_timeout: 90s
+    interval: 3m
+    send_pings: true
+    timeout_action: kill

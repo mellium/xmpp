@@ -77,7 +77,7 @@
 //
 // For example:
 //
-//	go test -tags "integration" -run Integration --integration.no-cleanup .
+//	go test -tags "integration" -run Integration -integration.no-cleanup .
 package integration // import "mellium.im/xmpp/internal/integration"
 
 import (
