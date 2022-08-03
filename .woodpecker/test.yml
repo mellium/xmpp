@@ -24,8 +24,8 @@ pipeline:
 
 matrix:
   GO_VERSION:
+    - 1.19
     - 1.18
-    - 1.17
 
 depends_on:
   - dco
