@@ -3,32 +3,28 @@
 
 pipeline:
   info: &info
-    image: golang:alpine
+    image: alpine:edge
     environment:
       GO111MODULE: "on"
       CGO_ENABLED: "0"
     commands:
+      - apk update
+      - apk add go python3 lua5.2
       - go version
       - go env
+      - python --version
+      - lua5.2 -v
   test:
     << : *info
     commands:
       - |
-        cat > /etc/apk/repositories << EOF; $$(echo)
-
-        http://dl-cdn.alpinelinux.org/alpine/v$$(cat /etc/alpine-release | cut -d'.' -f1,2)/main
-        http://dl-cdn.alpinelinux.org/alpine/v$$(cat /etc/alpine-release | cut -d'.' -f1,2)/community
-        # Remove after py3-tzlocal is in the golang:alpine releases community
-        # channel.
-        http://dl-cdn.alpinelinux.org/alpine/edge/community
+        cat >> /etc/apk/repositories << EOF; $$(echo)
         http://dl-cdn.alpinelinux.org/alpine/edge/testing
 
         EOF
       - apk update
-      - apk add py3-slixmpp py3-aioxmpp openssl prosody lua-unbound
-      - python3 --version
+      - apk add go python3 lua5.2 py3-slixmpp py3-aioxmpp openssl prosody lua-unbound
       - go test -v -tags "integration" -run Integration ./...
-
 depends_on:
   - dco
   - test
