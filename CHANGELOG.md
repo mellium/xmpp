@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
   sessions
 - roster: the ability to set/delete roster items on entities other than the
   account using `SetIQ` and `DeleteIQ`
+- upload: new package implementing file transfer by uploading to an HTTP server
 - xmpp: support SCRAM authentication with channel binding over TLS 1.3 using
   [RFC 9266]
 
