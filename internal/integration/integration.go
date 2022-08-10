@@ -66,15 +66,18 @@
 //
 // For more information see the Cmd type.
 //
-// By default, all configuration for each subtest is stored in a temporary
-// directory and removed when the test completes successfully.
-// To keep all generated test files for debugging purposes, the integration
-// package registers the flag "integration.no-cleanup".
-// Passing this flag when running tests will prevent the files from being
-// removed.
+// # Flags
+//
+// When the integration package is imported it registers several additional
+// flags that can be used to control the behavior of tests.
+// These flags are described below:
+//
+//	-integration.no-cleanup: do not remove temporary files when tests complete
+//	-integration.skip: a comma separated list of command names to skip
+//
 // For example:
 //
-//	go test -v -tags "integration" -run Integration --integration.no-cleanup .
+//	go test -tags "integration" -run Integration --integration.no-cleanup .
 package integration // import "mellium.im/xmpp/internal/integration"
 
 import (
@@ -93,6 +96,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -101,10 +105,14 @@ import (
 	"mellium.im/xmpp/jid"
 )
 
-var noCleanup bool
+var (
+	noCleanup bool
+	skip      string
+)
 
 func init() {
 	flag.BoolVar(&noCleanup, "integration.no-cleanup", noCleanup, "do not clean up generated files after tests run")
+	flag.StringVar(&skip, "integration.skip", skip, "skip tests that match the comma separated list of commands")
 }
 
 // Cmd is an external command being prepared or run.
@@ -774,12 +782,25 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 	t.Cleanup(cancel)
 
 	i := -1
+	skips := strings.Split(skip, ",")
+	for _, v := range skips {
+		v = strings.TrimSpace(v)
+		if v == name {
+			return func(f func(context.Context, *testing.T, *Cmd)) bool {
+				i++
+				return t.Run(fmt.Sprintf("%s/%d", filepath.Base(name), i), func(t *testing.T) {
+					t.Skipf("skipping %s tests due to integration.skip flag", name)
+				})
+			}
+		}
+	}
+
 	_, err := exec.LookPath(name)
 	if err != nil {
 		return func(f func(context.Context, *testing.T, *Cmd)) bool {
 			i++
 			return t.Run(fmt.Sprintf("%s/%d", filepath.Base(name), i), func(t *testing.T) {
-				t.Skip(err.Error())
+				t.Fatal(err.Error())
 			})
 		}
 	}
