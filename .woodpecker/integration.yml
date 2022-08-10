@@ -23,7 +23,7 @@ pipeline:
 
         EOF
       - apk update
-      - apk add go python3 lua5.2 py3-slixmpp py3-aioxmpp openssl prosody lua-unbound
+      - apk add go python3 lua5.2 py3-slixmpp py3-aioxmpp openssl prosody lua-unbound jackal
       - go test -v -tags "integration" -run Integration -integration.skip=ejabberd,sendxmpp,mcabber ./...
 depends_on:
   - dco
