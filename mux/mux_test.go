@@ -23,7 +23,11 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
-var _ info.FeatureIter = (*mux.ServeMux)(nil)
+var (
+	_ info.FeatureIter  = (*mux.ServeMux)(nil)
+	_ info.IdentityIter = (*mux.ServeMux)(nil)
+	_ items.Iter        = (*mux.ServeMux)(nil)
+)
 
 var (
 	errPassTest = errors.New("mux_test: PASSED")
