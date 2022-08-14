@@ -21,6 +21,7 @@ import (
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/aioxmpp"
 	"mellium.im/xmpp/internal/integration/ejabberd"
+	"mellium.im/xmpp/internal/integration/jackal"
 	"mellium.im/xmpp/internal/integration/mcabber"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/internal/integration/python"
@@ -42,7 +43,6 @@ var (
 func TestIntegrationSendPing(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
 		integration.Log(),
-		integration.LogXML(),
 		prosody.ListenC2S(),
 	)
 	prosodyRun(integrationSendPing)
@@ -53,6 +53,13 @@ func TestIntegrationSendPing(t *testing.T) {
 		ejabberd.ListenC2S(),
 	)
 	ejabberdRun(integrationSendPing)
+
+	jackalRun := jackal.Test(context.TODO(), t,
+		integration.Log(),
+		jackal.ListenC2S(),
+	)
+	jackalRun(integrationSendPing)
+	jackalRun(integrationRecvPing)
 }
 
 func integrationRecvPing(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
@@ -63,7 +70,7 @@ func integrationRecvPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 		xmpp.StartTLS(&tls.Config{
 			InsecureSkipVerify: true,
 		}),
-		xmpp.SASL("", pass, sasl.Plain),
+		xmpp.SASL("", pass, sasl.Plain, sasl.ScramSha256),
 		xmpp.BindResource(),
 	)
 	if err != nil {
@@ -187,7 +194,7 @@ func integrationSendPing(ctx context.Context, t *testing.T, cmd *integration.Cmd
 		xmpp.StartTLS(&tls.Config{
 			InsecureSkipVerify: true,
 		}),
-		xmpp.SASL("", pass, sasl.Plain),
+		xmpp.SASL("", pass, sasl.Plain, sasl.ScramSha256),
 		xmpp.BindResource(),
 	)
 	if err != nil {
