@@ -15,6 +15,8 @@ All notable changes to this project will be documented in this file.
 
 - ibb: the `Expect` method can be used to accept only pre-negotiated IBB
   sessions
+- roster: the ability to set/delete roster items on entities other than the
+  account using `SetIQ` and `DeleteIQ`
 
 
 ### Breaking
