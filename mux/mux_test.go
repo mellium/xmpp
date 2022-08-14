@@ -504,6 +504,15 @@ var testCases = [...]struct {
 		x:   `<iq xml:lang="en-us" type="result" xmlns="jabber:client"></iq>`,
 		err: errPassTest,
 	},
+	45: {
+		// IQ matches should skip char data (in case the other end of the connection
+		// is sending formatted XML)
+		m: []mux.Option{
+			mux.IQ(stanza.GetIQ, xml.Name{Local: "a"}, passHandler{}),
+		},
+		x:   `<iq xml:lang="en-us" type="get" xmlns="jabber:client">  <a/></iq>`,
+		err: errPassTest,
+	},
 }
 
 type nopEncoder struct {

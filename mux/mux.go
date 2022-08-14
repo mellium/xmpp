@@ -400,15 +400,23 @@ func (m *ServeMux) iqRouter(t xmlstream.TokenReadEncoder, start *xml.StartElemen
 		Encoder:     t,
 		TokenReader: xmlstream.Inner(t),
 	}
-	tok, err := t.Token()
-	// If we get any error return it, unless it's an EOF then don't return it if
-	// it's a result IQ (which may be empty).
-	if err != nil && (err != io.EOF || iq.Type != stanza.ResultIQ) {
-		return err
+	for {
+		tok, err := t.Token()
+		// If we get any error return it, unless it's an EOF then don't return it if
+		// it's a result IQ (which may be empty).
+		if err != nil && (err != io.EOF || iq.Type != stanza.ResultIQ) {
+			return err
+		}
+		var payloadStart xml.StartElement
+		switch start := tok.(type) {
+		case xml.StartElement:
+			payloadStart = start
+		case xml.CharData:
+			continue
+		}
+		h, _ := m.IQHandler(iq.Type, payloadStart.Name)
+		return h.HandleIQ(iq, t, &payloadStart)
 	}
-	payloadStart, _ := tok.(xml.StartElement)
-	h, _ := m.IQHandler(iq.Type, payloadStart.Name)
-	return h.HandleIQ(iq, t, &payloadStart)
 }
 
 type bufReader struct {
