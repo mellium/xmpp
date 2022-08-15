@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
   sessions
 - roster: the ability to set/delete roster items on entities other than the
   account using `SetIQ` and `DeleteIQ`
+- xmpp: support SCRAM authentication with channel binding over TLS 1.3 using
+  [RFC 9266]
 
 
 ### Breaking
@@ -41,6 +43,7 @@ All notable changes to this project will be documented in this file.
 - xmpp: a bug where resource binding would respond as if it were a
   client-to-server connection even on server-to-server streams
 
+[RFC 9266]: https://datatracker.ietf.org/doc/html/rfc9266
 [mellium.im/legacy/compress]: https://mellium.im/legacy/compress/
 
 
