@@ -79,7 +79,9 @@ func ctlFunc(ctx context.Context, args ...string) func(*integration.Cmd) error {
 		jackalCtl.Stdout = cmd.Stdout
 		jackalCtl.Stderr = cmd.Stderr
 
-		fmt.Fprintf(cmd.Stdout, "running %q…", jackalCtl)
+		if cmd.Stdout != nil {
+			fmt.Fprintf(cmd.Stdout, "running %q…", jackalCtl)
+		}
 		return jackalCtl.Run()
 	}
 }
