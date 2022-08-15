@@ -17,6 +17,7 @@ import (
 	"mellium.im/xmpp/disco"
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/ejabberd"
+	"mellium.im/xmpp/internal/integration/jackal"
 	"mellium.im/xmpp/internal/integration/prosody"
 )
 
@@ -32,6 +33,12 @@ func TestIntegrationInfo(t *testing.T) {
 		ejabberd.ListenC2S(),
 	)
 	ejabberdRun(integrationRequestInfo)
+
+	jackalRun := jackal.Test(context.TODO(), t,
+		integration.Log(),
+		jackal.ListenC2S(),
+	)
+	jackalRun(integrationRequestInfo)
 }
 
 func integrationRequestInfo(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
@@ -40,7 +47,7 @@ func integrationRequestInfo(ctx context.Context, t *testing.T, cmd *integration.
 		xmpp.StartTLS(&tls.Config{
 			InsecureSkipVerify: true,
 		}),
-		xmpp.SASL("", pass, sasl.Plain),
+		xmpp.SASL("", pass, sasl.Plain, sasl.ScramSha256),
 		xmpp.BindResource(),
 	)
 	if err != nil {
