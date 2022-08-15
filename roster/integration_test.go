@@ -17,6 +17,7 @@ import (
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/internal/integration"
 	"mellium.im/xmpp/internal/integration/ejabberd"
+	"mellium.im/xmpp/internal/integration/jackal"
 	"mellium.im/xmpp/internal/integration/prosody"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/roster"
@@ -34,6 +35,12 @@ func TestIntegrationRoster(t *testing.T) {
 		ejabberd.ListenC2S(),
 	)
 	ejabberdRun(integrationRoster)
+
+	jackalRun := jackal.Test(context.TODO(), t,
+		integration.Log(),
+		jackal.ListenC2S(),
+	)
+	jackalRun(integrationRoster)
 }
 
 func integrationRoster(ctx context.Context, t *testing.T, cmd *integration.Cmd) {
@@ -42,7 +49,7 @@ func integrationRoster(ctx context.Context, t *testing.T, cmd *integration.Cmd) 
 		xmpp.StartTLS(&tls.Config{
 			InsecureSkipVerify: true,
 		}),
-		xmpp.SASL("", pass, sasl.Plain),
+		xmpp.SASL("", pass, sasl.Plain, sasl.ScramSha256),
 		xmpp.BindResource(),
 	)
 	if err != nil {
