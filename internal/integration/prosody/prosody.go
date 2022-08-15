@@ -39,6 +39,18 @@ func New(ctx context.Context, opts ...integration.Option) (*integration.Cmd, err
 	)
 }
 
+// Upload configures the HTTP upload component.
+func Upload(domain string) integration.Option {
+	const modName = "http_file_share"
+	return func(cmd *integration.Cmd) error {
+		err := Component(domain, "", modName)(cmd)
+		if err != nil {
+			return err
+		}
+		return integration.Cert(domain)(cmd)
+	}
+}
+
 // WebSocket enables the websocket module.
 // WebSocket implies the HTTPS() option.
 func WebSocket() integration.Option {
