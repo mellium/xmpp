@@ -5,8 +5,8 @@ pipeline:
   info: &info
     image: alpine:edge
     environment:
-      GO111MODULE: "on"
       CGO_ENABLED: "0"
+      MELLIUM_INTEGRATION_SKIP: "ejabberdctl,sendxmpp,mcabber"
     commands:
       - apk update
       - apk add go python3 lua5.2
@@ -24,7 +24,7 @@ pipeline:
         EOF
       - apk update
       - apk add go python3 lua5.2 py3-slixmpp py3-aioxmpp openssl prosody lua-unbound jackal
-      - go test -v -tags "integration" -run Integration -integration.skip=ejabberd,sendxmpp,mcabber ./...
+      - go test -v -tags "integration" -run Integration ./...
 depends_on:
   - dco
   - test

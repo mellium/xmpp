@@ -63,21 +63,22 @@
 //			xmpp.SASL("", pass, sasl.Plain),
 //			xmpp.BindResource(),
 //		)
+//	}
 //
 // For more information see the Cmd type.
 //
-// # Flags
+// # Configuration
 //
-// When the integration package is imported it registers several additional
-// flags that can be used to control the behavior of tests.
-// These flags are described below:
+// The integration package uses several environment variables to control the
+// behavior of tests.
+// These environment variables are described below.
 //
-//	-integration.no-cleanup: do not remove temporary files when tests complete
-//	-integration.skip: a comma separated list of command names to skip
+//	MELLIUM_INTEGRATION_NO_CLEANUP=false do not remove temporary files when tests complete
+//	MELLIUM_INTEGRATION_SKIP=""          a comma separated list of command names to skip
 //
 // For example:
 //
-//	go test -tags "integration" -run Integration -integration.no-cleanup .
+//	MELLIUM_INTEGRATION_NO_CLEANUP=true go test -tags "integration" -run Integration .
 package integration // import "mellium.im/xmpp/internal/integration"
 
 import (
@@ -88,7 +89,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"math/big"
@@ -96,6 +96,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -106,14 +107,9 @@ import (
 )
 
 var (
-	noCleanup bool
-	skip      string
+	envNoCleanup = os.Getenv("MELLIUM_INTEGRATION_NO_CLEANUP")
+	envSkip      = os.Getenv("MELLIUM_INTEGRATION_SKIP")
 )
-
-func init() {
-	flag.BoolVar(&noCleanup, "integration.no-cleanup", noCleanup, "do not clean up generated files after tests run")
-	flag.StringVar(&skip, "integration.skip", skip, "skip tests that match the comma separated list of commands")
-}
 
 // Cmd is an external command being prepared or run.
 //
@@ -338,7 +334,8 @@ func (cmd *Cmd) Close() error {
 	if err != nil {
 		return fmt.Errorf("error waiting on command to exit: %v", err)
 	}
-	if !noCleanup {
+
+	if noCleanup, err := strconv.ParseBool(envNoCleanup); err != nil || !noCleanup {
 		err = os.RemoveAll(cmd.cfgDir)
 		if err != nil {
 			return err
@@ -782,14 +779,14 @@ func Test(ctx context.Context, name string, t *testing.T, opts ...Option) Subtes
 	t.Cleanup(cancel)
 
 	i := -1
-	skips := strings.Split(skip, ",")
+	skips := strings.Split(envSkip, ",")
 	for _, v := range skips {
 		v = strings.TrimSpace(v)
 		if v == name {
 			return func(f func(context.Context, *testing.T, *Cmd)) bool {
 				i++
 				return t.Run(fmt.Sprintf("%s/%d", filepath.Base(name), i), func(t *testing.T) {
-					t.Skipf("skipping %s tests due to integration.skip flag", name)
+					t.Skipf("skipping %s tests due to environment variable", name)
 				})
 			}
 		}
