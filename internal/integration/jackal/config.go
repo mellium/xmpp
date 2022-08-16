@@ -14,6 +14,7 @@ import (
 type Config struct {
 	C2SPort   int
 	AdminPort int
+	HTTPPort  int
 	VHosts    []string
 }
 

@@ -3,6 +3,9 @@ peppers:
     v1: integration-tests-not-secret
   use: v1
 
+http:
+  port: {{ .HTTPPort }}
+
 logger:
   level: "debug"
 

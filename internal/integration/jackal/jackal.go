@@ -120,10 +120,14 @@ func ListenC2S() integration.Option {
 	}
 }
 
-// listenAdmin listens for jackalctl connections.
-func listenAdmin() integration.Option {
+// defaultPorts sets up random ports for jackalctl connections and HTTP.
+func defaultPorts() integration.Option {
 	return func(cmd *integration.Cmd) error {
-		ln, err := net.Listen("tcp4", "127.0.0.1:0")
+		adminLn, err := net.Listen("tcp4", "127.0.0.1:0")
+		if err != nil {
+			return err
+		}
+		httpLn, err := net.Listen("tcp4", "127.0.0.1:0")
 		if err != nil {
 			return err
 		}
@@ -134,14 +138,20 @@ func listenAdmin() integration.Option {
 		// we need to close the connection and let Jackal listen on that port.
 		// Technically this is racey, but it's not likely to be a problem in
 		// practice.
-		adminPort := ln.Addr().(*net.TCPAddr).Port
-		err = ln.Close()
+		adminPort := adminLn.Addr().(*net.TCPAddr).Port
+		err = adminLn.Close()
+		if err != nil {
+			return err
+		}
+		httpPort := httpLn.Addr().(*net.TCPAddr).Port
+		err = httpLn.Close()
 		if err != nil {
 			return err
 		}
 
 		cfg := getConfig(cmd)
 		cfg.AdminPort = adminPort
+		cfg.HTTPPort = httpPort
 		cmd.Config = cfg
 		return nil
 	}
@@ -184,7 +194,7 @@ func defaultConfig(cmd *integration.Cmd) error {
 			return nil
 		}
 	}
-	err := listenAdmin()(cmd)
+	err := defaultPorts()(cmd)
 	if err != nil {
 		return err
 	}
