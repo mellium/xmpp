@@ -16,6 +16,7 @@ type Config struct {
 	AdminPort int
 	HTTPPort  int
 	VHosts    []string
+	Modules   []string
 }
 
 var (

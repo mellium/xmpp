@@ -38,6 +38,7 @@ func TestIntegrationRequestTime(t *testing.T) {
 	jackalRun := jackal.Test(context.TODO(), t,
 		integration.Log(),
 		jackal.ListenC2S(),
+		jackal.Modules("time"),
 	)
 	jackalRun(integrationRequestTime)
 }

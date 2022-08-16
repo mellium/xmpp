@@ -61,6 +61,16 @@ func ConfigFile(cfg Config) integration.Option {
 	}
 }
 
+// Modules adds custom modules to the enabled modules list.
+func Modules(mod ...string) integration.Option {
+	return func(cmd *integration.Cmd) error {
+		cfg := getConfig(cmd)
+		cfg.Modules = append(cfg.Modules, mod...)
+		cmd.Config = cfg
+		return nil
+	}
+}
+
 // Ctl returns an option that calls jackalctl with the provided args.
 // It automatically points jackalctl at the config file so there is no need to
 // pass the --config option.
