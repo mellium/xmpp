@@ -25,7 +25,6 @@ import (
 func TestIntegrationFetch(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
 		integration.Log(),
-		integration.LogXML(),
 		prosody.ListenC2S(),
 		prosody.Modules("mam"),
 	)

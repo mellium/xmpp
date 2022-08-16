@@ -28,7 +28,6 @@ import (
 func TestIntegrationJoinRoom(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
 		integration.Log(),
-		integration.LogXML(),
 		prosody.MUC("muc.localhost"),
 		prosody.ListenC2S(),
 	)
@@ -149,7 +148,6 @@ func integrationJoinRoom(ctx context.Context, t *testing.T, cmd *integration.Cmd
 func TestIntegrationJoinErr(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
 		integration.Log(),
-		integration.LogXML(),
 		prosody.MUC("muc.localhost"),
 		prosody.Channel("muc.localhost", prosody.ChannelConfig{
 			Localpart:  "bridgecrew",

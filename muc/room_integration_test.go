@@ -32,7 +32,6 @@ const (
 func TestIntegrationMediatedInvite(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
 		integration.Log(),
-		integration.LogXML(),
 		prosody.MUC("muc.localhost"),
 		prosody.CreateUser(context.TODO(), userOne, userPass),
 		prosody.CreateUser(context.TODO(), userTwo, userPass),
@@ -44,7 +43,6 @@ func TestIntegrationMediatedInvite(t *testing.T) {
 func TestIntegrationSetAffiliation(t *testing.T) {
 	prosodyRun := prosody.Test(context.TODO(), t,
 		integration.Log(),
-		integration.LogXML(),
 		prosody.MUC("muc.localhost"),
 		prosody.Channel("muc.localhost", prosody.ChannelConfig{
 			Localpart:  "bridgecrew",
