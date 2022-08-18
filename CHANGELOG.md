@@ -4,12 +4,6 @@ All notable changes to this project will be documented in this file.
 
 ## v0.21.3 — 2022-08-18
 
-### Fixed
-
-- component: ensure that the stream namespace is set on the session so that the
-  `mux` package and anything else matching on namespaces can be used with
-  component connections
-
 
 ### Added
 
@@ -36,6 +30,9 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- component: ensure that the stream namespace is set on the session so that the
+  `mux` package and anything else matching on namespaces can be used with
+  component connections
 - internal/discover: a resource leak where XRD response bodies were unlimited in
   size and could waste bandwidth until the context was canceled even though the
   XRD files should never be large
