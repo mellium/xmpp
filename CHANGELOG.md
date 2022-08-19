@@ -2,8 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## v0.21.3 — 2022-08-18
+## Unreleased
 
+### Breaking
+
+- ibr2: the deprecated ibr2 package has been removed, no replacement has been
+  provided as it implemented an experimental version of the protocol that was
+  not recommended for use
+
+
+## v0.21.3 — 2022-08-18
 
 ### Added
 
