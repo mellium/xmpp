@@ -99,13 +99,13 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 		Name:       xml.Name{Space: ns.Bind, Local: "bind"},
 		Necessary:  Authn,
 		Prohibited: Ready,
-		List: func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (req bool, err error) {
-			req = true
-			if err = e.EncodeToken(start); err != nil {
-				return req, err
+		List: func(ctx context.Context, e xmlstream.TokenWriter, start xml.StartElement) (bool, error) {
+			err := e.EncodeToken(start)
+			if err != nil {
+				return true, err
 			}
 			err = e.EncodeToken(start.End())
-			return req, err
+			return true, err
 		},
 		Parse: func(ctx context.Context, d *xml.Decoder, start *xml.StartElement) (bool, interface{}, error) {
 			parsed := struct {
@@ -113,7 +113,8 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			}{}
 			return true, nil, d.DecodeElement(&parsed, start)
 		},
-		Negotiate: func(ctx context.Context, session *Session, data interface{}) (mask SessionState, rw io.ReadWriter, err error) {
+		Negotiate: func(ctx context.Context, session *Session, data interface{}) (SessionState, io.ReadWriter, error) {
+			var mask SessionState
 			r := session.TokenReader()
 			defer r.Close()
 			d := xml.NewTokenDecoder(r)
@@ -196,7 +197,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 					Resource: session.LocalAddr().Resourcepart(),
 				},
 			}
-			_, err = req.WriteXML(w)
+			_, err := req.WriteXML(w)
 			if err != nil {
 				return mask, nil, err
 			}
