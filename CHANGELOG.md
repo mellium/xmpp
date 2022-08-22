@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- xmpp: add `UpdateAddr` to set the JID during resource binding
+
+
 ### Breaking
 
 - ibr2: the deprecated ibr2 package has been removed, no replacement has been

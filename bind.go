@@ -121,9 +121,10 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			w := session.TokenWriter()
 			defer w.Close()
 
+			state := session.State()
 			// Handle the server side of resource binding if we're on the receiving
 			// end of the connection.
-			if (session.State() & Received) == Received {
+			if (state & Received) == Received {
 				tok, err := d.Token()
 				if err != nil {
 					return mask, nil, err
@@ -134,7 +135,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 				}
 
 				iqNamespace := stanza.NSClient
-				if session.State()&S2S == S2S {
+				if state&S2S == S2S {
 					iqNamespace = stanza.NSServer
 				}
 
@@ -234,9 +235,7 @@ func bind(server func(jid.JID, string) (jid.JID, error)) StreamFeature {
 			case resp.ID != reqID:
 				return mask, nil, stream.UndefinedCondition
 			case resp.Type == stanza.ResultIQ:
-				// TODO: this should not use internal session details.
-				session.in.Info.To = resp.Bind.JID
-				session.out.Info.From = resp.Bind.JID
+				session.UpdateAddr(resp.Bind.JID)
 			case resp.Type == stanza.ErrorIQ:
 				return mask, nil, resp.Err
 			default:

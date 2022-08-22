@@ -1098,3 +1098,17 @@ func (se *stanzaEncoder) EncodeToken(t xml.Token) error {
 
 	return se.TokenWriteFlusher.EncodeToken(t)
 }
+
+// UpdateAddr sets the address used by the session.
+// If the Ready state bit is already set, UpdateAddr has no effect and ok will
+// be false.
+func (s *Session) UpdateAddr(j jid.JID) (ok bool) {
+	s.stateMutex.RLock()
+	defer s.stateMutex.RUnlock()
+	if s.state&Ready == Ready {
+		return false
+	}
+	s.in.Info.To = j
+	s.out.Info.From = j
+	return true
+}
