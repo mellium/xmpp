@@ -14,6 +14,7 @@ pipeline:
       - go install github.com/securego/gosec/v2/cmd/gosec@latest
       - go install mellium.im/checkmd@latest
       - go install mellium.im/checkdoc@latest
+      - go install golang.org/x/vuln/cmd/govulncheck@latest
       - export PATH=$(go env GOPATH)/bin:$PATH
       - go vet ./...
       - gofmt -s -l . && [ -z "$(gofmt -s -l .)" ]
@@ -22,6 +23,7 @@ pipeline:
       # gosec does not handle modules correctly.
       # See: https://github.com/securego/gosec/issues/622
       - gosec -exclude-dir=examples ./...
+      - govulncheck ./...
       - |
         checkdoc -fileheader.pattern='-' ./... <<EOF
         Copyright \d\d\d\d The Mellium Contributors\.
