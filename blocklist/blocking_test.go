@@ -88,15 +88,15 @@ func TestFetch(t *testing.T) {
 	var IQ = stanza.IQ{ID: "123"}
 	for i, tc := range testCases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			var list []jid.JID
+			var list []blocklist.Item
 			h := blocklist.Handler{
-				Block: func(j jid.JID) {
-					list = append(list, j)
+				Block: func(i blocklist.Item) {
+					list = append(list, i)
 				},
 				Unblock: func(j jid.JID) {
 					b := list[:0]
 					for _, x := range list {
-						if !j.Equal(x) {
+						if !j.Equal(x.JID) {
 							b = append(b, x)
 						}
 					}
@@ -106,8 +106,8 @@ func TestFetch(t *testing.T) {
 					list = list[:0]
 				},
 				List: func(j chan<- jid.JID) {
-					for _, jj := range list {
-						j <- jj
+					for _, b := range list {
+						j <- b.JID
 					}
 				},
 			}
@@ -144,7 +144,11 @@ func TestFetch(t *testing.T) {
 				if err != nil {
 					t.Errorf("error removing first blocklist item: %v", err)
 				}
-				if !reflect.DeepEqual(list, tc.items[1:]) {
+				listJIDs := make([]jid.JID, 0, len(list))
+				for _, b := range list {
+					listJIDs = append(listJIDs, b.JID)
+				}
+				if !reflect.DeepEqual(listJIDs, tc.items[1:]) {
 					t.Errorf("wrong items after removing %s:\nwant=\n%+v,\ngot=\n%+v", tc.items[0], tc.items[1:], list)
 				}
 			}
@@ -156,6 +160,30 @@ func TestFetch(t *testing.T) {
 			}
 			if len(list) > 0 {
 				t.Errorf("failed to remove remaining items")
+			}
+
+			// Test reporting JIDs.
+			var blockItems []blocklist.Item
+			for _, item := range tc.items {
+				blockItems = append(blockItems, blocklist.Item{
+					JID:    item,
+					Reason: blocklist.ReasonSpam,
+					StanzaIDs: []stanza.ID{
+						{
+							XMLName: xml.Name{Space: stanza.NSSid, Local: "stanza-id"},
+							ID:      "someomesome",
+							By:      jid.MustParse("user@domain/resource"),
+						},
+					},
+					Text: "Never came trouble to my house like this.",
+				})
+			}
+			err = blocklist.ReportIQ(context.Background(), IQ, cs.Client, blockItems...)
+			if err != nil {
+				t.Fatalf("error reporting jids: %v", err)
+			}
+			if !reflect.DeepEqual(blockItems, list) {
+				t.Errorf("wrong list:\nwant=\n%v,\ngot=\n%v", blockItems, list)
 			}
 		})
 	}

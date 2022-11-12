@@ -25,7 +25,7 @@ func Handle(h Handler) mux.Option {
 
 // Handler can be used to respond to incoming blocking command requests.
 type Handler struct {
-	Block      func(jid.JID)
+	Block      func(Item)
 	Unblock    func(jid.JID)
 	UnblockAll func()
 	List       func(chan<- jid.JID)
@@ -68,13 +68,18 @@ func (h Handler) HandleIQ(iq stanza.IQ, r xmlstream.TokenReadEncoder, start *xml
 	var found bool
 	for iter.Next() {
 		found = true
-		itemStart, _ := iter.Current()
+		itemStart, r := iter.Current()
 		jstr := itemStart.Attr[0].Value
 		j := jid.MustParse(jstr)
 		switch start.Name.Local {
 		case "block":
+			item := Item{}
+			d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*itemStart), r))
+			if err := d.Decode(&item); err != nil {
+				return err
+			}
 			if h.Block != nil {
-				h.Block(j)
+				h.Block(item)
 			}
 		case "unblock":
 			if h.Unblock != nil {

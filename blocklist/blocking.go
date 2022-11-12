@@ -15,8 +15,11 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
-// NS is the namespace used by this package, provided as a convenience.
-const NS = `urn:xmpp:blocking`
+// Various namespaces used by this package, provided as a convenience.
+const (
+	NS          = `urn:xmpp:blocking`
+	NSReporting = `urn:xmpp:reporting:1`
+)
 
 // Match checks j1 aginst a JID in the blocklist (j2) and returns true if they
 // are a match.
@@ -107,6 +110,123 @@ func FetchIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) *Iter {
 	return &Iter{
 		iter: iter,
 	}
+}
+
+// ReportReason is a reason of a report.
+type ReportReason string
+
+// The available report reasons are listed below.
+const (
+	// ReasonSpam is used for reporting a JID that is sending unwanted messages.
+	ReasonSpam ReportReason = "urn:xmpp:reporting:spam"
+
+	// ReasonAbuse is used for reporting general abuse.
+	ReasonAbuse ReportReason = "urn:xmpp:reporting:abuse"
+)
+
+// Item is a block payload.
+// It consists of a JID you want to block and optional report fields.
+type Item struct {
+	JID       jid.JID
+	Reason    ReportReason
+	StanzaIDs []stanza.ID
+	Text      string
+}
+
+// MarshalXML satisfies the xml.Marshaler interface.
+func (i *Item) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	_, err := i.WriteXML(e)
+	return err
+}
+
+// UnmarshalXML satisfies the xml.Unmarshaler interface.
+func (i *Item) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	data := struct {
+		JID    jid.JID `xml:"jid,attr"`
+		Report struct {
+			XMLName   xml.Name     `xml:"urn:xmpp:reporting:1 report"`
+			Reason    ReportReason `xml:"reason,attr"`
+			StanzaIDs []stanza.ID  `xml:"stanza-id"`
+			Text      string       `xml:"text"`
+		}
+	}{}
+	err := d.DecodeElement(&data, &start)
+	if err != nil {
+		return err
+	}
+	i.JID = data.JID
+	i.Reason = data.Report.Reason
+	i.StanzaIDs = data.Report.StanzaIDs
+	i.Text = data.Report.Text
+	return nil
+}
+
+// TokenReader satisfies the xmlstream.Marshaler interface.
+func (i *Item) TokenReader() xml.TokenReader {
+	var report xml.TokenReader
+	if i.Reason != "" || len(i.StanzaIDs) > 0 || i.Text != "" {
+		var child []xml.TokenReader
+		for _, stanzaID := range i.StanzaIDs {
+			child = append(child, stanzaID.TokenReader())
+		}
+		if i.Text != "" {
+			child = append(child, xmlstream.Wrap(
+				xmlstream.Token(xml.CharData(i.Text)),
+				xml.StartElement{
+					Name: xml.Name{Local: "text"},
+				},
+			))
+		}
+		reason := ReasonSpam
+		if i.Reason != "" {
+			reason = i.Reason
+		}
+		report = xmlstream.Wrap(
+			xmlstream.MultiReader(child...),
+			xml.StartElement{
+				Name: xml.Name{Space: NSReporting, Local: "report"},
+				Attr: []xml.Attr{{Name: xml.Name{Local: "reason"}, Value: string(reason)}},
+			},
+		)
+	}
+	return xmlstream.Wrap(report, xml.StartElement{
+		Name: xml.Name{Local: "item"},
+		Attr: []xml.Attr{{Name: xml.Name{Local: "jid"}, Value: i.JID.String()}},
+	})
+}
+
+// WriteXML satisfies the xmlstream.WriterTo interface.
+// It is like MarshalXML except it writes tokens to w.
+func (i *Item) WriteXML(w xmlstream.TokenWriter) (int, error) {
+	return xmlstream.Copy(w, i.TokenReader())
+}
+
+// Report adds JIDs to the blocklist.
+// You can optionally specify a report for each individual JID.
+func Report(ctx context.Context, s *xmpp.Session, i ...Item) error {
+	return ReportIQ(ctx, stanza.IQ{}, s, i...)
+}
+
+// ReportIQ is like Report except that it lets you customize the IQ.
+// Changing the type of the provided IQ has no effect.
+func ReportIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session, i ...Item) error {
+	if iq.Type != stanza.SetIQ {
+		iq.Type = stanza.SetIQ
+	}
+	var items []xml.TokenReader
+	for _, item := range i {
+		items = append(items, item.TokenReader())
+	}
+	r, err := s.SendIQ(ctx, iq.Wrap(xmlstream.Wrap(
+		xmlstream.MultiReader(items...),
+		xml.StartElement{
+			Name: xml.Name{Space: NS, Local: "block"},
+		},
+	)))
+	if err != nil {
+		return err
+	}
+	return r.Close()
 }
 
 // Add adds JIDs to the blocklist.
