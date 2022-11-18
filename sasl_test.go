@@ -212,6 +212,15 @@ var saslTestCases = [...]xmpptest.FeatureTestCase{
 		Out:        `<success xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></success>`,
 		FinalState: xmpp.Authn,
 	},
+	10: {
+		State: xmpp.Received,
+		Feature: xmpp.SASLServer(func(*sasl.Negotiator) bool {
+			return true
+		}, sasl.Plain),
+		In:         `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlcwA=</auth>`,
+		Out:        `<success xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></success>`,
+		FinalState: xmpp.Authn,
+	},
 }
 
 func TestSASL(t *testing.T) {

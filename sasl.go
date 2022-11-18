@@ -203,10 +203,11 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 		var decodedData []byte
 		if l > 1 {
 			decodedData = make([]byte, l)
-			_, err = base64.StdEncoding.Decode(decodedData, selection.Payload)
+			n, err := base64.StdEncoding.Decode(decodedData, selection.Payload)
 			if err != nil {
 				return 0, nil, err
 			}
+			decodedData = decodedData[:n]
 		}
 		more, resp, err = server.Step(decodedData)
 		switch err {
