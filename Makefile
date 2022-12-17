@@ -65,6 +65,12 @@ muc/affililiation_string.go: muc/types.go
 paging/disco.go: paging/rsm.go
 	go generate ./paging
 
+pubsub/conditions.go: pubsub/doc.go
+	go generate -run="genpubsub" ./pubsub
+
+pubsub/string.go: pubsub/doc.go pubsub/conditions.go
+	go generate -run="stringer" ./pubsub
+
 forward/disco.go: forward/forward.go
 	go generate ./forward
 

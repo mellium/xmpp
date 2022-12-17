@@ -2,6 +2,9 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
+//go:generate go run ../internal/genpubsub
+//go:generate go run -tags=tools golang.org/x/tools/cmd/stringer -output=string.go -type=SubType,Condition,Feature -linecomment
+
 // Package pubsub implements data storage using a publish–subscribe pattern.
 package pubsub // import "mellium.im/xmpp/pubsub"
 
