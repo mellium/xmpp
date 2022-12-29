@@ -16,6 +16,12 @@ All notable changes to this project will be documented in this file.
   not recommended for use
 
 
+### Fixed
+
+- xmpp: authentication no longer fails if the remote server offers channel
+  binding
+
+
 ## v0.21.3 — 2022-08-18
 
 ### Added
