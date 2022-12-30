@@ -6,6 +6,8 @@
 // defined by RFC 6120 §6.5.
 package saslerr // import "mellium.im/xmpp/internal/saslerr"
 
+//go:generate go run -tags=tools golang.org/x/tools/cmd/stringer -type=Condition -linecomment
+
 import (
 	"encoding/xml"
 
@@ -15,28 +17,31 @@ import (
 	"mellium.im/xmpp/internal/ns"
 )
 
-// condition represents a SASL error condition that can be encapsulated by a
+// Condition represents a SASL error condition that can be encapsulated by a
 // <failure/> element.
-type condition string
+type Condition uint16
 
 // Standard SASL error conditions.
 const (
-	Aborted              condition = "aborted"
-	AccountDisabled      condition = "account-disabled"
-	CredentialsExpired   condition = "credentials-expired"
-	EncryptionRequired   condition = "encryption-required"
-	IncorrectEncoding    condition = "incorrect-encoding"
-	InvalidAuthzID       condition = "invalid-authzid"
-	InvalidMechanism     condition = "invalid-mechanism"
-	MalformedRequest     condition = "malformed-request"
-	MechanismTooWeak     condition = "mechanism-too-weak"
-	NotAuthorized        condition = "not-authorized"
-	TemporaryAuthFailure condition = "temporary-auth-failure"
+	// None is a special condition that is present only if a defined condition was
+	// not present. Its use violates the spec.
+	None                 Condition = iota // none
+	Aborted                               // aborted
+	AccountDisabled                       // account-disabled
+	CredentialsExpired                    // credentials-expired
+	EncryptionRequired                    // encryption-required
+	IncorrectEncoding                     // incorrect-encoding
+	InvalidAuthzID                        // invalid-authzid
+	InvalidMechanism                      // invalid-mechanism
+	MalformedRequest                      // malformed-request
+	MechanismTooWeak                      // mechanism-too-weak
+	NotAuthorized                         // not-authorized
+	TemporaryAuthFailure                  // temporary-auth-failure
 )
 
 // Failure represents a SASL error that is marshalable to XML.
 type Failure struct {
-	Condition condition
+	Condition Condition
 	Lang      language.Tag
 	Text      string
 }
@@ -47,18 +52,22 @@ func (f Failure) Error() string {
 	if f.Text != "" {
 		return f.Text
 	}
-	return string(f.Condition)
+	return f.Condition.String()
 }
 
 // TokenReader implements the xmlstream.Marshaler interface.
 func (f Failure) TokenReader() xml.TokenReader {
-	inner := []xml.TokenReader{
-		xmlstream.Wrap(
+	var cond xml.TokenReader
+	if f.Condition != None {
+		cond = xmlstream.Wrap(
 			nil,
 			xml.StartElement{
-				Name: xml.Name{Local: string(f.Condition)},
+				Name: xml.Name{Local: f.Condition.String()},
 			},
-		),
+		)
+	}
+	inner := []xml.TokenReader{
+		cond,
 	}
 	if f.Text != "" {
 		inner = append(inner, xmlstream.Wrap(
@@ -141,7 +150,7 @@ func (f *Failure) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	case "temporary-auth-failure":
 		f.Condition = TemporaryAuthFailure
 	default:
-		f.Condition = condition(decoded.Condition.XMLName.Local)
+		f.Condition = None
 	}
 	tags := make([]language.Tag, 0, len(decoded.Text))
 	data := make(map[language.Tag]string)

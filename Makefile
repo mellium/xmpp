@@ -35,6 +35,9 @@ deps.svg: $(GOFILES)
 ##
 ######
 
+internal/saslerr/condition_string.go: internal/saslerr/errors.go
+	go generate -run="stringer -type=Condition" ./internal/saslerr
+
 carbons/disco.go: carbons/carbons.go
 	go generate ./carbons
 
