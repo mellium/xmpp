@@ -39,6 +39,42 @@ const (
 	TemporaryAuthFailure                  // temporary-auth-failure
 )
 
+// TokenReader implements the xmlstream.Marshaler interface.
+func (c Condition) TokenReader() xml.TokenReader {
+	if c == None || c >= Condition(len(_Condition_index)-1) {
+		return xmlstream.Token(nil)
+	}
+	return xmlstream.Wrap(
+		nil,
+		xml.StartElement{Name: xml.Name{Local: c.String()}},
+	)
+}
+
+// WriteXML implements the xmlstream.WriterTo interface.
+func (c Condition) WriteXML(w xmlstream.TokenWriter) (int, error) {
+	return xmlstream.Copy(w, c.TokenReader())
+}
+
+// MarshalXML satisfies the xml.Marshaler interface for a Failure.
+func (c Condition) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	_, err := c.WriteXML(e)
+	if err != nil {
+		return err
+	}
+	return e.Flush()
+}
+
+// UnmarshalXML satisfies the xml.Unmarshaler interface.
+func (c *Condition) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	for cond := Condition(1); cond < Condition(len(_Condition_index)-1); cond++ {
+		if start.Name.Local == cond.String() {
+			*c = cond
+			break
+		}
+	}
+	return d.Skip()
+}
+
 // Failure represents a SASL error that is marshalable to XML.
 type Failure struct {
 	Condition Condition
@@ -57,29 +93,22 @@ func (f Failure) Error() string {
 
 // TokenReader implements the xmlstream.Marshaler interface.
 func (f Failure) TokenReader() xml.TokenReader {
-	var cond xml.TokenReader
-	if f.Condition != None {
-		cond = xmlstream.Wrap(
-			nil,
-			xml.StartElement{
-				Name: xml.Name{Local: f.Condition.String()},
-			},
-		)
-	}
 	inner := []xml.TokenReader{
-		cond,
+		f.Condition.TokenReader(),
 	}
 	if f.Text != "" {
+		var attrs []xml.Attr
+		if f.Lang != language.Und {
+			attrs = append(attrs, xml.Attr{
+				Name:  xml.Name{Space: ns.XML, Local: "lang"},
+				Value: f.Lang.String(),
+			})
+		}
 		inner = append(inner, xmlstream.Wrap(
 			xmlstream.Token(xml.CharData(f.Text)),
 			xml.StartElement{
 				Name: xml.Name{Space: "", Local: "text"},
-				Attr: []xml.Attr{
-					{
-						Name:  xml.Name{Space: ns.XML, Local: "lang"},
-						Value: f.Lang.String(),
-					},
-				},
+				Attr: attrs,
 			},
 		))
 	}
@@ -115,10 +144,8 @@ func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 // the tag that most closely matches "und", whatever that means).
 func (f *Failure) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	decoded := struct {
-		Condition struct {
-			XMLName xml.Name
-		} `xml:",any"`
-		Text []struct {
+		Condition Condition `xml:",any"`
+		Text      []struct {
 			Lang string `xml:"http://www.w3.org/XML/1998/namespace lang,attr"`
 			Data string `xml:",chardata"`
 		} `xml:"text"`
@@ -126,40 +153,13 @@ func (f *Failure) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	if err := d.DecodeElement(&decoded, &start); err != nil {
 		return err
 	}
-	switch decoded.Condition.XMLName.Local {
-	case "not-authorized":
-		f.Condition = NotAuthorized
-	case "aborted":
-		f.Condition = Aborted
-	case "account-disabled":
-		f.Condition = AccountDisabled
-	case "credentials-expired":
-		f.Condition = CredentialsExpired
-	case "encryption-required":
-		f.Condition = EncryptionRequired
-	case "incorrect-encoding":
-		f.Condition = IncorrectEncoding
-	case "invalid-authzid":
-		f.Condition = InvalidAuthzID
-	case "invalid-mechanism":
-		f.Condition = InvalidMechanism
-	case "malformed-request":
-		f.Condition = MalformedRequest
-	case "mechanism-too-weak":
-		f.Condition = MechanismTooWeak
-	case "temporary-auth-failure":
-		f.Condition = TemporaryAuthFailure
-	default:
-		f.Condition = None
-	}
+	f.Condition = decoded.Condition
 	tags := make([]language.Tag, 0, len(decoded.Text))
 	data := make(map[language.Tag]string)
 	for _, text := range decoded.Text {
 		// Parse the language tag, skipping any that cannot be parsed.
-		tag, err := language.Parse(text.Lang)
-		if err != nil {
-			continue
-		}
+		/* #nosec */
+		tag, _ := language.Parse(text.Lang)
 		tags = append(tags, tag)
 		data[tag] = text.Data
 	}
