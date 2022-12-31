@@ -7,7 +7,7 @@ require (
 	golang.org/x/net v0.3.0
 	golang.org/x/sys v0.3.0
 	golang.org/x/text v0.5.0
-	golang.org/x/tools v0.3.0
+	golang.org/x/tools v0.4.0
 	mellium.im/sasl v0.3.1
 	mellium.im/xmlstream v0.15.4-0.20211023152852-0ca80a938137
 )
