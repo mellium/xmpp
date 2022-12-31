@@ -148,7 +148,7 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 			// No matching mechanism found…
 			if selected.Name == "" {
 				err = sendSASLError(w, saslerr.Failure{
-					Condition: saslerr.InvalidMechanism,
+					Condition: saslerr.ConditionInvalidMechanism,
 				})
 				if err != nil {
 					return 0, nil, err
@@ -169,7 +169,7 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 			server = sasl.NewServer(selected, permissions, opts...)
 		case xml.Name{Space: ns.SASL, Local: "abort"}:
 			err = sendSASLError(w, saslerr.Failure{
-				Condition: saslerr.Aborted,
+				Condition: saslerr.ConditionAborted,
 			})
 			if err != nil {
 				return 0, nil, err
@@ -180,7 +180,7 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 			// would be bad, so error out.
 			if server == nil || selected.Name == "" {
 				err = sendSASLError(w, saslerr.Failure{
-					Condition: saslerr.MalformedRequest,
+					Condition: saslerr.ConditionMalformedRequest,
 				})
 				if err != nil {
 					return 0, nil, err
@@ -189,7 +189,7 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 			}
 		default:
 			err = sendSASLError(w, saslerr.Failure{
-				Condition: saslerr.MalformedRequest,
+				Condition: saslerr.ConditionMalformedRequest,
 			})
 			if err != nil {
 				return 0, nil, err
@@ -214,7 +214,7 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 		case nil:
 		case sasl.ErrAuthn:
 			e := sendSASLError(w, saslerr.Failure{
-				Condition: saslerr.NotAuthorized,
+				Condition: saslerr.ConditionNotAuthorized,
 			})
 			if e != nil {
 				err = e

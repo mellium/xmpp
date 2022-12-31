@@ -8,18 +8,18 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[None-0]
-	_ = x[Aborted-1]
-	_ = x[AccountDisabled-2]
-	_ = x[CredentialsExpired-3]
-	_ = x[EncryptionRequired-4]
-	_ = x[IncorrectEncoding-5]
-	_ = x[InvalidAuthzID-6]
-	_ = x[InvalidMechanism-7]
-	_ = x[MalformedRequest-8]
-	_ = x[MechanismTooWeak-9]
-	_ = x[NotAuthorized-10]
-	_ = x[TemporaryAuthFailure-11]
+	_ = x[ConditionNone-0]
+	_ = x[ConditionAborted-1]
+	_ = x[ConditionAccountDisabled-2]
+	_ = x[ConditionCredentialsExpired-3]
+	_ = x[ConditionEncryptionRequired-4]
+	_ = x[ConditionIncorrectEncoding-5]
+	_ = x[ConditionInvalidAuthzID-6]
+	_ = x[ConditionInvalidMechanism-7]
+	_ = x[ConditionMalformedRequest-8]
+	_ = x[ConditionMechanismTooWeak-9]
+	_ = x[ConditionNotAuthorized-10]
+	_ = x[ConditionTemporaryAuthFailure-11]
 }
 
 const _Condition_name = "noneabortedaccount-disabledcredentials-expiredencryption-requiredincorrect-encodinginvalid-authzidinvalid-mechanismmalformed-requestmechanism-too-weaknot-authorizedtemporary-auth-failure"

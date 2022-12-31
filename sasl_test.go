@@ -156,14 +156,14 @@ var saslTestCases = [...]xmpptest.FeatureTestCase{
 		Feature: xmpp.SASL("", "", sasl.Plain),
 		In:      `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><not-authorized/></failure>`,
 		Out:     `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
-		Err:     saslerr.Failure{Condition: saslerr.NotAuthorized},
+		Err:     saslerr.Failure{Condition: saslerr.ConditionNotAuthorized},
 	},
 	3: {
 		Feature:    xmpp.SASL("", "", sasl.Plain),
 		In:         `<success xmlns="urn:ietf:params:xml:ns:xmpp-sasl"/>`,
 		Out:        `<auth xmlns="urn:ietf:params:xml:ns:xmpp-sasl" mechanism="PLAIN">AHRlc3QA</auth>`,
 		FinalState: xmpp.Authn,
-		Err:        saslerr.Failure{Condition: saslerr.NotAuthorized},
+		Err:        saslerr.Failure{Condition: saslerr.ConditionNotAuthorized},
 	},
 
 	// Simple server tests with plain.
@@ -185,7 +185,7 @@ var saslTestCases = [...]xmpptest.FeatureTestCase{
 		State:   xmpp.Received,
 		Feature: xmpp.SASLServer(panicPerms, sasl.Plain),
 		In:      `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><not-authorized/></failure>`,
-		Err:     saslerr.Failure{Condition: saslerr.NotAuthorized},
+		Err:     saslerr.Failure{Condition: saslerr.ConditionNotAuthorized},
 	},
 	7: {
 		State:   xmpp.Received,

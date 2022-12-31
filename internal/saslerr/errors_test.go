@@ -40,13 +40,13 @@ var encodingTestCases = []xmpptest.EncodingTestCase{
 	},
 	1: {
 		Value: &saslerr.Failure{
-			Condition: saslerr.Aborted,
+			Condition: saslerr.ConditionAborted,
 		},
 		XML: `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted></failure>`,
 	},
 	2: {
 		Value: &saslerr.Failure{
-			Condition: saslerr.Aborted,
+			Condition: saslerr.ConditionAborted,
 			Lang:      "pt-BR",
 		},
 		XML:         `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted></failure>`,
@@ -54,7 +54,7 @@ var encodingTestCases = []xmpptest.EncodingTestCase{
 	},
 	3: {
 		Value: &saslerr.Failure{
-			Condition: saslerr.Aborted,
+			Condition: saslerr.ConditionAborted,
 			Lang:      "lir",
 			Text:      "test",
 		},
@@ -62,7 +62,7 @@ var encodingTestCases = []xmpptest.EncodingTestCase{
 	},
 	4: {
 		Value: &saslerr.Failure{
-			Condition: saslerr.Aborted,
+			Condition: saslerr.ConditionAborted,
 			Text:      "test",
 		},
 		XML: `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted><text>test</text></failure>`,
@@ -76,7 +76,7 @@ func TestEncoding(t *testing.T) {
 func TestConditionEncoding(t *testing.T) {
 	var condEncodingTestCases = []xmpptest.EncodingTestCase{
 		0: {
-			Value:       indirect(saslerr.None),
+			Value:       indirect(saslerr.ConditionNone),
 			NoUnmarshal: true,
 		},
 		1: {
@@ -85,7 +85,7 @@ func TestConditionEncoding(t *testing.T) {
 			NoUnmarshal: true,
 		},
 		2: {
-			Value:     indirect(saslerr.None),
+			Value:     indirect(saslerr.ConditionNone),
 			XML:       "<badcondition/>",
 			NoMarshal: true,
 		},
@@ -110,7 +110,7 @@ func TestBadConditionString(t *testing.T) {
 
 func TestErrorTextOrCondition(t *testing.T) {
 	f := saslerr.Failure{
-		Condition: saslerr.MechanismTooWeak,
+		Condition: saslerr.ConditionMechanismTooWeak,
 		Text:      "Test",
 		Lang:      "bn",
 	}
@@ -118,7 +118,7 @@ func TestErrorTextOrCondition(t *testing.T) {
 		t.Error("Expected Error() to return the value of Text")
 	}
 	f = saslerr.Failure{
-		Condition: saslerr.MechanismTooWeak,
+		Condition: saslerr.ConditionMechanismTooWeak,
 	}
 	if f.Error() != f.Condition.String() {
 		t.Error("Expected Error() to return the value of Condition if no text")

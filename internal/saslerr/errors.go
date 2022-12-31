@@ -23,23 +23,23 @@ type Condition uint16
 const (
 	// None is a special condition that is used only if a defined condition was
 	// not present. Its use violates the spec.
-	None                 Condition = iota // none
-	Aborted                               // aborted
-	AccountDisabled                       // account-disabled
-	CredentialsExpired                    // credentials-expired
-	EncryptionRequired                    // encryption-required
-	IncorrectEncoding                     // incorrect-encoding
-	InvalidAuthzID                        // invalid-authzid
-	InvalidMechanism                      // invalid-mechanism
-	MalformedRequest                      // malformed-request
-	MechanismTooWeak                      // mechanism-too-weak
-	NotAuthorized                         // not-authorized
-	TemporaryAuthFailure                  // temporary-auth-failure
+	ConditionNone                 Condition = iota // none
+	ConditionAborted                               // aborted
+	ConditionAccountDisabled                       // account-disabled
+	ConditionCredentialsExpired                    // credentials-expired
+	ConditionEncryptionRequired                    // encryption-required
+	ConditionIncorrectEncoding                     // incorrect-encoding
+	ConditionInvalidAuthzID                        // invalid-authzid
+	ConditionInvalidMechanism                      // invalid-mechanism
+	ConditionMalformedRequest                      // malformed-request
+	ConditionMechanismTooWeak                      // mechanism-too-weak
+	ConditionNotAuthorized                         // not-authorized
+	ConditionTemporaryAuthFailure                  // temporary-auth-failure
 )
 
 // TokenReader implements the xmlstream.Marshaler interface.
 func (c Condition) TokenReader() xml.TokenReader {
-	if c == None || c >= Condition(len(_Condition_index)-1) {
+	if c == ConditionNone || c >= Condition(len(_Condition_index)-1) {
 		return xmlstream.Token(nil)
 	}
 	return xmlstream.Wrap(
