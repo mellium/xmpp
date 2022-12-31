@@ -15,13 +15,13 @@ import (
 
 // Compile time tests that interfaces are satisfied
 var (
-	_ error               = saslerr.Failure{}
-	_ error               = (*saslerr.Failure)(nil)
-	_ xml.Marshaler       = saslerr.Failure{}
-	_ xml.Marshaler       = (*saslerr.Failure)(nil)
-	_ xml.Unmarshaler     = (*saslerr.Failure)(nil)
-	_ xmlstream.Marshaler = (*saslerr.Failure)(nil)
-	_ xmlstream.WriterTo  = (*saslerr.Failure)(nil)
+	_ error               = saslerr.Error{}
+	_ error               = (*saslerr.Error)(nil)
+	_ xml.Marshaler       = saslerr.Error{}
+	_ xml.Marshaler       = (*saslerr.Error)(nil)
+	_ xml.Unmarshaler     = (*saslerr.Error)(nil)
+	_ xmlstream.Marshaler = (*saslerr.Error)(nil)
+	_ xmlstream.WriterTo  = (*saslerr.Error)(nil)
 	_ xml.Marshaler       = saslerr.Condition(0)
 	_ xml.Marshaler       = (*saslerr.Condition)(nil)
 	_ xml.Unmarshaler     = (*saslerr.Condition)(nil)
@@ -35,17 +35,17 @@ func indirect(c saslerr.Condition) *saslerr.Condition {
 
 var encodingTestCases = []xmpptest.EncodingTestCase{
 	0: {
-		Value: &saslerr.Failure{},
+		Value: &saslerr.Error{},
 		XML:   `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"></failure>`,
 	},
 	1: {
-		Value: &saslerr.Failure{
+		Value: &saslerr.Error{
 			Condition: saslerr.ConditionAborted,
 		},
 		XML: `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted></failure>`,
 	},
 	2: {
-		Value: &saslerr.Failure{
+		Value: &saslerr.Error{
 			Condition: saslerr.ConditionAborted,
 			Lang:      "pt-BR",
 		},
@@ -53,7 +53,7 @@ var encodingTestCases = []xmpptest.EncodingTestCase{
 		NoUnmarshal: true,
 	},
 	3: {
-		Value: &saslerr.Failure{
+		Value: &saslerr.Error{
 			Condition: saslerr.ConditionAborted,
 			Lang:      "lir",
 			Text:      "test",
@@ -61,7 +61,7 @@ var encodingTestCases = []xmpptest.EncodingTestCase{
 		XML: `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted><text xml:lang="lir">test</text></failure>`,
 	},
 	4: {
-		Value: &saslerr.Failure{
+		Value: &saslerr.Error{
 			Condition: saslerr.ConditionAborted,
 			Text:      "test",
 		},
@@ -109,7 +109,7 @@ func TestBadConditionString(t *testing.T) {
 }
 
 func TestErrorTextOrCondition(t *testing.T) {
-	f := saslerr.Failure{
+	f := saslerr.Error{
 		Condition: saslerr.ConditionMechanismTooWeak,
 		Text:      "Test",
 		Lang:      "bn",
@@ -117,7 +117,7 @@ func TestErrorTextOrCondition(t *testing.T) {
 	if f.Error() != f.Text {
 		t.Error("Expected Error() to return the value of Text")
 	}
-	f = saslerr.Failure{
+	f = saslerr.Error{
 		Condition: saslerr.ConditionMechanismTooWeak,
 	}
 	if f.Error() != f.Condition.String() {

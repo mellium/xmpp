@@ -147,7 +147,7 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 
 			// No matching mechanism found…
 			if selected.Name == "" {
-				err = sendSASLError(w, saslerr.Failure{
+				err = sendSASLError(w, saslerr.Error{
 					Condition: saslerr.ConditionInvalidMechanism,
 				})
 				if err != nil {
@@ -168,7 +168,7 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 
 			server = sasl.NewServer(selected, permissions, opts...)
 		case xml.Name{Space: ns.SASL, Local: "abort"}:
-			err = sendSASLError(w, saslerr.Failure{
+			err = sendSASLError(w, saslerr.Error{
 				Condition: saslerr.ConditionAborted,
 			})
 			if err != nil {
@@ -179,7 +179,7 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 			// We never got the initial <auth/> payload and selected a mechanism. This
 			// would be bad, so error out.
 			if server == nil || selected.Name == "" {
-				err = sendSASLError(w, saslerr.Failure{
+				err = sendSASLError(w, saslerr.Error{
 					Condition: saslerr.ConditionMalformedRequest,
 				})
 				if err != nil {
@@ -188,7 +188,7 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 				return 0, nil, errUnexpectedPayload
 			}
 		default:
-			err = sendSASLError(w, saslerr.Failure{
+			err = sendSASLError(w, saslerr.Error{
 				Condition: saslerr.ConditionMalformedRequest,
 			})
 			if err != nil {
@@ -213,7 +213,7 @@ func negotiateServer(ctx context.Context, identity, password string, permissions
 		switch err {
 		case nil:
 		case sasl.ErrAuthn:
-			e := sendSASLError(w, saslerr.Failure{
+			e := sendSASLError(w, saslerr.Error{
 				Condition: saslerr.ConditionNotAuthorized,
 			})
 			if e != nil {
@@ -453,7 +453,7 @@ func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement, allowChallenge 
 
 		return decodedChallenge, start.Name.Local == "success", nil
 	case xml.Name{Space: ns.SASL, Local: "failure"}:
-		fail := saslerr.Failure{}
+		fail := saslerr.Error{}
 		if err = d.DecodeElement(&fail, &start); err != nil {
 			return nil, false, err
 		}
@@ -463,7 +463,7 @@ func decodeSASLChallenge(d *xml.Decoder, start xml.StartElement, allowChallenge 
 	}
 }
 
-func sendSASLError(w xmlstream.TokenWriteFlusher, fail saslerr.Failure) error {
+func sendSASLError(w xmlstream.TokenWriteFlusher, fail saslerr.Error) error {
 	_, err := xmlstream.Copy(w, fail.TokenReader())
 	if err != nil {
 		return err
@@ -471,11 +471,11 @@ func sendSASLError(w xmlstream.TokenWriteFlusher, fail saslerr.Failure) error {
 	return w.Flush()
 }
 
-func decodeIfSASLErr(d *xml.Decoder, start xml.StartElement) (saslerr.Failure, bool, error) {
+func decodeIfSASLErr(d *xml.Decoder, start xml.StartElement) (saslerr.Error, bool, error) {
 	if start.Name.Local != "failure" || start.Name.Space != ns.SASL {
-		return saslerr.Failure{}, false, nil
+		return saslerr.Error{}, false, nil
 	}
 
-	fail := saslerr.Failure{}
+	fail := saslerr.Error{}
 	return fail, true, d.DecodeElement(&fail, &start)
 }

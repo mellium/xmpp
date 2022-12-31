@@ -73,8 +73,8 @@ func (c *Condition) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return d.Skip()
 }
 
-// Failure represents a SASL error that is marshalable to XML.
-type Failure struct {
+// Error represents a SASL error that is marshalable to XML.
+type Error struct {
 	Condition Condition
 	Lang      string
 	Text      string
@@ -82,7 +82,7 @@ type Failure struct {
 
 // Error satisfies the error interface for a Failure. It returns the text string
 // if set, or the condition otherwise.
-func (f Failure) Error() string {
+func (f Error) Error() string {
 	if f.Text != "" {
 		return f.Text
 	}
@@ -90,7 +90,7 @@ func (f Failure) Error() string {
 }
 
 // TokenReader implements the xmlstream.Marshaler interface.
-func (f Failure) TokenReader() xml.TokenReader {
+func (f Error) TokenReader() xml.TokenReader {
 	inner := []xml.TokenReader{
 		f.Condition.TokenReader(),
 	}
@@ -120,12 +120,12 @@ func (f Failure) TokenReader() xml.TokenReader {
 }
 
 // WriteXML implements the xmlstream.WriterTo interface.
-func (f Failure) WriteXML(w xmlstream.TokenWriter) (int, error) {
+func (f Error) WriteXML(w xmlstream.TokenWriter) (int, error) {
 	return xmlstream.Copy(w, f.TokenReader())
 }
 
 // MarshalXML satisfies the xml.Marshaler interface for a Failure.
-func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+func (f Error) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	_, err := f.WriteXML(e)
 	if err != nil {
 		return err
@@ -140,7 +140,7 @@ func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 // tag.
 // If no language tag in the XML matches the behavior is undefined and may
 // change at a later date or depending on the server order of tags.
-func (f *Failure) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (f *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	decoded := struct {
 		Condition Condition `xml:",any"`
 		Text      []struct {
