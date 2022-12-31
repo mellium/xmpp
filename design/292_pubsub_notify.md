@@ -33,7 +33,7 @@ rest of the document. This SHOULD include the latest text from [BCP 14]:
 
 Supporting subscribing to nodes, removing subscriptions, and receiving (and
 handling) events and updates is a critical pre-requisite to many features that
-use pubsub such as [OMEMO] ([#291]).
+use pubsub such as [OMEMO] \([#291]).
 The existing pubsub functionality allows users to publish and fetch data,
 effectively replacing the functionality of the legacy [`privatexml`] package,
 but does not implement the extra features that make pubsub so valuable and which
