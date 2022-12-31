@@ -8,8 +8,6 @@ import (
 	"encoding/xml"
 	"testing"
 
-	"golang.org/x/text/language"
-
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/saslerr"
 	"mellium.im/xmpp/internal/xmpptest"
@@ -49,7 +47,7 @@ var encodingTestCases = []xmpptest.EncodingTestCase{
 	2: {
 		Value: &saslerr.Failure{
 			Condition: saslerr.Aborted,
-			Lang:      language.BrazilianPortuguese,
+			Lang:      "pt-BR",
 		},
 		XML:         `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted></failure>`,
 		NoUnmarshal: true,
@@ -57,10 +55,10 @@ var encodingTestCases = []xmpptest.EncodingTestCase{
 	3: {
 		Value: &saslerr.Failure{
 			Condition: saslerr.Aborted,
-			Lang:      language.BrazilianPortuguese,
+			Lang:      "lir",
 			Text:      "test",
 		},
-		XML: `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted><text xml:lang="pt-BR">test</text></failure>`,
+		XML: `<failure xmlns="urn:ietf:params:xml:ns:xmpp-sasl"><aborted></aborted><text xml:lang="lir">test</text></failure>`,
 	},
 	4: {
 		Value: &saslerr.Failure{
@@ -114,7 +112,7 @@ func TestErrorTextOrCondition(t *testing.T) {
 	f := saslerr.Failure{
 		Condition: saslerr.MechanismTooWeak,
 		Text:      "Test",
-		Lang:      language.CanadianFrench,
+		Lang:      "bn",
 	}
 	if f.Error() != f.Text {
 		t.Error("Expected Error() to return the value of Text")

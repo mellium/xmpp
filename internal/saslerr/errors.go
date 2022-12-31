@@ -11,8 +11,6 @@ package saslerr // import "mellium.im/xmpp/internal/saslerr"
 import (
 	"encoding/xml"
 
-	"golang.org/x/text/language"
-
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
 )
@@ -23,7 +21,7 @@ type Condition uint16
 
 // Standard SASL error conditions.
 const (
-	// None is a special condition that is present only if a defined condition was
+	// None is a special condition that is used only if a defined condition was
 	// not present. Its use violates the spec.
 	None                 Condition = iota // none
 	Aborted                               // aborted
@@ -78,7 +76,7 @@ func (c *Condition) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 // Failure represents a SASL error that is marshalable to XML.
 type Failure struct {
 	Condition Condition
-	Lang      language.Tag
+	Lang      string
 	Text      string
 }
 
@@ -98,10 +96,10 @@ func (f Failure) TokenReader() xml.TokenReader {
 	}
 	if f.Text != "" {
 		var attrs []xml.Attr
-		if f.Lang != language.Und {
+		if f.Lang != "" {
 			attrs = append(attrs, xml.Attr{
 				Name:  xml.Name{Space: ns.XML, Local: "lang"},
-				Value: f.Lang.String(),
+				Value: f.Lang,
 			})
 		}
 		inner = append(inner, xmlstream.Wrap(
@@ -135,13 +133,13 @@ func (f Failure) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.Flush()
 }
 
-// UnmarshalXML satisfies the xml.Unmarshaler interface for a Failure. If
-// multiple text elements are present in the XML and the Failure struct already
-// has a language tag set, UnmarshalXML selects the text element with an
-// xml:lang attribute that most closely matches the features language tag. If no
-// language tag is present, UnmarshalXML selects a text element with an xml:lang
-// attribute of "und" if present, behavior is undefined otherwise (it will pick
-// the tag that most closely matches "und", whatever that means).
+// UnmarshalXML satisfies the xml.Unmarshaler interface for a Failure.
+//
+// If multiple text elements are present in the XML, UnmarshalXML selects the
+// text element with an xml:lang attribute that exactly matches the language
+// tag.
+// If no language tag in the XML matches the behavior is undefined and may
+// change at a later date or depending on the server order of tags.
 func (f *Failure) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	decoded := struct {
 		Condition Condition `xml:",any"`
@@ -154,17 +152,12 @@ func (f *Failure) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		return err
 	}
 	f.Condition = decoded.Condition
-	tags := make([]language.Tag, 0, len(decoded.Text))
-	data := make(map[language.Tag]string)
 	for _, text := range decoded.Text {
-		// Parse the language tag, skipping any that cannot be parsed.
-		/* #nosec */
-		tag, _ := language.Parse(text.Lang)
-		tags = append(tags, tag)
-		data[tag] = text.Data
+		f.Lang = text.Lang
+		f.Text = text.Data
+		if text.Lang == f.Lang {
+			break
+		}
 	}
-	tag, _, _ := language.NewMatcher(tags).Match(f.Lang)
-	f.Lang = tag
-	f.Text = data[tag]
 	return nil
 }
