@@ -13,7 +13,6 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
-	"mellium.im/xmpp/stream"
 )
 
 // StartTLS returns a new stream feature that can be used for negotiating TLS.
@@ -78,28 +77,24 @@ func StartTLS(cfg *tls.Config) StreamFeature {
 				case xml.StartElement:
 					switch {
 					case tok.Name.Space != ns.StartTLS:
-						return 0, nil, stream.UnsupportedStanzaType
+						return 0, nil, fmt.Errorf("xmpp: unknown namespace during TLS negotiation")
 					case tok.Name.Local == "proceed":
 						// Skip the </proceed> token.
 						if err = d.Skip(); err != nil {
-							return 0, nil, stream.InvalidXML
+							return 0, nil, err
 						}
 						rw = tls.Client(conn, cfg)
 					case tok.Name.Local == "failure":
 						// Skip the </failure> token.
 						if err = d.Skip(); err != nil {
-							err = stream.InvalidXML
+							return 0, nil, err
 						}
-						// Failure is not an "error", it's expected behavior. Immediately
-						// afterwards the server will end the stream. However, if we
-						// encounter bad XML while skipping the </failure> token, return
-						// that error.
-						return 0, nil, err
+						return 0, nil, fmt.Errorf("xmpp: receiver indicated that TLS negotiation failed")
 					default:
-						return 0, nil, stream.UnsupportedStanzaType
+						return 0, nil, fmt.Errorf("xmpp: unknown element during TLS negotiation")
 					}
 				default:
-					return 0, nil, stream.RestrictedXML
+					return 0, nil, fmt.Errorf("xmpp: disallowed XML sent during TLS negotiation")
 				}
 			}
 			return Secure, rw, nil
