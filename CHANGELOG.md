@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 
 - xmpp: authentication no longer fails if the remote server offers channel
   binding
+- xmpp: better error messages are returned when performing StartTLS
 
 
 ## v0.21.3 — 2022-08-18

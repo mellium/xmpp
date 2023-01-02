@@ -152,7 +152,7 @@ func TestNegotiateClient(t *testing.T) {
 		0: {[]string{`<proceed xmlns="badns"/>`}, true, false, xmpp.Secure},
 		1: {[]string{`<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`}, false, true, xmpp.Secure},
 		2: {[]string{`<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'></bad>`}, true, false, 0},
-		3: {[]string{`<failure xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`}, false, false, 0},
+		3: {[]string{`<failure xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`}, true, false, 0},
 		4: {[]string{`<failure xmlns='urn:ietf:params:xml:ns:xmpp-tls'></bad>`}, true, false, 0},
 		5: {[]string{`</somethingbadhappened>`}, true, false, 0},
 		6: {[]string{`<notproceedorfailure xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>`}, true, false, 0},
