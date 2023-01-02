@@ -11,6 +11,5 @@ const (
 	Bind     = "urn:ietf:params:xml:ns:xmpp-bind"
 	SASL     = "urn:ietf:params:xml:ns:xmpp-sasl"
 	StartTLS = "urn:ietf:params:xml:ns:xmpp-tls"
-	WS       = "urn:ietf:params:xml:ns:xmpp-framing"
 	XML      = "http://www.w3.org/XML/1998/namespace"
 )

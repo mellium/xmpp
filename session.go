@@ -21,7 +21,6 @@ import (
 	"mellium.im/xmpp/dial"
 	"mellium.im/xmpp/internal/attr"
 	"mellium.im/xmpp/internal/marshal"
-	"mellium.im/xmpp/internal/ns"
 	intstream "mellium.im/xmpp/internal/stream"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
@@ -35,11 +34,6 @@ var (
 )
 
 var errNotStart = errors.New("xmpp: SendElement did not begin with a StartElement")
-
-const (
-	closeStreamTag   = `</stream:stream>`
-	closeStreamWSTag = `<close xmlns="urn:ietf:params:xml:ns:xmpp-framing"/>`
-)
 
 // earlyCloser is a token reader that closes itself as soon as reading is
 // complete (io.EOF is reached). It is used to release the read lock as aquired
@@ -842,15 +836,7 @@ func (s *Session) closeSession() error {
 	s.state |= OutputStreamClosed
 	// We wrote the opening stream instead of encoding it, so do the same with the
 	// closing to ensure that the encoder doesn't think the tokens are mismatched.
-	var err error
-	switch xmlns := s.out.Info.Name.Space; xmlns {
-	case ns.WS:
-		_, err = s.Conn().Write([]byte(closeStreamWSTag))
-	default:
-		// case stream.NS:
-		_, err = s.Conn().Write([]byte(closeStreamTag))
-	}
-	return err
+	return intstream.Close(s.Conn(), &s.out.Info)
 }
 
 // State returns the current state of the session. For more information, see the

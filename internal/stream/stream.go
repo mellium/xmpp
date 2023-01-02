@@ -14,10 +14,11 @@ import (
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/decl"
-	"mellium.im/xmpp/internal/ns"
 	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
 )
+
+const wsNamespace = "urn:ietf:params:xml:ns:xmpp-framing"
 
 // Send sends a new XML header followed by a stream start element on the given
 // io.Writer.
@@ -123,9 +124,9 @@ func Expect(ctx context.Context, in *stream.Info, d xml.TokenReader, recv, ws bo
 				return se
 			case !ws && (tok.Name.Local != "stream" || tok.Name.Space != stream.NS):
 				return fmt.Errorf("expected stream open element %v, got %v: %w", xml.Name{Space: stream.NS, Local: "stream"}, tok.Name, stream.InvalidNamespace)
-			case ws && (tok.Name.Local != "open" || tok.Name.Space != ns.WS):
-				return fmt.Errorf("expected WebSocket stream open element %v, got %v: %w", xml.Name{Space: ns.WS, Local: "open"}, tok.Name, stream.InvalidNamespace)
-			case ws && tok.Name.Local == "open" && tok.Name.Space == ns.WS:
+			case ws && (tok.Name.Local != "open" || tok.Name.Space != wsNamespace):
+				return fmt.Errorf("expected WebSocket stream open element %v, got %v: %w", xml.Name{Space: wsNamespace, Local: "open"}, tok.Name, stream.InvalidNamespace)
+			case ws && tok.Name.Local == "open" && tok.Name.Space == wsNamespace:
 				// Websocket payloads are always full XML documents, so the "open"
 				// element is closed as well.
 				err = xmlstream.Skip(d)
@@ -159,4 +160,22 @@ func Expect(ctx context.Context, in *stream.Info, d xml.TokenReader, recv, ws bo
 			return fmt.Errorf("unexpected XML token %T encountered: %w", t, stream.RestrictedXML)
 		}
 	}
+}
+
+const (
+	closeStreamTag   = `</stream:stream>`
+	closeStreamWSTag = `<close xmlns="urn:ietf:params:xml:ns:xmpp-framing"/>`
+)
+
+// Close sends a stream end token.
+func Close(w io.Writer, streamData *stream.Info) error {
+	var err error
+	switch xmlns := streamData.Name.Space; xmlns {
+	case wsNamespace:
+		_, err = w.Write([]byte(closeStreamWSTag))
+	default:
+		// case stream.NS:
+		_, err = w.Write([]byte(closeStreamTag))
+	}
+	return err
 }
