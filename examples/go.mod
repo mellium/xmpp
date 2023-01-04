@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/gdamore/tcell/v2 v2.5.0
 	github.com/rivo/tview v0.0.0-20220307222120-9994674d60a8
-	mellium.im/sasl v0.2.1
+	mellium.im/sasl v0.3.1
 	mellium.im/xmlstream v0.15.4-0.20211023152852-0ca80a938137
 	mellium.im/xmpp v0.21.1
 )
