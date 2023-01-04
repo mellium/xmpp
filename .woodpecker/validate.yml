@@ -1,3 +1,10 @@
+clone:
+  clone:
+    image: woodpeckerci/plugin-git
+    settings:
+      # Full clone so that we can generate the CONTRIBUTORS file.
+      partial: false
+
 pipeline:
   info: &info
     image: golang:alpine
