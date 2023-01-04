@@ -21,6 +21,8 @@ All notable changes to this project will be documented in this file.
 - xmpp: authentication no longer fails if the remote server offers channel
   binding
 - xmpp: better error messages are returned when performing StartTLS
+- blocklist: the blocklist functions now use the correct namespace and are
+  compatible with most servers
 
 
 ## v0.21.3 — 2022-08-18

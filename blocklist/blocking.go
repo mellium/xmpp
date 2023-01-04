@@ -16,7 +16,7 @@ import (
 )
 
 // NS is the namespace used by this package, provided as a convenience.
-const NS = `urn:xmpp:blocklist`
+const NS = `urn:xmpp:blocking`
 
 // Match checks j1 aginst a JID in the blocklist (j2) and returns true if they
 // are a match.
