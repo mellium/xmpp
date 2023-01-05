@@ -4,6 +4,7 @@
 
 from slixmpp import jid
 import slixmpp
+import ssl
 import xmpptest
 
 
@@ -31,7 +32,13 @@ class Daemon(xmpptest.Daemon):
         async def run_callback(_):
             await self.run()
         self.client.add_event_handler('session_start', run_callback)
-        self.client.connect(address=("127.0.0.1", self.xmpp_port))
+        # These are integration tests that don't use a real certificate
+        # so disable verification so that our self-signed certs work.
+        tlsCtx = self.client.get_ssl_context()
+        tlsCtx.check_hostname=False
+        tlsCtx.verify_mode=ssl.CERT_NONE
+        self.client.connect(address=("127.0.0.1", self.xmpp_port),
+                            force_starttls=False)
         await self.client.wait_until('session_end')
 
     async def run(self) -> None:
