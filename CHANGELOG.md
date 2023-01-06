@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - xmpp: add `UpdateAddr` to set the JID during resource binding
+- pubsub: various namespaces and generated types
 
 
 ### Breaking

@@ -10,7 +10,10 @@ package pubsub // import "mellium.im/xmpp/pubsub"
 
 // Various namespaces used by this package, provided as a convenience.
 const (
-	NS       = `http://jabber.org/protocol/pubsub`
-	NSOwner  = `http://jabber.org/protocol/pubsub#owner`
-	NSPaging = `http://jabber.org/protocol/pubsub#rsm`
+	NS        = `http://jabber.org/protocol/pubsub`
+	NSErrors  = `http://jabber.org/protocol/pubsub#errors`
+	NSEvent   = `http://jabber.org/protocol/pubsub#event`
+	NSOptions = `http://jabber.org/protocol/pubsub#subscription-options`
+	NSOwner   = `http://jabber.org/protocol/pubsub#owner`
+	NSPaging  = `http://jabber.org/protocol/pubsub#rsm`
 )
