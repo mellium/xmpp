@@ -14,6 +14,7 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -79,4 +80,20 @@ func GetIQ(ctx context.Context, iq stanza.IQ, s *xmpp.Session) (Query, error) {
 	query := Query{}
 	err := s.UnmarshalIQ(ctx, iq.Wrap(query.TokenReader()), &query)
 	return query, err
+}
+
+// Handle returns an option that registers a Handler for software version requests.
+func Handle(q Query) mux.Option {
+	return mux.IQ(stanza.GetIQ, xml.Name{Local: "query", Space: NS}, handler{q})
+}
+
+// handler responds to software version requests.
+type handler struct {
+	Query Query
+}
+
+// HandleIQ responds to software version requests.
+func (h handler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+	_, err := xmlstream.Copy(t, iq.Result(h.Query.TokenReader()))
+	return err
 }

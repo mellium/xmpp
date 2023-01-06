@@ -15,6 +15,7 @@ import (
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/xmpptest"
 	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/mux"
 	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/version"
 )
@@ -78,16 +79,9 @@ func TestGet(t *testing.T) {
 		Version: "ver",
 		OS:      "os",
 	}
-	cs := xmpptest.NewClientServer(
-		xmpptest.ServerHandlerFunc(func(e xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-			iq, err := stanza.NewIQ(*start)
-			if err != nil {
-				return err
-			}
-			_, err = xmlstream.Copy(e, iq.Result(query.TokenReader()))
-			return err
-		}),
-	)
+	m := mux.New(stanza.NSClient, version.Handle(query))
+	cs := xmpptest.NewClientServer(xmpptest.ServerHandler(m))
+
 	resp, err := version.Get(context.Background(), cs.Client, jid.JID{})
 	if err != nil {
 		t.Fatalf("error querying version: %v", err)
