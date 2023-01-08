@@ -2,13 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## v0.21.4 — 2023-01-11
 
 ### Added
 
 - xmpp: add `UpdateAddr` to set the JID during resource binding
 - pubsub: various namespaces and generated types
 - version: add handler and mux option for software version requests
+- blocklist: the ability to report users for spam or abuse
 
 
 ### Breaking
