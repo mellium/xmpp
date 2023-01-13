@@ -173,6 +173,11 @@ var errorEncodingTests = []xmpptest.EncodingTestCase{
 			"de": "German",
 		}},
 	},
+	12: {
+		Value:     &stanza.Error{Type: stanza.Continue, Condition: stanza.ServiceUnavailable, Text: simpleText},
+		XML:       `<error type="continue"><foo xmlns="urn:example:errors"/><service-unavailable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></service-unavailable><bar xmlns="urn:example:errors"/><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas">test</text></error>`,
+		NoMarshal: true,
+	},
 }
 
 func TestEncodeError(t *testing.T) {

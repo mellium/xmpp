@@ -392,7 +392,7 @@ func (se Error) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 // UnmarshalXML satisfies the xml.Unmarshaler interface for StanzaError.
 func (se *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	decoded := struct {
-		Condition struct {
+		Condition []struct {
 			XMLName xml.Name
 		} `xml:",any"`
 		Type ErrorType `xml:"type,attr"`
@@ -407,8 +407,11 @@ func (se *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	}
 	se.Type = decoded.Type
 	se.By = decoded.By
-	if decoded.Condition.XMLName.Space == NSError {
-		se.Condition = Condition(decoded.Condition.XMLName.Local)
+	for _, cond := range decoded.Condition {
+		if cond.XMLName.Space == NSError {
+			se.Condition = Condition(cond.XMLName.Local)
+			break
+		}
 	}
 
 	for _, text := range decoded.Text {
