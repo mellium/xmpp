@@ -2,34 +2,50 @@
 
 package pubsub
 
+import (
+	"encoding/xml"
+)
+
 // Condition is the underlying cause of a pubsub error.
 type Condition uint32
 
 // Valid pubsub Conditions.
 const (
-	ClosedNode             Condition = iota // closed-node
-	ConfigRequired                          // configuration-required
-	InvalidJID                              // invalid-jid
-	InvalidOptions                          // invalid-options
-	InvalidPayload                          // invalid-payload
-	InvalidSubID                            // invalid-subid
-	ItemForbidden                           // item-forbidden
-	ItemRequired                            // item-required
-	JIDRequired                             // jid-required
-	MaxItemsExceeded                        // max-items-exceeded
-	MaxNodesExceeded                        // max-nodes-exceeded
-	NodeIDRequired                          // nodeid-required
-	NotInRosterGroup                        // not-in-roster-group
-	NotSubscribed                           // not-subscribed
-	PayloadTooBig                           // payload-too-big
-	PayloadRequired                         // payload-required
-	PendingSubscription                     // pending-subscription
-	PresenceRequired                        // presence-subscription-required
-	SubIDRequired                           // subid-required
-	TooManySubscriptions                    // too-many-subscriptions
-	Unsupported                             // unsupported
-	UnsupportedAccessModel                  // unsupported-access-model
+	ErrNone                   Condition = iota
+	ErrClosedNode                       // closed-node
+	ErrConfigRequired                   // configuration-required
+	ErrInvalidJID                       // invalid-jid
+	ErrInvalidOptions                   // invalid-options
+	ErrInvalidPayload                   // invalid-payload
+	ErrInvalidSubID                     // invalid-subid
+	ErrItemForbidden                    // item-forbidden
+	ErrItemRequired                     // item-required
+	ErrJIDRequired                      // jid-required
+	ErrMaxItemsExceeded                 // max-items-exceeded
+	ErrMaxNodesExceeded                 // max-nodes-exceeded
+	ErrNodeIDRequired                   // nodeid-required
+	ErrNotInRosterGroup                 // not-in-roster-group
+	ErrNotSubscribed                    // not-subscribed
+	ErrPayloadTooBig                    // payload-too-big
+	ErrPayloadRequired                  // payload-required
+	ErrPendingSubscription              // pending-subscription
+	ErrPresenceRequired                 // presence-subscription-required
+	ErrSubIDRequired                    // subid-required
+	ErrTooManySubscriptions             // too-many-subscriptions
+	ErrUnsupported                      // unsupported
+	ErrUnsupportedAccessModel           // unsupported-access-model
 )
+
+// UnmarshalXML implements xml.Unmarshaler.
+func (c *Condition) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	for cond := ErrNone; cond <= ErrUnsupportedAccessModel; cond++ {
+		if cond.String() == start.Name.Local {
+			*c = cond
+			break
+		}
+	}
+	return d.Skip()
+}
 
 // Feature is a specific pubsub feature that may be reported in an error as
 // being unsupported.
