@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## Unreleased
+
+### Fixed
+
+- stanza: when marshaling an error, all translations are now included
+
+
 ## v0.21.4 — 2023-01-11
 
 ### Added

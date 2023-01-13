@@ -166,6 +166,13 @@ var errorEncodingTests = []xmpptest.EncodingTestCase{
 		Value: &stanza.Error{Condition: stanza.Condition("other")},
 		XML:   `<error><other xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></other></error>`,
 	},
+	11: {
+		XML: `<error type="auth"><resource-constraint xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"></resource-constraint><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="de">German</text><text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="en">test</text></error>`,
+		Value: &stanza.Error{Type: stanza.Auth, Condition: stanza.ResourceConstraint, Text: map[string]string{
+			"en": "test",
+			"de": "German",
+		}},
+	},
 }
 
 func TestEncodeError(t *testing.T) {

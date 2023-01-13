@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"io"
+	"sort"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/ns"
@@ -276,10 +277,16 @@ func (se Error) Wrap(payload xml.TokenReader) xml.TokenReader {
 		start.Attr = append(start.Attr, a)
 	}
 
-	var text xml.TokenReader = xmlstream.ReaderFunc(func() (xml.Token, error) {
-		return nil, io.EOF
-	})
-	for lang, data := range se.Text {
+	// Operate in sorted order to make the output deterministic.
+	var langs []string
+	for lang := range se.Text {
+		langs = append(langs, lang)
+	}
+	sort.Strings(langs)
+
+	var text []xml.TokenReader
+	for _, lang := range langs {
+		data := se.Text[lang]
 		if data == "" {
 			continue
 		}
@@ -291,7 +298,7 @@ func (se Error) Wrap(payload xml.TokenReader) xml.TokenReader {
 				Value: lang,
 			}}
 		}
-		text = xmlstream.Wrap(
+		text = append(text, xmlstream.Wrap(
 			xmlstream.ReaderFunc(func() (xml.Token, error) {
 				return xml.CharData(data), io.EOF
 			}),
@@ -299,7 +306,7 @@ func (se Error) Wrap(payload xml.TokenReader) xml.TokenReader {
 				Name: xml.Name{Space: NSError, Local: "text"},
 				Attr: attrs,
 			},
-		)
+		))
 	}
 
 	if se.Condition == "" {
@@ -314,7 +321,7 @@ func (se Error) Wrap(payload xml.TokenReader) xml.TokenReader {
 					Name: xml.Name{Space: NSError, Local: string(se.Condition)},
 				},
 			),
-			text,
+			xmlstream.MultiReader(text...),
 			payload,
 		),
 		start,
