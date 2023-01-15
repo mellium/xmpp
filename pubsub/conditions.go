@@ -11,34 +11,34 @@ type Condition uint32
 
 // Valid pubsub Conditions.
 const (
-	ErrNone                   Condition = iota
-	ErrClosedNode                       // closed-node
-	ErrConfigRequired                   // configuration-required
-	ErrInvalidJID                       // invalid-jid
-	ErrInvalidOptions                   // invalid-options
-	ErrInvalidPayload                   // invalid-payload
-	ErrInvalidSubID                     // invalid-subid
-	ErrItemForbidden                    // item-forbidden
-	ErrItemRequired                     // item-required
-	ErrJIDRequired                      // jid-required
-	ErrMaxItemsExceeded                 // max-items-exceeded
-	ErrMaxNodesExceeded                 // max-nodes-exceeded
-	ErrNodeIDRequired                   // nodeid-required
-	ErrNotInRosterGroup                 // not-in-roster-group
-	ErrNotSubscribed                    // not-subscribed
-	ErrPayloadTooBig                    // payload-too-big
-	ErrPayloadRequired                  // payload-required
-	ErrPendingSubscription              // pending-subscription
-	ErrPresenceRequired                 // presence-subscription-required
-	ErrSubIDRequired                    // subid-required
-	ErrTooManySubscriptions             // too-many-subscriptions
-	ErrUnsupported                      // unsupported
-	ErrUnsupportedAccessModel           // unsupported-access-model
+	CondNone                   Condition = iota
+	CondClosedNode                       // closed-node
+	CondConfigRequired                   // configuration-required
+	CondInvalidJID                       // invalid-jid
+	CondInvalidOptions                   // invalid-options
+	CondInvalidPayload                   // invalid-payload
+	CondInvalidSubID                     // invalid-subid
+	CondItemForbidden                    // item-forbidden
+	CondItemRequired                     // item-required
+	CondJIDRequired                      // jid-required
+	CondMaxItemsExceeded                 // max-items-exceeded
+	CondMaxNodesExceeded                 // max-nodes-exceeded
+	CondNodeIDRequired                   // nodeid-required
+	CondNotInRosterGroup                 // not-in-roster-group
+	CondNotSubscribed                    // not-subscribed
+	CondPayloadTooBig                    // payload-too-big
+	CondPayloadRequired                  // payload-required
+	CondPendingSubscription              // pending-subscription
+	CondPresenceRequired                 // presence-subscription-required
+	CondSubIDRequired                    // subid-required
+	CondTooManySubscriptions             // too-many-subscriptions
+	CondUnsupported                      // unsupported
+	CondUnsupportedAccessModel           // unsupported-access-model
 )
 
 // UnmarshalXML implements xml.Unmarshaler.
 func (c *Condition) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	for cond := ErrNone; cond <= ErrUnsupportedAccessModel; cond++ {
+	for cond := CondNone; cond <= CondUnsupportedAccessModel; cond++ {
 		if cond.String() == start.Name.Local {
 			*c = cond
 			break

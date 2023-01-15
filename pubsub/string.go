@@ -28,34 +28,34 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[ErrNone-0]
-	_ = x[ErrClosedNode-1]
-	_ = x[ErrConfigRequired-2]
-	_ = x[ErrInvalidJID-3]
-	_ = x[ErrInvalidOptions-4]
-	_ = x[ErrInvalidPayload-5]
-	_ = x[ErrInvalidSubID-6]
-	_ = x[ErrItemForbidden-7]
-	_ = x[ErrItemRequired-8]
-	_ = x[ErrJIDRequired-9]
-	_ = x[ErrMaxItemsExceeded-10]
-	_ = x[ErrMaxNodesExceeded-11]
-	_ = x[ErrNodeIDRequired-12]
-	_ = x[ErrNotInRosterGroup-13]
-	_ = x[ErrNotSubscribed-14]
-	_ = x[ErrPayloadTooBig-15]
-	_ = x[ErrPayloadRequired-16]
-	_ = x[ErrPendingSubscription-17]
-	_ = x[ErrPresenceRequired-18]
-	_ = x[ErrSubIDRequired-19]
-	_ = x[ErrTooManySubscriptions-20]
-	_ = x[ErrUnsupported-21]
-	_ = x[ErrUnsupportedAccessModel-22]
+	_ = x[CondNone-0]
+	_ = x[CondClosedNode-1]
+	_ = x[CondConfigRequired-2]
+	_ = x[CondInvalidJID-3]
+	_ = x[CondInvalidOptions-4]
+	_ = x[CondInvalidPayload-5]
+	_ = x[CondInvalidSubID-6]
+	_ = x[CondItemForbidden-7]
+	_ = x[CondItemRequired-8]
+	_ = x[CondJIDRequired-9]
+	_ = x[CondMaxItemsExceeded-10]
+	_ = x[CondMaxNodesExceeded-11]
+	_ = x[CondNodeIDRequired-12]
+	_ = x[CondNotInRosterGroup-13]
+	_ = x[CondNotSubscribed-14]
+	_ = x[CondPayloadTooBig-15]
+	_ = x[CondPayloadRequired-16]
+	_ = x[CondPendingSubscription-17]
+	_ = x[CondPresenceRequired-18]
+	_ = x[CondSubIDRequired-19]
+	_ = x[CondTooManySubscriptions-20]
+	_ = x[CondUnsupported-21]
+	_ = x[CondUnsupportedAccessModel-22]
 }
 
-const _Condition_name = "ErrNoneclosed-nodeconfiguration-requiredinvalid-jidinvalid-optionsinvalid-payloadinvalid-subiditem-forbiddenitem-requiredjid-requiredmax-items-exceededmax-nodes-exceedednodeid-requirednot-in-roster-groupnot-subscribedpayload-too-bigpayload-requiredpending-subscriptionpresence-subscription-requiredsubid-requiredtoo-many-subscriptionsunsupportedunsupported-access-model"
+const _Condition_name = "CondNoneclosed-nodeconfiguration-requiredinvalid-jidinvalid-optionsinvalid-payloadinvalid-subiditem-forbiddenitem-requiredjid-requiredmax-items-exceededmax-nodes-exceedednodeid-requirednot-in-roster-groupnot-subscribedpayload-too-bigpayload-requiredpending-subscriptionpresence-subscription-requiredsubid-requiredtoo-many-subscriptionsunsupportedunsupported-access-model"
 
-var _Condition_index = [...]uint16{0, 7, 18, 40, 51, 66, 81, 94, 108, 121, 133, 151, 169, 184, 203, 217, 232, 248, 268, 298, 312, 334, 345, 369}
+var _Condition_index = [...]uint16{0, 8, 19, 41, 52, 67, 82, 95, 109, 122, 134, 152, 170, 185, 204, 218, 233, 249, 269, 299, 313, 335, 346, 370}
 
 func (i Condition) String() string {
 	if i >= Condition(len(_Condition_index)-1) {

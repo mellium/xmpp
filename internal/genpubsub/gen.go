@@ -36,16 +36,16 @@ type Condition uint32
 {{- $last := "" }}
 // Valid pubsub Conditions.
 const (
-ErrNone Condition = iota
+CondNone Condition = iota
 {{- range .Conditions }}
-	Err{{ . | ident }} // {{ . }}
+	Cond{{ . | ident }} // {{ . }}
 	{{- $last = . }}
 {{- end }}
 )
 
 // UnmarshalXML implements xml.Unmarshaler.
 func (c *Condition) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	for cond := ErrNone; cond <= Err{{ $last | ident }}; cond++ {
+	for cond := CondNone; cond <= Cond{{ $last | ident }}; cond++ {
 		if cond.String() == start.Name.Local {
 			*c = cond
 			break
