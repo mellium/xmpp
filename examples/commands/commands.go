@@ -323,6 +323,11 @@ func (l *label) GetFieldWidth() int {
 	return 0
 }
 
+// GetFieldHeight always returns 0 (dynamic width).
+func (l *label) GetFieldHeight() int {
+	return 1
+}
+
 // SetFinishedFunc is a noop.
 func (l *label) SetFinishedFunc(handler func(key tcell.Key)) tview.FormItem {
 	l.finished = handler
