@@ -50,13 +50,6 @@ type Link struct {
 	Href string `xml:"href,attr" json:"href"`
 }
 
-var (
-	xrdName = xml.Name{
-		Space: "http://docs.oasis-open.org/ns/xri/xrd-1.0",
-		Local: "XRD",
-	}
-)
-
 // LookupPort returns the default port for the provided network and service
 // using net.LookupPort.
 // If the provided service is one of xmpp[s]-client, xmpp[s]-server, or
