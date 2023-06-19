@@ -19,8 +19,11 @@ import (
 	"mellium.im/xmlstream"
 )
 
-// NS is the namespace used by this package.
-const NS = "urn:xmpp:hashes:2"
+// The namespaces used by this package.
+const (
+	NS      = "urn:xmpp:hashes:2"
+	NSTrust = "urn:xmpp:tm:1"
+)
 
 // A list of errors returned by functions in this package.
 // Error checking against these errors should always use errors.Is and not a
