@@ -14,7 +14,7 @@ protocols used for instant messaging), an XMPP library in Go seems like a great
 fit.
 There are a handful of libraries to handle XMPP already in existence, but most
 of them are small high-level libraries designed only to work with the legacy
-version of XMPP that was supported by Google Talk, or don't follow go idioms and
+version of XMPP that was supported by Google Talk, or don't follow Go idioms and
 best practices.
 When I started looking into a Go XMPP implementation around 2014, there wasn't a
 low-level library meant to act as a building block from which higher level
@@ -45,7 +45,7 @@ Then the server sends another list (possibly with new features, eg. now that we
 have TLS negotiated the server might advertise that authentication is now ready
 to proceed) and the client selects one and moves forward.
 This loop is easy enough to write in Go, but representing the features
-themselves was tricky.
+themselves is tricky.
 Features need to be able to encode the name they go by when the server lists
 them and any information that should be included in that listing, they need to
 be able to parse that payload from the clients side, and the actual negotiation
@@ -94,17 +94,17 @@ advertise or negotiate the feature using simple bit math.
 
 ```
 const (
-	// Secure indicates that the underlying connection has been secured. For
-	// instance, after STARTTLS has been performed or if a pre-secured connection
-	// is being used such as websockets over HTTPS.
+    // Secure indicates that the underlying connection has been secured. For
+    // instance, after STARTTLS has been performed or if a pre-secured
+    // connection is being used such as websockets over HTTPS.
 	Secure SessionState = 1 << iota
 
 	// Authn indicates that the session has been authenticated (probably with
 	// SASL).
 	Authn
 
-	// Ready indicates that the session is fully negotiated and that XMPP stanzas
-	// may be sent and received.
+	// Ready indicates that the session is fully negotiated and that XMPP
+    // stanzas may be sent and received.
 	Ready
 
 	// Received indicates that the session was initiated by a foreign entity.
