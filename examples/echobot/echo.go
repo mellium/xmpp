@@ -35,7 +35,7 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 
 	conn, err := dial.Client(ctx, "tcp", j)
 	if err != nil {
-		return fmt.Errorf("Error dialing sesion: %w", err)
+		return fmt.Errorf("Error dialing session: %w", err)
 	}
 
 	s, err := xmpp.NewSession(ctx, j.Domain(), j, conn, 0, xmpp.NewNegotiator(func(*xmpp.Session, *xmpp.StreamConfig) xmpp.StreamConfig {
