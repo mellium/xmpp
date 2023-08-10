@@ -139,6 +139,11 @@ var unmarshalTests = [...]struct {
 			Value: "some error",
 		}}},
 	},
+	3: {
+		xml: `<stream:error><see-other-host xmlns='urn:ietf:params:xml:ns:xmpp-streams'>127.0.0.1</see-other-host></stream:error>`,
+		se:  stream.Error{Err: "see-other-host", Content: "127.0.0.1"},
+		err: false,
+	},
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -155,6 +160,9 @@ func TestUnmarshal(t *testing.T) {
 				return
 			case !reflect.DeepEqual(test.se.Text, s.Text):
 				t.Errorf("invalid value for Text:\nwant=%+v\n got=%+v", test.se.Text, s.Text)
+				return
+			case test.se.Content != s.Content:
+				t.Errorf("expected Content `%#v` but got `%#v`", test.se.Content, s.Content)
 				return
 			case err != nil:
 				return

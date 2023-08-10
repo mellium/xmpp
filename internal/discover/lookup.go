@@ -125,19 +125,26 @@ func FallbackRecords(service, domain string) []*net.SRV {
 // returned.
 // Service should be one of "xmpp[s]-client" or "xmpp[s]-server".
 func LookupService(ctx context.Context, resolver *net.Resolver, service string, addr jid.JID) (addrs []*net.SRV, err error) {
+	return LookupServiceByDomain(ctx, resolver, service, addr.Domainpart())
+}
+
+// LookupServiceByDomain behaves exactly the same as LookupService, besides
+// that the domain it tries to connect to is given as argument instead of
+// using the domainpart of the JID.
+func LookupServiceByDomain(ctx context.Context, resolver *net.Resolver, service string, domain string) (addrs []*net.SRV, err error) {
 	switch service {
 	case "xmpp-client", "xmpp-server", "xmpps-client", "xmpps-server":
 	default:
 		return nil, ErrInvalidService
 	}
-	_, addrs, err = resolver.LookupSRV(ctx, service, "tcp", addr.Domainpart())
+	_, addrs, err = resolver.LookupSRV(ctx, service, "tcp", domain)
 	if err != nil {
 		if !isNotFound(err) {
 			return nil, err
 		}
 
 		// Add a fallback to the JID.
-		return FallbackRecords(service, addr.Domainpart()), nil
+		return FallbackRecords(service, domain), nil
 	}
 
 	// RFC 6230 §3.2.1

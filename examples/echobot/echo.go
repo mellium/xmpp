@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -18,6 +19,7 @@ import (
 	"mellium.im/xmpp/dial"
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
+	"mellium.im/xmpp/stream"
 )
 
 // MessageBody is a message stanza that contains a body. It is normally used for
@@ -30,12 +32,15 @@ type MessageBody struct {
 func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logger, debug *log.Logger) error {
 	j, err := jid.Parse(addr)
 	if err != nil {
-		return fmt.Errorf("Error parsing address %q: %w", addr, err)
+		return fmt.Errorf("error parsing address %q: %w", addr, err)
 	}
+	d := dial.Dialer{}
 
-	conn, err := dial.Client(ctx, "tcp", j)
+	server := j.Domainpart()
+retry_dial:
+	conn, err := d.DialServer(ctx, "tcp", j, server)
 	if err != nil {
-		return fmt.Errorf("Error dialing session: %w", err)
+		return fmt.Errorf("error dialing session: %w", err)
 	}
 
 	s, err := xmpp.NewSession(ctx, j.Domain(), j, conn, 0, xmpp.NewNegotiator(func(*xmpp.Session, *xmpp.StreamConfig) xmpp.StreamConfig {
@@ -54,7 +59,15 @@ func echo(ctx context.Context, addr, pass string, xmlIn, xmlOut io.Writer, logge
 		}
 	}))
 	if err != nil {
-		return fmt.Errorf("Error establishing a session: %w", err)
+		if errors.Is(err, stream.SeeOtherHost) {
+			server = err.(stream.Error).Content
+
+			logger.Printf("see-other-host: %s", server)
+			s.Close()
+			conn.Close()
+			goto retry_dial
+		}
+		return fmt.Errorf("error establishing a session: %w", err)
 	}
 	defer func() {
 		logger.Println("Closing conn…")

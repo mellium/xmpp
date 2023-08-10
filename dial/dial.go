@@ -79,15 +79,20 @@ type Dialer struct {
 // likely want to use one of the tcp connection types ("tcp", "tcp4", or
 // "tcp6").
 func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
-	return d.dial(ctx, network, addr)
+	return d.dial(ctx, network, addr, addr.Domainpart())
 }
 
-func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Conn, error) {
-	domain := addr.Domainpart()
+// DialServer behaves exactly the same as Dial, besides that the server it tries
+// to connect to is given as argument instead of using the domainpart of the JID.
+func (d *Dialer) DialServer(ctx context.Context, network string, addr jid.JID, server string) (net.Conn, error) {
+	return d.dial(ctx, network, addr, server)
+}
+
+func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID, server string) (net.Conn, error) {
 	cfg := d.TLSConfig
 	if cfg == nil {
 		cfg = &tls.Config{
-			ServerName: domain,
+			ServerName: addr.Domainpart(),
 			MinVersion: tls.VersionTLS12,
 		}
 		// XEP-0368
@@ -99,7 +104,7 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 	}
 	// If we're not looking up SRV records, use the A/AAAA fallback.
 	if d.NoLookup {
-		return d.legacy(ctx, network, addr, cfg)
+		return d.legacy(ctx, network, server, cfg)
 	}
 
 	var xmppAddrs, xmppsAddrs []*net.SRV
@@ -112,7 +117,7 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 			// Lookup xmpps-(client|server)
 			defer wg.Done()
 			xmppsService := connType(true, d.S2S)
-			addrs, err := discover.LookupService(ctx, d.Resolver, xmppsService, addr)
+			addrs, err := discover.LookupServiceByDomain(ctx, d.Resolver, xmppsService, server)
 			if err != nil {
 				xmppsErr = err
 			}
@@ -123,7 +128,7 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 		// Lookup xmpp-(client|server)
 		defer wg.Done()
 		xmppService := connType(false, d.S2S)
-		addrs, err := discover.LookupService(ctx, d.Resolver, xmppService, addr)
+		addrs, err := discover.LookupServiceByDomain(ctx, d.Resolver, xmppService, server)
 		if err != nil {
 			xmppErr = err
 		}
@@ -137,7 +142,7 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 	}
 	addrs := append(xmppsAddrs, xmppAddrs...)
 	if len(addrs) == 0 {
-		return nil, fmt.Errorf("no xmpp service found at address %s", domain)
+		return nil, fmt.Errorf("no xmpp service found at address %s", server)
 	}
 
 	// Try dialing all of the SRV records we know about, breaking as soon as the
@@ -167,8 +172,7 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID) (net.Co
 	return nil, err
 }
 
-func (d *Dialer) legacy(ctx context.Context, network string, addr jid.JID, cfg *tls.Config) (net.Conn, error) {
-	domain := addr.Domainpart()
+func (d *Dialer) legacy(ctx context.Context, network string, domain string, cfg *tls.Config) (net.Conn, error) {
 	if !d.NoTLS {
 		conn, err := tls.DialWithDialer(&d.Dialer, network,
 			net.JoinHostPort(domain, "5223"), cfg)

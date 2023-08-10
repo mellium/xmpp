@@ -114,6 +114,16 @@ var (
 	// entity reference.
 	RestrictedXML = Error{Err: "restricted-xml"}
 
+	// The server will not provide service to the initiating entity but is
+	// redirecting traffic to another host under the administrative control of the
+	// same service provider.
+	// When acting as a server: Creating an error of this type can be done
+	// with the SeeOtherHostError() function.
+	// When acting as a client: This error can be returned by the stream negotiator.
+	// Handling it is up to the client implementation, an example is given in the
+	// echo example client.
+	SeeOtherHost = Error{Err: "see-other-host"}
+
 	// SystemShutdown may be sent when server is being shut down and all active
 	// streams are being closed.
 	SystemShutdown = Error{Err: "system-shutdown"}
@@ -157,7 +167,8 @@ func SeeOtherHostError(addr net.Addr) Error {
 	}
 
 	return Error{
-		Err: "see-other-host",
+		Err:     "see-other-host",
+		Content: cdata,
 		// This needs to return the CharData every time in case we use this error
 		// multiple times, so use a custom ReaderFunc and not the stateful
 		// xmlstream.Token.
@@ -175,6 +186,10 @@ type Error struct {
 		Lang  string
 		Value string
 	}
+
+	// The content of the error condition element.
+	// This should only be used by see-other-host errors.
+	Content string
 
 	innerXML xml.TokenReader
 	payload  xml.TokenReader
@@ -233,6 +248,20 @@ func (s *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		}
 
 		switch {
+		case start.Name.Local == "see-other-host" && start.Name.Space == NSError:
+			// Fixing https://mellium.im/issue/151 would simplify things a lot here
+			t := struct {
+				XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-streams see-other-host"`
+				Text    string   `xml:",chardata"`
+			}{}
+
+			err = d.DecodeElement(&t, &start)
+			if err != nil {
+				return err
+			}
+			s.Err = start.Name.Local
+			s.Content = t.Text
+
 		case start.Name.Local == "text" && start.Name.Space == NSError:
 			t := struct {
 				XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-streams text"`

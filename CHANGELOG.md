@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- stream: add handling of `see-other-host` error
+
 ### Fixed
 
 - stanza: when marshaling an error, all translations are now included
