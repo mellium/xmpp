@@ -5,7 +5,7 @@ clone:
       # Full clone so that we can generate the CONTRIBUTORS file.
       partial: false
 
-pipeline:
+steps:
   info: &info
     image: golang:alpine
     environment:

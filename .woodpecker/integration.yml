@@ -2,7 +2,7 @@
 # See: https://mellium.im/issue/68, https://mellium.im/issue/222, and
 #      https://mellium.im/issue/329
 
-pipeline:
+steps:
   info: &info
     image: alpine:edge
     environment:

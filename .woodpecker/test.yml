@@ -1,4 +1,4 @@
-pipeline:
+steps:
   info: &info
     image: golang:${GO_VERSION}-alpine
     environment:
