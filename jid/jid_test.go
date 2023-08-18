@@ -408,6 +408,7 @@ func TestSplitMallocs(t *testing.T) {
 }
 
 func TestParseMallocs(t *testing.T) {
+	t.Skip("#377: allocs differ between Go 1.20 and Go 1.21")
 	n := testing.AllocsPerRun(1000, func() {
 		_, err := jid.Parse("olivia@example.net/ilyria")
 		if err != nil {
