@@ -126,6 +126,7 @@ func (c *config) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 					}
 					c.history.seconds = &v
 				case "since":
+					attr := attr
 					c.history.since = &attr.Value
 				}
 			}
