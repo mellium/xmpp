@@ -234,15 +234,9 @@ func (s *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 		switch {
 		case start.Name.Local == "text" && start.Name.Space == NSError:
-			var lang string
-			for _, attr := range start.Attr {
-				if attr.Name.Local == "lang" && attr.Name.Space == ns.XML {
-					lang = attr.Value
-					break
-				}
-			}
 			t := struct {
 				XMLName xml.Name `xml:"urn:ietf:params:xml:ns:xmpp-streams text"`
+				Lang    string   `xml:"http://www.w3.org/XML/1998/namespace lang,attr"`
 				Text    string   `xml:",chardata"`
 			}{}
 			err = d.DecodeElement(&t, &start)
@@ -253,14 +247,14 @@ func (s *Error) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 				Lang  string
 				Value string
 			}{
-				Lang:  lang,
+				Lang:  t.Lang,
 				Value: t.Text,
 			})
 		case start.Name.Space == NSError:
 			s.Err = start.Name.Local
-		}
-		if err = d.Skip(); err != nil {
-			return err
+			if err = d.Skip(); err != nil {
+				return err
+			}
 		}
 	}
 }

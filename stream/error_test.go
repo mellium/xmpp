@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"reflect"
 	"testing"
 
 	"mellium.im/xmlstream"
@@ -152,10 +153,14 @@ func TestUnmarshal(t *testing.T) {
 			case !test.err && err != nil:
 				t.Errorf("unexpected error: %v", err)
 				return
+			case !reflect.DeepEqual(test.se.Text, s.Text):
+				t.Errorf("invalid value for Text:\nwant=%+v\n got=%+v", test.se.Text, s.Text)
+				return
 			case err != nil:
 				return
 			case s.Err != test.se.Err:
 				t.Errorf("expected Err `%#v` but got `%#v`", test.se, s)
+				return
 			}
 		})
 	}
