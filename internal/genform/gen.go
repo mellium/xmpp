@@ -99,12 +99,9 @@ func main() {
 		outFile = "formfields.go"
 		names   = ""
 		prefix  = ""
-		// We should be using the generated registry at
-		// https://xmpp.org/registrar/formtypes.xml, but it has a bug.
-		// See: https://github.com/xsf/registrar/pull/40
-		regURL = `https://raw.githubusercontent.com/xsf/registrar/master/formtypes.xml`
-		tmpDir = os.TempDir()
-		noFmt  bool
+		regURL  = `https://xmpp.org/registrar/formtypes.xml`
+		tmpDir  = os.TempDir()
+		noFmt   bool
 	)
 
 	flag.StringVar(&outFile, "filename", outFile, "filename to generate")
