@@ -63,7 +63,7 @@ var marshalTests = [...]struct {
 		err: false,
 	},
 	3: {
-		se:  stream.UnsupportedEncoding.InnerXML(xmlstream.Token(xml.CharData("test"))),
+		se:  stream.Error{Err: "unsupported-encoding", Content: "test"},
 		xml: `<error xmlns="http://etherx.jabber.org/streams"><unsupported-encoding xmlns="urn:ietf:params:xml:ns:xmpp-streams">test</unsupported-encoding></error>`,
 	},
 	4: {
@@ -71,14 +71,10 @@ var marshalTests = [...]struct {
 		xml: `<error xmlns="http://etherx.jabber.org/streams"><unsupported-encoding xmlns="urn:ietf:params:xml:ns:xmpp-streams"></unsupported-encoding>test</error>`,
 	},
 	5: {
-		se:  stream.UnsupportedEncoding.ApplicationError(xmlstream.Token(xml.CharData("test"))).InnerXML(xmlstream.Token(xml.CharData("foo"))),
+		se:  stream.Error{Err: "unsupported-encoding", Content: "foo"}.ApplicationError(xmlstream.Token(xml.CharData("test"))),
 		xml: `<error xmlns="http://etherx.jabber.org/streams"><unsupported-encoding xmlns="urn:ietf:params:xml:ns:xmpp-streams">foo</unsupported-encoding>test</error>`,
 	},
 	6: {
-		se:  stream.UnsupportedEncoding.ApplicationError(xmlstream.Token(xml.CharData("test"))).InnerXML(xmlstream.Token(xml.CharData("foo"))),
-		xml: `<error xmlns="http://etherx.jabber.org/streams"><unsupported-encoding xmlns="urn:ietf:params:xml:ns:xmpp-streams">foo</unsupported-encoding>test</error>`,
-	},
-	7: {
 		se: stream.Error{Err: "undefined-condition", Text: []struct {
 			Lang  string
 			Value string

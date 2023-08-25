@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 
 - stream: add handling of `see-other-host` error
 
+### Breaking
+
+- stream: `Error.InnerXML()` has been replaced by `Error.Content`
+
 ### Fixed
 
 - stanza: when marshaling an error, all translations are now included
