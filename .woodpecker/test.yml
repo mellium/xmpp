@@ -19,8 +19,6 @@ steps:
         go build
         cd ..
       done
-    when:
-      path: "examples/**"
 
 matrix:
   GO_VERSION:
