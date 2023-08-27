@@ -24,3 +24,5 @@ require (
 	golang.org/x/tools v0.6.0 // indirect
 	mellium.im/reader v0.1.0 // indirect
 )
+
+replace mellium.im/xmpp => ../

@@ -56,5 +56,3 @@ mellium.im/sasl v0.3.1 h1:wE0LW6g7U83vhvxjC1IY8DnXM+EU095yeo8XClvCdfo=
 mellium.im/sasl v0.3.1/go.mod h1:xm59PUYpZHhgQ9ZqoJ5QaCqzWMi8IeS49dhp6plPCzw=
 mellium.im/xmlstream v0.15.4 h1:gLKxcWl4rLMUpKgtzrTBvr4OexPeO/edYus+uK3F6ZI=
 mellium.im/xmlstream v0.15.4/go.mod h1:yXaCW2++fmVO4L9piKVkyLDqnCmictVYF7FDQW8prb4=
-mellium.im/xmpp v0.21.4 h1:hhAGFC/mGt2Bbmx46vPn+kQT0pJec7uaq+9xckkr9uI=
-mellium.im/xmpp v0.21.4/go.mod h1:Emo7bXXyEEgH2hdTO9zp9eGJoc9yK5dAlG0/YVJlh+U=
