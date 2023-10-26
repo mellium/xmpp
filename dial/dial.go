@@ -39,7 +39,8 @@ func Server(ctx context.Context, network string, addr jid.JID) (net.Conn, error)
 
 // A Dialer contains options for connecting to an XMPP address.
 // After a connection is established the Dial method does not attempt to create
-// an XMPP session on the connection.
+// an XMPP session on the connection, the various session establishment
+// functions in the main xmpp package should be passed the resulting connection.
 //
 // The zero value for each field is equivalent to dialing without that option.
 // Dialing with the zero value of Dialer is equivalent to calling the Client
@@ -47,30 +48,26 @@ func Server(ctx context.Context, network string, addr jid.JID) (net.Conn, error)
 type Dialer struct {
 	net.Dialer
 
-	// NoLookup stops the dialer from looking up SRV or TXT records for the given
-	// domain. It also prevents fetching of the host metadata file.
-	// Instead, it will try to connect to the domain directly.
+	// NoLookup stops the dialer from looking up SRV records for the given domain.
+	// It also prevents fetching of the host metadata file. Instead, it will try
+	// to connect to the domain directly.
 	NoLookup bool
 
 	// S2S causes the server to attempt to dial a server-to-server connection.
 	S2S bool
 
-	// Disable TLS entirely (eg. when using StartTLS on a server that does not
-	// support implicit TLS).
+	// Disable implicit TLS entirely (eg. when using opportunistic TLS on a server
+	// that does not support implicit TLS).
 	NoTLS bool
 
-	// Attempt to create a TLS connection by first looking up SRV records (unless
-	// NoLookup is set) and then attempting to use the domains A or AAAA record.
-	// The nil value is interpreted as a tls.Config with the expected host set to
-	// that of the connection addresses domain part.
+	// The configuration to use when dialing with implicit TLS support.
+	// Setting TLSConfig has no effect if NoTLS is true.
+	// The default value is interpreted as a tls.Config with the expected host set
+	// to that of the connection addresses domain part.
 	TLSConfig *tls.Config
 }
 
 // Dial discovers and connects to the address on the named network.
-// It will attempt to look up SRV records for the JIDs domainpart or
-// connect to the domainpart directly if dialing the SRV records fails or is
-// disabled.
-//
 // If the context expires before the connection is complete, an error is
 // returned. Once successfully connected, any expiration of the context will not
 // affect the connection.
@@ -84,6 +81,9 @@ func (d *Dialer) Dial(ctx context.Context, network string, addr jid.JID) (net.Co
 
 // DialServer behaves exactly the same as Dial, besides that the server it tries
 // to connect to is given as argument instead of using the domainpart of the JID.
+//
+// Changing the server does not affect the server name expected by the default
+// TLSConfig which remains the addresses domainpart.
 func (d *Dialer) DialServer(ctx context.Context, network string, addr jid.JID, server string) (net.Conn, error) {
 	return d.dial(ctx, network, addr, server)
 }
