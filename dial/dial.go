@@ -117,9 +117,10 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID, server 
 			// Lookup xmpps-(client|server)
 			defer wg.Done()
 			xmppsService := connType(true, d.S2S)
-			addrs, err := discover.LookupServiceByDomain(ctx, d.Resolver, xmppsService, server)
-			if err != nil {
-				xmppsErr = err
+			addrs, e := discover.LookupServiceByDomain(ctx, d.Resolver, xmppsService, server)
+			if e != nil {
+				xmppsErr = e
+				return
 			}
 			xmppsAddrs = addrs
 		}()
@@ -128,9 +129,10 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID, server 
 		// Lookup xmpp-(client|server)
 		defer wg.Done()
 		xmppService := connType(false, d.S2S)
-		addrs, err := discover.LookupServiceByDomain(ctx, d.Resolver, xmppService, server)
-		if err != nil {
-			xmppErr = err
+		addrs, e := discover.LookupServiceByDomain(ctx, d.Resolver, xmppService, server)
+		if e != nil {
+			xmppErr = e
+			return
 		}
 		xmppAddrs = addrs
 	}()
@@ -140,7 +142,9 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID, server 
 	if xmppsErr != nil && xmppErr != nil {
 		return nil, xmppsErr
 	}
-	addrs := append(xmppsAddrs, xmppAddrs...)
+	addrs := make([]*net.SRV, 0, len(xmppAddrs)+len(xmppsAddrs))
+	addrs = append(addrs, xmppsAddrs...)
+	addrs = append(addrs, xmppAddrs...)
 	if len(addrs) == 0 {
 		return nil, fmt.Errorf("no xmpp service found at address %s", server)
 	}
@@ -148,10 +152,12 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID, server 
 	// Try dialing all of the SRV records we know about, breaking as soon as the
 	// connection is established.
 	var err error
-	for _, addr := range addrs {
+	for i, addr := range addrs {
 		var c net.Conn
 		var e error
-		if d.NoTLS {
+		// Do not dial expecting a TLS connection if we're trying addreses that we
+		// expect starttls on or if we have implicit TLS disabled.
+		if d.NoTLS || i >= len(xmppsAddrs) {
 			c, e = d.Dialer.DialContext(ctx, network, net.JoinHostPort(
 				addr.Target,
 				strconv.FormatUint(uint64(addr.Port), 10),
