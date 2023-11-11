@@ -24,8 +24,10 @@ func isWhitespace(b xml.CharData) bool {
 }
 
 type reader struct {
-	r     xml.TokenReader
-	depth uint64
+	r           xml.TokenReader
+	depth       uint64
+	negotiating bool
+	ws          bool
 }
 
 func (r *reader) Token() (xml.Token, error) {
@@ -45,6 +47,9 @@ func (r *reader) Token() (xml.Token, error) {
 		}
 	case xml.StartElement:
 		r.depth++
+		if r.ws && t.Name.Space == wsNamespace && !r.negotiating {
+			return nil, ErrUnexpectedRestart
+		}
 		if t.Name.Space != stream.NS {
 			return tok, err
 		}
@@ -60,7 +65,11 @@ func (r *reader) Token() (xml.Token, error) {
 			}
 			return nil, e
 		case "stream":
-			// Special case returning a nice error here.
+			// Special case returning a nice error here unless we're negotiating a new
+			// stream, then just return the stream start.
+			if r.negotiating {
+				return t, err
+			}
 			return nil, ErrUnexpectedRestart
 		default:
 			return nil, ErrUnknownStreamElement
@@ -91,6 +100,11 @@ func (r *reader) Token() (xml.Token, error) {
 
 // Reader returns a token reader that handles stream level tokens on an already
 // established stream.
-func Reader(r xml.TokenReader) xml.TokenReader {
-	return &reader{r: r}
+// The ws argument indicates whether this is a WebSocket connection or not.
+func Reader(r xml.TokenReader, ws bool) xml.TokenReader {
+	return &reader{r: r, ws: ws}
+}
+
+func negotiateReader(r xml.TokenReader, ws bool) xml.TokenReader {
+	return &reader{r: r, negotiating: true, ws: ws}
 }

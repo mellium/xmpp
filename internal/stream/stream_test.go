@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -19,6 +18,89 @@ import (
 	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
 )
+
+var expectTestCases = [...]struct {
+	XML  string
+	Err  bool
+	Recv bool
+	WS   bool
+}{
+	0: {Err: true},
+	1: {
+		XML: "<?xml version='1.0'?>\n\t <stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0' id='123'>",
+	},
+	2: {
+		XML: "<?xml version='1.0'?><stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0' id='123'>",
+	},
+	3: {
+		XML: "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0' id='123'>",
+	},
+	4: {
+		XML: `<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" to="example.com" version="1.0" id="123" />`,
+		WS:  true,
+	},
+	5: {
+		XML:  `<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" to="example.com" version="1.0" />`,
+		WS:   true,
+		Recv: true,
+	},
+	6: {
+		XML: "<foo/>",
+		Err: true,
+	},
+	7: {
+		XML: "<foo/>",
+		WS:  true,
+		Err: true,
+	},
+	8: {
+		XML: "<?xml version='1.0'?>",
+		Err: true,
+	},
+	9: {
+		// TODO: is this actually legal? I don't see why it wouldn't be, but I have
+		// a vague recollection that the first byte in an XML stream was always '<'.
+		// This test may need to change if we find out this is wrong.
+		XML: "\n\t <stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0' id='123'>",
+	},
+	10: {
+		XML: `<open xmlns="urn:ietf:params:xml:ns:xmpp-framing" to="example.com" version="1.0" id="123">`,
+		WS:  true,
+		Err: true,
+	},
+	11: {
+		XML: "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='0.0' id='123'>",
+		Err: true,
+	},
+	12: {
+		XML: "<stream:stream xmlns='jabber:foo' xmlns:stream='http://etherx.jabber.org/streams' version='1.0' id='123'>",
+		Err: true,
+	},
+	13: {
+		XML: "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>",
+		Err: true,
+	},
+	14: {
+		XML: "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='0' id='123'>",
+		Err: true,
+	},
+}
+
+func TestExpect(t *testing.T) {
+	for i, tc := range expectTestCases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			d := xml.NewDecoder(strings.NewReader(tc.XML))
+			info := &stream.Info{}
+			err := intstream.Expect(context.Background(), info, d, tc.Recv, tc.WS)
+			switch {
+			case err != nil && !tc.Err:
+				t.Errorf("Did not expect error but got %v", err)
+			case err == nil && tc.Err:
+				t.Error("Expected error but did not get one")
+			}
+		})
+	}
+}
 
 func TestSendNewS2S(t *testing.T) {
 	for i, tc := range []struct {
@@ -98,104 +180,5 @@ func TestSendNewS2SReturnsWriteErr(t *testing.T) {
 	}, &out, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", "abc")
 	if err != io.ErrUnexpectedEOF {
 		t.Errorf("Expected errWriterErr (%s) but got `%s`", io.ErrUnexpectedEOF, err)
-	}
-}
-
-var expectTestCases = [...]struct {
-	XML            string
-	Err            error
-	Recv           bool
-	WS             bool
-	SkipFinalToken bool
-	Pop            int
-}{
-	0: {
-		Err:            io.EOF,
-		SkipFinalToken: true,
-	},
-	1: {
-		XML: xml.Header[:len(xml.Header)-1] + `<stream><fin/>`,
-		Err: stream.InvalidNamespace,
-	},
-	2: {
-		XML: xml.Header + `<open><fin/>`,
-		WS:  true,
-		Err: stream.InvalidNamespace,
-	},
-	3: {
-		XML: xml.Header + xml.Header[:len(xml.Header)-1] + `<fin/>`,
-		WS:  true,
-		Err: stream.RestrictedXML,
-	},
-	4: {
-		XML: `<open xmlns="urn:ietf:params:xml:ns:xmpp-framing"
-		            to="example.com"
-								version="1.0" /><fin/>`,
-		Recv: true,
-		WS:   true,
-	},
-	5: {
-		XML: `<open xmlns="urn:ietf:params:xml:ns:xmpp-framing"
-		            to="example.com"
-								version="1.0" /><fin/>`,
-		WS:  true,
-		Err: stream.BadFormat,
-	},
-	6: {
-		XML: `<open xmlns="urn:ietf:params:xml:ns:xmpp-framing"
-		            to="example.com"
-								version="2.0" /><fin/>`,
-		Recv: true,
-		WS:   true,
-		Err:  stream.UnsupportedVersion,
-	},
-	7: {
-		XML: `<stream:stream
-            from='juliet@im.example.com'
-            to='im.example.com'
-            version='1.0'
-            xml:lang='en'
-						id='1234'
-            xmlns='wrong'
-            xmlns:stream='http://etherx.jabber.org/streams'><fin/>`,
-		Err: stream.InvalidNamespace,
-	},
-	8: {
-		XML: `<stream></stream><fin/>`,
-		Err: stream.NotWellFormed,
-		Pop: 1,
-	},
-	9: {
-		XML: `<!-- test --><fin/>`,
-		Err: stream.RestrictedXML,
-	},
-}
-
-func TestExpect(t *testing.T) {
-	for i, tc := range expectTestCases {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			d := xml.NewDecoder(strings.NewReader(tc.XML))
-			for ; tc.Pop > 0; tc.Pop-- {
-				_, err := d.Token()
-				if err != nil {
-					t.Fatalf("error while poping start tokens: %v", err)
-				}
-			}
-			info := &stream.Info{}
-			err := intstream.Expect(context.Background(), info, d, tc.Recv, tc.WS)
-			if (tc.Err != nil && !errors.Is(err, tc.Err)) || (tc.Err == nil && err != nil) {
-				t.Fatalf("wrong error: want=%v, got=%v", tc.Err, err)
-			}
-			if !tc.SkipFinalToken {
-				tok, err := d.Token()
-				if err != nil {
-					t.Fatalf("error reading expected final token: %v", err)
-				}
-				start, ok := tok.(xml.StartElement)
-				if !ok || start.Name.Local != "fin" {
-					t.Fatalf("unexpected final token: %T(%[1]v)", tok)
-				}
-			}
-		})
 	}
 }

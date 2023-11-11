@@ -104,7 +104,7 @@ func TestReader(t *testing.T) {
 				}
 				tc.skip--
 			}
-			_, err := xmlstream.Copy(e, stream.Reader(d))
+			_, err := xmlstream.Copy(e, stream.Reader(d, false))
 			switch {
 			case tc.errType != nil:
 				if reflect.TypeOf(tc.errType) != reflect.TypeOf(err) {
@@ -125,7 +125,7 @@ func TestBadFormat(t *testing.T) {
 	toks := &xmpptest.Tokens{
 		xml.EndElement{Name: xml.Name{Local: "error", Space: streamerr.NS}},
 	}
-	r := stream.Reader(toks)
+	r := stream.Reader(toks, false)
 	var out strings.Builder
 	e := xml.NewEncoder(&out)
 	_, err := xmlstream.Copy(e, r)
@@ -148,7 +148,7 @@ func TestDisallowedTokenType(t *testing.T) {
 		},
 		xml.Directive("test"),
 	}
-	r := stream.Reader(toks)
+	r := stream.Reader(toks, false)
 	for {
 		tok, err := r.Token()
 		if err == io.EOF {

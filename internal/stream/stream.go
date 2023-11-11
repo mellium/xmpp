@@ -101,7 +101,7 @@ func Send(rw io.ReadWriter, streamData *stream.Info, ws bool, version stream.Ver
 // If an XML header is discovered instead, it is skipped.
 func Expect(ctx context.Context, in *stream.Info, d xml.TokenReader, recv, ws bool) error {
 	// Skip the XML declaration (if any).
-	d = decl.Skip(d)
+	d = negotiateReader(decl.Skip(d), ws)
 
 	for {
 		select {
@@ -114,6 +114,10 @@ func Expect(ctx context.Context, in *stream.Info, d xml.TokenReader, recv, ws bo
 			return err
 		}
 		switch tok := t.(type) {
+		case xml.CharData:
+			// If we get whitespace (the only valid chardata let through by the
+			// negotiateReader call above), skip it.
+			continue
 		case xml.StartElement:
 			switch {
 			case tok.Name.Local == "error" && tok.Name.Space == stream.NS:
@@ -149,20 +153,9 @@ func Expect(ctx context.Context, in *stream.Info, d xml.TokenReader, recv, ws bo
 
 			if !recv && in.ID == "" {
 				// if we are the initiating entity and there is no stream ID…
-				return fmt.Errorf("receiving entity must set stream ID: %w", stream.BadFormat)
+				return fmt.Errorf("initiating entity must set stream ID: %w", stream.BadFormat)
 			}
 			return nil
-		case xml.ProcInst:
-			return fmt.Errorf("unexpected procinst encountered: %w", stream.RestrictedXML)
-		case xml.EndElement:
-			return fmt.Errorf("unexpected end element encountered: %w", stream.NotWellFormed)
-		case xml.CharData:
-			if isWhitespace(tok) {
-				continue
-			}
-			return fmt.Errorf("unexpected chardata encountered: %w", stream.RestrictedXML)
-		default:
-			return fmt.Errorf("unexpected XML token %T encountered: %w", t, stream.RestrictedXML)
 		}
 	}
 }
