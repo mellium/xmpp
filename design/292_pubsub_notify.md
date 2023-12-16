@@ -1,7 +1,7 @@
 # Pub-Sub Subscriptions
 
 **Author(s):** Sam Whited <sam@samwhited.com>  
-**Last updated:** 2022-12-13  
+**Last updated:** 2023-12-16  
 **Discussion:** https://mellium.im/issue/292
 
 ## Abstract
@@ -271,7 +271,3 @@ const (
 Implementing this proposal would add seven types, 19 methods, 21 constants,
 and one function that would need to remain backwards compatible once we reach
 1.0.
-
-## Open Issues
-
-- How does notification filtering fit into this API?
