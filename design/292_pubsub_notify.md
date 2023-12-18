@@ -1,7 +1,7 @@
 # Pub-Sub Subscriptions
 
 **Author(s):** Sam Whited <sam@samwhited.com>  
-**Last updated:** 2023-12-16  
+**Last updated:** 2023-12-18  
 **Discussion:** https://mellium.im/issue/292
 
 ## Abstract
@@ -181,9 +181,9 @@ handler and begins forwarding events to it.
 Unsubscribing will send the unsubscribe stanza regardless of whether a
 subscription is registered (in case of server policy automatically subscribing a
 user to some events), but may return an error if the server sends one back.
-Similarly, calling Subscribe will always send the subscribe stanza, replacing
-the handler if it exists locally and no error is returned from the subscription
-response.
+Similarly, calling Subscribe will always send the subscribe stanza and will
+replace the existing handler if it already exists locally and no error is
+returned from the subscription response.
 
 ```
 // Handler returns the handler to use for an item list with the given namespace.
@@ -192,9 +192,9 @@ response.
 func (*Subscriptions) Handler(ns string) (h Handler, ok bool)
 ```
 
-As a convenience (and to more closely match the API provided by the
-multiplexer) the `Handler` function returns whether a handler is registered for
-a given subscription.
+As a convenience (and to more closely match the API provided by the multiplexer
+in the [`mux`] package) the `Handler` function returns whether a handler is
+registered for a given subscription.
 
 Errors returned from pubsub methods will return a special error type that
 contains information about the underlying XML errors and embeds a stanza.Error.
@@ -271,3 +271,5 @@ const (
 Implementing this proposal would add seven types, 19 methods, 21 constants,
 and one function that would need to remain backwards compatible once we reach
 1.0.
+
+[`mux`]: https://pkg.go.dev/mellium.im/xmpp/mux
