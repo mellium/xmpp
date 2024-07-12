@@ -14,10 +14,8 @@ When making a release, remember to do the following:
   proxy) to trigger the docs being built
 - Write up a release announcement on https://opencollective.com/mellium
 - Announce the release
-  - Post it in users@mellium.chat
-  - Post it on https://fosstodon.org/@mellium
-  - Add it to the XMPP newsletter https://yopad.eu/p/xmpp-newsletter-365days
+  - Post it in `users@mellium.chat`
+  - Post it on fedi at https://social.coop/@mellium
   - Post it on Reddit https://www.reddit.com/r/xmpp/
-  - Post it on Lemmy https://community.xmpp.net/c/mellium
   - If there's anything worth demoing sign up for Office Hours
     https://wiki.xmpp.org/web/XMPP_Office_Hours
