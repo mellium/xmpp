@@ -54,7 +54,7 @@ func TestIntegrationDial(t *testing.T) {
 		t.Run(tc.domain, func(t *testing.T) {
 			tries := 3
 		retry:
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 			j := jid.MustParse("test@" + tc.domain)
 			_, err := tc.dialer.Dial(ctx, "tcp", j)

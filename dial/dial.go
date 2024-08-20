@@ -163,10 +163,14 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID, server 
 				strconv.FormatUint(uint64(addr.Port), 10),
 			))
 		} else {
-			c, e = tls.DialWithDialer(&d.Dialer, network, net.JoinHostPort(
+			tlsDialer := &tls.Dialer{
+				NetDialer: &d.Dialer,
+				Config:    cfg,
+			}
+			c, e = tlsDialer.DialContext(ctx, network, net.JoinHostPort(
 				addr.Target,
 				strconv.FormatUint(uint64(addr.Port), 10),
-			), cfg)
+			))
 		}
 		if e != nil {
 			err = e
@@ -180,8 +184,12 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID, server 
 
 func (d *Dialer) legacy(ctx context.Context, network string, domain string, cfg *tls.Config) (net.Conn, error) {
 	if !d.NoTLS {
-		conn, err := tls.DialWithDialer(&d.Dialer, network,
-			net.JoinHostPort(domain, "5223"), cfg)
+		tlsDialer := &tls.Dialer{
+			NetDialer: &d.Dialer,
+			Config:    cfg,
+		}
+		conn, err := tlsDialer.DialContext(ctx, network,
+			net.JoinHostPort(domain, "5223"))
 		if err == nil {
 			return conn, nil
 		}
