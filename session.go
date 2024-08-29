@@ -124,6 +124,11 @@ const (
 	S2S
 )
 
+type tokenReadChan struct {
+	c   chan xmlstream.TokenReadCloser
+	ctx context.Context
+}
+
 // A Session represents an XMPP session comprising an input and an output XML
 // stream.
 type Session struct {
@@ -140,7 +145,7 @@ type Session struct {
 	negotiated map[string]struct{}
 
 	sentIQMutex sync.Mutex
-	sentIQs     map[string]chan xmlstream.TokenReadCloser
+	sentIQs     map[string]tokenReadChan
 
 	in struct {
 		stream.Info
@@ -232,7 +237,7 @@ func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 		conn:       newConn(rw, nil),
 		features:   make(map[string]interface{}),
 		negotiated: make(map[string]struct{}),
-		sentIQs:    make(map[string]chan xmlstream.TokenReadCloser),
+		sentIQs:    make(map[string]tokenReadChan),
 		state:      state,
 	}
 
@@ -574,15 +579,18 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 
 	if typ == string(stanza.ResultIQ) || typ == "error" {
 		s.sentIQMutex.Lock()
-		c := s.sentIQs[id]
+		readerChan, ok := s.sentIQs[id]
 		s.sentIQMutex.Unlock()
-		if c != nil {
+		if ok {
 			inner := xmlstream.Inner(r)
-			c <- iqResponder{
+			select {
+			case readerChan.c <- iqResponder{
 				r: xmlstream.Wrap(inner, start),
-				c: c,
+				c: readerChan.c,
+			}:
+				<-readerChan.c
+			case <-readerChan.ctx.Done():
 			}
-			<-c
 			// Consume the rest of the stream before continuing the loop.
 			_, err = xmlstream.Copy(discard, inner)
 			if err != nil {
@@ -973,7 +981,10 @@ func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenRead
 	c := make(chan xmlstream.TokenReadCloser)
 
 	s.sentIQMutex.Lock()
-	s.sentIQs[id] = c
+	s.sentIQs[id] = tokenReadChan{
+		c:   c,
+		ctx: ctx,
+	}
 	s.sentIQMutex.Unlock()
 	defer func() {
 		s.sentIQMutex.Lock()
@@ -990,7 +1001,6 @@ func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenRead
 	case rr := <-c:
 		return rr, nil
 	case <-ctx.Done():
-		close(c)
 		return nil, ctx.Err()
 	}
 }
