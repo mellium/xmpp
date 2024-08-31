@@ -82,9 +82,8 @@ func TestMain(m *testing.M) {
 	logger.Printf("decoded config: %+v", cfg)
 
 	cfg.C2SFeatures = []xmpp.StreamFeature{
-		/* #nosec */
 		xmpp.StartTLS(&tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: true, // #nosec G402 -- Package for testing only
 			GetCertificate: func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
 				if info.ServerName == "" {
 					info.ServerName = "localhost"
