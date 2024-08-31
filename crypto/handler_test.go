@@ -22,7 +22,7 @@ var iterTests = []struct {
 	err  error
 }{
 	0: {
-		h:    []crypto.Hash{crypto.SHA256, crypto.SHA3_256},
+		h:    []crypto.Hash{crypto.SHA256, crypto.BLAKE2b_512},
 		vars: []string{"urn:xmpp:hash-function-text-names:sha-256"},
 		err:  crypto.ErrUnlinkedAlgo,
 	},
