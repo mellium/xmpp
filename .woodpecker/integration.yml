@@ -15,6 +15,8 @@ steps:
       - go env
       - python --version
       - lua5.2 -v
+    when:
+      - event: [tag, push, pull_request, release, manual]
   test:
     << : *info
     commands:

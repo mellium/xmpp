@@ -27,3 +27,5 @@ steps:
         # Check that all commits that aren't in main are signed off by the same
         # committer (taken from the HEAD commit).
         [[ ! "$(git log --pretty="%an <%ae>%n%(trailers:key=Signed-off-by,valueonly,separator=)" origin/main.. | uniq -u)" ]]
+    when:
+      - event: [tag, push, pull_request, release, manual]
