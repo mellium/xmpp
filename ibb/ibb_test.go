@@ -192,8 +192,8 @@ func TestExpect(t *testing.T) {
 
 	accept := make(chan error)
 	const sid = "1234"
+	ln := serverIBB.Listen(s.Server)
 	go func() {
-		ln := serverIBB.Listen(s.Server)
 		_, err := ln.Expect(context.Background(), jid.JID{}, sid)
 		if err != nil {
 			accept <- err
@@ -202,6 +202,9 @@ func TestExpect(t *testing.T) {
 		close(accept)
 	}()
 
+	// This is a bit jank and only usable in tests.
+	// See the function definition comments for details.
+	ln.WaitExpect(context.Background(), jid.JID{}, sid)
 	_, err := clientIBB.OpenIQ(context.Background(), stanza.IQ{To: s.Server.LocalAddr()}, s.Client, true, 20, sid)
 	if err != nil {
 		t.Fatalf("error opening connection: %v", err)
