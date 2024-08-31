@@ -1,5 +1,5 @@
 clone:
-  clone:
+  git:
     image: woodpeckerci/plugin-git
     settings:
       # Full clone so that we can generate the CONTRIBUTORS file.
