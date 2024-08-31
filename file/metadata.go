@@ -4,7 +4,7 @@
 
 // Package file contains shared functionality between various file upload
 // mechanisms.
-package file
+package file // import "mellium.im/xmpp/file"
 
 import (
 	"encoding/xml"
@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	// The namespace used by this package, provided as a convenience.
 	NSMeta = `urn:xmpp:file:metadata:0`
 )
 
