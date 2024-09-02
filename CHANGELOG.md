@@ -15,6 +15,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- muc: fix a goroutine leak when joining or leaving a room and respect the
+       context timeout when leaving the room
 - stanza: when marshaling an error, all translations are now included
 - stanza: when unmarshaling an error, the condition is now unmarshaled even if
           there are unknown child elements in the stanza

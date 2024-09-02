@@ -75,11 +75,18 @@ func (c *Channel) LeavePresence(ctx context.Context, status string, p stanza.Pre
 			xml.StartElement{Name: xml.Name{Local: "status"}},
 		)
 	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	errChan := make(chan error)
 	go func(errChan chan<- error) {
 		resp, err := c.session.SendPresenceElement(ctx, inner, p)
 		if err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			case <-ctx.Done():
+			}
 			return
 		}
 		/* #nosec */
@@ -87,21 +94,32 @@ func (c *Channel) LeavePresence(ctx context.Context, status string, p stanza.Pre
 		// Pop the start presence token.
 		_, err = resp.Token()
 		if err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			case <-ctx.Done():
+			}
 			return
 		}
 		stanzaError, err := stanza.UnmarshalError(resp)
 		if err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			case <-ctx.Done():
+			}
 			return
 		}
-		errChan <- stanzaError
+		select {
+		case errChan <- stanzaError:
+		case <-ctx.Done():
+		}
 	}(errChan)
 
 	select {
 	case err := <-errChan:
 		return err
 	case <-c.depart:
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 	return nil
 }
@@ -188,11 +206,17 @@ func (c *Channel) JoinPresence(ctx context.Context, p stanza.Presence, opt ...Op
 		c.addr = newAddr
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	errChan := make(chan error)
 	go func(errChan chan<- error) {
 		resp, err := c.session.SendPresenceElement(ctx, conf.TokenReader(), p)
 		if err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			case <-ctx.Done():
+			}
 			return
 		}
 		/* #nosec */
@@ -200,16 +224,25 @@ func (c *Channel) JoinPresence(ctx context.Context, p stanza.Presence, opt ...Op
 		// Pop the start presence token.
 		_, err = resp.Token()
 		if err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			case <-ctx.Done():
+			}
 			return
 		}
 
 		stanzaError, err := stanza.UnmarshalError(resp)
 		if err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			case <-ctx.Done():
+			}
 			return
 		}
-		errChan <- stanzaError
+		select {
+		case errChan <- stanzaError:
+		case <-ctx.Done():
+		}
 	}(errChan)
 
 	select {
