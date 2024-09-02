@@ -78,7 +78,6 @@ func (c *Channel) LeavePresence(ctx context.Context, status string, p stanza.Pre
 	errChan := make(chan error)
 	go func(errChan chan<- error) {
 		resp, err := c.session.SendPresenceElement(ctx, inner, p)
-		//err := s.Send(ctx, p.Wrap(conf.TokenReader()))
 		if err != nil {
 			errChan <- err
 			return
