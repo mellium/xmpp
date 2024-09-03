@@ -144,8 +144,8 @@ type Session struct {
 	// The negotiated features (by namespace) for the current session.
 	negotiated map[string]struct{}
 
-	sentIQMutex sync.Mutex
-	sentIQs     map[string]tokenReadChan
+	sentStanzaMutex sync.Mutex
+	sentStanzas     map[string]tokenReadChan
 
 	in struct {
 		stream.Info
@@ -234,11 +234,11 @@ func negotiateSession(ctx context.Context, location, origin jid.JID, rw io.ReadW
 	}
 
 	s := &Session{
-		conn:       newConn(rw, nil),
-		features:   make(map[string]interface{}),
-		negotiated: make(map[string]struct{}),
-		sentIQs:    make(map[string]tokenReadChan),
-		state:      state,
+		conn:        newConn(rw, nil),
+		features:    make(map[string]interface{}),
+		negotiated:  make(map[string]struct{}),
+		sentStanzas: make(map[string]tokenReadChan),
+		state:       state,
 	}
 
 	if s.state&Received == Received {
@@ -578,9 +578,9 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 	_, _, id, typ := getIDTyp(start.Attr)
 
 	if typ == string(stanza.ResultIQ) || typ == "error" {
-		s.sentIQMutex.Lock()
-		readerChan, ok := s.sentIQs[id]
-		s.sentIQMutex.Unlock()
+		s.sentStanzaMutex.Lock()
+		readerChan, ok := s.sentStanzas[id]
+		s.sentStanzaMutex.Unlock()
 		if ok {
 			inner := xmlstream.Inner(r)
 			select {
@@ -980,16 +980,16 @@ func isStanzaEmptySpace(name xml.Name) bool {
 func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenReader, start xml.StartElement) (xmlstream.TokenReadCloser, error) {
 	c := make(chan xmlstream.TokenReadCloser)
 
-	s.sentIQMutex.Lock()
-	s.sentIQs[id] = tokenReadChan{
+	s.sentStanzaMutex.Lock()
+	s.sentStanzas[id] = tokenReadChan{
 		c:   c,
 		ctx: ctx,
 	}
-	s.sentIQMutex.Unlock()
+	s.sentStanzaMutex.Unlock()
 	defer func() {
-		s.sentIQMutex.Lock()
-		delete(s.sentIQs, id)
-		s.sentIQMutex.Unlock()
+		s.sentStanzaMutex.Lock()
+		delete(s.sentStanzas, id)
+		s.sentStanzaMutex.Unlock()
 	}()
 
 	err := s.SendElement(ctx, payload, start)
