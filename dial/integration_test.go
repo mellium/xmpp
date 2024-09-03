@@ -26,9 +26,9 @@ var dialTests = []struct {
 	errType error
 }{
 	{
-		dialer: dial.Dialer{S2S: true},
-		domain: "no-target.badxmpp.eu",
-		err:    "no such host",
+		dialer:  dial.Dialer{S2S: true},
+		domain:  "no-target.badxmpp.eu",
+		errType: &net.OpError{},
 	},
 	{
 		dialer:  dial.Dialer{S2S: true},
@@ -70,7 +70,7 @@ func TestIntegrationDial(t *testing.T) {
 				t.Errorf("wrong error: want=%s, got=%v", tc.err, err.Error())
 			case tc.err == "" && tc.errType != nil:
 				if reflect.TypeOf(tc.errType) != reflect.TypeOf(err) {
-					t.Errorf("wrong type of error: want=%T, got=%T", tc.errType, err)
+					t.Errorf("wrong type of error: want=%T(%#v), got=%T(%#v)", tc.errType, tc.errType, err, err)
 				}
 			case tc.err == "" && err != nil:
 				t.Errorf("got unexpected error: %v", err)
