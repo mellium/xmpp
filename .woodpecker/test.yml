@@ -1,6 +1,6 @@
 steps:
   info: &info
-    image: golang:${GO_VERSION}-alpine
+    image: golang:1.22-alpine
     environment:
       GO111MODULE: "on"
       CGO_ENABLED: "0"
@@ -21,11 +21,6 @@ steps:
         go build
         cd ..
       done
-
-matrix:
-  GO_VERSION:
-    - 1.23
-    - 1.22
 
 depends_on:
   - dco
