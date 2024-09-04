@@ -50,34 +50,6 @@ type Link struct {
 	Href string `xml:"href,attr" json:"href"`
 }
 
-// LookupPort returns the default port for the provided network and service
-// using net.LookupPort.
-// If the provided service is one of xmpp[s]-client, xmpp[s]-server, or
-// xmpp-bosh and it is not found by net.LookupPort, a default value is returned.
-func LookupPort(network, service string) (uint16, error) {
-	p, err := net.LookupPort(network, service)
-	if err == nil {
-		return uint16(p), err
-	}
-	switch service {
-	case "xmpps-client":
-		// This port isn't actually registered with IANA for XMPP use, but for
-		// historical reasons it's widely used for implicit TLS.
-		return 5223, nil
-	case "xmpp-client":
-		return 5222, nil
-	case "xmpp-server":
-		return 5269, nil
-	case "xmpps-server":
-		// This port isn't actually registered with IANA for XMPP use, but for
-		// historical reasons it's widely used for implicit TLS.
-		return 5270, nil
-	case "xmpp-bosh":
-		return 5280, nil
-	}
-	return 0, err
-}
-
 func isNotFound(err error) bool {
 	dnsErr, ok := err.(*net.DNSError)
 	return ok && dnsErr.IsNotFound
