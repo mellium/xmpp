@@ -126,8 +126,9 @@ const (
 )
 
 type tokenReadChan struct {
-	c   chan xmlstream.TokenReadCloser
-	ctx context.Context
+	stanzaName xml.Name
+	c          chan xmlstream.TokenReadCloser
+	ctx        context.Context
 }
 
 // A Session represents an XMPP session comprising an input and an output XML
@@ -590,7 +591,8 @@ func handleInputStream(s *Session, handler Handler) (err error) {
 		s.sentStanzaMutex.Lock()
 		readerChan, ok := s.sentStanzas[id]
 		s.sentStanzaMutex.Unlock()
-		if ok {
+		emptySpace := xml.Name{Local: start.Name.Local}
+		if ok && readerChan.stanzaName == start.Name || readerChan.stanzaName == emptySpace {
 			inner := xmlstream.Inner(r)
 			select {
 			case readerChan.c <- iqResponder{
@@ -991,8 +993,9 @@ func (s *Session) sendResp(ctx context.Context, id string, payload xml.TokenRead
 
 	s.sentStanzaMutex.Lock()
 	s.sentStanzas[id] = tokenReadChan{
-		c:   c,
-		ctx: ctx,
+		stanzaName: start.Name,
+		c:          c,
+		ctx:        ctx,
 	}
 	s.sentStanzaMutex.Unlock()
 	defer func() {

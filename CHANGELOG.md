@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Security
+
+- xmpp: fix incorrect stanza handling when different stanza type had same ID.
+        A CVE has been issued with the id [CVE-2024-46957].
+
+[CVE-2024-46957]: https://mellium.im/cve/cve-2024-46957/
+
 ### Added
 
 - stream: add handling of `see-other-host` error
