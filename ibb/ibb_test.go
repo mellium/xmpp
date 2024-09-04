@@ -45,6 +45,7 @@ func TestSendSelf(t *testing.T) {
 		Got string
 		Err error
 	})
+	started := make(chan struct{})
 	go func() {
 		result := struct {
 			Got string
@@ -52,6 +53,7 @@ func TestSendSelf(t *testing.T) {
 		}{}
 
 		ln := serverIBB.Listen(s.Server)
+		started <- struct{}{}
 		for {
 			select {
 			case <-recv:
@@ -74,6 +76,7 @@ func TestSendSelf(t *testing.T) {
 			recv <- result
 		}
 	}()
+	<-started
 
 	t.Run("iq", func(t *testing.T) {
 		clientConn, err := clientIBB.Open(context.Background(), s.Client, s.Server.LocalAddr())
