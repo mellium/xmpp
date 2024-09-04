@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"hash"
-	"strconv"
 
 	"mellium.im/xmlstream"
 )
@@ -234,7 +233,7 @@ func (h Hash) String() string {
 	case BLAKE2b_512:
 		return "blake2b512"
 	default:
-		return "unknown hash value " + strconv.Itoa(int(h))
+		return fmt.Sprintf("unknown hash value %d", h)
 	}
 }
 
