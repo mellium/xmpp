@@ -17,6 +17,7 @@ import (
 	intstream "mellium.im/xmpp/internal/stream"
 	"mellium.im/xmpp/stanza"
 	"mellium.im/xmpp/stream"
+	"mellium.im/xmpp/websocket"
 )
 
 var expectTestCases = [...]struct {
@@ -180,5 +181,29 @@ func TestSendNewS2SReturnsWriteErr(t *testing.T) {
 	}, &out, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", "abc")
 	if err != io.ErrUnexpectedEOF {
 		t.Errorf("Expected errWriterErr (%s) but got `%s`", io.ErrUnexpectedEOF, err)
+	}
+}
+
+func TestClose(t *testing.T) {
+	b := new(strings.Builder)
+
+	err := intstream.Close(b, &stream.Info{Name: xml.Name{Space: websocket.NS}})
+	if err != nil {
+		t.Fatalf("error writing websocket close: %v", err)
+	}
+	expect := `<close xmlns="urn:ietf:params:xml:ns:xmpp-framing"/>`
+	if out := b.String(); out != expect {
+		t.Fatalf("wrong websocket close written: want=%q, got=%q", expect, out)
+	}
+
+	b.Reset()
+
+	err = intstream.Close(b, &stream.Info{})
+	if err != nil {
+		t.Fatalf("error writing regular stream close: %v", err)
+	}
+	expect = `</stream:stream>`
+	if out := b.String(); out != expect {
+		t.Fatalf("wrong stream close written: want=%q, got=%q", expect, out)
 	}
 }
