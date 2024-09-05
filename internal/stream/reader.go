@@ -19,6 +19,10 @@ var (
 	ErrUnexpectedRestart    = errors.New("xmpp: unexpected stream restart")
 )
 
+func isWhitespace(b xml.CharData) bool {
+	return len(bytes.TrimLeft(b, " \t\r\n")) == 0
+}
+
 type reader struct {
 	r     xml.TokenReader
 	depth uint64
@@ -33,7 +37,7 @@ func (r *reader) Token() (xml.Token, error) {
 	switch t := tok.(type) {
 	case xml.CharData:
 		if r.depth == 0 {
-			if len(bytes.TrimLeft(t, " \t\r\n")) != 0 {
+			if !isWhitespace(t) {
 				// Whitespace is allowed, but anything else at the top of the stream is
 				// disallowed.
 				return t, errors.New("xmpp: unexpected stream-level chardata")

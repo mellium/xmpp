@@ -20,6 +20,8 @@ All notable changes to this project will be documented in this file.
 - stanza: when marshaling an error, all translations are now included
 - stanza: when unmarshaling an error, the condition is now unmarshaled even if
           there are unknown child elements in the stanza
+- stream: whitespace is now allowed around stream start elements during session
+          negotiation
 
 
 ## v0.21.4 — 2023-01-11

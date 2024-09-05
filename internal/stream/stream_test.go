@@ -118,12 +118,12 @@ var expectTestCases = [...]struct {
 		Err: stream.InvalidNamespace,
 	},
 	2: {
-		XML: xml.Header[:len(xml.Header)-1] + `<open><fin/>`,
+		XML: xml.Header + `<open><fin/>`,
 		WS:  true,
 		Err: stream.InvalidNamespace,
 	},
 	3: {
-		XML: xml.Header[:len(xml.Header)-1] + xml.Header[:len(xml.Header)-1] + `<fin/>`,
+		XML: xml.Header + xml.Header[:len(xml.Header)-1] + `<fin/>`,
 		WS:  true,
 		Err: stream.RestrictedXML,
 	},

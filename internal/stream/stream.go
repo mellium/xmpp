@@ -156,6 +156,11 @@ func Expect(ctx context.Context, in *stream.Info, d xml.TokenReader, recv, ws bo
 			return fmt.Errorf("unexpected procinst encountered: %w", stream.RestrictedXML)
 		case xml.EndElement:
 			return fmt.Errorf("unexpected end element encountered: %w", stream.NotWellFormed)
+		case xml.CharData:
+			if isWhitespace(tok) {
+				continue
+			}
+			return fmt.Errorf("unexpected chardata encountered: %w", stream.RestrictedXML)
 		default:
 			return fmt.Errorf("unexpected XML token %T encountered: %w", t, stream.RestrictedXML)
 		}
