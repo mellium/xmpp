@@ -6,6 +6,9 @@ package stream_test
 
 import (
 	"bytes"
+	"context"
+	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -95,5 +98,104 @@ func TestSendNewS2SReturnsWriteErr(t *testing.T) {
 	}, &out, false, stream.Version{Major: 1, Minor: 0}, "und", "example.net", "test@example.net", "abc")
 	if err != io.ErrUnexpectedEOF {
 		t.Errorf("Expected errWriterErr (%s) but got `%s`", io.ErrUnexpectedEOF, err)
+	}
+}
+
+var expectTestCases = [...]struct {
+	XML            string
+	Err            error
+	Recv           bool
+	WS             bool
+	SkipFinalToken bool
+	Pop            int
+}{
+	0: {
+		Err:            io.EOF,
+		SkipFinalToken: true,
+	},
+	1: {
+		XML: xml.Header[:len(xml.Header)-1] + `<stream><fin/>`,
+		Err: stream.InvalidNamespace,
+	},
+	2: {
+		XML: xml.Header[:len(xml.Header)-1] + `<open><fin/>`,
+		WS:  true,
+		Err: stream.InvalidNamespace,
+	},
+	3: {
+		XML: xml.Header[:len(xml.Header)-1] + xml.Header[:len(xml.Header)-1] + `<fin/>`,
+		WS:  true,
+		Err: stream.RestrictedXML,
+	},
+	4: {
+		XML: `<open xmlns="urn:ietf:params:xml:ns:xmpp-framing"
+		            to="example.com"
+								version="1.0" /><fin/>`,
+		Recv: true,
+		WS:   true,
+	},
+	5: {
+		XML: `<open xmlns="urn:ietf:params:xml:ns:xmpp-framing"
+		            to="example.com"
+								version="1.0" /><fin/>`,
+		WS:  true,
+		Err: stream.BadFormat,
+	},
+	6: {
+		XML: `<open xmlns="urn:ietf:params:xml:ns:xmpp-framing"
+		            to="example.com"
+								version="2.0" /><fin/>`,
+		Recv: true,
+		WS:   true,
+		Err:  stream.UnsupportedVersion,
+	},
+	7: {
+		XML: `<stream:stream
+            from='juliet@im.example.com'
+            to='im.example.com'
+            version='1.0'
+            xml:lang='en'
+						id='1234'
+            xmlns='wrong'
+            xmlns:stream='http://etherx.jabber.org/streams'><fin/>`,
+		Err: stream.InvalidNamespace,
+	},
+	8: {
+		XML: `<stream></stream><fin/>`,
+		Err: stream.NotWellFormed,
+		Pop: 1,
+	},
+	9: {
+		XML: `<!-- test --><fin/>`,
+		Err: stream.RestrictedXML,
+	},
+}
+
+func TestExpect(t *testing.T) {
+	for i, tc := range expectTestCases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			d := xml.NewDecoder(strings.NewReader(tc.XML))
+			for ; tc.Pop > 0; tc.Pop-- {
+				_, err := d.Token()
+				if err != nil {
+					t.Fatalf("error while poping start tokens: %v", err)
+				}
+			}
+			info := &stream.Info{}
+			err := intstream.Expect(context.Background(), info, d, tc.Recv, tc.WS)
+			if (tc.Err != nil && !errors.Is(err, tc.Err)) || (tc.Err == nil && err != nil) {
+				t.Fatalf("wrong error: want=%v, got=%v", tc.Err, err)
+			}
+			if !tc.SkipFinalToken {
+				tok, err := d.Token()
+				if err != nil {
+					t.Fatalf("error reading expected final token: %v", err)
+				}
+				start, ok := tok.(xml.StartElement)
+				if !ok || start.Name.Local != "fin" {
+					t.Fatalf("unexpected final token: %T(%[1]v)", tok)
+				}
+			}
+		})
 	}
 }
