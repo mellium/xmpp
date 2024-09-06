@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"io"
 	"strconv"
 	"strings"
 	"testing"
@@ -20,9 +21,9 @@ import (
 )
 
 var (
-	_ xml.Marshaler         = receipts.Requested{}
-	_ xmlstream.Marshaler   = receipts.Requested{}
-	_ xmlstream.WriterTo    = receipts.Requested{}
+	_ xml.Marshaler         = receipts.Requested(false)
+	_ xmlstream.Marshaler   = receipts.Requested(false)
+	_ xmlstream.WriterTo    = receipts.Requested(false)
 	_ xml.Unmarshaler       = (*receipts.Requested)(nil)
 	_ xmlstream.Transformer = receipts.Request
 )
@@ -91,55 +92,33 @@ func TestRequest(t *testing.T) {
 	}
 }
 
-func TestMarshal(t *testing.T) {
-	var buf strings.Builder
-	e := xml.NewEncoder(&buf)
-	err := e.Encode(struct {
-		stanza.Message
-
-		Requested receipts.Requested
-	}{})
-	if err != nil {
-		t.Fatalf("error encoding: %v", err)
-	}
-	if err = e.Flush(); err != nil {
-		t.Fatalf("error flushing: %v", err)
-	}
-
-	const expected = `<message to="" from=""><request xmlns="urn:xmpp:receipts"></request></message>`
-	if out := buf.String(); expected != out {
-		t.Errorf("wrong output:\nwant=%s,\n got=%s", expected, out)
-	}
-}
-
-var unmarshalTestCases = [...]struct {
-	in  string
-	out bool
-}{
+var encodingTestCases = []xmpptest.EncodingTestCase{
 	0: {
-		in:  `<message><request xmlns="urn:xmpp:receipts"/></message>`,
-		out: true,
+		Value: func() *receipts.Requested {
+			v := receipts.Requested(false)
+			return &v
+		}(),
+		NoUnmarshal: true,
 	},
-	1: {in: `<message><wrong xmlns="urn:xmpp:receipts"/></message>`},
-	2: {in: `<message><request xmlns="urn:xmpp:wrongns"/></message>`},
+	1: {
+		Value: func() *receipts.Requested {
+			v := receipts.Requested(false)
+			return &v
+		}(),
+		Err:       io.EOF,
+		NoMarshal: true,
+	},
+	2: {
+		Value: func() *receipts.Requested {
+			v := receipts.Requested(true)
+			return &v
+		}(),
+		XML: `<request xmlns="urn:xmpp:receipts"></request>`,
+	},
 }
 
-func TestUnmarshal(t *testing.T) {
-	for i, tc := range unmarshalTestCases {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			m := struct {
-				stanza.Message
-				Requested receipts.Requested
-			}{}
-			err := xml.NewDecoder(strings.NewReader(tc.in)).Decode(&m)
-			if err != nil {
-				t.Errorf("error decoding: %v", err)
-			}
-			if m.Requested.Value != tc.out {
-				t.Errorf("bad decode: want=%t, got=%t", tc.out, m.Requested.Value)
-			}
-		})
-	}
+func TestEncode(t *testing.T) {
+	xmpptest.RunEncodingTests(t, encodingTestCases)
 }
 
 func TestClosedDoesNotPanic(t *testing.T) {

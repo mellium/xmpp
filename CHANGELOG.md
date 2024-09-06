@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking
 
+- receipts: the API for requesting read receipts has been simplified
 - stream: `Error.InnerXML()` has been replaced by `Error.Content`
 
 ### Fixed

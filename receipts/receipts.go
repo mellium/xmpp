@@ -27,19 +27,24 @@ const (
 	NS = "urn:xmpp:receipts"
 )
 
-// Requested is a type that can be added to messages to request a read receipt.
-// When unmarshaled or marshaled its value indicates whether it was or will be
-// present in the message.
+// Requested is a type that can be added to messages to enable or disable
+// requesting a read receipt.
 //
 // This type is used to manually include a request in a message struct.
 // To send a message and wait for the receipt see the methods on Handler.
-type Requested struct {
-	XMLName xml.Name `xml:"urn:xmpp:receipts request"`
-	Value   bool
+type Requested bool
+
+type eofReader struct{}
+
+func (eofReader) Token() (xml.Token, error) {
+	return nil, io.EOF
 }
 
 // TokenReader implements xmlstream.Marshaler.
 func (r Requested) TokenReader() xml.TokenReader {
+	if !r {
+		return eofReader{}
+	}
 	return xmlstream.Wrap(
 		nil,
 		xml.StartElement{Name: xml.Name{Space: NS, Local: "request"}},
@@ -62,7 +67,7 @@ func (r Requested) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
 
 // UnmarshalXML implements xml.Unmarshaler.
 func (r *Requested) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	r.Value = start.Name.Space == NS && start.Name.Local == "request"
+	*r = start.Name.Space == NS && start.Name.Local == "request"
 	return d.Skip()
 }
 
@@ -260,7 +265,7 @@ func (h *Handler) SendMessageElement(ctx context.Context, s *xmpp.Session, paylo
 	h.sent[msg.ID] = c
 	h.m.Unlock()
 
-	r := Requested{Value: true}.TokenReader()
+	r := Requested(true).TokenReader()
 	if payload != nil {
 		r = xmlstream.MultiReader(payload, r)
 	}
