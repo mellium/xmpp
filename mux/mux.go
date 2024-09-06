@@ -21,6 +21,7 @@ import (
 	"mellium.im/xmpp/disco/info"
 	"mellium.im/xmpp/disco/items"
 	"mellium.im/xmpp/form"
+	"mellium.im/xmpp/internal/decl"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -398,25 +399,20 @@ func (m *ServeMux) iqRouter(t xmlstream.TokenReadEncoder, start *xml.StartElemen
 		xmlstream.Encoder
 	}{
 		Encoder:     t,
-		TokenReader: xmlstream.Inner(t),
+		TokenReader: decl.TrimLeftSpace(xmlstream.Inner(t)),
 	}
-	for {
-		tok, err := t.Token()
-		// If we get any error return it, unless it's an EOF then don't return it if
-		// it's a result IQ (which may be empty).
-		if err != nil && (err != io.EOF || iq.Type != stanza.ResultIQ) {
-			return err
-		}
-		var payloadStart xml.StartElement
-		switch start := tok.(type) {
-		case xml.StartElement:
-			payloadStart = start
-		case xml.CharData:
-			continue
-		}
-		h, _ := m.IQHandler(iq.Type, payloadStart.Name)
-		return h.HandleIQ(iq, t, &payloadStart)
+	tok, err := t.Token()
+	// If we get any error return it, unless it's an EOF then don't return it if
+	// it's a result IQ (which may be empty).
+	if err != nil && (err != io.EOF || iq.Type != stanza.ResultIQ) {
+		return err
 	}
+	payloadStart, ok := tok.(xml.StartElement)
+	if tok != nil && !ok {
+		return fmt.Errorf("xmpp: received IQ with invalid payload of type %T", t)
+	}
+	h, _ := m.IQHandler(iq.Type, payloadStart.Name)
+	return h.HandleIQ(iq, t, &payloadStart)
 }
 
 type bufReader struct {

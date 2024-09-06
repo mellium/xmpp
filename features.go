@@ -12,6 +12,7 @@ import (
 	"io"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/internal/decl"
 	"mellium.im/xmpp/internal/ns"
 	intstream "mellium.im/xmpp/internal/stream"
 	"mellium.im/xmpp/stream"
@@ -192,7 +193,7 @@ func negotiateFeatures(ctx context.Context, s *Session, first, ws bool, features
 			var iqStart xml.StartElement
 			if isIQ(start.Name) {
 				iqStart = start
-				t, err = s.in.d.Token()
+				t, err = decl.TrimLeftSpace(s.in.d).Token()
 				if err != nil {
 					return mask, nil, err
 				}
