@@ -5,46 +5,26 @@
 package decl_test
 
 import (
-	"bytes"
 	"encoding/xml"
 	"io"
-	"strconv"
-	"strings"
 	"testing"
 
 	"mellium.im/xmlstream"
 	"mellium.im/xmpp/internal/decl"
+	"mellium.im/xmpp/internal/xmpptest"
 )
 
-var skipTests = [...]struct {
-	in  string
-	out string
-}{
+var skipTests = []xmpptest.TransformerTestCase{
 	0: {},
-	1: {in: "<a/>", out: "<a></a>"},
-	2: {in: xml.Header + "<a/>", out: "\n<a></a>"},
-	3: {in: `<?xml?><a/>`, out: "<a></a>"},
-	4: {in: `<?sgml?><a/>`, out: "<?sgml?><a></a>"},
-	5: {in: `<?xml?>`},
+	1: {In: "<a/>", Out: "<a></a>"},
+	2: {In: xml.Header + "<a/>", Out: "\n<a></a>"},
+	3: {In: `<?xml?><a/>`, Out: "<a></a>"},
+	4: {In: `<?sgml?><a/>`, Out: "<?sgml?><a></a>"},
+	5: {In: `<?xml?>`},
 }
 
 func TestDecl(t *testing.T) {
-	for i, tc := range skipTests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			d := decl.Skip(xml.NewDecoder(strings.NewReader(tc.in)))
-			buf := &bytes.Buffer{}
-			e := xml.NewEncoder(buf)
-			if _, err := xmlstream.Copy(e, d); err != nil {
-				t.Fatalf("Error copying tokens: %q", err)
-			}
-			if err := e.Flush(); err != nil {
-				t.Fatalf("Error flushing tokens: %q", err)
-			}
-			if s := buf.String(); s != tc.out {
-				t.Errorf("Output does not match: want=%q, got=%q", tc.out, s)
-			}
-		})
-	}
+	xmpptest.RunTransformerTests(t, decl.Skip, skipTests)
 }
 
 func TestImmediateEOF(t *testing.T) {
