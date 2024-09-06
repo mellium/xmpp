@@ -409,7 +409,7 @@ func (m *ServeMux) iqRouter(t xmlstream.TokenReadEncoder, start *xml.StartElemen
 	}
 	payloadStart, ok := tok.(xml.StartElement)
 	if tok != nil && !ok {
-		return fmt.Errorf("xmpp: received IQ with invalid payload of type %T", t)
+		return fmt.Errorf("xmpp: received IQ with invalid payload of type %T", tok)
 	}
 	h, _ := m.IQHandler(iq.Type, payloadStart.Name)
 	return h.HandleIQ(iq, t, &payloadStart)
