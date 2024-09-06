@@ -40,3 +40,20 @@ func TestImmediateEOF(t *testing.T) {
 		}
 	}
 }
+
+var trimSpaceTests = []xmpptest.TransformerTestCase{
+	0: {},
+	1: {In: "\t\n\r <a/>", Out: "<a></a>"},
+	2: {In: "a b<a/>", Out: "a b<a></a>"},
+	3: {In: "\n<?foo bar ?><a/>\n", Out: "<?foo bar ?><a></a>\n"},
+	4: {In: " \n a b<a/>", Out: " \n a b<a></a>"},
+	5: {In: " \n ", Out: ""},
+	6: {InStream: xmlstream.ReaderFunc(func() (xml.Token, error) {
+		// Concurrent EOF should also be trimmed.
+		return xml.CharData(" \n"), io.EOF
+	}), Out: ""},
+}
+
+func TestTrimSpace(t *testing.T) {
+	xmpptest.RunTransformerTests(t, decl.TrimLeftSpace, trimSpaceTests)
+}
