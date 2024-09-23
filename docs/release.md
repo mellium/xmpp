@@ -4,9 +4,11 @@ When making a release, remember to do the following:
 
 - Create a new commit bumping the release in `CHANGELOG.md` with the commit
   message "all: release vX.Y.Z"
-- Tag the release with `git tag -a --cleanup=whitespace vX.Y.Z`
+- Tag the release with `git tag -a --cleanup=whitespace vX.Y.Z` and remove all
+  comments from the annotation as these won't be treated as comments and will
+  end up in the final annotation
 - Copy the changelog for the release in as the annotation, making sure the
-  headers are correct
+  headers are correct (ie. remove one `#' from each header)
 - Create a new release on Codeberg (https://codeberg.org/mellium/xmpp/releases)
   using the same annotation, making sure headers make sense (remove the top
   level one, Codeberg will create that from the tag)
