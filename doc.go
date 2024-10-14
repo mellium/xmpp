@@ -129,7 +129,7 @@
 // handler did not consume the entire element).
 //
 //	err := session.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-//	    d := xml.NewTokenDecoder(t)
+//	    d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*start), t))
 //
 //	    // Ignore anything that's not a message.
 //	    if start.Name.Local != "message" {

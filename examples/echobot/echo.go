@@ -95,7 +95,7 @@ retry_dial:
 	return s.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 
 		// This is a workaround for https://mellium.im/issue/196
-		// until a cleaner permanent fix is devised (see https://mellium/issue/197)
+		// until a cleaner permanent fix is devised (see https://mellium.im/issue/197)
 		d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*start), t))
 		if _, err := d.Token(); err != nil {
 			return err
