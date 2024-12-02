@@ -51,7 +51,8 @@ type Link struct {
 }
 
 func isNotFound(err error) bool {
-	dnsErr, ok := err.(*net.DNSError)
+	var dnsErr *net.DNSError
+	ok := errors.As(err, &dnsErr)
 	return ok && dnsErr.IsNotFound
 }
 
