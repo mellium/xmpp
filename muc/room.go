@@ -15,6 +15,11 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
+type joinCtx struct {
+	done <-chan struct{}
+	j    chan<- jid.JID
+}
+
 // Channel represents a group chat, conference, or chatroom.
 //
 // Channel aims to be as stateless as possible, so details such as the channel
@@ -27,7 +32,7 @@ type Channel struct {
 	client  *Client
 	session *xmpp.Session
 
-	join   chan jid.JID
+	join   chan joinCtx
 	depart chan struct{}
 }
 
@@ -210,7 +215,19 @@ func (c *Channel) JoinPresence(ctx context.Context, p stanza.Presence, opt ...Op
 	defer cancel()
 
 	errChan := make(chan error)
+	joinChan := make(chan jid.JID)
+	joinCtx := joinCtx{
+		done: ctx.Done(),
+		j:    joinChan,
+	}
+	select {
+	case c.join <- joinCtx:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 	go func(errChan chan<- error) {
+		defer cancel()
+
 		resp, err := c.session.SendPresenceElement(ctx, conf.TokenReader(), p)
 		if err != nil {
 			select {
@@ -248,7 +265,7 @@ func (c *Channel) JoinPresence(ctx context.Context, p stanza.Presence, opt ...Op
 	select {
 	case err := <-errChan:
 		return err
-	case roomAddr := <-c.join:
+	case roomAddr := <-joinChan:
 		c.addr = roomAddr
 	case <-ctx.Done():
 		return ctx.Err()

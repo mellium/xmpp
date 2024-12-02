@@ -198,10 +198,21 @@ func (c *Client) HandlePresence(p stanza.Presence, r xmlstream.TokenReadEncoder)
 
 	switch p.Type {
 	case stanza.AvailablePresence:
-		if channel.join != nil {
-			channel.join <- p.From
-			channel.join = nil
-			return nil
+		// If any join functions are pending awaiting the join to complete, unblock
+		// them.
+	selectJoin:
+		select {
+		case c := <-channel.join:
+			select {
+			case c.j <- p.From:
+				return nil
+			case <-c.done:
+				// If the call to Join has timed out, try again to see if we have a
+				// subsequent call to Join (and if not, send the call to the user
+				// presence handler for the user to take care of).
+				goto selectJoin
+			}
+		default:
 		}
 		if decodedPresence.X.XMLName.Space == NSUser && c.HandleUserPresence != nil {
 			c.HandleUserPresence(decodedPresence.Presence, decodedPresence.X.Item)
@@ -234,7 +245,7 @@ func (c *Client) JoinPresence(ctx context.Context, p stanza.Presence, s *xmpp.Se
 		client:  c,
 		session: s,
 
-		join:   make(chan jid.JID, 1),
+		join:   make(chan joinCtx, 1),
 		depart: make(chan struct{}),
 	}
 	if c.managed == nil {
