@@ -8,6 +8,7 @@ package dial // import "mellium.im/xmpp/dial"
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -138,9 +139,9 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID, server 
 	}()
 	wg.Wait()
 
-	// If both lookups failed, return one of the errors.
+	// If both lookups failed, return the errors.
 	if xmppsErr != nil && xmppErr != nil {
-		return nil, xmppsErr
+		return nil, errors.Join(xmppsErr, xmppErr)
 	}
 	addrs := make([]*net.SRV, 0, len(xmppAddrs)+len(xmppsAddrs))
 	addrs = append(addrs, xmppsAddrs...)
