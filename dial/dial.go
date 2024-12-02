@@ -108,36 +108,37 @@ func (d *Dialer) dial(ctx context.Context, network string, addr jid.JID, server 
 		return d.legacy(ctx, network, server, cfg)
 	}
 
-	var xmppAddrs, xmppsAddrs []*net.SRV
-	var xmppErr, xmppsErr error
-	var wg sync.WaitGroup
+	var (
+		xmppAddrs, xmppsAddrs           []*net.SRV
+		xmppNotPresent, xmppsNotPresent bool
+		xmppErr, xmppsErr               error
+		wg                              sync.WaitGroup
+		xmppsService                    = connType(true, d.S2S)
+		xmppService                     = connType(false, d.S2S)
+	)
 	wg.Add(1)
 	if !d.NoTLS {
 		wg.Add(1)
 		go func() {
 			// Lookup xmpps-(client|server)
 			defer wg.Done()
-			xmppsService := connType(true, d.S2S)
-			addrs, e := discover.LookupServiceByDomain(ctx, d.Resolver, xmppsService, server)
-			if e != nil {
-				xmppsErr = e
-				return
-			}
-			xmppsAddrs = addrs
+			xmppsAddrs, xmppsNotPresent, xmppsErr = discover.LookupServiceByDomain(ctx, d.Resolver, xmppsService, server)
 		}()
 	}
 	go func() {
 		// Lookup xmpp-(client|server)
 		defer wg.Done()
-		xmppService := connType(false, d.S2S)
-		addrs, e := discover.LookupServiceByDomain(ctx, d.Resolver, xmppService, server)
-		if e != nil {
-			xmppErr = e
-			return
-		}
-		xmppAddrs = addrs
+		xmppAddrs, xmppNotPresent, xmppErr = discover.LookupServiceByDomain(ctx, d.Resolver, xmppService, server)
 	}()
 	wg.Wait()
+
+	// Set a fallback if either record set was not present.
+	if !d.NoTLS && !xmppsNotPresent && len(xmppsAddrs) == 0 {
+		xmppsAddrs = discover.FallbackRecords(xmppsService, server)
+	}
+	if !xmppNotPresent && len(xmppAddrs) == 0 {
+		xmppAddrs = discover.FallbackRecords(xmppService, server)
+	}
 
 	// If both lookups failed, return the errors.
 	if xmppsErr != nil && xmppErr != nil {

@@ -20,11 +20,12 @@ import (
 var testConvJID = jid.MustParse("sam@conversations.im")
 
 var lookupTests = [...]struct {
-	resolver *net.Resolver
-	service  string
-	addr     jid.JID
-	addrs    []*net.SRV
-	err      error
+	resolver  *net.Resolver
+	service   string
+	addr      jid.JID
+	noService bool
+	addrs     []*net.SRV
+	err       error
 }{
 	0: {
 		err: discover.ErrInvalidService,
@@ -32,7 +33,6 @@ var lookupTests = [...]struct {
 	1: {
 		service: "xmpp-client",
 		addr:    jid.MustParse("me@example.net"),
-		addrs:   discover.FallbackRecords("xmpp-client", "example.net"),
 	},
 	2: {
 		service: "xmpp-client",
@@ -76,12 +76,20 @@ var lookupTests = [...]struct {
 			},
 		},
 	},
+	5: {
+		service:   "xmpp-server",
+		addr:      jid.MustParse("example@no-service.badxmpp.eu"),
+		noService: true,
+	},
 }
 
 func TestIntegrationLookupService(t *testing.T) {
 	for i, tc := range lookupTests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			addrs, err := discover.LookupService(context.Background(), tc.resolver, tc.service, tc.addr)
+			addrs, noService, err := discover.LookupService(context.Background(), tc.resolver, tc.service, tc.addr)
+			if noService != tc.noService {
+				t.Errorf("unexpected value for '.' record: want=%t, got=%t", tc.noService, noService)
+			}
 			switch dnsErr := err.(type) {
 			case nil:
 				if err != tc.err {
