@@ -37,14 +37,15 @@ func (h *discoHandler) HandleXMPP(t xmlstream.TokenReadEncoder, start *xml.Start
 func (h *discoHandler) HandleIQ(iq stanza.IQ, r xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 	seen := make(map[string]struct{})
 	pr, pw := xmlstream.Pipe()
-	go func() {
-		var node string
-		for _, attr := range start.Attr {
-			if attr.Name.Local == "node" {
-				node = attr.Value
-				break
-			}
+	var node string
+	for _, attr := range start.Attr {
+		if attr.Name.Local == "node" {
+			node = attr.Value
+			break
 		}
+	}
+
+	go func() {
 		switch start.Name.Space {
 		case NSInfo:
 			err := h.ServeMux.ForFeatures(node, func(f info.Feature) error {
