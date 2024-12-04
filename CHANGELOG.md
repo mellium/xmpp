@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - muc: fix a race condition that could cause the loss of the nickname when
   joining a channel as well as a bug where subsequent join requests would always
   block forever (or until the provided timeout).
+- muc: fix a deadlock that could occur when leaving a channel.
 
 ### Added
 

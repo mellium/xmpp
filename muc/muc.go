@@ -218,8 +218,11 @@ func (c *Client) HandlePresence(p stanza.Presence, r xmlstream.TokenReadEncoder)
 			c.HandleUserPresence(decodedPresence.Presence, decodedPresence.X.Item)
 		}
 	case stanza.UnavailablePresence:
-		channel.depart <- struct{}{}
 		delete(c.managed, channel.addr.String())
+		select {
+		case channel.depart <- struct{}{}:
+		default:
+		}
 	}
 	return nil
 }
