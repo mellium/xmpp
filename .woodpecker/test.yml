@@ -2,8 +2,7 @@ steps:
   info: &info
     image: golang:1.22-alpine
     environment:
-      GO111MODULE: "on"
-      CGO_ENABLED: "0"
+      CGO_ENABLED: "1"
     commands:
       - go version
       - go env
@@ -11,9 +10,13 @@ steps:
       - event: [tag, push, pull_request, release, manual]
   test:
     << : *info
-    commands: go test -v -cover ./...
+    commands:
+      - apk add gcc musl-dev
+      - go test -race -v -cover ./...
   examples:
     << : *info
+    environment:
+      CGO_ENABLED: "0"
     directory: examples/
     commands: |
       for d in ./*/; do
