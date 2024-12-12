@@ -43,7 +43,6 @@ func Server(ctx context.Context, network string, addr jid.JID) (net.Conn, error)
 // an XMPP session on the connection, the various session establishment
 // functions in the main xmpp package should be passed the resulting connection.
 //
-// The zero value for each field is equivalent to dialing without that option.
 // Dialing with the zero value of Dialer is equivalent to calling the Client
 // function.
 type Dialer struct {
