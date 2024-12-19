@@ -2,7 +2,87 @@
 // Use of this source code is governed by the BSD 2-clause
 // license that can be found in the LICENSE file.
 
-// Package dial contains methods and types for dialing XMPP connections.
+// Package dial provides mechanisms to resolve and dial XMPP endpoints.
+//
+// This package provides advanced configuration for establishing the initial
+// network layer sockets that will be used for XMPP session negotiation later.
+// For simple uses that do not require extra configuration, users may instead
+// use the [mellium.im/xmpp.DialClientSession],
+// [mellium.im/xmpp.DialServerSession], or [mellium.im/xmpp.DialSession]
+// functions to perform both service discovery and session negotiation at once.
+//
+// Projects requiring more advanced configuration of the connection options may
+// instead choose to use the [Client] and [Server] shortcuts in this package to
+// first dial the TCP connection without performing any session negotiation.
+// Session negotiation can then be completed using the
+// [mellium.im/xmpp.NewClientSession], [mellium.im/xmpp.NewServerSession], or
+// [mellium.im/xmpp.NewSession] function.
+//
+// Projects such as clients requiring the ability to enable or disable service
+// discovery, configure implicit TLS, configure timeouts, etc. will want to
+// create and configure a [Dialer] instead.
+//
+// # Service Discovery
+//
+// An XMPP service is discovered by looking up DNS SRV records from the
+// domainpart of the XMPP address.
+// For details on the SRV record format see [RFC6120 §3.2.1] and [XEP-0368].
+// This package looks up SRV records by default, but their lookup may be
+// disabled entirely by creating and configuring a [Dialer].
+// If SRV lookup is disabled or no SRV records are found the [Dialer] will
+// instead lookup A or AAAA records for the specified hostname or XMPP address
+// domainpart and attempt to connect on two default ports:
+//
+//   - 5223 for implicit TLS (sometimes called "direct TLS") connections
+//   - 5222 for plain or opportunistic TLS (STARTTLS) connections
+//
+// Services that set SRV records and explicitly do not provide implicit TLS
+// should indicate this using an xmpps record that points to "." to disable
+// implicit TLS connection attempts.
+//
+// # Implicit TLS
+//
+// If service discovery returns any XMPP endpoints that provide implicit TLS
+// (ie. performing a TLS handshake immediately after dialing the transport layer
+// connection), these ports are tried first for safety reasons.
+// If the server does not support implicit TLS and no timeout is configured the
+// connection may take longer than anticipated, or hang entirely.
+// This is especially true for servers using the default ports described above.
+// This behavior can be disabled entirely on the [Dialer] (eg. for servers that
+// we know only support STARTTLS).
+//
+// # Timeouts
+//
+// As with any network connection, timeouts or deadlines should be set to ensure
+// that a misconfigured server or bad network hardware can't block the
+// connection attempt forever.
+// For the simple connection functions in [mellium.im/xmpp] this is accomplished
+// by passing a [context.Context] to the function.
+// The context cancelation will apply to the entire connection and XMPP session
+// negotiation attempt.
+// For many uses, this is not granular enough.
+// By using this package to first dial the connection, then performing session
+// negotiation separately we can have separate timeouts for the transport and
+// application layers of our connection.
+// However, this package may also make multiple connection attempts per call to
+// a dialer function or method (ie. one per SRV record returned until a
+// connection is made, or one with implicit TLS and one without as described
+// previously in this document).
+// For any robust system it is important that we make sure that a single
+// connection attempt cannot block until the sole timeout is reached, thus
+// preventing any further attempts, so a shorter timeout should be set per
+// connection attempt.
+// This can be accomplished by configuring the underlying [net.Dialer]:
+//
+//	Dialer{
+//		Dialer: net.Dialer{
+//			Timeout: 5*time.Second,
+//		},
+//		TLSConfig: &tls.Config{…},
+//	}
+//
+// [RFC6120 §3.2.1]: https://datatracker.ietf.org/doc/html/rfc6120#section-3.2.1
+// [XEP-0368]: https://xmpp.org/extensions/xep-0368.html
 package dial // import "mellium.im/xmpp/dial"
 
 import (
@@ -49,8 +129,7 @@ type Dialer struct {
 	net.Dialer
 
 	// NoLookup stops the dialer from looking up SRV records for the given domain.
-	// It also prevents fetching of the host metadata file. Instead, it will try
-	// to connect to the domain directly.
+	// Instead, it will try to connect to the domain directly.
 	NoLookup bool
 
 	// S2S causes the server to attempt to dial a server-to-server connection.
